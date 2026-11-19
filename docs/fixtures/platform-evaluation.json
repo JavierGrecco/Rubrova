@@ -437,6 +437,28 @@
         "invoiced",
         "cash"
       ]
+    },
+    "internalBusinessUnitTransfer": {
+      "reference": "INTERNAL-BU-TRANSFER-001",
+      "legalEntity": "RUBROVA-TEST",
+      "sameLegalEntity": true,
+      "sourceBusinessUnit": "BU-WHOLESALE",
+      "destinationBusinessUnit": "BU-SERVICES",
+      "sku": "SKU-UNIT-001",
+      "quantityMilli": 1000,
+      "warehouse": "DEPOT-TEST-001",
+      "physicalInventoryMovementCount": 1,
+      "actualCarryingCostMinor": 320000,
+      "managerialTransferPriceMinor": 350000,
+      "internalManagerialRevenueMinor": 350000,
+      "internalManagerialCostMinor": 350000,
+      "expectedConsolidationEliminationMinor": 350000,
+      "createsExternalSale": false,
+      "createsFiscalInvoice": false,
+      "createsCustomerReceivable": false,
+      "createsExternalCashMovement": false,
+      "expectedConsolidatedExternalRevenueImpactMinor": 0,
+      "expectedConsolidatedCostMinor": 320000
     }
   },
   "expectedInventory": {

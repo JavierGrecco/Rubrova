@@ -156,3 +156,29 @@ test("rechaza costos compartidos asignados por encima del pool", () => {
   assert.equal(result.valid, false);
   assert.ok(result.errors.some(message => message.includes("shared allocation reconciliation")));
 });
+
+
+test("valida consumo interno entre áreas sin crear una venta externa", () => {
+  const result = validateFixture(readFixture());
+  assert.equal(result.valid, true, result.errors.join("\\n"));
+  const fixture = readFixture();
+  const scenario = fixture.scenarios.internalBusinessUnitTransfer;
+  assert.equal(scenario.physicalInventoryMovementCount, 1);
+  assert.equal(scenario.expectedConsolidatedExternalRevenueImpactMinor, 0);
+});
+
+test("rechaza doble movimiento físico en una transferencia interna", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.internalBusinessUnitTransfer.physicalInventoryMovementCount = 2;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("physicalInventoryMovementCount")));
+});
+
+test("rechaza una transferencia interna convertida en factura externa ficticia", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.internalBusinessUnitTransfer.createsFiscalInvoice = true;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("createsFiscalInvoice")));
+});

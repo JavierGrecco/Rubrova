@@ -663,6 +663,38 @@ export function validateFixture(data) {
     }
   }
 
+
+  const internalTransfer = scenarios.internalBusinessUnitTransfer;
+  if (!isRecord(internalTransfer)) {
+    errors.push("scenarios.internalBusinessUnitTransfer debe existir.");
+  } else {
+    compare(internalTransfer.sameLegalEntity, true, "internalBusinessUnitTransfer.sameLegalEntity", errors);
+    if (internalTransfer.sourceBusinessUnit === internalTransfer.destinationBusinessUnit) {
+      errors.push("La transferencia interna debe conectar dos unidades distintas.");
+    }
+    if (!unitCodes.has(internalTransfer.sourceBusinessUnit)) errors.push("La unidad de origen de transferencia interna no existe.");
+    if (!unitCodes.has(internalTransfer.destinationBusinessUnit)) errors.push("La unidad de destino de transferencia interna no existe.");
+    if (!catalogBySku.has(internalTransfer.sku)) errors.push("El SKU de transferencia interna no existe.");
+    integer(internalTransfer.quantityMilli, "internalBusinessUnitTransfer.quantityMilli", errors, 1);
+    const physicalCount = integer(internalTransfer.physicalInventoryMovementCount, "internalBusinessUnitTransfer.physicalInventoryMovementCount", errors, 1);
+    compare(physicalCount, 1, "internalBusinessUnitTransfer.physicalInventoryMovementCount", errors);
+    const carryingCost = integer(internalTransfer.actualCarryingCostMinor, "internalBusinessUnitTransfer.actualCarryingCostMinor", errors, 1);
+    const transferPrice = integer(internalTransfer.managerialTransferPriceMinor, "internalBusinessUnitTransfer.managerialTransferPriceMinor", errors, 1);
+    const internalRevenue = integer(internalTransfer.internalManagerialRevenueMinor, "internalBusinessUnitTransfer.internalManagerialRevenueMinor", errors);
+    const internalCost = integer(internalTransfer.internalManagerialCostMinor, "internalBusinessUnitTransfer.internalManagerialCostMinor", errors);
+    const elimination = integer(internalTransfer.expectedConsolidationEliminationMinor, "internalBusinessUnitTransfer.expectedConsolidationEliminationMinor", errors);
+    const revenueImpact = integer(internalTransfer.expectedConsolidatedExternalRevenueImpactMinor, "internalBusinessUnitTransfer.expectedConsolidatedExternalRevenueImpactMinor", errors);
+    const consolidatedCost = integer(internalTransfer.expectedConsolidatedCostMinor, "internalBusinessUnitTransfer.expectedConsolidatedCostMinor", errors);
+    if (transferPrice !== null && internalRevenue !== null) compare(internalRevenue, transferPrice, "internalBusinessUnitTransfer.internalManagerialRevenueMinor", errors);
+    if (transferPrice !== null && internalCost !== null) compare(internalCost, transferPrice, "internalBusinessUnitTransfer.internalManagerialCostMinor", errors);
+    if (transferPrice !== null && elimination !== null) compare(elimination, transferPrice, "internalBusinessUnitTransfer.expectedConsolidationEliminationMinor", errors);
+    if (revenueImpact !== null) compare(revenueImpact, 0, "internalBusinessUnitTransfer.expectedConsolidatedExternalRevenueImpactMinor", errors);
+    if (carryingCost !== null && consolidatedCost !== null) compare(consolidatedCost, carryingCost, "internalBusinessUnitTransfer.expectedConsolidatedCostMinor", errors);
+    for (const field of ["createsExternalSale","createsFiscalInvoice","createsCustomerReceivable","createsExternalCashMovement"]) {
+      compare(internalTransfer[field], false, "internalBusinessUnitTransfer." + field, errors);
+    }
+  }
+
   const resilience = data.resilience;
   if (!isRecord(resilience)) {
     errors.push("resilience debe ser un objeto.");
