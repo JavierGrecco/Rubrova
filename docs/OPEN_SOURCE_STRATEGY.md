@@ -3,6 +3,21 @@
 **Revisión:** 19 de noviembre de 2026  
 **Estado:** evaluación técnica y de licencias; todavía no se incorporó código de terceros.
 
+## Contexto de uso y criterio de licencias (actualización)
+
+**El sistema se desarrollará para uso interno y privado del negocio. No está previsto distribuirlo, revenderlo, ofrecerlo como producto ni dar acceso remoto a terceros como servicio.** Esta condición cambia la estrategia de reutilización: no debemos descartar automáticamente GPL, AGPL ni otros proyectos copyleft por el solo hecho de que sus licencias no sean permisivas.
+
+La guía de la Free Software Foundation confirma que una organización puede modificar y usar internamente software GPL sin publicar esas modificaciones ni entregar el código a terceros. La AGPL agrega una condición específica: si se modifica un programa AGPL y usuarios interactúan con esa versión remotamente a través de una red, debe ofrecerse el código fuente correspondiente a esos usuarios. Por eso, el uso interno no elimina la necesidad de leer y cumplir cada licencia.
+
+**Nuevo criterio:** evaluar proyectos GPL, AGPL, LGPL, MIT, BSD, Apache y licencias duales según su utilidad técnica real para nuestro escenario. La licencia deja de ser un filtro automático de descarte y pasa a ser una condición de uso que se documenta y cumple. Si en el futuro cambiara el alcance —distribución, instalación en equipos de terceros, acceso de terceros por red o comercialización— se revisará la arquitectura y las obligaciones antes de ese cambio.
+
+Esto no es asesoramiento jurídico. Las licencias pueden variar por versión, archivos, dependencias y excepciones; se conservarán avisos, textos de licencia y atribuciones aplicables, y se consultará a un profesional ante dudas sobre obras derivadas, integración de componentes o alcance de usuarios remotos.
+
+Fuentes primarias:
+- GNU GPL FAQ en español: https://www.gnu.org/licenses/gpl-faq.es.html
+- GNU AGPLv3, sección 13: https://www.gnu.org/licenses/agpl-3.0.html
+- Política de licencias Frappe: https://docs.frappe.io/legal/others/license-and-trademark
+
 ## Conclusión ejecutiva
 
 Sí: reutilizar proyectos y bibliotecas de código abierto puede acelerar mucho el desarrollo. La comparación encontró dos candidatos que merecen una prueba real, pero por razones distintas:
@@ -17,7 +32,7 @@ La decisión no se puede cerrar por cantidad de funciones en una ficha comercial
 
 **Recomendación actual:** hacer una comparación técnica acotada entre Odoo Community 20 y Medusa v2 con exactamente el mismo flujo de POS. No adoptar aún ninguno. El criterio será el costo total de llegar a una operación confiable y mantenible, no la cantidad de pantallas que ya traiga cada uno.
 
-No recomiendo incorporar por defecto código GPL/AGPL de ERPNext, Vendure, uniCenta, OCA o módulos externos de ARCA. Esas licencias permiten usos comerciales bajo sus condiciones, pero pueden imponer obligaciones de reciprocidad que no encajan con la distribución que queremos preservar. Se puede estudiar su funcionamiento y sus pruebas sin copiar código.
+Ahora sí debemos evaluar la incorporación real de código GPL/AGPL de ERPNext, Vendure, uniCenta, OCA y módulos externos de ARCA. Para el uso privado previsto, esas licencias no son motivo automático de descarte. Pueden ser candidatos valiosos para adoptar, modificar o integrar, siempre que se determine si la solución es un programa independiente, una obra derivada o una interacción de red alcanzada por AGPL, y se cumplan los avisos y demás condiciones aplicables.
 
 Esta evaluación no sustituye asesoramiento jurídico. Antes de distribuir software que incorpore código de terceros, se debe revisar el caso concreto con un profesional de propiedad intelectual y software.
 
@@ -32,7 +47,7 @@ Hay cuatro formas distintas de aprovechar un proyecto externo:
 | Adaptación de componente | Copiamos o extraemos una parte identificable, conservando licencia y avisos | La pieza resuelve un problema concreto y puede mantenerse aislada |
 | Fork | Adoptamos el proyecto completo y mantenemos nuestra propia variante | El producto externo ya resuelve la mayor parte del negocio y el costo de adaptación es menor que construir |
 
-La preferencia será **dependencia o extensión**, luego adaptación de una pieza aislada y, solamente con evidencia, un fork. No se copiará código por parecer útil sin identificar su origen, licencia, dependencias y pruebas.
+La preferencia será **reutilizar el máximo de funcionalidad que encaje**, empezando por adopción/extensión de un proyecto completo cuando ahorre más trabajo, luego módulos y componentes, y finalmente bibliotecas aisladas. Un fork también es válido si resulta la ruta más eficiente y mantenible para el uso interno. No se copiará código por parecer útil sin identificar origen, versión, licencia, dependencias, avisos, pruebas y condiciones de uso.
 
 ## Comparación de candidatos
 
@@ -81,7 +96,7 @@ Fuentes:
 Encontramos `leonobitech/l10n_ar_arca_edi`, un módulo de facturación electrónica para Odoo Community que declara integración WSAA/WSFEv1, generación de CAE y pruebas para documentos y WSFE. La revisión de su manifiesto es más importante que una etiqueta del buscador: declara **AGPL-3**, versión Odoo 19 y estado de desarrollo Beta. Su README también contiene una inconsistencia sobre la licencia, por lo que debe prevalecer el manifiesto y el archivo LICENSE, no los badges o resúmenes.
 
 - Puede servir para comprender el protocolo, descubrir casos de prueba y comparar cobertura.
-- No se recomienda copiarlo ni incorporarlo a un producto propietario sin aceptar AGPL-3 o recibir asesoramiento jurídico que confirme una forma de uso compatible.
+- Puede ser candidato para adaptación interna. Antes de incorporarlo, validar versión, madurez, dependencias, avisos y obligaciones AGPL si usuarios interactúan remotamente con la versión modificada.
 - No está validado para Odoo 20 ni para producción ARCA; sus propios metadatos indican Beta.
 - El repositorio OCA `l10n-argentina` declara AGPL-3 en su nivel raíz y advierte que cada módulo puede tener licencia distinta. En la rama 19.0 observada encontramos la estructura de mantenimiento, pero no módulos listos para incorporar. No se lo considera hoy una base lista para integrar.
 
@@ -148,7 +163,7 @@ La licencia del proyecto principal no basta. Hay que revisar cada dependencia, p
 | MIT, ISC, BSD-2/3 | Uso, modificación y distribución; normalmente exigen conservar avisos y cumplir condiciones de atribución | Preferidas para componentes acotados |
 | Apache 2.0 | Uso, modificación y distribución; exige conservar avisos/licencia y atender condiciones de patentes y archivos NOTICE cuando correspondan | Preferida; registrar NOTICE y modificaciones |
 | LGPL | Permite determinados usos combinados bajo condiciones; las modificaciones a la biblioteca cubierta y la forma de enlazar/distribuir tienen obligaciones específicas | Aceptable solo con revisión de cómo se integra, avisos, fuente y posibilidad de reemplazo/re-enlace |
-| GPL | Permite uso comercial, pero al distribuir una obra cubierta o derivada pueden existir obligaciones de entregar el código fuente correspondiente bajo GPL | No incorporar al núcleo por defecto |
+| GPL | Permite uso comercial, pero al distribuir una obra cubierta o derivada pueden existir obligaciones de entregar el código fuente correspondiente bajo GPL | Permitidas para evaluación e incorporación interna, con cumplimiento de condiciones |
 | AGPL | Añade obligaciones para ciertos usos de versiones modificadas a través de una red | No incorporar al núcleo por defecto |
 | Licencias comerciales, duales o personalizadas | Dependen del contrato o de condiciones adicionales | No usar sin permiso y alcance documentados |
 | Sin licencia | El código público no concede automáticamente permiso para copiar, modificar o distribuir | No reutilizar |
