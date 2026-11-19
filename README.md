@@ -67,8 +67,8 @@ Una plataforma que reúne en un solo lugar:
 - Consolidar los requisitos funcionales y operativos.
 - Acordar el modelo de dominio y las reglas económicas.
 - Definir límites de módulos y contratos.
-- Evaluar la adopción, modificación o integración de proyectos existentes bajo cualquier licencia compatible con el uso interno privado; comparar el costo real de adaptar frente a construir.
-- Comparar Odoo Community 20 y Medusa v2 con el mismo flujo real de POS, caja, inventario, descuentos y recuperación offline.
+- Evaluar la adopción, modificación o integración de proyectos existentes bajo cualquier licencia compatible con el uso interno privado; comparar el costo real de adaptar frente a construir. Consultar el catálogo técnico actualizado.
+- Comparar Posnic, ERPNext/Frappe, NexoPOS y Odoo con el mismo flujo real de POS, caja, inventario, descuentos y recuperación offline; evaluar además componentes especializados del catálogo.
 - Confirmar la licencia y disponibilidad efectiva de los módulos de facturación argentina.
 - Identificar riesgos fiscales, de sincronización, seguridad y hardware.
 - Elegir la plataforma solo después de esa prueba; si ninguna encaja, construir el monolito modular propio.
