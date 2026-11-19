@@ -73,7 +73,7 @@ Fuentes:
 - Hardware y básculas: https://www.odoo.com/documentation/20.0/applications/sales/point_of_sale/hardware_network/scale.html
 - Impresoras: https://www.odoo.com/documentation/20.0/applications/sales/point_of_sale/configuration/epos_printers.html
 - Ediciones y licencias: https://www.odoo.com/documentation/20.0/legal/licenses/licenses.html
-- Manifiestos LGPL-3: https://github.com/odoo/odoo/blob/20.0/addons/point_of_sale/__manifest__.py y https://github.com/odoo/odoo/blob/20.0/addons/l10n_ar/__manifest__.py
+- Manifiestos LGPL-3: https://github.com/odoo/odoo/blob/20.0/addons/point_of_sale/__manifest__.py, https://github.com/odoo/odoo/blob/20.0/addons/stock/__manifest__.py, https://github.com/odoo/odoo/blob/20.0/addons/purchase/__manifest__.py, https://github.com/odoo/odoo/blob/20.0/addons/mrp/__manifest__.py, https://github.com/odoo/odoo/blob/20.0/addons/account/__manifest__.py, https://github.com/odoo/odoo/blob/20.0/addons/loyalty/__manifest__.py y https://github.com/odoo/odoo/blob/20.0/addons/l10n_ar/__manifest__.py
 - Localización argentina y módulos documentados: https://www.odoo.com/documentation/20.0/es_419/applications/finance/fiscal_localizations/argentina.html
 
 ### Código abierto argentino para ARCA — referencia, no incorporación aprobada
@@ -247,7 +247,8 @@ Una biblioteca no se aprueba solo porque sea popular o tenga muchas estrellas. T
 - [x] Se identificaron candidatos con código y licencia comprobables.
 - [x] Se separaron licencias permisivas, copyleft, comerciales y condiciones personalizadas.
 - [x] Se definió una estrategia para conservar un único núcleo transaccional.
-- [x] Se priorizó Medusa como primer candidato para validar.
+- [x] Se seleccionaron Odoo Community 20 y Medusa v2 como finalistas de una comparación acotada.
+- [x] Se identificó un módulo ARCA externo AGPL-3 que se mantiene como referencia, no como dependencia aprobada.
 - [ ] No se incorporó código de terceros.
 - [ ] No se eligió ni fijó todavía una versión de framework.
 - [ ] Falta ejecutar la prueba vertical de compatibilidad.
