@@ -139,6 +139,94 @@
       "unitCostMinor": 320000,
       "expectedPendingQuantityMilli": 4000,
       "expectedStockAfterReceiptMilli": 16000
+    },
+    "checkoutBeforePayment": {
+      "reference": "CHECKOUT-BUDGET-TEST-001",
+      "initialLines": [
+        {
+          "sku": "SKU-UNIT-001",
+          "quantityMilli": 1000,
+          "unitPriceMinorPerUnit": 550000,
+          "expectedLineTotalMinor": 550000
+        },
+        {
+          "sku": "SKU-VAR-001",
+          "quantityMilli": 1000,
+          "unitPriceMinorPerUnit": 500000,
+          "expectedLineTotalMinor": 500000
+        },
+        {
+          "sku": "SKU-WEIGHT-001",
+          "quantityMilli": 325,
+          "unitPriceMinorPerUnit": 1800000,
+          "expectedLineTotalMinor": 585000
+        }
+      ],
+      "expectedTotalBeforeRemovalMinor": 1635000,
+      "removedLines": [
+        {
+          "sku": "SKU-VAR-001",
+          "quantityMilli": 1000,
+          "unitPriceMinorPerUnit": 500000,
+          "expectedLineTotalMinor": 500000,
+          "reason": "customer-budget"
+        }
+      ],
+      "expectedRemovedTotalMinor": 500000,
+      "finalLines": [
+        {
+          "sku": "SKU-UNIT-001",
+          "quantityMilli": 1000,
+          "unitPriceMinorPerUnit": 550000,
+          "expectedLineTotalMinor": 550000
+        },
+        {
+          "sku": "SKU-WEIGHT-001",
+          "quantityMilli": 325,
+          "unitPriceMinorPerUnit": 1800000,
+          "expectedLineTotalMinor": 585000
+        }
+      ],
+      "expectedTotalAfterRemovalMinor": 1135000,
+      "removedLineCreatesSaleLine": false,
+      "removedLineCreatesStockMovement": false,
+      "removedLineCreatesPayment": false,
+      "removedLineCreatesFiscalDocument": false,
+      "cashTender": {
+        "method": "cash",
+        "tenderedMinor": 1200000,
+        "amountDueMinor": 1135000,
+        "expectedChangeMinor": 65000,
+        "expectedCashRetainedMinor": 1135000
+      },
+      "insufficientCash": {
+        "tenderedMinor": 1000000,
+        "amountDueMinor": 1135000,
+        "expectedShortfallMinor": 135000,
+        "expectedChangeMinor": 0,
+        "saleMayComplete": false
+      }
+    },
+    "terminalPayment": {
+      "reference": "CHECKOUT-TERMINAL-TEST-001",
+      "provider": "mercado-pago-point",
+      "terminalId": "TEST-POINT-001",
+      "externalReference": "RUBROVA-CHK-001",
+      "idempotencyKey": "TEST-IDEMPOTENCY-001",
+      "amountMinor": 1135000,
+      "currency": "ARS",
+      "statusSequence": [
+        "created",
+        "at_terminal",
+        "processed"
+      ],
+      "finalStatus": "processed",
+      "paidOnlyAfterFinalStatus": true,
+      "confirmedPaid": true,
+      "unknownStatusPolicy": "query-and-reconcile-before-any-new-emission",
+      "printOnTerminalCapability": "point-smart-compatible-only",
+      "terminalSlipIsFiscalDocument": false,
+      "itemizedReceiptOwner": "Rubrova"
     }
   },
   "expectedInventory": {

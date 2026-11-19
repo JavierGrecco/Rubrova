@@ -50,3 +50,51 @@ test("rechaza artículos duplicados y barras repetidas", () => {
   assert.ok(result.errors.some(message => message.includes("SKU duplicado")));
   assert.ok(result.errors.some(message => message.includes("Código de barras duplicado")));
 });
+
+
+test("el retiro de una línea antes del pago reconcilia el carrito sin crear movimientos", () => {
+  const result = validateFixture(readFixture());
+  assert.equal(result.valid, true, result.errors.join("\\n"));
+  const fixture = readFixture();
+  const checkout = fixture.scenarios.checkoutBeforePayment;
+  assert.equal(checkout.expectedTotalBeforeRemovalMinor, 1635000);
+  assert.equal(checkout.expectedTotalAfterRemovalMinor, 1135000);
+  assert.equal(checkout.removedLineCreatesStockMovement, false);
+});
+
+test("rechaza vuelto incorrecto", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.checkoutBeforePayment.cashTender.expectedChangeMinor += 1;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("cashTender.expectedChangeMinor")));
+});
+
+test("rechaza un artículo que se quitó pero sigue en el carrito final", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.checkoutBeforePayment.finalLines.push({
+    sku: "SKU-VAR-001",
+    quantityMilli: 1000,
+    unitPriceMinorPerUnit: 500000,
+    expectedLineTotalMinor: 500000
+  });
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("sigue en el carrito final")));
+});
+
+test("rechaza una secuencia terminal que marca el pago antes de procesarlo", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.terminalPayment.statusSequence = ["created", "processed"];
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("terminalPayment.statusSequence")));
+});
+
+test("rechaza un importe terminal diferente del total final del checkout", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.terminalPayment.amountMinor += 100;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("terminalPayment.amountMinor")));
+});

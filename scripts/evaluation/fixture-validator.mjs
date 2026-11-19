@@ -330,6 +330,127 @@ export function validateFixture(data) {
     }
   }
 
+
+  const checkout = scenarios.checkoutBeforePayment;
+  if (!isRecord(checkout)) {
+    errors.push("scenarios.checkoutBeforePayment debe ser un objeto.");
+  } else {
+    const sumCartLines = (lines, path) => {
+      if (!Array.isArray(lines) || lines.length === 0) {
+        errors.push(path + " debe contener al menos una línea.");
+        return null;
+      }
+      let total = 0n;
+      for (const [index, line] of lines.entries()) {
+        const linePath = path + "[" + index + "]";
+        if (!isRecord(line)) {
+          errors.push(linePath + " debe ser un objeto.");
+          continue;
+        }
+        if (!catalogBySku.has(line.sku)) errors.push(linePath + ".sku no existe en catalog.");
+        const quantity = integer(line.quantityMilli, linePath + ".quantityMilli", errors, 1);
+        const price = integer(line.unitPriceMinorPerUnit, linePath + ".unitPriceMinorPerUnit", errors, 1);
+        const expected = integer(line.expectedLineTotalMinor, linePath + ".expectedLineTotalMinor", errors);
+        if (quantity !== null && price !== null && expected !== null) {
+          const calculated = Number(roundDiv(BigInt(quantity) * BigInt(price), 1000n));
+          compare(expected, calculated, linePath + ".expectedLineTotalMinor", errors);
+          total += BigInt(calculated);
+        }
+      }
+      return Number(total);
+    };
+
+    const initialTotal = sumCartLines(checkout.initialLines, "checkoutBeforePayment.initialLines");
+    const finalTotal = sumCartLines(checkout.finalLines, "checkoutBeforePayment.finalLines");
+    const removedTotal = sumCartLines(
+      (checkout.removedLines || []).map(line => ({
+        sku: line.sku,
+        quantityMilli: line.quantityMilli,
+        unitPriceMinorPerUnit: line.unitPriceMinorPerUnit,
+        expectedLineTotalMinor: line.expectedLineTotalMinor
+      })),
+      "checkoutBeforePayment.removedLines"
+    );
+
+    const expectedBefore = integer(checkout.expectedTotalBeforeRemovalMinor, "checkoutBeforePayment.expectedTotalBeforeRemovalMinor", errors);
+    const expectedRemoved = integer(checkout.expectedRemovedTotalMinor, "checkoutBeforePayment.expectedRemovedTotalMinor", errors);
+    const expectedAfter = integer(checkout.expectedTotalAfterRemovalMinor, "checkoutBeforePayment.expectedTotalAfterRemovalMinor", errors);
+
+    if (initialTotal !== null && expectedBefore !== null) compare(expectedBefore, initialTotal, "checkoutBeforePayment.expectedTotalBeforeRemovalMinor", errors);
+    if (removedTotal !== null && expectedRemoved !== null) compare(expectedRemoved, removedTotal, "checkoutBeforePayment.expectedRemovedTotalMinor", errors);
+    if (finalTotal !== null && expectedAfter !== null) compare(expectedAfter, finalTotal, "checkoutBeforePayment.expectedTotalAfterRemovalMinor", errors);
+    if (initialTotal !== null && removedTotal !== null && finalTotal !== null) {
+      compare(initialTotal - removedTotal, finalTotal, "checkoutBeforePayment cart reconciliation", errors);
+    }
+
+    const finalSkus = new Set((checkout.finalLines || []).map(line => line?.sku));
+    for (const [index, removed] of (checkout.removedLines || []).entries()) {
+      if (finalSkus.has(removed.sku)) errors.push("checkoutBeforePayment.removedLines[" + index + "] sigue en el carrito final.");
+    }
+
+    for (const field of [
+      "removedLineCreatesSaleLine",
+      "removedLineCreatesStockMovement",
+      "removedLineCreatesPayment",
+      "removedLineCreatesFiscalDocument"
+    ]) {
+      compare(checkout[field], false, "checkoutBeforePayment." + field, errors);
+    }
+
+    const cash = checkout.cashTender;
+    if (!isRecord(cash)) {
+      errors.push("checkoutBeforePayment.cashTender debe ser un objeto.");
+    } else {
+      const tendered = integer(cash.tenderedMinor, "checkoutBeforePayment.cashTender.tenderedMinor", errors);
+      const due = integer(cash.amountDueMinor, "checkoutBeforePayment.cashTender.amountDueMinor", errors);
+      const change = integer(cash.expectedChangeMinor, "checkoutBeforePayment.cashTender.expectedChangeMinor", errors);
+      const retained = integer(cash.expectedCashRetainedMinor, "checkoutBeforePayment.cashTender.expectedCashRetainedMinor", errors);
+      if (tendered !== null && due !== null && change !== null && retained !== null) {
+        if (tendered < due) errors.push("El efectivo de cashTender debe cubrir el importe asignado.");
+        compare(change, Math.max(0, tendered - due), "checkoutBeforePayment.cashTender.expectedChangeMinor", errors);
+        compare(retained, tendered - change, "checkoutBeforePayment.cashTender.expectedCashRetainedMinor", errors);
+        compare(retained, due, "checkoutBeforePayment cash retained equals amount due", errors);
+      }
+    }
+
+    const insufficient = checkout.insufficientCash;
+    if (!isRecord(insufficient)) {
+      errors.push("checkoutBeforePayment.insufficientCash debe ser un objeto.");
+    } else {
+      const tendered = integer(insufficient.tenderedMinor, "checkoutBeforePayment.insufficientCash.tenderedMinor", errors);
+      const due = integer(insufficient.amountDueMinor, "checkoutBeforePayment.insufficientCash.amountDueMinor", errors);
+      const shortfall = integer(insufficient.expectedShortfallMinor, "checkoutBeforePayment.insufficientCash.expectedShortfallMinor", errors);
+      const change = integer(insufficient.expectedChangeMinor, "checkoutBeforePayment.insufficientCash.expectedChangeMinor", errors);
+      if (tendered !== null && due !== null && shortfall !== null && change !== null) {
+        if (tendered >= due) errors.push("insufficientCash debe ser menor al importe adeudado.");
+        compare(shortfall, due - tendered, "checkoutBeforePayment.insufficientCash.expectedShortfallMinor", errors);
+        compare(change, 0, "checkoutBeforePayment.insufficientCash.expectedChangeMinor", errors);
+      }
+      compare(insufficient.saleMayComplete, false, "checkoutBeforePayment.insufficientCash.saleMayComplete", errors);
+    }
+  }
+
+  const terminal = scenarios.terminalPayment;
+  if (!isRecord(terminal)) {
+    errors.push("scenarios.terminalPayment debe ser un objeto.");
+  } else {
+    compare(terminal.currency, data.currency, "terminalPayment.currency", errors);
+    const amount = integer(terminal.amountMinor, "terminalPayment.amountMinor", errors, 1);
+    const checkoutDue = integer(scenarios.checkoutBeforePayment?.expectedTotalAfterRemovalMinor, "checkoutBeforePayment.expectedTotalAfterRemovalMinor", errors);
+    if (amount !== null && checkoutDue !== null) compare(amount, checkoutDue, "terminalPayment.amountMinor", errors);
+    if (typeof terminal.terminalId !== "string" || terminal.terminalId.trim() === "") errors.push("terminalPayment.terminalId es obligatorio.");
+    if (typeof terminal.externalReference !== "string" || terminal.externalReference.trim() === "") errors.push("terminalPayment.externalReference es obligatorio.");
+    if (typeof terminal.idempotencyKey !== "string" || terminal.idempotencyKey.trim() === "") errors.push("terminalPayment.idempotencyKey es obligatorio.");
+    const expectedSequence = ["created", "at_terminal", "processed"];
+    compare(JSON.stringify(terminal.statusSequence), JSON.stringify(expectedSequence), "terminalPayment.statusSequence", errors);
+    compare(terminal.finalStatus, "processed", "terminalPayment.finalStatus", errors);
+    compare(terminal.paidOnlyAfterFinalStatus, true, "terminalPayment.paidOnlyAfterFinalStatus", errors);
+    compare(terminal.confirmedPaid, true, "terminalPayment.confirmedPaid", errors);
+    compare(terminal.unknownStatusPolicy, "query-and-reconcile-before-any-new-emission", "terminalPayment.unknownStatusPolicy", errors);
+    compare(terminal.terminalSlipIsFiscalDocument, false, "terminalPayment.terminalSlipIsFiscalDocument", errors);
+    compare(terminal.itemizedReceiptOwner, "Rubrova", "terminalPayment.itemizedReceiptOwner", errors);
+  }
+
   const resilience = data.resilience;
   if (!isRecord(resilience)) {
     errors.push("resilience debe ser un objeto.");
