@@ -131,7 +131,7 @@ Logs estructurados, correlación por operación, métricas de latencia y sincron
 - [ ] Instalar y ejecutar MyCompany/lsFusion 6.2 en entorno local aislado y probar un módulo custom.
 - [ ] Instalar y ejecutar Posnic en entorno local aislado.
 - [ ] Instalar y ejecutar ERPNext/Frappe en entorno local aislado.
-- [ ] Completar P01–P19 del protocolo y registrar evidencia.
+- [ ] Completar P01–P26 del protocolo y registrar evidencia.
 - [ ] Elegir una plataforma o aprobar el monolito modular propio.
 - [ ] Confirmar una solución fiscal argentina con pruebas de homologación.
 - [ ] Cerrar interfaz, persistencia local y eventual servicio local según los resultados.
