@@ -87,3 +87,18 @@ Documentos de detalle:
 - [Mayorista y distribución](WHOLESALE_AND_DISTRIBUTION.md)
 - [Servicios B2B y contratos](B2B_SERVICES_AND_CONTRACTS.md)
 - [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md)
+
+
+## Logística, interoperabilidad y operación financiera de PyMEs
+
+- Centro logístico común con transportistas directos, agregadores y carga manual.
+- Seguimiento unificado y eventos idempotentes; despacho separado de la venta.
+- Importación/migración guiada con dry-run, mapeo, deduplicación, validación y reversión.
+- Exportación contable por perfiles de ERP con lote balanceado, idempotencia, acuse y conciliación.
+- Capital de trabajo, cuentas corrientes, aging, flujo de caja y margen real por producto/canal/área.
+- WMS con ubicaciones, barcode, unidades, lotes, vencimientos, conteos y reposición.
+
+Detalles:
+- [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md)
+- [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md)
+- [Necesidades PyME y backlog de mejoras](PYME_NEEDS_AND_PRODUCT_BACKLOG.md)
