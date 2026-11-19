@@ -54,6 +54,9 @@ Una plataforma que reúne en un solo lugar:
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
+| [Logística argentina](docs/ARGENTINA_LOGISTICS_INTEGRATION.md) | Andreani, PAQ.AR, OCA, Vía Cargo, agregadores y tracking unificado |
+| [Interoperabilidad contable](docs/ACCOUNTING_INTEROPERABILITY.md) | Tango, Catedral, Bejerman, Xubio, Colppy y reportes de gestión |
+| [Necesidades PyME y backlog](docs/PYME_NEEDS_AND_PRODUCT_BACKLOG.md) | Evidencia de pymes argentinas y mejoras priorizadas para Rubrova |
 | [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md) | Cobertura completa: ERP, POS, canales, WMS, producción, finanzas e inteligencia |
 | [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md) | Varias actividades, clientes y recursos compartidos con resultados separados |
 | [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md) | B2B, mínimos, escalas, crédito, retiros, reparto y envíos posteriores |
@@ -72,9 +75,11 @@ Una plataforma que reúne en un solo lugar:
 - Consolidar reglas comerciales, dominio y contratos.
 - Mantener el mapa integral: no reducir el proyecto a POS; comparar ERP modular, WMS, canales, producción, promociones y analítica.
 - Ampliar la comparación integral a MyCompany/lsFusion 6.2, además de Posnic 1.9.2 y ERPNext 16.60.0.
-- Evaluar módulos especializados como Simple WMS, OpenLinker, OfferKit, DuckDB/Superset y Node-RED detrás de contratos.
+- Evaluar módulos especializados como Simple WMS, InvenTree, OpenBoxes, OpenWMS, DuckDB/Superset y automatización detrás de contratos.
+- Definir adaptadores de logística argentina y perfiles de exportación contable para sistemas existentes.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
 - Comparar las tres plataformas integrales con P01–P19 y los escenarios multiárea P20–P26.
+- Preparar pruebas de conectividad y exportación para operadores logísticos y sistemas contables, sin afirmar integraciones activas.
 - Mantener el modelo de rentabilidad con eliminación de cargos internos entre áreas y distinguir transferencias gerenciales de operaciones intercompany reales.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
 - Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
