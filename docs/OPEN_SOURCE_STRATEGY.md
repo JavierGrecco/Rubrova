@@ -11,10 +11,11 @@ La AGPL merece una revisión específica si usuarios interactúan remotamente a 
 
 ## Conclusión ejecutiva
 
-La evaluación integral se concentra ahora en dos candidatos que cubren necesidades diferentes:
+La evaluación integral compara ahora tres candidatos:
 
-1. **Posnic 1.9.2:** primera prueba por su POS local, Electron, ventas, caja e inventario. Código propio AGPL-3.0-only; el paquete incluye componentes con licencias distintas, entre ellos MongoDB SSPL-1.0 y amCharts 4 comercial. La edición self-hosted puede compartir una base local entre varios equipos, pero no sincroniza bases independientes de distintas cajas/sucursales. Su evidencia offline publicada es acotada.
-2. **ERPNext 16.60.0 + Frappe Framework 16:** segunda prueba por su profundidad en compras, inventario, fabricación, costos y contabilidad. ERPNext es GPL-3.0; Frappe Framework es MIT. Hay que verificar que POS, facilidad de uso, recuperación offline y localización argentina no requieran personalizaciones demasiado profundas.
+1. **MyCompany/lsFusion 6.2:** ERP/POS modular con CRM, ventas, compras, inventario, fabricación, facturación, proyectos y RR. HH. La aplicación MyCompany declara Apache-2.0 y la plataforma lsFusion LGPL-3.0 por separado. Se debe probar la release 6.2 y su mecanismo de módulos, sin asumir que la documentación online 7.0 aplica a esa versión.
+2. **Posnic 1.9.2:** candidato directo para POS local, Electron, ventas, caja e inventario. Código propio AGPL-3.0-only; el paquete incluye componentes con licencias distintas, entre ellos MongoDB SSPL-1.0 y amCharts 4 comercial. La edición self-hosted puede compartir una base local entre varios equipos, pero no sincroniza bases independientes de distintas cajas/sucursales. Su evidencia offline publicada es acotada.
+3. **ERPNext 16.60.0 + Frappe Framework 16:** candidato de profundidad administrativa en compras, inventario, fabricación, costos y contabilidad. ERPNext es GPL-3.0; Frappe Framework es MIT. Hay que verificar POS, facilidad de uso, recuperación offline y localización argentina.
 
 Ninguno está elegido ni aprobado. **No se debe construir la aplicación definitiva hasta ejecutar la prueba común** descrita en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Si ambas alternativas fallan los controles críticos, la salida es un monolito modular propio, reutilizando únicamente componentes que encajen.
 
@@ -64,7 +65,7 @@ La preferencia es aprovechar tanto código maduro como sea posible, pero no acum
 
 ## Prueba técnica obligatoria
 
-Se ejecuta el mismo conjunto de datos y escenarios sobre Posnic y ERPNext. Se debe probar como mínimo:
+Se ejecuta el mismo conjunto de datos y escenarios sobre MyCompany, Posnic y ERPNext. Además de los flujos comunes, en MyCompany se prueba un módulo propio separado que declare sus dependencias mediante REQUIRE. Se debe probar como mínimo:
 
 - Alta de artículos, variantes, códigos, unidades y productos vendidos por peso.
 - Venta rápida con lector simulado, descuentos manuales y promociones.
@@ -78,7 +79,7 @@ Se ejecuta el mismo conjunto de datos y escenarios sobre Posnic y ERPNext. Se de
 - Impresión, cajón, lector y balanza; simulación primero y hardware físico después.
 - Adaptación fiscal argentina y ARCA exclusivamente en homologación.
 
-La pauta completa, la tabla de evidencia P01–P17 y la escala de puntuación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+La pauta completa, la tabla de evidencia P01–P19 y la escala de puntuación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
 ## Componentes especializados a evaluar por separado
 
@@ -113,6 +114,7 @@ No incorporar dos motores para el mismo dato. La plataforma elegida será la ún
 - [x] Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 definidos como ronda activa.
 - [x] Protocolo P01–P17 documentado.
 - [x] Componentes de hardware, fiscalidad y offline separados de las plataformas integrales.
+- [ ] Instalación y pruebas locales de MyCompany/lsFusion 6.2, incluido módulo custom.
 - [ ] Instalación y pruebas locales de Posnic.
 - [ ] Instalación y pruebas locales de ERPNext/Frappe.
 - [ ] Puntuación con evidencias y cálculo de esfuerzo de adaptación.

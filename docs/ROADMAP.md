@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-**Fase 0 — decisión técnica basada en evidencia.** Rubrova contiene definición de producto, arquitectura e investigación, pero todavía no tiene una aplicación funcional ni código externo incorporado. El paso inmediato es ejecutar una evaluación local reproducible de dos plataformas integrales, no sumar más referencias ni empezar pantallas aisladas.
+**Fase 0 — decisión técnica basada en evidencia.** Rubrova contiene definición de producto, arquitectura e investigación, pero todavía no tiene una aplicación funcional ni código externo incorporado. El paso inmediato es ejecutar una evaluación local reproducible de tres plataformas integrales y comprobar módulos especializados, no sumar referencias sin prueba ni empezar pantallas aisladas.
 
 La prueba común, versiones fijadas, conjunto sintético y criterios de aprobación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
@@ -73,15 +73,15 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Estrategia de uso interno privado y revisión de licencias.
 - [x] Posnic fijado en tag v1.9.2 para una prueba reproducible.
 - [x] ERPNext v16.60.0 y Frappe Framework 16 identificados como alternativa integral.
-- [x] Protocolo común P01–P17 con datos sintéticos y puertas críticas.
-- [x] Laboratorio de instalación reproducible para Posnic y ERPNext.
+- [x] Protocolo común P01–P19 con datos sintéticos y puertas críticas.
+- [x] Laboratorio de instalación para MyCompany 6.2, Posnic 1.9.2 y ERPNext 16.60.0.
 - [x] Validador automático del dataset y workflow de GitHub Actions; última ejecución confirmada: 6/6 pruebas aprobadas y dataset válido.
 - [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
 - [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
 - [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
 - [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
-- [ ] Instalar/evaluar Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
+- [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
 - [ ] Ejecución y evidencia de los escenarios.
 - [ ] Decisión de base y plan de adaptación.

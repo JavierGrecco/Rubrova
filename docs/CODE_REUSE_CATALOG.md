@@ -9,6 +9,7 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 
 | Prioridad | Proyecto | Qué puede adelantarnos | Estado |
 |---|---|---|---|
+| Muy alta | [MyCompany/lsFusion](https://github.com/lsfusion-solutions/mycompany) | ERP/POS modular, CRM, compras, inventario, producción, RR. HH. y proyectos | Nuevo candidato integral; evaluar release 6.2 |
 | Muy alta | [Posnic](https://github.com/Posnic/POS) | POS local/offline, retail y gastronomía, ventas, inventario, compras y devoluciones | Evaluar como base integral |
 | Muy alta | [ERPNext](https://github.com/frappe/erpnext) + [Frappe](https://github.com/frappe/frappe) | ERP, contabilidad, compras, stock, fabricación, pedidos y POS | Evaluar como base integral |
 | Alta | [NexoPOS](https://github.com/Blair2004/NexoPOS) | POS, caja, ventas, compras, stock, clientes, permisos y módulos | Evaluar; licencia contradictoria |
@@ -68,7 +69,7 @@ ERPNext aporta procesos de contabilidad, pedidos, inventario, abastecimiento, fa
 - La localización argentina y ARCA deben verificarse módulo por módulo. No contar una integración por una pantalla documentada si no se encuentra el código, licencia y prueba correspondiente.
 - ERPNext GPL-3 no se convierte en MIT por estar construido sobre Frappe Framework MIT.
 
-**Prueba requerida:** ejecutar P01–P17 del protocolo común, incluyendo venta rápida, arqueo, pagos mixtos, compra/recepción, costo, producción y recuperación offline.
+**Prueba requerida:** ejecutar P01–P19 del protocolo común, incluyendo venta rápida, retiro de artículos, pagos mixtos/vuelto, terminal, arqueo, compra/recepción, costo, producción y recuperación offline.
 
 **Recomendación:** segundo candidato integral. Puede ahorrar mucho trabajo de back-office, pero gana solo si el costo de adaptar caja, experiencia offline y operación argentina es menor que construir esas capacidades.
 ### NexoPOS
@@ -217,21 +218,22 @@ Stack Next.js/Expo/Prisma/PostgreSQL/SQLite. Declara diseño de perfiles sobre e
 
 ## 6. Hallazgos y decisiones
 
-1. **Posnic 1.9.2** es el primer candidato a prueba por su POS local. No está aprobado: la evidencia offline es limitada, la sincronización entre bases independientes es un servicio aparte y el paquete contiene MongoDB SSPL-1.0 y amCharts comercial.
-2. **ERPNext 16.60.0/Frappe 16** es la alternativa integral por la profundidad de compras, inventario, producción y contabilidad; su POS y continuidad offline deben probarse.
-3. La ronda integral queda limitada a esos dos candidatos. Odoo Community 20 y Medusa v2 quedan fuera de la ronda activa; NexoPOS continúa bloqueado por discrepancia de licencia.
+1. **MyCompany/lsFusion 6.2** se suma como candidato integral por su POS, CRM, compras, inventario, producción, facturación y mecanismo de módulos seleccionables. No está aprobado: deben comprobarse el runtime, la localización argentina, los pagos y el offline.
+2. **Posnic 1.9.2** conserva prioridad para probar una caja local; su evidencia offline es limitada, la sincronización entre bases independientes es un servicio aparte y el paquete contiene MongoDB SSPL-1.0 y amCharts comercial.
+3. **ERPNext 16.60.0/Frappe 16** aporta profundidad en compras, inventario, producción y contabilidad; su POS y continuidad offline deben probarse.
+4. La ronda integral contiene ahora tres candidatos. Odoo Community 20 y Medusa v2 quedan fuera de la ronda activa; NexoPOS continúa bloqueado por discrepancia de licencia.
 4. **pos-toolkit** aporta código concreto para hardware y tickets. La parte de hardware requiere Tauri v2; `register-core` está planificado.
 5. **emupos + ESCPost** pueden reducir la compra temprana de periféricos y hacer reproducibles las pruebas de hardware.
 6. **arca-sdks** es el adaptador fiscal candidato para TypeScript; el paquete de facturación 7.1.0 declara MIT y requiere Node >=22.12. La homologación y la recuperación de estados inciertos siguen siendo responsabilidad de nuestra integración.
 7. **PowerSync** se evalúa como motor de sincronización, distinguiendo Open Edition de Enterprise/Cloud; **Dexie** es almacenamiento IndexedDB, no sincronizador completo.
 8. No integrar varios ERP/POS como fuentes de verdad. El sistema elegido será dueño de ventas, pagos, caja y stock; el resto aporta herramientas o módulos aislados.
 9. El uso privado permite considerar GPL/AGPL, pero no elimina obligaciones ni licencias separadas de dependencias, fuentes, recursos comerciales y servicios.
-10. La evaluación completa, con versiones fijadas, datos sintéticos y escenarios P01–P17, está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+10. La evaluación completa, con versiones fijadas, datos sintéticos y escenarios P01–P19, está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
 Ninguno de estos candidatos está incorporado ni ejecutado dentro de Rubrova.
 ## 7. Prueba técnica siguiente
 
-Seguir el protocolo único de [Evaluación de plataformas](PLATFORM_EVALUATION.md). No duplicar guiones ni comenzar a copiar módulos antes de ejecutar las dos plataformas.
+Seguir el protocolo único de [Evaluación de plataformas](PLATFORM_EVALUATION.md). No duplicar guiones ni comenzar a copiar módulos antes de ejecutar los tres candidatos integrales.
 
 La prueba debe dejar evidencia de versiones, commits, entorno, escenarios, fallos, recuperación, licencias y esfuerzo de adaptación. La elección se hace con condiciones excluyentes: venta/pago/stock exactamente una vez, cierre forzado recuperable, backup restaurable, auditoría, permisos y ruta fiscal argentina viable.
 

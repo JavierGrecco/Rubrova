@@ -16,7 +16,7 @@ La ronda integral se amplía a tres candidatos porque la inspección de código 
 
 No se adoptan varias como fuentes de verdad paralelas. Los módulos especializados se evalúan aparte y se conectan por contratos explícitos. Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda; pueden reabrirse si aparece evidencia que cambie la comparación.
 
-**Resultado actual: ninguna plataforma está aprobada.** No se han ejecutado localmente Posnic ni ERPNext para Rubrova, no se ha incorporado código externo y no hay una aplicación de Rubrova implementada.
+**Resultado actual: ninguna plataforma está aprobada.** No se ha instalado ni ejecutado localmente MyCompany, Posnic o ERPNext para Rubrova; no se ha incorporado código externo y no hay una aplicación de Rubrova implementada.
 
 ## Versiones y procedencia que se deben fijar
 
@@ -190,28 +190,27 @@ Estos componentes no convierten por sí solos a una plataforma en la base del pr
 
 La revisión de licencias se hace para la versión y los archivos que realmente se incorporen. El uso privado permite considerar código GPL/AGPL, pero no elimina las licencias separadas de dependencias, fuentes, imágenes, servicios o componentes comerciales.
 
-El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 19/11/2026 terminó correctamente: seis pruebas aprobadas y dataset canónico válido. Esto valida el dataset y su aritmética; no valida todavía el comportamiento funcional de Posnic o ERPNext.
+El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 19/11/2026 terminó correctamente: seis pruebas aprobadas y dataset canónico válido. Esto valida el dataset y sus reglas aritméticas; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
 
 ## Estado de ejecución
 
 | Actividad | Estado |
 |---|---|
-| Inspección inicial de MyCompany/lsFusion 6.2 y mecanismo de módulos | Hecha; prueba funcional pendiente |
-| Procedimiento de instalación y hashes de MyCompany 6.2 | Preparados; runtime debe registrarse |
+| Inspección documental y licencias iniciales de MyCompany/lsFusion 6.2 | Hecha; prueba funcional pendiente |
+| Fijación de release, instalador y JAR MyCompany 6.2 | Preparada mediante hashes; runtime debe registrarse |
 | Inspección documental y manifiestos de Posnic | Hecha |
-| Inspección inicial de MyCompany/lsFusion 6.2 y mecanismo de módulos | Hecha; pruebas funcionales pendientes |
 | Fijación de release/commit para Posnic | Hecha |
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
-| Protocolo común y datos sintéticos | Preparados |
-| Instrucciones de instalación aislada y fijación de versiones | Preparadas |
-| Validación automatizada del dataset en GitHub Actions | Aprobada: 6/6 tests y dataset válido (19/11/2026) |
-| Instalación/evaluación de MyCompany 6.2 | Pendiente |
-| Instalación/evaluación de MyCompany 6.2 | Pendiente |
+| Protocolo común y dataset sintético | Preparados |
+| Laboratorio de instalación para los tres candidatos | Preparado |
+| Validador y CI del dataset | Aprobados: 11/11 tests y dataset válido |
+| Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
-| Ejecución P01–P17 | Pendiente |
+| Ejecución P01–P19 | Pendiente |
+| Pruebas físicas de terminales y hardware | Pendiente |
 | Revisión completa de dependencias y seguridad | Pendiente |
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P19 con el mismo dataset. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. La CI cubre únicamente el validador y las reglas aritméticas; no simula una instalación real de ninguna de las dos plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P19 con el mismo dataset. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.

@@ -102,7 +102,7 @@ El catálogo de repositorios, módulos, licencias y condiciones está en [Catál
 
 ### Estado actualizado — 19/11/2026
 
-La ronda integral se concentra en **Posnic 1.9.2** y **ERPNext 16.60.0 + Frappe Framework 16**. Odoo Community 20 y Medusa v2 quedan como referencias históricas fuera de la comparación activa; NexoPOS no se aprueba mientras siga la discrepancia entre su LICENSE raíz GPLv3 y composer.json MIT.
+La ronda integral compara **MyCompany/lsFusion 6.2**, **Posnic 1.9.2** y **ERPNext 16.60.0 + Frappe Framework 16**. MyCompany se agregó por su cobertura de ERP/POS y su mecanismo de módulos. Odoo Community 20 y Medusa v2 quedan como referencias históricas fuera de la comparación activa; NexoPOS no se aprueba mientras siga la discrepancia entre su LICENSE raíz GPLv3 y composer.json MIT.
 
 **Posnic** aporta POS local, ventas, inventario, compras y caja. La prueba debe fijarse en el tag `v1.9.2`: la rama `main` consultada tenía seis commits posteriores y `develop` estaba divergida. Su self-hosted comparte una base en LAN, pero no sincroniza varias bases independientes; esa función se ofrece mediante Cloud. La evidencia offline publicada es limitada. El código es AGPL-3.0-only, mientras que el instalador revisado incluye MongoDB SSPL-1.0 y amCharts 4 comercial. Sus campos GST/India requieren adaptación para Argentina.
 
@@ -115,7 +115,7 @@ La ronda integral se concentra en **Posnic 1.9.2** y **ERPNext 16.60.0 + Frappe 
 - PowerSync Open Edition: Apache-2.0, separada de Enterprise/Cloud.
 - Dexie.js: Apache-2.0, IndexedDB y no sincronización distribuida completa.
 
-La evaluación sigue sin ejecución local. Se preparó un laboratorio reproducible: Posnic 1.9.2 se prueba en Windows/Linux compatible (no tiene instalador macOS en esa release; en Mac se usa VM Ubuntu Desktop) y ERPNext se levanta con el demo oficial Frappe Docker, fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. El dataset ahora tiene validador Node.js y workflow de GitHub Actions. No se incorporó código externo; las pruebas P01–P17 siguen pendientes.
+La evaluación sigue sin ejecución local. El laboratorio fija MyCompany 6.2 con instalador/JAR verificados por SHA-256; Posnic 1.9.2 se prueba en Windows/Linux compatible (no tiene instalador macOS en esa release; en Mac se usa VM); ERPNext se levanta con el demo oficial Frappe Docker, fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. El dataset tiene validador Node.js y CI con 11 pruebas aprobadas. No se incorporó código externo; las pruebas funcionales P01–P19 siguen pendientes.
 
 Fuentes de código y licencias:
 - Posnic: https://github.com/Posnic/POS/releases/tag/v1.9.2 y https://github.com/Posnic/POS
