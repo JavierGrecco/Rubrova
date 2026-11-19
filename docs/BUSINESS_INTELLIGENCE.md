@@ -105,3 +105,20 @@ Métricas específicas:
 - **Distribución:** costo por entrega/parada/peso/volumen, entregas a tiempo, reintentos, incidencias y margen logístico.
 
 Ver [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md).
+
+
+## Forecasting y calidad de las predicciones
+
+La demanda prevista debe calcularse por SKU, familia, sucursal, canal y área según la calidad del historial. No entrenar un modelo único para todos los productos sin evaluar comportamiento y cobertura.
+
+Cada predicción conserva:
+- ventana histórica usada, fechas de entrenamiento y horizonte;
+- ventas observadas, stockout y días sin disponibilidad para reconocer demanda censurada;
+- calendario, estacionalidad, promociones, precio, canal y factores externos disponibles;
+- modelo, parámetros, versión, intervalo de predicción y baseline;
+- resultados de backtesting y error por horizonte/segmento;
+- fecha de próxima revisión y señal de drift.
+
+Skforecast es un candidato de biblioteca para backtesting, modelos estadísticos/ML, intervalos y explicabilidad. DuckDB y Polars pueden preparar datasets; no sustituyen el ledger ni la base transaccional. Para series cortas/intermitentes o productos nuevos, mostrar reglas simples, intervalos amplios o ausencia de pronóstico, no una precisión ficticia.
+
+Toda sugerencia de reposición debe explicar stock disponible/reservado/en tránsito, lead time, múltiplos, mínimo, proveedor, demanda prevista y costo de compra. El sistema propone; la orden de compra solo nace con aprobación y controles de crédito/presupuesto.

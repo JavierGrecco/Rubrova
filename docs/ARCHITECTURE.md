@@ -210,3 +210,28 @@ Ver [Servicios B2B y contratos](B2B_SERVICES_AND_CONTRACTS.md).
 ## Resultado por área y consolidación
 
 Los hechos económicos llevan dimensiones de unidad de negocio, centro de costo, canal, sucursal, cliente, producto, proyecto o contrato según corresponda. Los costos directos se imputan donde suceden; los compartidos permanecen visibles y pueden distribuirse mediante reglas versionadas. La vista consolidada elimina la duplicación de las asignaciones y reconcilia con el libro contable.
+
+
+## Logística e interoperabilidad con sistemas externos
+
+El dominio logístico posee Shipment, HandlingUnit, CarrierBooking, TrackingReference y TrackingEvent. No pertenece al POS ni al adaptador de un transportista. Los pedidos y ventas pueden existir antes de la guía; el módulo de logística recibe una solicitud de fulfillment, prepara uno o varios envíos y asocia la referencia externa cuando está disponible.
+
+Los transportistas y agregadores se conectan por adaptadores bajo un contrato común de capacidades. El adaptador conserva códigos y payloads originales, normaliza eventos sin borrar el origen y procesa webhooks con idempotencia. Los agregadores de tracking (por ejemplo, AfterShip/17TRACK) son proveedores de visibilidad; no se consideran automáticamente operadores de contratación, creación de guías o etiquetas.
+
+La integración contable usa un paquete canónico y perfiles por destino. Rubrova genera lotes de exportación balanceados, revisables e idempotentes; el ERP contable designado conserva el libro legal y/o los comprobantes que le correspondan. Nunca se sincroniza el mismo documento a dos emisores ni se mantienen dos ledgers editables sin una autoridad definida.
+
+Referencias:
+- [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md)
+- [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md)
+
+## Ingestión documental y automatización
+
+Facturas, remitos, contratos y constancias ingresan a una bandeja de documentos. El archivo original se conserva inmutable con checksum; OCR y extracción de campos generan datos derivados con versión, evidencia de origen y confianza. La revisión humana precede la generación de cuentas a pagar, comprobantes o asientos.
+
+OCRmyPDF/invoice2data y Paperless-ngx son candidatos de procesamiento/archivo, no autoridades contables. Las automatizaciones y motores de workflow ejecutan pasos periféricos por APIs; no escriben directamente sobre tablas del ledger, ventas, stock o pagos.
+
+## Analítica y pronóstico
+
+El OLTP sigue siendo autoridad transaccional. DuckDB/Polars y los modelos de forecasting se utilizan en lecturas, snapshots y pipelines analíticos separados. Los reportes guardan definición, versión, fecha, cobertura y fuente; las predicciones se comparan con baselines mediante backtesting temporal. Ningún forecast confirma compras, modifica precios ni descuenta stock sin una decisión autorizada.
+
+El asistente puede sugerir, explicar y preparar simulaciones, pero las decisiones que cambian dinero, stock, impuestos o compromisos requieren validación de reglas y permisos.
