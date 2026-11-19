@@ -1,5 +1,11 @@
 # Arquitectura
 
+## Contexto de reutilización
+
+La plataforma está destinada a uso interno y privado del negocio, sin distribución ni reventa previstas. Por eso, la selección de tecnología debe considerar proyectos GPL y AGPL además de licencias permisivas. No se descarta un proyecto por copyleft: se evalúan su cobertura, capacidad de adaptación, mantenimiento y las condiciones concretas de la licencia. Para AGPL se analiza especialmente si usuarios interactúan remotamente por red con una versión modificada. Si cambia el uso previsto, se revisan las obligaciones antes de distribuir o habilitar acceso a terceros.
+
+La estrategia prioriza aprovechar proyectos completos y módulos maduros cuando su adaptación sea más eficiente que construirlos. Se permite adoptar, extender, modificar o mantener un fork interno si la licencia y el costo de mantenimiento son aceptables. Siempre se conservan licencias, avisos, atribuciones y un registro de origen/versiones.
+
 ## Dirección técnica
 
 La dirección sigue siendo un **monolito modular con límites claros**, una base transaccional central y capacidad local para operar durante interrupciones de conectividad. No se dividirá en microservicios sin una necesidad medida.
@@ -17,7 +23,7 @@ La elección no se va a basar solo en la velocidad de mostrar una primera pantal
 
 Si Odoo requiere sobrescribir grandes partes de su POS o no permite recuperación offline duradera sin un fork profundo, pierde su ventaja de velocidad. Si Medusa obliga a construir casi todo el núcleo comercial o a duplicar sus conceptos de pedidos/stock, también pierde su ventaja modular.
 
-**Alternativa de salida:** si ninguna plataforma supera la evaluación sin comprometer la integridad, se construye un monolito modular propio en TypeScript sobre PostgreSQL y se reutilizan únicamente bibliotecas y componentes permisivos que hayan superado la revisión. No se ejecutarán Odoo y Medusa como dos fuentes de verdad ni se mezclará el código interno de sus POS.
+**Alternativa de salida:** si ninguna plataforma supera la evaluación sin comprometer la integridad, se construye un monolito modular propio en TypeScript sobre PostgreSQL y se reutilizan proyectos, módulos, bibliotecas y componentes de cualquier licencia compatible con el uso privado previsto, después de revisar y documentar sus condiciones. No se ejecutarán Odoo y Medusa como dos fuentes de verdad ni se mezclará el código interno de sus POS.
 
 ## Principios
 
