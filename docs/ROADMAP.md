@@ -72,6 +72,8 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Posnic fijado en tag v1.9.2 para una prueba reproducible.
 - [x] ERPNext v16.60.0 y Frappe Framework 16 identificados como alternativa integral.
 - [x] Protocolo común P01–P17 con datos sintéticos y puertas críticas.
+- [x] Laboratorio de instalación reproducible para Posnic y ERPNext.
+- [x] Validador automático del dataset y workflow de GitHub Actions; corregir cualquier fallo antes de usar la suite como control estable.
 - [ ] Instalación local de Posnic.
 - [ ] Instalación local de ERPNext/Frappe.
 - [ ] Ejecución y evidencia de los escenarios.

@@ -35,6 +35,8 @@ Tecnología observada: Electron, Node.js >=22.12, Express, Mongoose y MongoDB.
 
 El código revisado cubre POS, ventas, devoluciones, pagos parciales, productos, variantes, compras, inventario, cuentas de clientes, permisos, reportes y gastronomía. La aplicación de escritorio mantiene API y base principal local; el modo self-hosted puede atender varios equipos de una LAN sobre una base compartida.
 
+**Compatibilidad de ejecución:** la release 1.9.2 publica instalador firmado Windows x64 y paquetes Linux x86_64; no publica instalador macOS. El manual oficial indica que la notarización nativa seguía en corrección. Para evaluar desde Mac usaremos una VM Ubuntu Desktop y el AppImage verificado; no usaremos builds no notarizados.
+
 **Hallazgos nuevos de la inspección del código y documentación:**
 - El modo self-hosted no sincroniza varias bases de datos independientes. La documentación del proyecto reserva esa sincronización entre cajas o sucursales para Posnic Cloud.
 - La prueba offline que el README publica está limitada a una venta sintética en efectivo que se completó y reabrió en Electron, en una versión anterior. No demuestra pérdida de energía, cierre forzado, jornada completa ni terminales de pago.
@@ -48,7 +50,7 @@ El código revisado cubre POS, ventas, devoluciones, pagos parciales, productos,
 - El mismo aviso identifica amCharts 4 como comercialmente licenciado. No reutilizarlo sin confirmar permiso; contemplar reemplazo.
 - Las dependencias npm y los recursos visuales/fuentes requieren inventario propio. La licencia raíz no cubre automáticamente todo el instalador.
 
-**Recomendación:** priorizar una prueba integral de escritorio/local, pero no aprobar todavía como base. Medir si la adaptación argentina y la recuperación offline pasan los controles sin un fork profundo. La referencia de ejecución está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+**Recomendación:** priorizar una prueba integral en VM compatible, pero no aprobar todavía como base. Medir si la adaptación argentina y la recuperación offline pasan los controles sin un fork profundo. Los instaladores y sus hashes se documentan en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md); los resultados se registran con [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 ### ERPNext + Frappe
 
 Repositorios: https://github.com/frappe/erpnext y https://github.com/frappe/frappe  

@@ -115,7 +115,7 @@ La ronda integral se concentra en **Posnic 1.9.2** y **ERPNext 16.60.0 + Frappe 
 - PowerSync Open Edition: Apache-2.0, separada de Enterprise/Cloud.
 - Dexie.js: Apache-2.0, IndexedDB y no sincronización distribuida completa.
 
-La evaluación es todavía documental. No se instalaron ni ejecutaron localmente Posnic o ERPNext para Rubrova; no se incorporó código externo. La decisión debe basarse en la prueba P01–P17, sin declarar como realizadas las pruebas pendientes.
+La evaluación sigue sin ejecución local. Se preparó un laboratorio reproducible: Posnic 1.9.2 se prueba en Windows/Linux compatible (no tiene instalador macOS en esa release; en Mac se usa VM Ubuntu Desktop) y ERPNext se levanta con el demo oficial Frappe Docker, fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. El dataset ahora tiene validador Node.js y workflow de GitHub Actions. No se incorporó código externo; las pruebas P01–P17 siguen pendientes.
 
 Fuentes de código y licencias:
 - Posnic: https://github.com/Posnic/POS/releases/tag/v1.9.2 y https://github.com/Posnic/POS

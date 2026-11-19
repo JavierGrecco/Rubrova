@@ -286,6 +286,10 @@ export function validateFixture(data) {
       for (const [sku, soldQuantity] of soldBySku.entries()) {
         const item = catalogBySku.get(sku);
         const result = expectedInventory[sku];
+        if (!item) {
+          errors.push("No se puede calcular el stock: SKU no definido en catalog: " + sku + ".");
+          continue;
+        }
         if (!isRecord(result)) {
           errors.push("Falta expectedInventory para " + sku + ".");
           continue;

@@ -53,20 +53,23 @@ Una plataforma que reúne en un solo lugar:
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
 | [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de Posnic y ERPNext con los mismos escenarios |
+| [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md) | Instalación aislada, versiones fijadas y registro de evidencias |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
 
 **Ahora — Fase 0: elegir una base con pruebas reales**
 - Consolidar reglas comerciales, dominio y contratos.
-- Comparar Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 con el mismo guion.
+- Preparar entornos aislados: Posnic 1.9.2 en Windows/Linux compatible y ERPNext 16.60.0 con Docker.
+- Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions.
+- Comparar ambas plataformas con el mismo guion P01–P17.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
 - Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
 - Verificar la adaptación argentina y la viabilidad de ARCA en homologación.
 - Revisar las licencias de cada componente y dependencia del paquete concreto.
 - Elegir una sola fuente de verdad o confirmar el monolito modular propio.
 
-La prueba, versiones fijadas, datos sintéticos y criterios de aprobación están en [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md). Posnic y ERPNext son candidatos de evaluación, no decisiones de adopción.
+La prueba, versiones fijadas, datos sintéticos y criterios de aprobación están en [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md). Los pasos de instalación están en [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md). Posnic y ERPNext son candidatos de evaluación, no decisiones de adopción.
 **Siguiente — Fase 1: núcleo transaccional**
 - Catálogo, precios y unidades de medida.
 - Carrito y venta POS.

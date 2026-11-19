@@ -24,15 +24,18 @@ No se adoptan ambos ni se conectan como fuentes de verdad paralelas. Los demás 
 | Posnic | Tag `v1.9.2` | Commit `4096126edb1ff4fd337069697776254215dc2680`; release publicada el 16/11/2026 | No probar desde una rama móvil sin registrar commit. |
 | Posnic, revisión adicional | Rama `main` | HEAD consultado: `bf97ab2e2cdfba88121d369cacf48dd877ac8b55`, seis commits posterior al tag | Comparar diferencias con el tag antes de decidir si un arreglo posterior cambia la evaluación. |
 | ERPNext | Release `v16.60.0` | Tag asociado al commit `886ab6ae187244e7f1b852393384ab6019d56264`; publicada el 17/11/2026 | Mantener fija la versión durante la prueba. |
-| Frappe Framework | Rama de versión `version-16` | Commit consultado: `2df0425571ebbaed878eabc3edc5b7e7c3327ae0`; actualización 16.60.2 del 18/11/2026 | Registrar el commit exacto desplegado y no actualizar durante la prueba. |
+| Frappe Framework | Incluido en la imagen ERPNext fijada | Versión efectiva registrada con `bench version` dentro del contenedor | No combinar una rama independiente del framework con una imagen ERPNext ya construida. |
+| Frappe Docker | Configuración de demo | Commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce`; su `pwd.yml` fija `frappe/erpnext:v16.60.0` | Demo desechable, no instalación de producción. Mantener el archivo local separado y limitar el puerto a localhost. |
 
 El repositorio Posnic declara `develop` como rama predeterminada, pero en la consulta del 19/11/2026 esa rama estaba divergida respecto del tag estable: dos commits por delante y 27 por detrás. La rama `main` tenía seis commits por delante del tag. Por reproducibilidad, la primera prueba debe usar el tag estable `v1.9.2`; las diferencias de `main` se revisan aparte. No usar `develop` como sustituto silencioso del release.
+
+**Compatibilidad del paquete Posnic 1.9.2:** la release publica instalador firmado para Windows x64 y AppImage/paquete Debian para Linux x86_64, pero no un instalador macOS. El manual oficial señala que la notarización del binario nativo seguía en corrección. Si el equipo principal es Mac, la prueba de escritorio debe hacerse en una VM Ubuntu Desktop x86_64 con el AppImage; no instalar un paquete no notarizado. Los hashes de los instaladores y los comandos de validación están en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md).
 
 Fuentes de versión:
 - [Posnic v1.9.2](https://github.com/Posnic/POS/releases/tag/v1.9.2)
 - [Posnic main](https://github.com/Posnic/POS/tree/main)
 - [ERPNext v16.60.0](https://github.com/frappe/erpnext/releases/tag/v16.60.0)
-- [Frappe Framework version-16](https://github.com/frappe/frappe/tree/version-16)
+- [Configuración oficial Frappe Docker fijada](https://github.com/frappe/frappe_docker/blob/ef24ebc0a411b6237694765f0b51d8f8f8dd13ce/pwd.yml)
 
 ## Perfil técnico y riesgos conocidos
 
@@ -71,6 +74,7 @@ ERPNext aporta procesos ERP profundos: inventario, abastecimiento, compras, fabr
 - La cobertura de ERP no garantiza una caja de alta velocidad ni una experiencia táctil simple.
 - No damos por demostrado el offline duradero de la versión 16. Hay que cortar internet, cerrar el navegador o matar el proceso y recuperar las operaciones sin pérdidas ni duplicados.
 - El stack habitual de Frappe/ERPNext gira alrededor de Python y MariaDB; PostgreSQL no se debe asumir como una opción equivalente o estable para esta evaluación.
+- La prueba local usa la configuración oficial desechable `frappe_docker/pwd.yml`, fijada al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. No admite instalar aplicaciones propias en esta modalidad. Registrar la versión exacta de Frappe con `bench version`.
 - La adaptación del POS, localización argentina, hardware y experiencia de uso puede exigir extensiones considerables.
 
 ## Reglas de prueba comunes
@@ -178,11 +182,13 @@ La revisión de licencias se hace para la versión y los archivos que realmente 
 | Fijación de release/commit para Posnic | Hecha |
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y datos sintéticos | Preparados |
-| Instalación local de Posnic | Pendiente |
-| Instalación local de ERPNext/Frappe | Pendiente |
+| Instrucciones de instalación aislada y fijación de versiones | Preparadas |
+| Validación automatizada del dataset en GitHub Actions | En corrección inicial; 5 de 6 pruebas pasaron y se corrigió el caso restante |
+| Instalación local de Posnic en VM compatible | Pendiente |
+| Instalación local de ERPNext/Frappe con Docker | Pendiente |
 | Ejecución P01–P17 | Pendiente |
 | Revisión completa de dependencias y seguridad | Pendiente |
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** desplegar las dos plataformas en entornos aislados, primero Posnic v1.9.2 y luego ERPNext v16.60.0/Frappe v16, y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** ejecutar el laboratorio documentado en [PLATFORM_LAB_SETUP.md](PLATFORM_LAB_SETUP.md): primero ERPNext v16.60.0 en Docker y luego Posnic v1.9.2 en una VM compatible con sus paquetes. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
