@@ -33,7 +33,7 @@ Precios y cifras comerciales cambian. Las cifras de adopción publicadas por pro
 - Fudo — https://fu.do/es-ar/funcionalidades/ — arqueo ciego, multicaja, multiturno, descuentos, recetas, reportes y delivery.
 - Maxirest — https://maxirest.com.ar/ — operación local, sincronización central, cocina, auditoría y empleados.
 - MIGA — https://migasoftware.com.ar/ — panadería, recetas, producción, stock y merma.
-- Odoo — https://www.odoo.com/documentation/ — POS, ecommerce, promociones, restaurantes e inventario; estudiar límites offline.
+- Odoo 20.0 — https://www.odoo.com/documentation/20.0/ — POS, inventario, compras, fabricación, descuentos, fidelización y hardware; estudiar límites offline y separar Community de Enterprise.
 
 ## Abastecimiento y automatización
 
@@ -103,12 +103,22 @@ La comparación de licencias, arquitectura, alcance y posibilidad de adaptación
 Resumen de la revisión del 19/11/2026:
 
 - **Medusa:** núcleo MIT con materiales Enterprise separados; primer candidato para probar módulos de comercio reutilizables.
-- **Odoo Community 19:** LGPLv3; referencia funcional principal para POS, offline, descuentos y hardware. Community y Enterprise deben analizarse por separado.
+- **Odoo Community 20.0:** los manifiestos públicos de POS, inventario, compras, fabricación, contabilidad base, fidelización y `l10n_ar` declaran LGPL-3. Es finalista por cobertura funcional, pero el offline del POS no garantiza recuperación tras cierre del navegador. La disponibilidad y licencia de `l10n_ar_edi` y `l10n_ar_reports` no se confirmaron en el repositorio Community.
 - **Frappe / ERPNext:** Frappe es MIT, ERPNext es GPLv3; no confundir las dos licencias.
 - **Apache OFBiz:** Apache 2.0; suite ERP muy completa, pero con costo de adaptación elevado.
 - **Saleor:** BSD 3-Clause; referencia de comercio electrónico, no una base POS completa.
 - **Vendure, uniCenta y NexoPOS:** GPLv3 por defecto; no incorporar su núcleo sin una decisión explícita sobre copyleft.
 - **OSPOS:** su archivo LICENSE agrega una exigencia de atribución visible en cada pantalla; no encaja con una interfaz completamente rebrandeada.
 - **TastyIgniter:** MIT; referencia o posible fuente acotada para flujos gastronómicos.
+
+- **ARCA externo para Odoo:** `leonobitech/l10n_ar_arca_edi` declara AGPL-3, Odoo 19 y estado Beta en su manifiesto; estudiar su protocolo y pruebas, no incorporarlo al producto sin una decisión expresa sobre AGPL.
+- **OCA `l10n-argentina`:** repositorio raíz AGPL-3; la licencia de cada módulo se determina por su propio manifiesto. La rama 19.0 revisada no presentaba módulos listos para integrar.
+
+Fuentes de código y documentación Odoo 20:
+- Soporte de versiones: https://www.odoo.com/documentation/20.0/es/administration/supported_versions.html
+- POS offline: https://www.odoo.com/documentation/20.0/es_419/applications/sales/point_of_sale/use.html
+- Descuentos y promociones: https://www.odoo.com/documentation/20.0/es_419/applications/sales/point_of_sale/extra/pricing.html
+- Localización argentina y ARCA: https://www.odoo.com/documentation/20.0/es_419/applications/finance/fiscal_localizations/argentina.html
+- Código público LGPL-3 del POS y `l10n_ar`: https://github.com/odoo/odoo/blob/20.0/addons/point_of_sale/__manifest__.py y https://github.com/odoo/odoo/blob/20.0/addons/l10n_ar/__manifest__.py
 
 La consulta de código abierto no equivale a una auditoría de seguridad ni a la aprobación de una dependencia. No se incorporó código externo en esta etapa.
