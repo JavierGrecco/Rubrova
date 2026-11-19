@@ -14,8 +14,12 @@
 - Estrategia de canales y facturación.
 - Riesgos y pruebas de aceptación.
 - Decisiones técnicas registradas.
+- Revisión de código abierto, licencias y dependencias.
+- Odoo Community 20 y Medusa v2 como finalistas, sin aprobación anticipada.
+- Prueba vertical equivalente para comparar POS, caja, inventario, descuentos, recuperación offline, extensibilidad y esfuerzo de adaptación.
+- Verificación de licencias y disponibilidad real de los módulos argentinos para ARCA.
 
-Criterio de salida: el equipo puede explicar alcance, arquitectura y flujos principales sin depender de conversaciones previas.
+Criterio de salida: el equipo puede explicar alcance, arquitectura y flujos principales sin depender de conversaciones previas; la plataforma elegida supera la prueba comparativa sin alterar su núcleo, duplicar fuentes de verdad ni incumplir los requisitos offline. Si ninguna alternativa lo logra, se aprueba el monolito modular propio.
 
 ## Fase 1 — núcleo transaccional
 
