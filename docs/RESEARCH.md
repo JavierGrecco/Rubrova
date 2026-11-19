@@ -70,3 +70,27 @@ Precios y cifras comerciales cambian. Las cifras de adopción publicadas por pro
 3. Cifras comerciales se identifican como declaraciones del proveedor.
 4. Disponibilidad, licencia, versión y mantenimiento se revisan antes de adoptar código o servicios.
 5. Las decisiones importantes quedan registradas con alternativas y consecuencias.
+
+
+### POS, descuentos y hardware
+
+- Odoo 19 — descuentos por línea y globales, programas de lealtad, cupones, promociones automáticas, Buy X Get Y y listas de precios: https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale/pricing.html.
+- Fudo — descuentos fijos/porcentuales, multicaja, turnos, arqueo ciego, cierres parciales y reportes: https://fu.do/es/funcionalidades/.
+- Square — matriz de compatibilidad de lectores de códigos: https://squareup.com/us/en/compatibility/accessories/barcode-scanners.
+- Square — conexión y prueba de cajones de dinero USB o asociados a impresoras: https://api.squareup.com/help/us/en/article/8354-connect-a-cash-drawer-to-your-point-of-sale.
+- Square — impresoras para tickets, comandas, pedidos, anulaciones y etiquetas: https://squareup.com/help/us/en/article/8246-connect-a-printer-to-square.
+
+Estos ejemplos ayudan a definir una matriz propia de hardware compatible. No se copiarán listas de compatibilidad de otros proveedores como si fueran pruebas de nuestros adaptadores.
+
+### Calidad, seguridad, accesibilidad y normativa
+
+- ISO/IEC 25010:2023 — modelo de calidad del producto: https://www.iso.org/standard/78176.html.
+- W3C WCAG 2.2 — recomendación vigente para accesibilidad web: https://www.w3.org/TR/wcag/.
+- OWASP ASVS 5.0 — requisitos de seguridad verificables: https://asvs.owasp.org/.
+- NIST SSDF SP 800-218 — v1.1 final; Rev. 1 / v1.2 seguía como borrador en la consulta del 19/11/2026: https://csrc.nist.gov/Projects/ssdf/publications.
+- PCI Security Standards Council — biblioteca oficial; PCI DSS v4.0.1: https://www.pcisecuritystandards.org/es/document_library/.
+- Argentina — Ley 25.326 de protección de datos personales: https://www.argentina.gob.ar/normativa/nacional/ley-25326-64790/actualizacion.
+- Argentina — texto actualizado de RG 1415, con modificaciones de 2025 y 2026: https://www.argentina.gob.ar/normativa/nacional/resoluci%C3%B3n-1415-2003-81316/actualizacion.
+- INPI — buscador oficial de marcas: https://portaltramites.inpi.gov.ar/marcasconsultas/busqueda.
+
+El nombre de producto no se considera legalmente disponible hasta realizar búsqueda de denominaciones idénticas y similares, variantes fonéticas, titulares y clases pertinentes. La consulta web no sustituye el análisis del INPI ni asesoramiento especializado.
