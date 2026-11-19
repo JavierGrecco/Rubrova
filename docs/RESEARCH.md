@@ -127,3 +127,22 @@ Fuentes de código y licencias:
 - Dexie.js: https://github.com/dexie/Dexie.js
 
 Este resumen es una guía de investigación, no asesoramiento jurídico ni auditoría de seguridad.
+
+## Investigación ampliada de módulos — 19/11/2026
+
+- **MyCompany/lsFusion 6.2:** MyCompany Apache-2.0, runtime lsFusion LGPL v3; POS, CRM, compras, inventario, fabricación, proyectos y RR. HH. Nuevo candidato integral. https://github.com/lsfusion-solutions/mycompany
+- **Simple WMS:** MIT; FastAPI/PostgreSQL, stock ledger append-only, tareas de almacén, scanner PWA y transferencias. Candidato WMS. https://github.com/q7-technology/simple-wms
+- **OpenLinker v0.20.0:** Apache-2.0; arquitectura hexagonal, ports/adapters, conectores, OAuth, webhooks y fulfillment. Referencia para integración. https://github.com/openlinker-project/openlinker
+- **OfferKit:** MIT; cupones, redenciones atómicas, gift cards, loyalty, referidos y segmentos. Candidato de promociones. https://github.com/offerkit/offerkit
+- **DuckDB:** MIT; motor analítico embebido y multiplataforma, no OLTP. https://github.com/duckdb/duckdb
+- **Apache Superset:** Apache-2.0; BI self-hosted de solo lectura. https://github.com/apache/superset
+- **Node-RED:** Apache-2.0; automatización periférica, no fuente transaccional. https://github.com/node-red/node-red
+- **OpenOMS:** Elastic License 2.0, no aprobado como open source. https://github.com/openoms-org/openoms
+
+Ver [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md) y [Composición de módulos](MODULE_COMPOSITION.md).
+
+### Terminales locales de pago
+
+Mercado Pago Point documenta Orders API, estados, webhooks, cancelaciones asíncronas e impresión de contenido personalizado en terminales compatibles. Getnet documenta soluciones POS Integrado con API/SDK según habilitación; Fiserv/Posnet ofrece una modalidad Trx a Trx cuya integración necesita protocolo y homologación; Payway mantiene documentación de desarrolladores que requiere acceso técnico adicional.
+
+La especificación y la matriz de capacidades están en [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md). Estos hallazgos son documentales; no se ha realizado homologación física con un adquirente.

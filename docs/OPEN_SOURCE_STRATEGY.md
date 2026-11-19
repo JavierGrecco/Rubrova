@@ -120,3 +120,12 @@ No incorporar dos motores para el mismo dato. La plataforma elegida será la ún
 - [ ] Incorporación de código externo con inventario de licencias y procedencia.
 
 **No hay código externo incorporado ni módulos funcionales implementados en Rubrova todavía.** El siguiente avance debe surgir de ejecutar el protocolo, no de ampliar indefinidamente la lista de repositorios.
+
+
+## Composición de módulos heterogéneos y compatibilidad
+
+La meta no es que un solo repositorio cubra todos los dominios. Podemos adoptar una plataforma integral y complementarla con módulos especializados, siempre que cada agregado tenga un único propietario, los módulos se comuniquen por puertos/contratos, los eventos sean idempotentes y las operaciones externas se concilien.
+
+Windows, Linux y macOS son objetivos del producto final, no una condición para que cada biblioteca soporte los tres desde el primer día. Los drivers de hardware pueden ser específicos por OS detrás de una interfaz común. Un módulo de servidor/web se evalúa por su runtime y el acceso desde navegador, no por el OS del puesto.
+
+Ver [Composición de módulos y contratos](MODULE_COMPOSITION.md) y [Investigación ampliada](MODULAR_COMPONENT_RESEARCH.md).

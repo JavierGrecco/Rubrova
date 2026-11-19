@@ -260,3 +260,19 @@ No se declara reutilizado un proyecto hasta fijar su versión, conservar avisos,
 - ElitaleRestro: https://github.com/tirforge/restro
 
 La revisión de repositorios y código fuente es documental; todavía no se instalaron ni ejecutaron los candidatos localmente para Rubrova ni se completó una auditoría de seguridad. Ninguno se considera incorporado o aprobado por aparecer en este catálogo. La prueba reproducible y sus datos sintéticos están en [Evaluación de plataformas](PLATFORM_EVALUATION.md) y [fixtures/platform-evaluation.json](fixtures/platform-evaluation.json).
+
+
+## 8. Módulos ampliados para un producto más grande que POS
+
+La investigación detallada, versiones y límites están en [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md).
+
+- **MyCompany/lsFusion 6.2:** Apache-2.0 para la aplicación, LGPL v3 para la plataforma; POS, CRM, compras, inventario multi-depósito, facturación, fabricación, proyectos y RR. HH. Nuevo candidato integral. Release commit d21ca6978717b98b6300d90267f9767db7414008. No está demostrado ARCA/offline argentino.
+- **Simple WMS:** MIT; FastAPI/PostgreSQL, ledger append-only, recepción/putaway/pick/pack/ship, transferencias, pallets/SSCC y scanner PWA. Candidato WMS, con un recorrido de devolución SAP que necesita corrección.
+- **OpenLinker v0.20.0:** Apache-2.0; ports/adapters, conectores ecommerce/marketplace/carrier, OAuth, webhooks, jobs durables y mapeo de IDs. Referencia y extracción selectiva.
+- **OfferKit:** MIT; cupones, redenciones atómicas, gift cards, loyalty, referidos y segmentos. Candidato de promociones, madurez baja, imagen publicada linux/amd64.
+- **DuckDB:** MIT; motor analítico local y multiplataforma, no OLTP.
+- **Apache Superset:** Apache-2.0; BI self-hosted, solo lectura sobre modelos analíticos.
+- **Node-RED:** Apache-2.0; automatización periférica, no autoridad de transacciones.
+- **OpenOMS:** Elastic License 2.0, no aprobado como open source; solo referencia condicionada.
+
+La estrategia de contratos, ownership y adaptadores está en [Composición de módulos](MODULE_COMPOSITION.md).

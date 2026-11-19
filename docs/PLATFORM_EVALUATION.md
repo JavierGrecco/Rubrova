@@ -8,18 +8,20 @@ Este documento convierte la investigación en una prueba repetible. No elige una
 
 ## Decisión de evaluación
 
-La ronda activa queda reducida a dos candidatos integrales:
+La ronda integral se amplía a tres candidatos porque la inspección de código encontró una plataforma adicional con POS, cobertura ERP amplia y extensibilidad explícita por módulos:
 
-1. **Posnic 1.9.2**, para comprobar cuánto resuelve de POS local, caja, ventas e inventario y qué tan real es su continuidad offline.
-2. **ERPNext 16.60.0 + Frappe Framework 16**, para comprobar cuánto adelanta de compras, inventario, producción, costos y contabilidad, sin asumir que su POS satisface nuestro requisito offline.
+1. **MyCompany/lsFusion 6.2**, para comprobar POS, CRM, compras, multi-depósito, facturación, producción y la composición de módulos.
+2. **Posnic 1.9.2**, para comprobar cuánto resuelve de POS local, caja, ventas e inventario y qué tan real es su continuidad offline.
+3. **ERPNext 16.60.0 + Frappe Framework 16**, para comprobar cuánto adelanta de compras, inventario, producción, costos y contabilidad, sin asumir que su POS satisface nuestro requisito offline.
 
-No se adoptan ambos ni se conectan como fuentes de verdad paralelas. Los demás proyectos quedan como componentes o referencias especializadas. Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda; pueden reabrirse solo si aparece evidencia técnica concreta que cambie la comparación.
+No se adoptan varias como fuentes de verdad paralelas. Los módulos especializados se evalúan aparte y se conectan por contratos explícitos. Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda; pueden reabrirse si aparece evidencia que cambie la comparación.
 
 **Resultado actual: ninguna plataforma está aprobada.** No se han ejecutado localmente Posnic ni ERPNext para Rubrova, no se ha incorporado código externo y no hay una aplicación de Rubrova implementada.
 
 ## Versiones y procedencia que se deben fijar
 
 | Proyecto | Referencia de prueba | Procedencia comprobada | Precaución |
+| MyCompany | Tag 6.2 | Commit del tag d21ca6978717b98b6300d90267f9767db7414008 | Aplicación Apache-2.0; plataforma lsFusion LGPL v3. No mezclar tag 6.2 con documentación online 7.0/master. |
 |---|---|---|---|
 | Posnic | Tag `v1.9.2` | Commit `4096126edb1ff4fd337069697776254215dc2680`; release publicada el 16/11/2026 | No probar desde una rama móvil sin registrar commit. |
 | Posnic, revisión adicional | Rama `main` | HEAD consultado: `bf97ab2e2cdfba88121d369cacf48dd877ac8b55`, seis commits posterior al tag | Comparar diferencias con el tag antes de decidir si un arreglo posterior cambia la evaluación. |
@@ -32,12 +34,24 @@ El repositorio Posnic declara `develop` como rama predeterminada, pero en la con
 **Compatibilidad del paquete Posnic 1.9.2:** la release publica instalador firmado para Windows x64 y AppImage/paquete Debian para Linux x86_64, pero no un instalador macOS. El manual oficial señala que la notarización del binario nativo seguía en corrección. Si el equipo principal es Mac, la prueba de escritorio debe hacerse en una VM Ubuntu Desktop x86_64 con el AppImage; no instalar un paquete no notarizado. Los hashes de los instaladores y los comandos de validación están en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md).
 
 Fuentes de versión:
+- [MyCompany 6.2](https://github.com/lsfusion-solutions/mycompany/releases/tag/6.2)
+- [MyCompany code tag](https://github.com/lsfusion-solutions/mycompany/tree/6.2)
 - [Posnic v1.9.2](https://github.com/Posnic/POS/releases/tag/v1.9.2)
 - [Posnic main](https://github.com/Posnic/POS/tree/main)
 - [ERPNext v16.60.0](https://github.com/frappe/erpnext/releases/tag/v16.60.0)
 - [Configuración oficial Frappe Docker fijada](https://github.com/frappe/frappe_docker/blob/ef24ebc0a411b6237694765f0b51d8f8f8dd13ce/pwd.yml)
 
 ## Perfil técnico y riesgos conocidos
+
+### MyCompany / lsFusion 6.2
+
+La aplicación MyCompany tiene licencia Apache-2.0 y utiliza la plataforma lsFusion, que tiene licencia independiente LGPL v3. La release 6.2 incluye CRM, ventas, compras, inventario, fabricación, facturación, RR. HH., proyectos y Retail POS. La documentación de desarrollo describe cómo añadir módulos propios y seleccionar módulos existentes mediante dependencias declaradas.
+
+**Ventajas:** cobertura funcional extensa; módulos seleccionables; web client accesible desde los tres OS de escritorio; instalación Windows y Linux; posibilidad de Docker. Es un candidato importante para reutilizar capacidades ERP en vez de reconstruirlas.
+
+**Riesgos:** no se demostró adaptación argentina, ARCA ni terminales locales; el POS y módulos fiscales pueden depender de configuraciones regionales. El release etiquetado es 6.2 (commit d21ca6978717b98b6300d90267f9767db7414008), mientras la documentación online consultada se identifica como 7.0 y master declara 7.0-SNAPSHOT. No tomar instrucciones de 7.0 como prueba de funciones en 6.2.
+
+**Prueba requerida:** ejecutar POS, sesiones, pagos mixtos/vuelto, inventario, compras y producción; añadir un módulo custom mínimo sin parchear el core; comprobar comportamiento al actualizar.
 
 ### Posnic
 
@@ -181,11 +195,13 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Actividad | Estado |
 |---|---|
 | Inspección documental y manifiestos de Posnic | Hecha |
+| Inspección inicial de MyCompany/lsFusion 6.2 y mecanismo de módulos | Hecha; pruebas funcionales pendientes |
 | Fijación de release/commit para Posnic | Hecha |
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y datos sintéticos | Preparados |
 | Instrucciones de instalación aislada y fijación de versiones | Preparadas |
 | Validación automatizada del dataset en GitHub Actions | Aprobada: 6/6 tests y dataset válido (19/11/2026) |
+| Instalación/evaluación de MyCompany 6.2 | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
 | Ejecución P01–P17 | Pendiente |
@@ -193,4 +209,4 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** ejecutar el laboratorio documentado en [PLATFORM_LAB_SETUP.md](PLATFORM_LAB_SETUP.md): primero ERPNext v16.60.0 en Docker y luego Posnic v1.9.2 en una VM compatible con sus paquetes. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. La CI cubre únicamente el validador y las reglas aritméticas; no simula una instalación real de ninguna de las dos plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** ampliar el laboratorio con MyCompany 6.2 y comparar los tres candidatos. ERPNext v16.60.0 y Posnic v1.9.2 conservan sus procedimientos fijados; MyCompany se instala desde el tag 6.2 y se registra el runtime lsFusion exacto. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. La CI cubre únicamente el validador y las reglas aritméticas; no simula una instalación real de ninguna de las dos plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
