@@ -68,8 +68,10 @@ Una plataforma que reúne en un solo lugar:
 - Acordar el modelo de dominio y las reglas económicas.
 - Definir límites de módulos y contratos.
 - Evaluar la reutilización de código abierto, las licencias y el framework más conveniente.
+- Comparar Odoo Community 20 y Medusa v2 con el mismo flujo real de POS, caja, inventario, descuentos y recuperación offline.
+- Confirmar la licencia y disponibilidad efectiva de los módulos de facturación argentina.
 - Identificar riesgos fiscales, de sincronización, seguridad y hardware.
-- Preparar una prueba técnica integral antes de fijar la plataforma.
+- Elegir la plataforma solo después de esa prueba; si ninguna encaja, construir el monolito modular propio.
 
 **Siguiente — Fase 1: núcleo transaccional**
 - Catálogo, precios y unidades de medida.
