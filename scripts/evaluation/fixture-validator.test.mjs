@@ -117,3 +117,42 @@ test("rechaza una terminal que solo devuelve el voucher sin imprimir el ticket d
   assert.equal(result.valid, false);
   assert.ok(result.errors.some(message => message.includes("itemizedReceiptMustPrintFromTerminal")));
 });
+
+
+test("valida áreas, mayorista, despacho posterior, servicios y rentabilidad consolidada", () => {
+  const result = validateFixture(readFixture());
+  assert.equal(result.valid, true, result.errors.join("\\n"));
+});
+
+test("rechaza un mínimo de compra mayorista incumplido", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.wholesaleOrder.lines[0].quantityMilli = 6000;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("mínimo por SKU")));
+});
+
+test("rechaza tracking exigido al momento de la venta", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.shipmentAfterSale.trackingReferenceAtSale = "GUIA-DEMASIADO-PRONTO";
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("trackingReferenceAtSale")));
+});
+
+test("rechaza rentabilidad consolidada que no coincide con las áreas", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.businessUnitProfitability.expectedConsolidated.operatingResultMinor += 100;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("expectedConsolidated.operatingResultMinor")));
+});
+
+test("rechaza costos compartidos asignados por encima del pool", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.businessUnitProfitability.businessUnits[0].sharedCostAllocationMinor += 1;
+  fixture.scenarios.businessUnitProfitability.businessUnits[0].expectedOperatingResultMinor -= 1;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("shared allocation reconciliation")));
+});

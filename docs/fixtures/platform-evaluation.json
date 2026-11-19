@@ -241,6 +241,202 @@
         ],
         "terminalPrintIsFiscalDocument": false
       }
+    },
+    "multiAreaAllocation": {
+      "reference": "MULTI-AREA-TEST-001",
+      "sharedCustomerCode": "CLI-COMPANY-TEST-001",
+      "expectedCustomerAccountCount": 1,
+      "businessUnitTransactions": [
+        {
+          "reference": "RETAIL-AREA-001",
+          "businessUnit": "BU-RETAIL",
+          "channel": "physical-store",
+          "amountMinor": 100000
+        },
+        {
+          "reference": "WHOLESALE-AREA-001",
+          "businessUnit": "BU-WHOLESALE",
+          "channel": "b2b-sales",
+          "amountMinor": 400000
+        },
+        {
+          "reference": "SERVICE-AREA-001",
+          "businessUnit": "BU-SERVICES",
+          "channel": "service-operations",
+          "amountMinor": 300000
+        }
+      ],
+      "expectedConsolidatedRevenueMinor": 800000,
+      "sameCustomerAcrossBusinessUnits": true,
+      "channelsAreNotBusinessUnits": true
+    },
+    "wholesaleOrder": {
+      "reference": "WHOLESALE-ORDER-TEST-001",
+      "customerCode": "CLI-COMPANY-TEST-001",
+      "businessUnit": "BU-WHOLESALE",
+      "channel": "b2b-sales",
+      "minimumOrderValueMinor": 2500000,
+      "lines": [
+        {
+          "sku": "SKU-UNIT-001",
+          "quantityMilli": 24000,
+          "minQuantityMilli": 12000,
+          "packMultipleMilli": 6000,
+          "priceTierMinQuantityMilli": 24000,
+          "unitPriceMinor": 480000,
+          "expectedLineTotalMinor": 11520000
+        },
+        {
+          "sku": "SKU-VAR-001",
+          "quantityMilli": 12000,
+          "minQuantityMilli": 6000,
+          "packMultipleMilli": 6000,
+          "priceTierMinQuantityMilli": 12000,
+          "unitPriceMinor": 450000,
+          "expectedLineTotalMinor": 5400000
+        }
+      ],
+      "expectedTotalMinor": 16920000,
+      "credit": {
+        "paymentTermDays": 30,
+        "creditLimitMinor": 50000000,
+        "openExposureBeforeMinor": 10000000,
+        "expectedExposureAfterMinor": 26920000,
+        "approved": true
+      }
+    },
+    "shipmentAfterSale": {
+      "reference": "POST-SALE-SHIPMENT-TEST-001",
+      "salesOrder": "ORD-WHOLESALE-TEST-001",
+      "saleReference": "SALE-WHOLESALE-TEST-001",
+      "saleConfirmedAt": "2026-11-19T10:00:00-03:00",
+      "trackingReferenceAtSale": null,
+      "saleRequiresTracking": false,
+      "orderedQuantitiesMilli": {
+        "SKU-UNIT-001": 24000,
+        "SKU-VAR-001": 12000
+      },
+      "shipments": [
+        {
+          "shipmentId": "SHP-CARRIER-001",
+          "createdAt": "2026-11-19T11:00:00-03:00",
+          "mode": "carrier-handoff",
+          "status": "handed-over",
+          "carrierCode": "CARRIER-TEST-001",
+          "trackingReference": "GUIA-TEST-0001",
+          "trackingAssignedAt": "2026-11-19T11:30:00-03:00",
+          "lines": [
+            {
+              "sku": "SKU-UNIT-001",
+              "quantityMilli": 12000
+            },
+            {
+              "sku": "SKU-VAR-001",
+              "quantityMilli": 12000
+            }
+          ]
+        },
+        {
+          "shipmentId": "SHP-PICKUP-001",
+          "createdAt": "2026-11-19T11:15:00-03:00",
+          "mode": "customer-pickup",
+          "status": "ready-for-pickup",
+          "carrierCode": null,
+          "trackingReference": null,
+          "trackingAssignedAt": null,
+          "lines": [
+            {
+              "sku": "SKU-UNIT-001",
+              "quantityMilli": 12000
+            }
+          ]
+        }
+      ],
+      "expectedShippedQuantitiesMilli": {
+        "SKU-UNIT-001": 24000,
+        "SKU-VAR-001": 12000
+      },
+      "noOverShipment": true
+    },
+    "b2bServiceContract": {
+      "reference": "B2B-SERVICE-CONTRACT-TEST-001",
+      "customerCode": "CLI-COMPANY-TEST-001",
+      "businessUnit": "BU-SERVICES",
+      "contractCode": "CONTRACT-SERVICE-001",
+      "contractVersion": 1,
+      "startsOn": "2026-11-01",
+      "endsOn": "2027-10-31",
+      "monthlyFeeMinor": 1000000,
+      "recurrence": "monthly",
+      "sla": {
+        "responseHours": 8,
+        "resolutionHours": 48,
+        "calendar": "business-hours",
+        "holidayCalendar": "AR-TEST"
+      },
+      "workOrder": {
+        "reference": "WORK-ORDER-001",
+        "status": "completed-pending-acceptance",
+        "scheduledAt": "2026-11-19T09:00:00-03:00",
+        "completedAt": "2026-11-19T12:00:00-03:00",
+        "hoursMilli": 3000,
+        "laborCostMinor": 300000,
+        "materialsCostMinor": 100000,
+        "travelCostMinor": 50000,
+        "evidenceCount": 2,
+        "customerAcceptanceRequired": true
+      },
+      "expectedDirectCostMinor": 450000,
+      "expectedContributionMinor": 550000,
+      "duplicateInvoiceCount": 0
+    },
+    "businessUnitProfitability": {
+      "period": "2026-11",
+      "currency": "ARS",
+      "businessUnits": [
+        {
+          "businessUnit": "BU-RETAIL",
+          "netRevenueMinor": 10000000,
+          "goodsOrServiceCostMinor": 6000000,
+          "variableServingCostMinor": 1000000,
+          "directFixedCostMinor": 1000000,
+          "sharedCostAllocationMinor": 500000,
+          "expectedOperatingResultMinor": 1500000
+        },
+        {
+          "businessUnit": "BU-WHOLESALE",
+          "netRevenueMinor": 20000000,
+          "goodsOrServiceCostMinor": 13000000,
+          "variableServingCostMinor": 2000000,
+          "directFixedCostMinor": 1000000,
+          "sharedCostAllocationMinor": 1000000,
+          "expectedOperatingResultMinor": 3000000
+        },
+        {
+          "businessUnit": "BU-SERVICES",
+          "netRevenueMinor": 8000000,
+          "goodsOrServiceCostMinor": 2000000,
+          "variableServingCostMinor": 500000,
+          "directFixedCostMinor": 2000000,
+          "sharedCostAllocationMinor": 500000,
+          "expectedOperatingResultMinor": 3000000
+        }
+      ],
+      "sharedCostPoolMinor": 2000000,
+      "unallocatedSharedCostMinor": 0,
+      "expectedConsolidated": {
+        "netRevenueMinor": 38000000,
+        "goodsOrServiceCostMinor": 21000000,
+        "variableServingCostMinor": 3500000,
+        "directFixedCostMinor": 4000000,
+        "sharedCostAllocationMinor": 2000000,
+        "operatingResultMinor": 7500000
+      },
+      "reportViews": [
+        "accrual",
+        "invoiced",
+        "cash"
+      ]
     }
   },
   "expectedInventory": {
@@ -269,5 +465,54 @@
     "productionCredentialsAllowed": false,
     "realCustomerDataAllowed": false,
     "retryAfterUnknownResult": "query-and-reconcile-before-any-new-emission"
-  }
+  },
+  "businessUnits": [
+    {
+      "code": "BU-RETAIL",
+      "name": "Venta minorista",
+      "profitCenter": "PC-RETAIL"
+    },
+    {
+      "code": "BU-WHOLESALE",
+      "name": "Mayorista y distribución",
+      "profitCenter": "PC-WHOLESALE"
+    },
+    {
+      "code": "BU-SERVICES",
+      "name": "Servicios B2B",
+      "profitCenter": "PC-SERVICES"
+    }
+  ],
+  "businessDimensions": {
+    "legalEntity": "RUBROVA-TEST",
+    "channels": [
+      "physical-store",
+      "ecommerce",
+      "b2b-sales",
+      "service-operations"
+    ],
+    "rule": "BusinessUnit is independent from channel, branch, warehouse, territory and cost center."
+  },
+  "businessCustomers": [
+    {
+      "code": "CLI-COMPANY-TEST-001",
+      "type": "company",
+      "legalName": "Empresa ficticia de prueba",
+      "taxId": null,
+      "accountCount": 1,
+      "enabledBusinessUnits": [
+        "BU-RETAIL",
+        "BU-WHOLESALE",
+        "BU-SERVICES"
+      ],
+      "contacts": [
+        "CONTACT-BUYER-001",
+        "CONTACT-TECH-001"
+      ],
+      "sites": [
+        "SITE-MAIN-001",
+        "SITE-DELIVERY-001"
+      ]
+    }
+  ]
 }

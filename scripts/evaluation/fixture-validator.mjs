@@ -486,6 +486,183 @@ export function validateFixture(data) {
     }
   }
 
+
+  const businessUnits = data.businessUnits;
+  if (!Array.isArray(businessUnits) || businessUnits.length < 3) {
+    errors.push("businessUnits debe contener al menos tres unidades.");
+  }
+  const unitCodes = new Set((businessUnits || []).map(unit => unit?.code).filter(Boolean));
+  for (const required of ["BU-RETAIL","BU-WHOLESALE","BU-SERVICES"]) {
+    if (!unitCodes.has(required)) errors.push("Falta la unidad de negocio " + required + ".");
+  }
+  if (unitCodes.size !== (businessUnits || []).length) errors.push("businessUnits tiene códigos vacíos o duplicados.");
+
+  const multiArea = scenarios.multiAreaAllocation;
+  if (!isRecord(multiArea)) {
+    errors.push("scenarios.multiAreaAllocation debe ser un objeto.");
+  } else {
+    compare(multiArea.expectedCustomerAccountCount, 1, "multiAreaAllocation.expectedCustomerAccountCount", errors);
+    compare(multiArea.sameCustomerAcrossBusinessUnits, true, "multiAreaAllocation.sameCustomerAcrossBusinessUnits", errors);
+    compare(multiArea.channelsAreNotBusinessUnits, true, "multiAreaAllocation.channelsAreNotBusinessUnits", errors);
+    if (multiArea.sharedCustomerCode !== data.businessCustomers?.[0]?.code) errors.push("multiAreaAllocation debe usar la cuenta empresarial compartida.");
+    let total = 0;
+    const seenUnits = new Set();
+    for (const [index, tx] of (multiArea.businessUnitTransactions || []).entries()) {
+      const path = "multiAreaAllocation.businessUnitTransactions[" + index + "]";
+      if (!isRecord(tx)) { errors.push(path + " debe ser un objeto."); continue; }
+      if (seenUnits.has(tx.businessUnit)) errors.push(path + " repite una unidad.");
+      seenUnits.add(tx.businessUnit);
+      const amount = integer(tx.amountMinor, path + ".amountMinor", errors, 1);
+      if (amount !== null) total += amount;
+      if (!unitCodes.has(tx.businessUnit)) errors.push(path + ".businessUnit no existe.");
+      if (typeof tx.channel !== "string" || !tx.channel) errors.push(path + ".channel es obligatorio.");
+    }
+    const expected = integer(multiArea.expectedConsolidatedRevenueMinor, "multiAreaAllocation.expectedConsolidatedRevenueMinor", errors);
+    if (expected !== null) compare(total, expected, "multiAreaAllocation.expectedConsolidatedRevenueMinor", errors);
+  }
+
+  const wholesale = scenarios.wholesaleOrder;
+  if (!isRecord(wholesale) || !Array.isArray(wholesale.lines) || wholesale.lines.length === 0) {
+    errors.push("scenarios.wholesaleOrder debe contener líneas.");
+  } else {
+    if (wholesale.businessUnit !== "BU-WHOLESALE") errors.push("wholesaleOrder debe pertenecer a BU-WHOLESALE.");
+    if (wholesale.customerCode !== data.businessCustomers?.[0]?.code) errors.push("wholesaleOrder debe usar la cuenta empresarial compartida.");
+    let total = 0n;
+    for (const [index, line] of wholesale.lines.entries()) {
+      const path = "wholesaleOrder.lines[" + index + "]";
+      if (!isRecord(line)) { errors.push(path + " debe ser un objeto."); continue; }
+      if (!catalogBySku.has(line.sku)) errors.push(path + ".sku no existe en catalog.");
+      const quantity = integer(line.quantityMilli, path + ".quantityMilli", errors, 1);
+      const minQty = integer(line.minQuantityMilli, path + ".minQuantityMilli", errors, 1);
+      const multiple = integer(line.packMultipleMilli, path + ".packMultipleMilli", errors, 1);
+      const tierQty = integer(line.priceTierMinQuantityMilli, path + ".priceTierMinQuantityMilli", errors, 1);
+      const price = integer(line.unitPriceMinor, path + ".unitPriceMinor", errors, 1);
+      const expectedLine = integer(line.expectedLineTotalMinor, path + ".expectedLineTotalMinor", errors, 1);
+      if (quantity !== null && minQty !== null && quantity < minQty) errors.push(path + " no cumple el mínimo por SKU.");
+      if (quantity !== null && multiple !== null && quantity % multiple !== 0) errors.push(path + " no respeta el múltiplo de empaque.");
+      if (quantity !== null && tierQty !== null && quantity < tierQty) errors.push(path + " no alcanza el umbral de precio aplicado.");
+      if (quantity !== null && price !== null && expectedLine !== null) {
+        const calculated = Number(roundDiv(BigInt(quantity) * BigInt(price), 1000n));
+        compare(expectedLine, calculated, path + ".expectedLineTotalMinor", errors);
+        total += BigInt(calculated);
+      }
+    }
+    const minOrder = integer(wholesale.minimumOrderValueMinor, "wholesaleOrder.minimumOrderValueMinor", errors, 1);
+    const expectedTotal = integer(wholesale.expectedTotalMinor, "wholesaleOrder.expectedTotalMinor", errors, 1);
+    if (expectedTotal !== null) compare(Number(total), expectedTotal, "wholesaleOrder.expectedTotalMinor", errors);
+    if (minOrder !== null && expectedTotal !== null && expectedTotal < minOrder) errors.push("wholesaleOrder no alcanza el importe mínimo.");
+    const credit = wholesale.credit;
+    if (!isRecord(credit)) {
+      errors.push("wholesaleOrder.credit debe estar definido.");
+    } else {
+      const limit = integer(credit.creditLimitMinor, "wholesaleOrder.credit.creditLimitMinor", errors, 1);
+      const before = integer(credit.openExposureBeforeMinor, "wholesaleOrder.credit.openExposureBeforeMinor", errors);
+      const after = integer(credit.expectedExposureAfterMinor, "wholesaleOrder.credit.expectedExposureAfterMinor", errors);
+      if (before !== null && expectedTotal !== null && after !== null) compare(after, before + expectedTotal, "wholesaleOrder.credit.expectedExposureAfterMinor", errors);
+      if (limit !== null && after !== null && after > limit && credit.approved !== true) errors.push("La exposición de crédito excede el límite sin autorización.");
+    }
+  }
+
+  const shipmentScenario = scenarios.shipmentAfterSale;
+  if (!isRecord(shipmentScenario) || !Array.isArray(shipmentScenario.shipments)) {
+    errors.push("scenarios.shipmentAfterSale debe contener envíos.");
+  } else {
+    compare(shipmentScenario.trackingReferenceAtSale, null, "shipmentAfterSale.trackingReferenceAtSale", errors);
+    compare(shipmentScenario.saleRequiresTracking, false, "shipmentAfterSale.saleRequiresTracking", errors);
+    const saleDate = Date.parse(shipmentScenario.saleConfirmedAt);
+    if (!Number.isFinite(saleDate)) errors.push("shipmentAfterSale.saleConfirmedAt debe ser una fecha ISO válida.");
+    const shipmentIds = new Set();
+    const shipped = new Map();
+    for (const [index, shipment] of shipmentScenario.shipments.entries()) {
+      const path = "shipmentAfterSale.shipments[" + index + "]";
+      if (!isRecord(shipment)) { errors.push(path + " debe ser un objeto."); continue; }
+      if (shipmentIds.has(shipment.shipmentId)) errors.push("shipmentId duplicado: " + shipment.shipmentId);
+      shipmentIds.add(shipment.shipmentId);
+      const createdAt = Date.parse(shipment.createdAt);
+      if (!Number.isFinite(createdAt) || (Number.isFinite(saleDate) && createdAt <= saleDate)) errors.push(path + " debe crearse después de la venta.");
+      if (!["carrier-handoff","customer-pickup","own-fleet"].includes(shipment.mode)) errors.push(path + ".mode no es válido.");
+      if (shipment.mode === "carrier-handoff") {
+        if (!shipment.carrierCode) errors.push(path + " requiere carrierCode.");
+        if (!shipment.trackingReference) errors.push(path + " requiere trackingReference para el handoff del caso.");
+        const trackedAt = Date.parse(shipment.trackingAssignedAt);
+        if (!Number.isFinite(trackedAt) || (Number.isFinite(saleDate) && trackedAt <= saleDate)) errors.push(path + " debe asignar tracking después de la venta.");
+      }
+      for (const line of shipment.lines || []) {
+        if (!isRecord(line)) continue;
+        const qty = integer(line.quantityMilli, path + ".lines.quantityMilli", errors, 1);
+        if (qty !== null) shipped.set(line.sku, (shipped.get(line.sku) || 0) + qty);
+      }
+    }
+    const expected = shipmentScenario.expectedShippedQuantitiesMilli || {};
+    for (const [sku, quantity] of Object.entries(expected)) {
+      const qty = integer(quantity, "shipmentAfterSale.expectedShippedQuantitiesMilli." + sku, errors);
+      if (qty !== null) compare(shipped.get(sku) || 0, qty, "shipmentAfterSale.shipped." + sku, errors);
+    }
+    for (const sku of shipped.keys()) if (!(sku in expected)) errors.push("Se despachó SKU no incluido en el pedido: " + sku + ".");
+  }
+
+  const service = scenarios.b2bServiceContract;
+  if (!isRecord(service)) {
+    errors.push("scenarios.b2bServiceContract debe ser un objeto.");
+  } else {
+    if (service.businessUnit !== "BU-SERVICES") errors.push("b2bServiceContract debe pertenecer a BU-SERVICES.");
+    if (service.customerCode !== data.businessCustomers?.[0]?.code) errors.push("b2bServiceContract debe usar la cuenta empresarial compartida.");
+    const start = Date.parse(service.startsOn);
+    const end = Date.parse(service.endsOn);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) errors.push("El período del contrato B2B no es válido.");
+    const wo = service.workOrder;
+    if (!isRecord(wo)) errors.push("b2bServiceContract.workOrder debe existir.");
+    else {
+      const labor = integer(wo.laborCostMinor, "b2bServiceContract.workOrder.laborCostMinor", errors);
+      const materials = integer(wo.materialsCostMinor, "b2bServiceContract.workOrder.materialsCostMinor", errors);
+      const travel = integer(wo.travelCostMinor, "b2bServiceContract.workOrder.travelCostMinor", errors);
+      const expectedCost = integer(service.expectedDirectCostMinor, "b2bServiceContract.expectedDirectCostMinor", errors);
+      const fee = integer(service.monthlyFeeMinor, "b2bServiceContract.monthlyFeeMinor", errors, 1);
+      const expectedContribution = integer(service.expectedContributionMinor, "b2bServiceContract.expectedContributionMinor", errors);
+      if (labor !== null && materials !== null && travel !== null && expectedCost !== null) compare(expectedCost, labor + materials + travel, "b2bServiceContract.expectedDirectCostMinor", errors);
+      if (fee !== null && expectedCost !== null && expectedContribution !== null) compare(expectedContribution, fee - expectedCost, "b2bServiceContract.expectedContributionMinor", errors);
+      if (!Number.isInteger(wo.evidenceCount) || wo.evidenceCount < 1) errors.push("La orden de trabajo debe contener evidencia.");
+      compare(wo.customerAcceptanceRequired, true, "b2bServiceContract.workOrder.customerAcceptanceRequired", errors);
+    }
+    compare(service.duplicateInvoiceCount, 0, "b2bServiceContract.duplicateInvoiceCount", errors);
+  }
+
+  const profitability = scenarios.businessUnitProfitability;
+  if (!isRecord(profitability) || !Array.isArray(profitability.businessUnits)) {
+    errors.push("scenarios.businessUnitProfitability debe contener áreas.");
+  } else {
+    const totals = {netRevenueMinor:0,goodsOrServiceCostMinor:0,variableServingCostMinor:0,directFixedCostMinor:0,sharedCostAllocationMinor:0,operatingResultMinor:0};
+    let allocatedShared = 0;
+    const seen = new Set();
+    for (const [index, unit] of profitability.businessUnits.entries()) {
+      const path = "businessUnitProfitability.businessUnits[" + index + "]";
+      if (!isRecord(unit)) { errors.push(path + " debe ser un objeto."); continue; }
+      if (seen.has(unit.businessUnit)) errors.push(path + " duplica una unidad.");
+      seen.add(unit.businessUnit);
+      const revenue = integer(unit.netRevenueMinor, path + ".netRevenueMinor", errors);
+      const goods = integer(unit.goodsOrServiceCostMinor, path + ".goodsOrServiceCostMinor", errors);
+      const variable = integer(unit.variableServingCostMinor, path + ".variableServingCostMinor", errors);
+      const fixed = integer(unit.directFixedCostMinor, path + ".directFixedCostMinor", errors);
+      const shared = integer(unit.sharedCostAllocationMinor, path + ".sharedCostAllocationMinor", errors);
+      const result = integer(unit.expectedOperatingResultMinor, path + ".expectedOperatingResultMinor", errors);
+      if ([revenue,goods,variable,fixed,shared,result].every(v => v !== null)) {
+        compare(result, revenue - goods - variable - fixed - shared, path + ".expectedOperatingResultMinor", errors);
+        totals.netRevenueMinor += revenue; totals.goodsOrServiceCostMinor += goods; totals.variableServingCostMinor += variable;
+        totals.directFixedCostMinor += fixed; totals.sharedCostAllocationMinor += shared; totals.operatingResultMinor += result;
+        allocatedShared += shared;
+      }
+    }
+    const sharedPool = integer(profitability.sharedCostPoolMinor, "businessUnitProfitability.sharedCostPoolMinor", errors);
+    const unallocated = integer(profitability.unallocatedSharedCostMinor, "businessUnitProfitability.unallocatedSharedCostMinor", errors);
+    if (sharedPool !== null && unallocated !== null) compare(allocatedShared + unallocated, sharedPool, "businessUnitProfitability shared allocation reconciliation", errors);
+    const consolidated = profitability.expectedConsolidated;
+    if (!isRecord(consolidated)) errors.push("businessUnitProfitability.expectedConsolidated debe existir.");
+    else for (const key of Object.keys(totals)) {
+      const expected = integer(consolidated[key], "businessUnitProfitability.expectedConsolidated." + key, errors);
+      if (expected !== null) compare(totals[key], expected, "businessUnitProfitability.expectedConsolidated." + key, errors);
+    }
+  }
+
   const resilience = data.resilience;
   if (!isRecord(resilience)) {
     errors.push("resilience debe ser un objeto.");
