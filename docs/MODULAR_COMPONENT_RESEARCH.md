@@ -288,3 +288,104 @@ Fuente:
 Fuente:
 - https://github.com/bigcapitalhq/bigcapital
 - https://docs.bigcapital.app/api-reference
+
+
+## M. InvenTree — inventario, trazabilidad y extensión por plugins
+
+- Repositorio: https://github.com/inventree/InvenTree
+- Rama inspeccionada: master; licencia del repositorio: MIT.
+- Stack: Python/Django, Django REST Framework, PostgreSQL/MySQL/MariaDB/SQLite, Redis y frontend React.
+- El README define un sistema de control de stock y partes de bajo nivel, con backend de base de datos, interfaz web, API REST, módulo Python y plugin interface.
+- Valor para Rubrova: modelo de partes/SKU, stock por ubicación, trazabilidad, API, extensiones, datos y operaciones de depósito. Es una fuente técnica atractiva para revisar modelos de inventario, seriales/lotes, unidades, barcode y plugins.
+- Riesgo: es una aplicación completa con su propio modelo de stock. Integrarlo como servicio externo sin designar un único ledger duplicaría existencias y movimientos.
+- Recomendación: inspeccionar migraciones, modelos, endpoints, plugin API, conteo y movimientos; reutilizar patrones o componentes independientes, no incorporar toda la aplicación como segunda autoridad de inventario.
+
+Fuente: https://github.com/inventree/InvenTree
+
+## N. OpenBoxes — WMS y gestión de supply chain
+
+- Repositorio: https://github.com/openboxes/openboxes
+- Rama inspeccionada: develop; README declara EPL-1.0.
+- Propósito: WMS/inventario de propósito general, surgido para cadenas de abastecimiento con restricciones de recursos. El proyecto destaca eficiencia, flexibilidad, accesibilidad y soporte a cadenas de suministro complejas.
+- Valor: recepción, inventario, ubicaciones, transferencias y operación de almacenes. Tiene guías de usuario, instalación, comunidad y demo.
+- Límite: aplicación completa con su propia persistencia y flujo de stock; no es un paquete de funciones independiente. Su origen en health supply chain implica estudiar bien los modelos y no asumir encaje directo con retail argentino.
+- Recomendación: utilizarlo como referencia para workflows de recepción, movimientos, conteos, transferencia y trazabilidad. No crear una segunda fuente de verdad de stock en Rubrova.
+
+Fuentes:
+- https://github.com/openboxes/openboxes
+- https://docs.openboxes.com/en/latest/
+
+## O. OpenWMS.org — ejecución avanzada de almacenes y material flow control
+
+- Repositorio: https://github.com/openwms/org.openwms
+- Rama inspeccionada: master; el README requiere JDK 25 y describe Java 25/Spring Boot 4.1, RabbitMQ y componentes distribuidos.
+- Licencias: el root tiene Apache-2.0 y la tabla del proyecto distingue explícitamente módulos públicos Apache-2.0, privados GPLv3 y componentes privados/preview. Cada repo/módulo se licencia por separado.
+- Propósito: WMS extensible más Material Flow Control (MFC) para almacenes automáticos y manuales. La arquitectura orquesta servicios de inventario, movimientos, tareas, picking, transporte y drivers cercanos a sensores/PLC.
+- Valor: arquitectura de composición de servicios, ownership por componente, APIs de negocio, eventos, dispositivos y movimiento físico.
+- Riesgo: infraestructura distribuida considerable, Java 25/Spring, módulos privados y control de hardware con tiempos de respuesta exigentes. Es mucho más complejo que el depósito típico de una pyme.
+- Recomendación: no adoptarlo como base. Guardar como referencia de segunda etapa si Rubrova administra depósitos automatizados, transportadores, sensores o varias instalaciones grandes. Solo evaluar repositorios Apache públicos, nunca asumir que el catálogo completo comparte la licencia root.
+
+Fuentes:
+- https://github.com/openwms/org.openwms
+- https://wiki.openwms.cloud/projects/openwms/wiki/00-dot-02-business-services
+
+## P. Automatización y workflows: Activepieces, Temporal, Kestra y n8n
+
+### Activepieces
+- Repositorio: https://github.com/activepieces/activepieces
+- MIT para el core fuera de packages/ee y rutas enterprise especificadas en la licencia.
+- Builder visual de automatizaciones e integraciones; útil para tareas de back-office, alertas y sincronización periférica.
+- No permitir que sus flujos modifiquen directamente el ledger sin pasar por APIs idempotentes y permisos de Rubrova.
+
+### Temporal
+- Repositorio: https://github.com/temporalio/temporal
+- MIT.
+- Motor de durable execution para workflows largos que sobreviven reinicios, con historial y reintentos. Encaja conceptualmente en emisión fiscal, integración logística, importación de lotes y conciliaciones.
+- Requiere backend/worker/DB y competencias operativas; puede ser excesivo al inicio. Primero definir workflow y pruebas; decidir después si hace falta el motor.
+
+### Kestra
+- Repositorio: https://github.com/kestra-io/kestra
+- Apache-2.0.
+- Orquestación declarativa de flujos de datos, infraestructura y operaciones.
+- Puede servir para pipelines, conciliaciones y tareas programadas, pero no es el motor transaccional de una venta.
+
+### n8n
+- Repositorio: https://github.com/n8n-io/n8n
+- Sustainable Use License, source-available; no OSI open source. La licencia del README/archivo también excluye ramas distintas de master y separa carpetas .ee.
+- Es útil como referencia y puede contemplarse para determinados workflows internos si se revisa la licencia vigente; no incorporarlo como código abierto ni como núcleo de Rubrova.
+
+**Conclusión:** usar APIs/adaptadores de Rubrova para operaciones de negocio. Una herramienta de automatización externa puede coordinar tareas periféricas, pero no sustituye estados durables, permisos, audit trail ni idempotencia del dominio.
+
+Fuentes:
+- https://github.com/activepieces/activepieces
+- https://github.com/temporalio/temporal
+- https://github.com/kestra-io/kestra
+- https://github.com/n8n-io/n8n
+
+## Q. Paperless-ngx — archivo documental OCR
+
+- Repositorio: https://github.com/paperless-ngx/paperless-ngx
+- Rama inspeccionada: dev; licencia GPL-3.0.
+- Sistema self-hosted de archivo y búsqueda de documentos, con OCR y metadatos.
+- Valor: referencia para capturar facturas de proveedores, remitos, constancias de entrega, contratos y comprobantes; indexar y vincularlos a los objetos de Rubrova.
+- Límite: no reemplaza compras, cuentas a pagar, impuestos ni contabilización. Si se usa como servicio separado, Rubrova mantiene la referencia documental y el vínculo de negocio; no se crea un segundo registro contable.
+- Recomendación: evaluar ingestión desde carpetas/email/escáner y extracción asistida, manteniendo original inmutable, checksum, permisos y revisión humana.
+
+Fuente: https://github.com/paperless-ngx/paperless-ngx
+
+## R. Analítica tabular: DuckDB, Polars y Apache Superset
+
+La separación recomendada es:
+- PostgreSQL/ERP como OLTP transaccional y autoridad de los registros.
+- DuckDB para consultas analíticas locales y procesamiento por lotes.
+- Polars para preparación/transformación de datasets cuando se requiera alto rendimiento.
+- Superset para dashboards de solo lectura sobre vistas y datasets analíticos.
+- Ninguna de estas herramientas recibe permisos para escribir ventas, caja, pagos, movimientos de inventario o libros contables.
+- Las métricas deben tener definiciones versionadas, filtros explícitos, fuente, fecha de actualización y conciliación con los datos de origen.
+
+Fuentes:
+- https://github.com/duckdb/duckdb
+- https://github.com/pola-rs/polars
+- https://github.com/apache/superset
+
+Las referencias son candidatas de código, patrones o servicios de soporte; ninguna está incorporada ni ejecutada en Rubrova. La decisión de integración exige revisión de licencias, dependencias, versión, seguridad, ownership de datos y pruebas locales.
