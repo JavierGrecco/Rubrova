@@ -257,4 +257,4 @@ No se declara reutilizado un proyecto hasta fijar su versión, conservar avisos,
 - DearPOS: https://github.com/engindearing-projects/dearpos
 - ElitaleRestro: https://github.com/tirforge/restro
 
-La revisión es documental y de manifiestos/repositorios; todavía no se clonaron, ejecutaron ni auditaron estos proyectos. Ninguno se considera incorporado al producto por aparecer en este catálogo.
+La revisión de repositorios y código fuente es documental; todavía no se instalaron ni ejecutaron los candidatos localmente para Rubrova ni se completó una auditoría de seguridad. Ninguno se considera incorporado o aprobado por aparecer en este catálogo. La prueba reproducible y sus datos sintéticos están en [Evaluación de plataformas](PLATFORM_EVALUATION.md) y [fixtures/platform-evaluation.json](fixtures/platform-evaluation.json).
