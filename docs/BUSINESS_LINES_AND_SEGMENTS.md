@@ -107,3 +107,16 @@ No duplicar físicamente el stock por unidad de negocio si es el mismo inventari
 ## Resultado esperado
 
 El dueño puede ver la organización completa o entrar en cada área y entender quién vende, qué vende, por qué canal, a qué clientes, con qué costos, qué recursos consume y cuánto resultado aporta. Las áreas pueden trabajar con procesos diferentes sin convertirse en sistemas aislados.
+
+
+## Cuándo crear un área y cuándo usar una dimensión
+
+No crear una unidad de negocio por cada canal, sucursal o territorio. Crear una BusinessUnit cuando exista una responsabilidad económica/operativa diferenciada: oferta, reglas, responsable, presupuesto, decisiones y resultado propios. Si la diferencia es solo el canal de captación, usar SalesChannel. Si es una zona, usar Territory. Si es un local, Branch. Si es una línea de producto dentro de la misma dirección comercial, evaluar categoría/segmento antes de crear otra unidad.
+
+Las áreas pueden tener jerarquía padre/hija para reportes, manteniendo vigencia y trazabilidad. El consolidado debe poder agruparlas sin sumar dos veces una unidad padre y sus hijas.
+
+## Consumo y prestación entre áreas
+
+Un área puede consumir mercadería, trabajo, equipos o infraestructura que administra otra. Debe registrarse el recurso y costo real una sola vez, asignando el costo de uso al área que lo consume. Para gestión se puede aplicar una tarifa de transferencia interna, pero hay que separar ese indicador del costo consolidado y evitar crear una venta externa ficticia.
+
+Ver [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md) para el tratamiento según entidad legal.

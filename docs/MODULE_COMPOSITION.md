@@ -101,3 +101,12 @@ El módulo de servicios posee contratos, SLA, obligaciones, agendas y órdenes d
 ## Dimensiones y costos cruzados
 
 Una operación mixta puede asignar distintas líneas a unidades diferentes. Los costos comunes usan AllocationPolicy versionada con base de reparto. Un módulo de analítica solo consulta los hechos y las asignaciones; no reescribe transacciones ni crea otro ledger.
+
+
+## Operaciones entre módulos y áreas
+
+Cuando una unidad utiliza recursos de otra, el módulo propietario del recurso registra el hecho real. El módulo destino registra la asignación de consumo con una referencia al movimiento origen y su costo. Una política de transferencia gerencial puede calcular un cargo interno separado; no puede crear una segunda venta, factura fiscal, cobro o movimiento físico.
+
+En el consolidado de una misma entidad legal se eliminan los cargos/créditos internos, dejando el costo externo original una sola vez. Entre entidades legales distintas se usa el contrato intercompany, con facturación y obligaciones fiscales propias, más las eliminaciones de consolidación cuando haya estados de grupo.
+
+La auditoría conserva origen del costo, área emisora/receptora, política/tarifa aplicada y asiento de eliminación.

@@ -14,6 +14,7 @@ La prueba común, versiones fijadas, conjunto sintético y criterios de aprobaci
 - Definir y validar unidades de negocio, centros de beneficio/costo y dimensiones de canal, sucursal, territorio, proyecto y contrato.
 - Probar mínimos y escalas mayoristas, crédito B2B, despachos parciales y tracking agregado después de la venta.
 - Probar contratos de servicio, SLA, agenda, órdenes de trabajo, evidencia, aceptación y facturación.
+- Probar consumo interárea de stock/servicios y su eliminación en el resultado consolidado.
 - Completar la especificación del checkout: línea removible antes de pagar, efectivo recibido/vuelto y pago integrado con terminales locales.
 - Probar caja, ventas, pagos mixtos, descuentos, devoluciones, inventario, compras y producción.
 - Demostrar corte de internet, cierre forzado, reinicio, reintento, conciliación y backup/restauración.
@@ -88,7 +89,7 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
 - [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
-- [ ] Ejecutar escenarios P20–P25: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios y rentabilidad.
+- [ ] Ejecutar escenarios P20–P26: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios, rentabilidad y transferencias internas.
 - [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
 - [ ] Ejecución y evidencia de todos los escenarios.
 - [ ] Decisión de base y plan de adaptación.

@@ -150,6 +150,7 @@ Los importes son datos didácticos y no representan precios de mercado ni reglas
 | P23 | Despacho posterior a la venta | Venta confirmada sin tracking; crear envíos parciales y agregar carrier/guía después; pickup/own fleet/carrier | Exigir guía antes de vender, duplicar salida o perder enlace pedido-envío |
 | P24 | Contrato y cumplimiento de servicios | Contrato versionado, agenda recurrente, SLA, orden, horas/materiales, evidencia y facturación | Trabajo sin obligación/contrato o factura duplicada |
 | P25 | Rentabilidad por área y consolidado | Ingresos, costo directo, gastos compartidos y allocation suman correctamente; P&L por área y global | Doble conteo, costo no asignado oculto o total no conciliado |
+| P26 | Consumo y transferencias internas entre áreas | Un área consume stock/servicio de otra; costo y movimiento se registran una vez; cargos internos se eliminan en el consolidado de la misma entidad legal | Venta ficticia, movimiento duplicado, costo duplicado o eliminación incorrecta |
 
 En P11 se debe distinguir pérdida de internet de pérdida de red local. En un servidor local compartido, los otros puestos pueden seguir conectados por LAN; una caja con su propia base desconectada es un caso distinto y debe documentarse como tal.
 
@@ -213,13 +214,13 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
-| Ejecución P01–P25 | Pendiente |
+| Ejecución P01–P26 | Pendiente |
 | Pruebas físicas de terminales y hardware | Pendiente |
 | Revisión completa de dependencias y seguridad | Pendiente |
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P25 con datos sintéticos equivalentes. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P26 con datos sintéticos equivalentes. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
 
 
 ## Extensión del protocolo: varias áreas y operación B2B (P20–P25)
@@ -229,3 +230,10 @@ Los seis escenarios nuevos usan un mismo CustomerAccount empresarial relacionado
 El despacho se ejecuta después de confirmar la venta. El tracking/guía puede estar vacío al registrar la venta y asociarse al Shipment después; la prueba incluye entregas parciales y handoff a transportista. Los acuerdos de servicio generan obligaciones y órdenes de trabajo, mientras los ingresos/costos se imputan al contrato y unidad de negocio.
 
 La prueba de rentabilidad distingue devengado, facturado y cobrado, y compara costos directos, compartidos sin asignar y compartidos distribuidos mediante una regla versionada. Las asignaciones deben sumar el costo de origen sin contarlo dos veces.
+
+
+## P26 — consumo interno y resultado consolidado
+
+El caso utiliza áreas dentro de la misma entidad legal. El módulo de inventario registra un único movimiento de salida del depósito; el área consumidora recibe la imputación del costo real. Si existe una tarifa interna para medir desempeño, queda identificada como cargo/abono gerencial y se elimina al consolidar. No se emite factura fiscal ni se genera cobro externo por el mero traspaso interno.
+
+La variante multi-entidad legal se prueba aparte: debe utilizar documentos intercompany reales y una eliminación de consolidación, sin borrar libros fiscales de cada entidad.

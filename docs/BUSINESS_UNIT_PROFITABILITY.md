@@ -140,3 +140,31 @@ ERPNext documenta centros de costo jerárquicos, asignación a nivel de línea, 
 - https://docs.frappe.io/erpnext/profit-and-loss-report
 
 El modelo de Rubrova debe tomar esta capacidad como referencia, no copiar literalmente la semántica de un proveedor. Unidad de negocio, canal, centro de costo, sucursal y proyecto son dimensiones distintas.
+
+
+## 10. Operaciones internas entre áreas y consolidación
+
+Una unidad puede suministrar bienes o servicios a otra. Por ejemplo, el depósito mayorista entrega insumos a la unidad de servicios para cumplir un contrato, o un equipo central presta horas a otra área.
+
+### Dentro de la misma entidad legal
+
+- Registrar el movimiento físico/consumo una sola vez y conservar SKU, cantidad, depósito, lote y costo real.
+- Atribuir el costo al área que consume el recurso. La unidad que administra el stock/personas conserva la trazabilidad de origen.
+- Si se usa un precio de transferencia gerencial, registrarlo como dimensión/indicador interno, no como ingreso externo ni factura fiscal ficticia.
+- El informe por área puede mostrar cargos y créditos internos para evaluar desempeño, pero la vista consolidada elimina ambos lados.
+- El costo real del recurso aparece una sola vez en el resultado consolidado.
+- Un movimiento interno no crea cobro, saldo de cliente ni IVA de una venta externa.
+
+### Entre entidades legales distintas
+
+Si las áreas pertenecen a CUIT/entidades legales diferentes, no tratarlas como simples centros de costo. La operación puede requerir factura, cuenta a cobrar/pagar, impuestos y documentación intercompany. La consolidación de grupo puede eliminar saldos/ingresos/gastos internos, pero debe conservar libros e impuestos de cada entidad.
+
+Las reglas fiscales, de precios de transferencia y consolidación deben validarse con un profesional argentino antes de operar.
+
+### Prueba de integridad
+
+- El consumo aparece en el área destino y el origen queda trazable.
+- Existe un único movimiento físico.
+- Las imputaciones gerenciales internas se compensan/eliminan en la vista consolidada.
+- El costo original no se duplica ni desaparece.
+- Si cambia la entidad legal, se exige el circuito intercompany configurado, no una transferencia gerencial informal.
