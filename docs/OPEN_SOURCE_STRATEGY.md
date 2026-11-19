@@ -5,18 +5,19 @@
 
 ## Conclusión ejecutiva
 
-Sí: reutilizar proyectos y bibliotecas de código abierto puede reducir mucho el tiempo de desarrollo. No conviene, sin embargo, convertir el producto en una colección de sistemas pegados entre sí ni copiar un ERP entero para después luchar contra su modelo interno.
+Sí: reutilizar proyectos y bibliotecas de código abierto puede acelerar mucho el desarrollo. La comparación encontró dos candidatos que merecen una prueba real, pero por razones distintas:
 
-La estrategia recomendada es **reutilizar componentes y capacidades bien delimitadas, conservar un único núcleo transaccional y desarrollar las reglas diferenciales del negocio**. La licencia es una condición de entrada, no una revisión que se hace al final.
+1. **Odoo Community 20.0 — candidato de mayor cobertura funcional inmediata.** Su código Community incluye POS, inventario, compras, fabricación, contabilidad y programas de fidelización. Los manifiestos de los módulos principales revisados declaran LGPL-3. Puede ahorrar una gran cantidad de implementación si adoptamos Odoo como plataforma y construimos módulos propios encima. No conviene copiar su POS de forma aislada: sus modelos, permisos, extensiones y procesos forman parte de un ecosistema integrado. Sus límites offline son importantes y la licencia/edición de la integración electrónica completa con ARCA todavía debe verificarse.
+2. **Medusa v2 — candidato de mayor control tecnológico y licencia permisiva.** Su núcleo es MIT, usa TypeScript y ofrece módulos de catálogo, pedidos, precios, promociones, pagos e inventario. Está mejor alineado con una aplicación propia y modular, pero deja más trabajo de POS, caja, compras, producción, auditoría, offline y fiscalidad.
+3. **Monolito modular propio en TypeScript + PostgreSQL — alternativa de salida.** Evita dependencia de un framework comercial/ERP y permite que el modelo de negocio sea completamente nuestro, pero exige construir más capacidades desde cero.
 
-Los candidatos más útiles encontrados son:
+Odoo 20.0 figura como versión principal lanzada en septiembre de 2026, con fin de soporte estándar previsto para septiembre de 2029. No vamos a usar Odoo 19 como base nueva si el objetivo es evaluar la versión vigente.
 
-1. **Medusa** como candidato principal para una prueba técnica de reutilización del núcleo de comercio. Su código central es MIT y ofrece módulos de catálogo, pedidos, precios, promociones, pagos e inventario, además de workflows y contratos de extensión.
-2. **Odoo Community 19** como referencia funcional de primer nivel para POS completo, descuentos, caja, offline y hardware. También podría ser una base integral si se decidiera adoptar deliberadamente el ecosistema Odoo; su licencia es LGPLv3 y hay que distinguir Community de Enterprise.
-3. **Apache OFBiz** como fuente de patrones y procesos ERP bajo Apache 2.0, pero no como base preferida: su amplitud y arquitectura Java elevan mucho el costo de adaptación.
-4. **TastyIgniter** como referencia y posible fuente de componentes acotados para pedidos, reservas y gastronomía; no cubre nuestro núcleo comercial completo.
+La decisión no se puede cerrar por cantidad de funciones en una ficha comercial. Hay que medir cuánto del producto real podemos conservar sin forzar el modelo, depender de componentes Enterprise, alterar el núcleo o incumplir las exigencias de continuidad offline.
 
-No recomiendo incorporar directamente al producto, por defecto, código GPL/AGPL de ERPNext, Vendure, uniCenta o NexoPOS. Se puede hacer legalmente bajo las condiciones de esas licencias, pero puede afectar la obligación de entregar el código fuente de partes derivadas cuando distribuimos el programa. Como el producto contempla instalación local y offline, conviene preservar esa decisión comercial hasta que se tome expresamente.
+**Recomendación actual:** hacer una comparación técnica acotada entre Odoo Community 20 y Medusa v2 con exactamente el mismo flujo de POS. No adoptar aún ninguno. El criterio será el costo total de llegar a una operación confiable y mantenible, no la cantidad de pantallas que ya traiga cada uno.
+
+No recomiendo incorporar por defecto código GPL/AGPL de ERPNext, Vendure, uniCenta, OCA o módulos externos de ARCA. Esas licencias permiten usos comerciales bajo sus condiciones, pero pueden imponer obligaciones de reciprocidad que no encajan con la distribución que queremos preservar. Se puede estudiar su funcionamiento y sus pruebas sin copiar código.
 
 Esta evaluación no sustituye asesoramiento jurídico. Antes de distribuir software que incorpore código de terceros, se debe revisar el caso concreto con un profesional de propiedad intelectual y software.
 
@@ -35,14 +36,14 @@ La preferencia será **dependencia o extensión**, luego adaptación de una piez
 
 ## Comparación de candidatos
 
-### Medusa — candidato principal para la prueba técnica
+### Medusa — finalista para una plataforma propia
 
 - **Licencia:** MIT para el núcleo, con materiales de Enterprise Edition expresamente separados y sujetos a licencia comercial. No todo lo que aparece en el repositorio tiene automáticamente licencia MIT.
 - **Tecnología y estructura:** TypeScript/Node.js, API, PostgreSQL, módulos de comercio e infraestructura, workflows, eventos y panel administrativo extensible.
 - **Qué puede acelerar:** catálogo, variantes, carritos, pedidos, precios, promociones, pagos, inventario, canales, integraciones y la infraestructura para extender esos conceptos.
 - **Qué no resuelve por sí solo:** caja y turnos de cajeros, arqueo y diferencias, libro de movimientos comerciales completo, reglas de descuentos auditables específicas, offline resistente a cierres/reinicios, fiscalidad argentina, compras y recepción avanzada, costos/contabilidad, producción y recetas.
 - **Riesgo de adaptación:** su modelo está orientado a comercio y pedidos. Debemos comprobar que ventas POS, pagos parciales/mixtos, devoluciones, stock y movimientos contables se puedan integrar sin forzar sus entidades ni mantener un fork del núcleo.
-- **Evaluación:** es el candidato con mejor equilibrio inicial entre código reutilizable, licencia permisiva y arquitectura modular. No queda aprobado como base hasta superar la prueba vertical definida más abajo.
+- **Evaluación:** es el finalista más atractivo si se prioriza una plataforma propia en TypeScript y se quiere minimizar el riesgo de licencia copyleft. Su ventaja de licencia no significa que incluya más producto listo: la mayor parte de la gestión comercial y la experiencia POS seguirán siendo trabajo nuestro.
 
 El diseño de Medusa separa rutas/API, workflows, módulos y persistencia. También mantiene aislados los modelos entre módulos y utiliza vínculos explícitos para relacionarlos. Sus workflows pueden registrar pasos y compensar operaciones ante fallos; para producción, su documentación recomienda un motor de workflows con persistencia y Redis en lugar del motor en memoria. Son capacidades útiles, pero no equivalen automáticamente a nuestra idempotencia, libro de stock ni sincronización offline: habrá que verificarlas.
 
@@ -54,22 +55,41 @@ Fuentes:
 - https://docs.medusajs.com/learn/fundamentals/module-links
 - https://docs.medusajs.com/resources/architectural-modules/workflow-engine
 
-### Odoo Community 19 — referencia POS/ERP y alternativa de adopción integral
+### Odoo Community 20.0 — finalista para acelerar la cobertura funcional
 
-- **Licencia:** LGPLv3 para Community. Enterprise es una edición distinta, con licencia comercial; no se debe confundir código visible con código reutilizable bajo LGPL.
-- **Qué aporta:** un POS de comercio y gastronomía, sesiones de caja, ventas, devoluciones, descuentos por línea y globales, programas promocionales, listas de precios, redondeo, inventario, dispositivos y flujos de restaurante.
-- **Offline:** el POS puede continuar creando y administrando pedidos con datos previamente cargados en caché del navegador y sincronizarlos al volver la conexión. La documentación advierte que no se debe cerrar ni recargar el navegador ni limpiar la caché antes de sincronizar. Durante la desconexión no están disponibles todas las funciones: por ejemplo, terminales de pago, sincronización de stock en tiempo real, carga bajo demanda y determinadas acciones de clientes o facturación.
-- **Hardware:** contempla impresoras, cajones conectados a impresoras, lectores, balanzas, pantallas de cliente y terminales, directamente o mediante una pasarela IoT. La compatibilidad real depende del dispositivo, sistema operativo y conexión.
-- **Costo de adopción:** Odoo tiene un modelo, ORM, permisos, vistas y ciclo de módulos propios. Extenderlo es razonable si se adopta el ecosistema; extraer piezas internas para un sistema distinto puede dejar dependencias difíciles de mantener. Además, hay funciones que pertenecen a Enterprise y no se deben presuponer disponibles en Community.
-- **Evaluación:** excelente referencia de cobertura funcional y opción seria si se decide construir sobre Odoo Community. No recomiendo copiar su POS y mezclarlo informalmente con otro backend. Si se lo adopta como base, se debe aceptar su arquitectura y cumplir LGPLv3 para el código cubierto.
+- **Versión:** Odoo 20.0 fue lanzado en septiembre de 2026. El soporte estándar está previsto hasta septiembre de 2029.
+- **Licencia:** LGPL-3 para Community. Verificamos los manifiestos de `point_of_sale`, `stock`, `purchase`, `mrp`, `account`, `loyalty` y `l10n_ar` en la rama pública `20.0`; todos declaran LGPL-3. Enterprise es una edición diferente bajo licencia comercial. No se debe copiar material Enterprise ni asumir que un módulo documentado está disponible bajo LGPL.
+- **Qué puede acelerar:** un POS integrado con productos, pedidos, sesiones, pagos y caja; inventario; compras; fabricación; contabilidad; listas de precios; descuentos por línea y globales; promociones, cupones y fidelización. Es el candidato con mayor cobertura de procesos comerciales ya implementados.
+- **Offline del POS:** el POS guarda pedidos sin conexión en la caché del navegador y los sincroniza al volver internet. La documentación advierte expresamente que no se debe cerrar ni recargar el navegador ni borrar la caché antes de sincronizar. Sin conexión también quedan limitadas acciones como registrar clientes, ver detalles de producto, sincronizar stock en tiempo real, usar terminales de pago y cargar datos bajo demanda. El modo offline general de Odoo también tiene límites de caché y no equivale a una base transaccional local duradera.
+- **Hardware:** la documentación de Odoo describe integración con impresoras, básculas, lectores, cajones, pantallas y terminales, a menudo mediante IoT o acceso a red local. Hay dependencias de edición, conexión y modelo físico. No se debe suponer que todas las funciones IoT o todos los periféricos están disponibles en Community. Cada modelo concreto necesita prueba.
+- **Argentina y ARCA:** el módulo base `l10n_ar` está en el repositorio público Community y declara LGPL-3. Odoo 20 documenta también `l10n_ar_edi` para emitir por web service y `l10n_ar_reports` para reportes; sin embargo, esos dos módulos no aparecen en las rutas públicas correspondientes de `odoo/odoo` 20.0 que revisamos. No se pudo confirmar que su código esté incluido en Community ni su licencia. Por lo tanto, **no contamos todavía la facturación electrónica ARCA como código abierto reutilizable de Odoo Community**.
+- **Costo de adopción:** Odoo tiene su propio framework, ORM, permisos, vistas y ciclo de módulos. Extenderlo es razonable si se adopta el ecosistema; extraer el POS para mezclarlo con otro backend arrastra dependencias difíciles de mantener. La ventaja se pierde si para diferenciar el producto debemos sobrescribir gran parte del núcleo.
+- **Evaluación:** es el finalista con más funcionalidad existente y puede ser la ruta de menor tiempo para un ERP/POS. Solo es conveniente si aceptamos que la base técnica sea Odoo y podemos resolver las exigencias offline y de identidad del producto mediante extensiones limpias, sin un fork profundo. No se aprueba todavía.
 
 Fuentes:
-- https://github.com/odoo/odoo/blob/19.0/LICENSE
-- https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale/use.html
-- https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale/pricing.html
-- https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale/hardware_network.html
-- https://www.odoo.com/documentation/19.0/es/administration.html
-- https://www.odoo.com/documentation/19.0/developer/tutorials/server_framework_101/01_architecture.html
+- Versiones y soporte: https://www.odoo.com/documentation/20.0/es/administration/supported_versions.html
+- POS y operación offline: https://www.odoo.com/documentation/20.0/es_419/applications/sales/point_of_sale/use.html
+- Descuentos y promociones: https://www.odoo.com/documentation/20.0/es_419/applications/sales/point_of_sale/extra/pricing.html
+- Hardware y básculas: https://www.odoo.com/documentation/20.0/applications/sales/point_of_sale/hardware_network/scale.html
+- Impresoras: https://www.odoo.com/documentation/20.0/applications/sales/point_of_sale/configuration/epos_printers.html
+- Ediciones y licencias: https://www.odoo.com/documentation/20.0/legal/licenses/licenses.html
+- Manifiestos LGPL-3: https://github.com/odoo/odoo/blob/20.0/addons/point_of_sale/__manifest__.py y https://github.com/odoo/odoo/blob/20.0/addons/l10n_ar/__manifest__.py
+- Localización argentina y módulos documentados: https://www.odoo.com/documentation/20.0/es_419/applications/finance/fiscal_localizations/argentina.html
+
+### Código abierto argentino para ARCA — referencia, no incorporación aprobada
+
+Encontramos `leonobitech/l10n_ar_arca_edi`, un módulo de facturación electrónica para Odoo Community que declara integración WSAA/WSFEv1, generación de CAE y pruebas para documentos y WSFE. La revisión de su manifiesto es más importante que una etiqueta del buscador: declara **AGPL-3**, versión Odoo 19 y estado de desarrollo Beta. Su README también contiene una inconsistencia sobre la licencia, por lo que debe prevalecer el manifiesto y el archivo LICENSE, no los badges o resúmenes.
+
+- Puede servir para comprender el protocolo, descubrir casos de prueba y comparar cobertura.
+- No se recomienda copiarlo ni incorporarlo a un producto propietario sin aceptar AGPL-3 o recibir asesoramiento jurídico que confirme una forma de uso compatible.
+- No está validado para Odoo 20 ni para producción ARCA; sus propios metadatos indican Beta.
+- El repositorio OCA `l10n-argentina` declara AGPL-3 en su nivel raíz y advierte que cada módulo puede tener licencia distinta. En la rama 19.0 observada encontramos la estructura de mantenimiento, pero no módulos listos para incorporar. No se lo considera hoy una base lista para integrar.
+
+Fuentes:
+- https://github.com/leonobitech/l10n_ar_arca_edi
+- https://github.com/leonobitech/l10n_ar_arca_edi/blob/main/__manifest__.py
+- https://github.com/leonobitech/l10n_ar_arca_edi/blob/main/LICENSE
+- https://github.com/OCA/l10n-argentina
 
 ### Frappe Framework y ERPNext — separar el framework de la aplicación ERP
 
@@ -155,21 +175,37 @@ Textos oficiales:
 
 ## Dirección técnica recomendada para validar
 
-La evaluación favorece una solución web modular, con interfaz propia para POS y administración, un núcleo transaccional único y almacenamiento local duradero para operar sin conexión.
+La arquitectura general permanece como un **monolito modular con una fuente de verdad transaccional**. La decisión de plataforma todavía está abierta porque hay una disyuntiva real:
 
-Como primer candidato se propone validar **Medusa v2 (núcleo MIT) + TypeScript + React + PostgreSQL**, extendiendo con módulos propios para POS, caja, libro de inventario, compras, producción, fiscalidad, auditoría y sincronización. La interfaz POS no debe depender del panel administrativo de Medusa. No se usarán materiales Enterprise sin contrato.
+- **Elegir Odoo Community 20** si la prioridad es acelerar con POS, inventario, compras, fabricación y contabilidad existentes, y aceptamos construir el producto como un conjunto de módulos dentro del ecosistema Odoo. En ese caso no se reescribe el POS desde cero ni se extraen archivos sueltos; se extiende Odoo mediante sus módulos y APIs. Hay que resolver fuera de la caja la recuperación offline tras cierre/reinicio, confirmar qué módulos de Argentina son Community y evitar dependencia no planificada de Enterprise.
+- **Elegir Medusa v2** si la prioridad es una base tecnológica propia en TypeScript, con núcleo MIT y límites modulares más cercanos a una plataforma que diseñamos nosotros. Se desarrollaría un POS propio y los módulos de caja, compras, producción, fiscalidad, auditoría y sincronización que Medusa no ofrece.
+- **Construir un monolito propio en TypeScript + PostgreSQL** si Medusa no encaja sin forzar su modelo y Odoo exige demasiadas adaptaciones o no supera los requisitos offline. Esta opción mantiene mayor independencia, pero tiene el costo inicial más alto.
 
-La parte local debe diseñarse por separado del servidor: aplicación instalable, almacenamiento transaccional local, cola persistente de operaciones, identificadores globales, idempotencia y conciliación. El prototipo tiene que sobrevivir a desconexión, cierre y reapertura del navegador o aplicación; no basta con mantener una pestaña abierta. IndexedDB es una alternativa inicial para PWA, pero si no garantiza la recuperación requerida en equipos objetivo, se evaluará un agente local con SQLite. La elección final se basará en pruebas de recuperación, no en preferencia tecnológica.
+No se recomienda ejecutar Odoo y Medusa juntos como dos sistemas transaccionales, ni usar sus tablas como dos fuentes de verdad. Tampoco se recomienda combinar código del POS de Odoo dentro de una aplicación Medusa: ambos son frameworks completos con modelos, permisos, ciclo de vida y dependencias propias.
 
-PostgreSQL se mantiene como candidato para el registro central. Redis no se incorpora hasta confirmar su necesidad; si se adopta Medusa en producción, se deberá configurar el motor durable que recomienda su documentación para workflows y eventos. Los cálculos estadísticos iniciales se resolverán con SQL y procesos del mismo sistema; no se introducirá un segundo backend Python hasta que exista una necesidad medida.
+La comparación debe medir el producto que realmente necesitamos, no solo el arranque:
 
-**Alternativa de salida:** si la prueba muestra que Medusa obliga a forzar entidades, parchear el núcleo o duplicar el libro transaccional, no se lo adopta. En ese caso se construye un monolito modular propio en TypeScript sobre PostgreSQL y se conservan únicamente las bibliotecas permisivas que hayan superado la revisión.
+| Criterio | Odoo Community 20 | Medusa v2 |
+|---|---|---|
+| POS funcional inicial | Alto | Bajo; hay que construirlo |
+| Inventario, compras y fabricación | Alto en módulos existentes | Parcial; exige extensiones |
+| Catálogo, pedidos y promociones | Alto | Alto para comercio/pedidos |
+| Arquitectura TypeScript propia | No; framework Python de Odoo | Sí; core TypeScript |
+| Licencia del core revisado | LGPL-3 | MIT, excluyendo Enterprise |
+| Offline resistente a cierre/reinicio | No demostrado; la guía advierte no cerrar el navegador antes de sincronizar | No viene resuelto; hay que diseñarlo |
+| ARCA | Localización documentada; licencia de EDI/reportes por confirmar | Adaptador propio o componente externo aprobado |
+| Dependencia de framework | Alta | Media/alta |
+| Trabajo nuevo estimado | Menor en funciones ERP; mayor donde se requiera alterar POS u offline | Mayor en POS/ERP; menor fricción para diseñar contratos propios |
 
-Esto es una dirección de evaluación, no una decisión irrevocable: el framework se aprueba únicamente con evidencia.
+La elección final se hará con una prueba comparativa. PostgreSQL sigue siendo el candidato para el registro central si elegimos Medusa o el monolito propio; Odoo administra sus propios datos y motor de persistencia si gana la alternativa Odoo.
 
-## Prueba única de compatibilidad antes de cerrar el framework
+Para una app propia, la capa local debe tener almacenamiento transaccional y cola duradera, identificadores globales, idempotencia, reintentos y conciliación explícita. IndexedDB es una alternativa inicial de PWA; si no garantiza recuperación, se evaluará SQLite mediante un servicio local. No se prometerá offline total: ARCA, pagos externos y datos de otros dispositivos pueden requerir conexión.
 
-No vamos a encadenar pruebas sueltas. Se define una prueba vertical de punta a punta que resuelva una vez los riesgos más importantes:
+En Medusa, el motor en memoria no se considerará suficiente para producción; se configurará el mecanismo durable recomendado por su documentación. Redis solo se incorpora si forma parte de la solución elegida y se justifica operativamente. En Odoo se debe demostrar cómo preservar las operaciones locales incluso si el proceso o el navegador se cierra abruptamente; no alcanza con la caché que documenta el POS.
+
+## Prueba comparativa única antes de cerrar el framework
+
+No vamos a encadenar pruebas sueltas ni construir dos productos. Se define una sola prueba vertical, pequeña y equivalente, ejecutada como dos pruebas de ajuste: un módulo/extensión mínima sobre Odoo Community 20 y un conjunto mínimo de módulos sobre Medusa. La implementación debe alcanzar el mismo resultado y registrar el esfuerzo y las dependencias de cada alternativa.
 
 1. Cargar producto, variante, código de barras, unidad y lista de precios.
 2. Abrir turno/caja, iniciar carrito y registrar artículos.
@@ -183,8 +219,10 @@ No vamos a encadenar pruebas sueltas. Se define una prueba vertical de punta a p
 10. Comprobar permisos, auditoría, aislamiento entre negocios y trazabilidad de las operaciones.
 11. Ejecutar la misma suite con base limpia y datos sintéticos repetibles; registrar versión, tiempos y resultados.
 12. Revisar que no se haya modificado el código central de la dependencia y que el inventario de licencias esté completo.
+13. En Odoo, comprobar que el escenario funciona solo con código Community y módulos con licencia aprobada; verificar qué ocurre al cerrar el navegador durante el modo offline. En Medusa, comprobar que los módulos propios no alteran el núcleo y que cada dato tiene un solo dueño.
+14. Registrar tiempo/esfuerzo real, cantidad de personalizaciones, puntos de extensión usados, dependencias, licencias, facilidad de actualización y deuda técnica introducida.
 
-**Criterio para aprobar Medusa:** completar el flujo sin modificar su núcleo, sin crear una segunda fuente de verdad para ventas/pagos/stock, con recuperación durable y sincronización idempotente; las limitaciones deben quedar dentro de módulos propios y mantenibles. Si no cumple, se descarta como base y se adopta la alternativa modular propia.
+**Criterio para elegir:** comparar el esfuerzo real de completar el flujo en ambos candidatos, sin modificar núcleos y sin crear una segunda fuente de verdad para ventas/pagos/stock. La opción elegida debe preservar la recuperación tras cierre/reinicio, la sincronización idempotente, los permisos y la trazabilidad. Si ninguna cumple sin cambios invasivos, se construye el monolito modular propio.
 
 No se considerará aprobada la compatibilidad de hardware por una simulación: luego se necesitará una matriz de pruebas con modelos físicos concretos de impresora, lector, balanza, cajón y terminal.
 
