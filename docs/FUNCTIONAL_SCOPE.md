@@ -15,6 +15,8 @@ Rubrova es una plataforma integral para administrar, operar y analizar actividad
 - Inventario basado en movimientos, reservas, recepción, transferencias, picking, packing, despacho y devoluciones.
 - Compras, abastecimiento, producción, recetas/BOM, mermas, costos y trazabilidad.
 - Canales locales y digitales, marketplaces, mensajería, delivery, retiro y logística.
+- Integraciones de transportistas y tracking unificado con alta de guía posterior a la venta.
+- Exportación/importación contable y administrativa a Tango, Catedral, Bejerman, Xubio, Colppy y perfiles de archivos.
 - Fiscalidad argentina, ARCA en homologación, conciliación y recuperación de estados inciertos.
 - Auditoría, seguridad, continuidad local, sincronización, backup y restauración.
 
@@ -59,5 +61,8 @@ Los perfiles agregan flujos, campos y pantallas sobre el mismo núcleo; no dupli
 - [Mayorista y distribución](WHOLESALE_AND_DISTRIBUTION.md)
 - [Servicios B2B y contratos](B2B_SERVICES_AND_CONTRACTS.md)
 - [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md)
+- [Logística argentina](ARGENTINA_LOGISTICS_INTEGRATION.md)
+- [Interoperabilidad contable](ACCOUNTING_INTEROPERABILITY.md)
+- [Investigación de necesidades PyME](PYME_NEEDS_AND_PRODUCT_BACKLOG.md)
 - [Arquitectura](ARCHITECTURE.md)
 - [Roadmap](ROADMAP.md)
