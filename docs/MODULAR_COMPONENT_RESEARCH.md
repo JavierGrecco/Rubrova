@@ -127,3 +127,82 @@ Fuentes de terminales:
 - Fiserv/Posnet: https://www.fiserv.com.ar/content/dam/firstdata/ar/es/pdf/Reglamento_de_Comerciantes_13-04-26.pdf
 - Payway PayStore Terminals: https://developers.payway.com.ar/catalog?category=Pagos
 - Mobbex Smart POS: https://www.mobbex.com/smart-pos/
+
+
+## I. Dolibarr ERP/CRM 24.0.3 — candidato integral para áreas comerciales y servicios
+
+- Repositorio: https://github.com/Dolibarr/dolibarr
+- Release: 24.0.3, publicada el 11/11/2026; commit del tag 5c6c7ff6a5112413b1c27221c8d11750afad56f8.
+- Licencia declarada: GPL-3.0.
+- Stack: aplicación web PHP, módulos activables y extensiones; admite despliegues genéricos en distintos sistemas/hosting.
+- Cobertura documentada en la distribución: terceros/contactos, productos y servicios, stock/depósitos, códigos de barras, lotes/series, variantes, BOM y manufacturing orders, propuestas, pedidos, contratos/suscripciones, intervenciones, tickets, envíos, facturas/créditos, pagos, POS, contabilidad, proyectos y agenda.
+- **Por qué es relevante:** reúne venta de productos, prestación de servicios, contratos, agenda y envíos. El módulo de Shipping parte de un pedido, sigue cantidades despachadas y pendientes, genera packing slips y evidencia de entrega. Interventions representa órdenes de servicio/mantenimiento.
+- **Límites a verificar:** no asumir que los módulos estándar cubren las escalas mayoristas, reglas multiárea o rentabilidad por unidad que queremos. Hay que probar la atribución de ingresos/costos, clientes con varias relaciones comerciales, acuerdos de suministro y localización argentina. La modularidad de Dolibarr no implica que cada módulo pueda extraerse a otro runtime.
+- **Recomendación:** nuevo candidato de alta relevancia funcional para inspección comparativa. Antes de incorporarlo al laboratorio formal, realizar una prueba de código/funcional de dimensiones de área, shipment lifecycle, contratos/intervenciones, márgenes y actualización de módulos. No declararlo compatible con Rubrova todavía.
+
+Fuentes:
+- https://github.com/Dolibarr/dolibarr/releases/tag/24.0.3
+- https://github.com/Dolibarr/dolibarr/tree/24.0
+- https://wiki.dolibarr.org/index.php/User_documentation
+- https://wiki.dolibarr.org/index.php/Module_Shipments
+- https://wiki.dolibarr.org/index.php?title=Module_Interventions_En
+- https://www.dolibarr.org/presentation-shipments.php
+
+## J. OCA Field Service 19.0 — módulos de servicio para ecosistema Odoo
+
+- Repositorio: https://github.com/OCA/field-service
+- Rama inspeccionada: 19.0; el catálogo publica addons versión 19.0.
+- Licencia del repositorio: AGPL-3.0; cada addon se verifica individualmente en __manifest__.py.
+- Addons relevantes: fieldservice, fieldservice_agreement, fieldservice_calendar, fieldservice_recurring, fieldservice_timesheet, fieldservice_expense, fieldservice_vehicle, fieldservice_stock, fieldservice_crm, fieldservice_project y fieldservice_portal.
+- Hallazgo: fieldservice_agreement declara AGPL-3, depende de fieldservice y agreement, y aparece en estado Beta. fieldservice_recurring aporta órdenes recurrentes; calendar y timesheet conectan programación y tiempo.
+- Valor: referencia concreta para órdenes de trabajo, acuerdos, técnicos, recurrencias, agenda, stock, gastos y vehículos.
+- Límite: está integrado al ORM de Odoo. No es una biblioteca independiente que se pueda copiar sin su runtime. El español argentino disponible en algunos archivos i18n no implica localización argentina completa.
+- Recomendación: usarlo como fuente de patrones y candidato de adopción/fork si se evaluara Odoo como base; no prometer integración directa con otra plataforma sin estudiar dependencias.
+
+Fuentes:
+- https://github.com/OCA/field-service/tree/19.0
+- https://github.com/OCA/field-service/blob/19.0/fieldservice_agreement/__manifest__.py
+
+## K. OpenFieldPro — FSM self-hosted orientado a servicios
+
+- Repositorio: https://github.com/niko4244/openfieldpro
+- Rama principal declarada: ofp-monorepo; commit inspeccionado 25ba62297ba4b6890656017dd425117de166b94a (22/08/2026).
+- Licencia: AGPL-3.0-only.
+- Stack: monorepo TypeScript, Fastify/API, Next.js web, PostgreSQL y app Expo para técnicos.
+- Funciones observadas: CRM, clientes y propiedades, agenda día/semana/mes, dispatcher board, órdenes de trabajo, estimaciones, facturas, pagos, service plans, reporting, documentos, notificaciones, plugin registry, API tokens, webhooks y app móvil.
+- Estado declarado por el README: release-candidate hardening; exige pruebas de dispositivos y evidencia de backup/restore antes de release.
+- Valor: referencia concreta para el flujo de servicios desde oportunidad hasta pago, agenda/dispatch, trabajo técnico y cierre/facturación.
+- Límite: proyecto joven y vertical; no reemplaza mayorista, stock, compras, POS ni contabilidad integral. Revisar datos y reglas de facturación antes de reutilizar.
+- Recomendación: extraer conceptos, contratos y pruebas; evaluar código de agenda/dispatch/work order como módulo solo si su esquema puede aislarse. No adoptar la aplicación completa como base.
+
+Fuentes:
+- https://github.com/niko4244/openfieldpro
+- https://github.com/niko4244/openfieldpro/tree/ofp-monorepo
+- https://github.com/niko4244/openfieldpro/blob/ofp-monorepo/LICENSE
+
+## L. Open TMS — transporte y tracking posterior al pedido
+
+- Repositorio: https://github.com/DominicFinn/open_tms
+- Rama: main; README indica desarrollo activo y que todavía no existe release estable.
+- Licencia: README y metadata de GitHub indican MIT, pero la inspección del árbol/endpoint no encontró un archivo raíz LICENSE. **Licencia pendiente de verificación antes de incorporar código.**
+- Stack: TypeScript, React, Fastify, Prisma y PostgreSQL; backend CQRS/event-driven.
+- Funciones observadas: clientes, carriers, órdenes, facilities/depósitos, lanes/rutas, shipment lifecycle, tracking, eventos, referencias de carrier, consolidación, shipment share links, customer portal, API, webhooks, EDI, carrier integrations, IoT y SLA.
+- Particularmente relevante: permite crear un shipment desde una orden o varias; dividir una orden grande en varios envíos; consolidar envíos compatibles; mantener la orden separada del shipment; asociar carrier y tracking después; mantener timeline de eventos e idempotencia de webhooks.
+- Valor: fuente cercana al caso de distribución interprovincial y carga posterior del número de guía.
+- Riesgos: proyecto en desarrollo sin release; stack y dominio orientados a 3PL/logística compleja; revisar seguridad, transiciones, integridad de cantidades, permisos multiempresa, licencia real y madurez antes de portar.
+- Recomendación: candidato prioritario para inspección de Shipment/Tracking y patrones de integración; no usarlo como autoridad de ventas, pagos o inventario comercial.
+
+Fuente:
+- https://github.com/DominicFinn/open_tms
+
+## Prioridad de investigación por nuevos escenarios
+
+| Dominio | Candidato | Próxima inspección |
+|---|---|---|
+| ERP + contratos + envíos + POS | Dolibarr 24.0.3 | Áreas, margen, contratos, intervenciones y envío parcial |
+| Wholesale/B2B pricing | ERPNext y Dolibarr | Mínimos, tiers, cliente/contrato, UOM y crédito |
+| Servicios de campo | OCA Field Service / OpenFieldPro | Acuerdos, SLA, agenda, recurrencias, costo real y aceptación |
+| TMS/distribución | Open TMS / Simple WMS | Pedido a uno/múltiples envíos, tracking posterior, handoff y costo |
+| Rentabilidad multiárea | ERPNext / Dolibarr | Dimensiones y P&L por unidad con costos compartidos |
+
+Las referencias se analizan por módulo y versión; no se integran como fuentes de verdad paralelas.

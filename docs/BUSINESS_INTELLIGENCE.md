@@ -89,3 +89,19 @@ Candidatos a evaluar:
 Estas herramientas no reemplazan la base transaccional ni pueden escribir ventas, pagos o stock. Los dashboards deben ser de solo lectura y sus definiciones financieras deben coincidir con las del dominio.
 
 Ver [Investigación de módulos ampliados](MODULAR_COMPONENT_RESEARCH.md).
+
+
+## Rentabilidad por área de negocio
+
+La dimensión de unidad de negocio debe mantenerse separada de canal, sucursal, centro de costo, cliente y proyecto. Los tableros muestran resultados de minorista, ecommerce, mayorista/distribución y servicios B2B, y permiten navegar al consolidado.
+
+Cada área necesita ingresos netos, descuentos/devoluciones, costo de mercadería o prestación, costos variables de servir, costos directos fijos y costos compartidos asignados. Se muestra el resultado antes y después de asignaciones, además de los costos aún no distribuidos.
+
+Los datos distinguen devengado, facturado y cobrado. La rentabilidad no se confunde con saldo bancario; una venta a crédito genera ingreso según su política, pero no efectivo hasta el cobro.
+
+Métricas específicas:
+- **Mayorista:** volumen, pedido promedio, recurrencia, precio por escala, margen después de flete, costo de servir, días de cobro y morosidad.
+- **Servicios:** ingreso recurrente, margen por contrato, utilización, horas consumidas, SLA, retrabajo y costo de desplazamiento.
+- **Distribución:** costo por entrega/parada/peso/volumen, entregas a tiempo, reintentos, incidencias y margen logístico.
+
+Ver [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md).

@@ -144,6 +144,12 @@ Los importes son datos didácticos y no representan precios de mercado ni reglas
 | P17 | Fiscalidad argentina | Adaptador separado, comprobantes en homologación y recuperación de estado incierto | Emisión duplicada o reintento ciego |
 | P18 | Retiro de productos antes del pago | Eliminar una línea y comprobar total, descuentos/impuestos, reserva y ausencia de venta/salida/pago para el artículo retirado | La línea retirada queda cobrada o descuenta stock |
 | P19 | Terminal integrada e impresión desde el dispositivo | Enviar importe, detectar estado final, procesar webhook repetido, conciliar voucher e imprimir desde la terminal el ticket detallado de Rubrova | Marcar cobrado antes de confirmación, duplicar transacción o no poder imprimir el ticket requerido |
+| P20 | Separación multiárea | Mismo cliente en retail, wholesale y servicios; ventas/costos quedan en su área y se consolidan sin duplicados | Duplicar cuenta o mezclar ingresos/costos de áreas |
+| P21 | Mínimos y escalas mayoristas | Validar mínimo por SKU, pack multiple, mínimo cesta, lista cliente y tier por cantidad/importe | Aplicar regla equivocada, precio inconsistente o excepción no auditada |
+| P22 | Acuerdo B2B y crédito | Cotización/pedido empresarial con condiciones, límite, plazo y vigencia congelados | Aceptar sobre límite sin autorización o cambiar precio histórico |
+| P23 | Despacho posterior a la venta | Venta confirmada sin tracking; crear envíos parciales y agregar carrier/guía después; pickup/own fleet/carrier | Exigir guía antes de vender, duplicar salida o perder enlace pedido-envío |
+| P24 | Contrato y cumplimiento de servicios | Contrato versionado, agenda recurrente, SLA, orden, horas/materiales, evidencia y facturación | Trabajo sin obligación/contrato o factura duplicada |
+| P25 | Rentabilidad por área y consolidado | Ingresos, costo directo, gastos compartidos y allocation suman correctamente; P&L por área y global | Doble conteo, costo no asignado oculto o total no conciliado |
 
 En P11 se debe distinguir pérdida de internet de pérdida de red local. En un servidor local compartido, los otros puestos pueden seguir conectados por LAN; una caja con su propia base desconectada es un caso distinto y debe documentarse como tal.
 
@@ -207,10 +213,19 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
-| Ejecución P01–P19 | Pendiente |
+| Ejecución P01–P25 | Pendiente |
 | Pruebas físicas de terminales y hardware | Pendiente |
 | Revisión completa de dependencias y seguridad | Pendiente |
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P19 con el mismo dataset. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P25 con datos sintéticos equivalentes. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+
+
+## Extensión del protocolo: varias áreas y operación B2B (P20–P25)
+
+Los seis escenarios nuevos usan un mismo CustomerAccount empresarial relacionado con más de una unidad de negocio. Las unidades se distinguen de canales, sucursales y centros de costo.
+
+El despacho se ejecuta después de confirmar la venta. El tracking/guía puede estar vacío al registrar la venta y asociarse al Shipment después; la prueba incluye entregas parciales y handoff a transportista. Los acuerdos de servicio generan obligaciones y órdenes de trabajo, mientras los ingresos/costos se imputan al contrato y unidad de negocio.
+
+La prueba de rentabilidad distingue devengado, facturado y cobrado, y compara costos directos, compartidos sin asignar y compartidos distribuidos mediante una regla versionada. Las asignaciones deben sumar el costo de origen sin contarlo dos veces.

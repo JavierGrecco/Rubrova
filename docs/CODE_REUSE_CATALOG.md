@@ -278,3 +278,16 @@ La investigación detallada, versiones y límites están en [Investigación ampl
 - **OpenOMS:** Elastic License 2.0, no aprobado como open source; solo referencia condicionada.
 
 La estrategia de contratos, ownership y adaptadores está en [Composición de módulos](MODULE_COMPOSITION.md).
+
+
+## 9. Áreas de negocio, mayorista, servicios y TMS
+
+La investigación detallada está en [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md); los requisitos están en los documentos de áreas, mayorista, servicios y rentabilidad.
+
+- **Dolibarr 24.0.3 (GPL-3.0):** nuevo candidato integral para estudiar. Combina CRM, contratos/suscripciones, intervenciones, agenda, proyectos, envíos, POS, stock, fabricación y contabilidad. Requiere verificar dimensiones de unidad de negocio, margen, mayorista y localización.
+- **OCA Field Service 19.0 (AGPL-3.0):** addons de acuerdos, calendarios, recurrencia, timesheets, gastos, vehículos y stock. fieldservice_agreement figura Beta y depende del runtime Odoo; no es módulo independiente de Odoo.
+- **OpenFieldPro (AGPL-3.0-only):** agenda, dispatch, work orders, estimaciones, facturas, service plans y app técnica móvil. Release-candidate hardening; fuente de código/patrones, no base integral aprobada.
+- **Open TMS:** TMS TypeScript con pedidos, carriers, shipments, tracking posterior, división y consolidación. README/metadata indican MIT pero no se encontró LICENSE raíz; licencia pendiente antes de reutilizar.
+- **ERPNext:** referencia fuerte para venta mayorista: price lists por cliente, Item Price con mínimos y packing units, Pricing Rules y Promotional Schemes por cantidad/importe; Sales Orders con entrega y facturación parciales; dimensiones contables para informes por unidad/centro.
+
+La estrategia multiárea mantiene una sola cuenta de cliente y asigna la unidad de negocio a nivel de documento/línea. El despacho y tracking son objetos posteriores y separados de la venta. Ninguna referencia queda aprobada hasta ejecutar pruebas.

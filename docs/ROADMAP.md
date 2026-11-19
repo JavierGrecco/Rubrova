@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-**Fase 0 — decisión técnica basada en evidencia.** Rubrova contiene definición de producto, arquitectura e investigación, pero todavía no tiene una aplicación funcional ni código externo incorporado. El paso inmediato es ejecutar una evaluación local reproducible de tres plataformas integrales y comprobar módulos especializados, no sumar referencias sin prueba ni empezar pantallas aisladas.
+**Fase 0 — decisión técnica basada en evidencia.** Rubrova contiene definición de producto, arquitectura e investigación, pero todavía no tiene una aplicación funcional ni código externo incorporado. El paso inmediato es consolidar el modelo multiárea y ejecutar una evaluación local reproducible de las plataformas integrales y módulos especializados. Rubrova debe cubrir comercio minorista, online, mayorista/distribución y servicios B2B sobre datos compartidos, con rentabilidad por unidad y consolidada.
 
 La prueba común, versiones fijadas, conjunto sintético y criterios de aprobación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
@@ -10,7 +10,10 @@ La prueba común, versiones fijadas, conjunto sintético y criterios de aprobaci
 
 - Consolidar reglas comerciales, modelo de dominio, estados y contratos.
 - Comparar Posnic 1.9.2, ERPNext 16.60.0/Frappe 16 y MyCompany/lsFusion 6.2 como plataformas integrales con pruebas equivalentes.
-- Evaluar módulos dedicados de WMS, integraciones, promociones, analítica y automatización detrás de contratos.
+- Evaluar módulos dedicados de WMS/TMS, integraciones, promociones, servicios de campo, analítica y automatización detrás de contratos.
+- Definir y validar unidades de negocio, centros de beneficio/costo y dimensiones de canal, sucursal, territorio, proyecto y contrato.
+- Probar mínimos y escalas mayoristas, crédito B2B, despachos parciales y tracking agregado después de la venta.
+- Probar contratos de servicio, SLA, agenda, órdenes de trabajo, evidencia, aceptación y facturación.
 - Completar la especificación del checkout: línea removible antes de pagar, efectivo recibido/vuelto y pago integrado con terminales locales.
 - Probar caja, ventas, pagos mixtos, descuentos, devoluciones, inventario, compras y producción.
 - Demostrar corte de internet, cierre forzado, reinicio, reintento, conciliación y backup/restauración.
@@ -80,10 +83,14 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
 - [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
 - [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
+- [x] Alcance multiárea, mayorista/distribución, servicios B2B y rentabilidad por unidad documentados.
+- [x] Investigación de Dolibarr, OCA Field Service, OpenFieldPro y Open TMS para los nuevos dominios.
 - [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
 - [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
-- [ ] Ejecución y evidencia de los escenarios.
+- [ ] Ejecutar escenarios P20–P25: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios y rentabilidad.
+- [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
+- [ ] Ejecución y evidencia de todos los escenarios.
 - [ ] Decisión de base y plan de adaptación.
 
 No se marca una prueba como aprobada por haber leído documentación, ejecutar una demo o completar un formulario. Se necesita evidencia reproducible.

@@ -76,3 +76,28 @@ No se descarta una biblioteca por cubrir solo un OS. Se incorpora detrás de una
 Ningún módulo externo pasa a operación real hasta probar contratos, permisos, aislamiento, idempotencia, fallos parciales, recuperación, backup, auditoría, actualización, licencia, sustitución y ausencia de segunda fuente de verdad.
 
 Ver [Arquitectura](ARCHITECTURE.md), [Modelo de dominio](DOMAIN_MODEL.md), [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md) y [Calidad y pruebas](QUALITY_AND_TESTING.md).
+
+
+## Módulos que habilitan varias áreas de negocio
+
+- **Organización y dimensiones:** entidad legal, unidad de negocio, centros de beneficio/costo, sucursal, canal, territorio y permisos.
+- **Ventas y precios:** ofertas, pedidos, reglas de mínimos, listas de precios, promociones, crédito y snapshots comerciales.
+- **Fulfillment/WMS/TMS:** preparación, bultos, despachos parciales, tramos de transportista, tracking y pruebas de entrega.
+- **Contratos/servicios:** acuerdos, SLA, calendarios, obligaciones, órdenes de trabajo, tiempos, materiales y aceptación.
+- **Finanzas/analítica:** dimensiones contables, costos directos, pools compartidos, políticas de asignación y P&L por unidad.
+
+Una cuenta de cliente compartida puede relacionarse con distintas áreas, pero la propiedad del maestro permanece en el módulo de clientes. Los contratos, acuerdos de suministro, pedidos y servicios referencian el mismo CustomerAccount.
+
+## Contratos entre pedido, envío y tracking
+
+El adaptador de transporte no crea la venta ni es dueño del inventario comercial. Recibe una orden de despacho, reserva/crea el envío, devuelve una referencia/guía cuando existe y publica eventos normalizados. La guía se puede registrar después de la venta, pero todo cambio se correlaciona con el Shipment y queda auditado.
+
+Los envíos se pueden dividir y consolidar; la cantidad despachada nunca puede superar la cantidad confirmada y disponible/reservada. Los movimientos físicos se ejecutan una sola vez por ShipmentLine.
+
+## Contratos, calendario y trabajo de servicio
+
+El módulo de servicios posee contratos, SLA, obligaciones, agendas y órdenes de trabajo. El módulo de clientes conserva la identidad; ventas/facturación conserva los importes; inventario registra consumos de materiales; proyectos asigna costos cuando corresponda. Ninguna orden de trabajo puede crear una segunda factura por un trabajo ya facturado.
+
+## Dimensiones y costos cruzados
+
+Una operación mixta puede asignar distintas líneas a unidades diferentes. Los costos comunes usan AllocationPolicy versionada con base de reparto. Un módulo de analítica solo consulta los hechos y las asignaciones; no reescribe transacciones ni crea otro ledger.
