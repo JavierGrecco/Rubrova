@@ -287,7 +287,7 @@ El validador comprueba aritmética de venta, descuentos, pagos mixtos, caja, can
 
 ## 6. Registro de evidencia
 
-Por cada prueba P01–P19, registrar:
+Por cada prueba P01–P26, registrar:
 
 | Campo | Qué guardar |
 |---|---|
@@ -308,7 +308,7 @@ No marcar una prueba como aprobada por ver una pantalla o completar una demo. Pa
 2. Levantar ERPNext 16.60.0 y comprobar versión.
 3. Cargar datos sintéticos y ejecutar P01–P10.
 4. Ejecutar cortes, reinicio, idempotencia y restauración (P11–P15).
-5. Preparar MyCompany/lsFusion 6.2; probar composición de módulos, POS, inventario, compras y producción; repetir el mismo conjunto P01–P19.
+5. Preparar MyCompany/lsFusion 6.2; probar composición de módulos, POS, inventario, compras y producción; repetir el mismo conjunto P01–P26.
 6. Registrar qué casos no puede demostrar la demo desechable por sus límites.
 7. Preparar Posnic 1.9.2 en la VM compatible y repetir el mismo guion.
 8. Ejecutar hardware y terminales simuladas/físicas y fiscalidad en homologación (P16–P19) solo cuando existan adaptadores y dispositivos de prueba adecuados.
