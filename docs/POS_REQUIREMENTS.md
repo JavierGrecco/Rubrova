@@ -1,121 +1,23 @@
-# Requisitos del punto de venta
+undefined
 
-## Objetivo
+## Checkout detallado y eliminación de artículos antes del cobro
 
-La caja debe permitir atender con rapidez y registrar correctamente venta, descuentos, pagos, stock y responsabilidad del operador. El flujo frecuente debe funcionar con teclado, pantalla táctil y lector de códigos.
+El carrito es una operación editable, no una venta confirmada. Cada escaneo agrega o incrementa una línea y recalcula el total. Antes de iniciar el cobro, el cajero puede quitar productos o reducir cantidades. El sistema recalcula promociones, descuentos, impuestos y total, libera reservas temporales y no genera salida de stock, pago ni comprobante por los artículos retirados.
 
-## Flujo de venta
+Una vez que se envió una orden a una terminal, el importe y el carrito quedan congelados mientras la terminal procesa. Para cambiar el carrito hay que cancelar primero la orden pendiente y esperar confirmación. Si el cobro ya fue aprobado, el cambio se gestiona como devolución/reembolso o nueva venta vinculada, nunca como edición silenciosa.
 
-1. El operador inicia sesión y abre o toma una caja/turno autorizado.
-2. Escanea, busca o selecciona artículos.
-3. El sistema valida estado, precio, unidad, disponibilidad y reglas vigentes.
-4. El operador modifica cantidades, agrega cliente o aplica descuentos permitidos.
-5. El sistema calcula subtotales, descuentos, impuestos y total.
-6. El cliente elige uno o más medios de pago.
-7. El sistema confirma el cobro o registra saldo pendiente según la modalidad.
-8. Se confirma la venta y se generan movimientos relacionados.
-9. Se emite o vincula el comprobante fiscal según la configuración del canal.
-10. Se entrega o envía ticket y la operación queda disponible para consulta y auditoría.
+## Cobro en efectivo y vuelto
 
-Una venta no se considera cobrada porque el operador seleccionó un medio de pago. El estado debe reflejar la confirmación real del proveedor cuando aplique.
+La pantalla solicita el importe recibido del cliente, calcula el vuelto exacto y muestra también el faltante cuando el efectivo no alcanza. Se calculan importes con unidades monetarias menores enteras para evitar errores de coma flotante. En pago mixto, el efectivo que ingresa a caja es el importe recibido menos el vuelto; no se registra todo el total como efectivo si parte se cobró por otro medio.
 
-## Descuentos y promociones
+## Terminal bancaria integrada
 
-### Tipos admitidos
+El checkout debe poder crear una solicitud en la terminal asignada a la caja, transmitir el importe exacto, detectar la respuesta aprobada/rechazada/cancelada y registrar el resultado en el pago correspondiente. Se implementa un adaptador por proveedor y modelo de dispositivo. La selección de tarjeta en pantalla no es aprobación: solo el estado final confirmado por proveedor permite completar ese tramo del pago.
 
-- Porcentaje o importe fijo sobre una línea.
-- Porcentaje o importe fijo sobre el carrito.
-- Precio especial por cantidad.
-- Segunda unidad o unidad adicional con descuento.
-- Combos y paquetes.
-- Precio por lista, grupo de cliente o volumen.
-- Cupón o código promocional.
-- Descuento por día, horario, sucursal o canal.
-- Beneficio de fidelización.
-- Descuento autorizado por supervisor.
-- Liquidación por vencimiento o discontinuación, con motivo específico.
+Un timeout, webhook repetido o cancelación asíncrona debe resolverse por consulta y conciliación, no con un cobro nuevo a ciegas. La pantalla debe informar cuando un pago queda pendiente de confirmación.
 
-### Registro obligatorio
+## Ticket de venta, voucher y factura
 
-Cada descuento conserva:
-- Precio base utilizado.
-- Importe o porcentaje aplicado.
-- Línea o conjunto de líneas afectadas.
-- Regla, promoción o cupón que lo originó.
-- Canal, sucursal y vigencia.
-- Usuario que lo aplicó y quién lo autorizó, si corresponde.
-- Motivo, si fue manual o excepcional.
-- Importe final y asignación proporcional a las líneas.
-- Impacto en margen y documentación fiscal.
+El ticket detallado de Rubrova, el voucher de la terminal y la factura fiscal son documentos diferentes. Pueden imprimirse en dispositivos distintos. La impresión desde una terminal solo se habilita para modelos y firmware que documenten esa función; no se presume que todos los adquirentes impriman el ticket de Rubrova o un comprobante fiscal.
 
-El descuento no sobrescribe el precio de lista ni borra la condición original. La venta conserva una fotografía de precios y reglas vigentes al confirmarse.
-
-### Reglas y controles
-
-- Definir prioridad y compatibilidad entre promociones.
-- Impedir acumulaciones no permitidas.
-- Configurar límites por rol, importe y porcentaje.
-- Permitir mínimo de margen configurable, con excepción explícita y auditada.
-- Impedir totales negativos o descuentos superiores a la base elegible.
-- Definir redondeos de manera consistente.
-- Calcular impuestos sobre la base neta según normativa y comprobante.
-- Permitir descuentos diferentes por canal sin alterar otros canales.
-- Distribuir descuentos de carrito entre líneas para devoluciones y análisis.
-- Revertir proporcionalmente descuentos y beneficios cuando se devuelven artículos.
-- Identificar promociones financiadas por el comercio o por un proveedor.
-
-### Reportes de descuentos
-
-Importe y porcentaje descontado; descuentos por usuario, sucursal, caja y canal; descuentos por producto, marca y categoría; motivos y excepciones; uso de cupones; ganancia antes/después del descuento; impacto en margen y contribución; comparación de campañas.
-
-## Carrito y atención
-
-- Búsqueda instantánea y lectura de códigos.
-- Modificación de cantidades y unidades.
-- Suspender y recuperar ventas sin perder contenido.
-- Agregar o cambiar cliente según permisos.
-- Identificar productos sin precio o código.
-- Mostrar stock disponible sin bloquear indebidamente la venta.
-- Mostrar promociones aplicables y ahorro total.
-- Venta rápida de artículos frecuentes.
-- División de cuenta y cobro parcial cuando el perfil lo necesite.
-
-## Pagos
-
-- Efectivo, tarjetas, transferencia, QR, billeteras, cuenta corriente y medios configurables.
-- Pagos mixtos, entrega de efectivo y vuelto.
-- Pagos parciales, señas y saldos.
-- Consulta de autorización y estado con proveedores.
-- Reembolsos vinculados al pago original.
-- Conciliación entre venta, operación de pago y acreditación.
-- Nunca almacenar datos completos de tarjeta ni CVV; usar terminales, SDK o proveedores habilitados.
-
-## Caja, turnos y cierres
-
-Fondo inicial, operador, ingresos, retiros, gastos, devoluciones, arqueo ciego opcional, efectivo esperado/contado, totales por medio de pago, diferencia explicada, reapertura excepcional autorizada, varias cajas y turnos.
-
-## Devoluciones, cambios y anulaciones
-
-Buscar operación original; devolver todo o parte; registrar estado y destino de mercadería; reingresar stock solo si corresponde; reembolsar al medio original cuando la plataforma lo permita; registrar alternativa autorizada; emitir nota de crédito cuando aplique; conservar registros relacionados; prevenir reembolsos duplicados.
-
-## Hardware
-
-Definir matriz probada para PC, terminal táctil, tablet y teléfono; lectores USB/Bluetooth tipo teclado; impresoras térmicas y de etiquetas; cajones de dinero; balanzas y códigos de peso; terminales de pago; pantallas de cocina. La compatibilidad no se afirma sin probar modelo, sistema operativo, conexión, protocolo y versión.
-
-## Rendimiento y experiencia
-
-La pantalla de venta no espera informes pesados. Escanear es directo. La confirmación indica si quedó guardada. Los errores proponen el siguiente paso. Teclado, lector y pantalla táctil deben ser utilizables. Los perfiles no ven opciones administrativas innecesarias.
-
-## Criterios de aceptación mínimos
-
-- Venta en efectivo con vuelto correcto.
-- Venta con medios mixtos.
-- Descuento por línea y carrito.
-- Descuentos incompatibles no se acumulan.
-- Excepción solicita autorización y queda registrada.
-- Devolución revierte correctamente stock, importe y descuento.
-- Reintentar no duplica venta ni cobro.
-- El cierre concilia movimientos del turno.
-- Un corte no elimina una venta confirmada localmente.
-- Informe de descuentos coincide con líneas de venta.
-- Ticket y comprobante reflejan importes coherentes.
+Ver [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md) para el flujo, capacidades investigadas de Mercado Pago Point/Getnet/Fiserv Posnet/Payway y escenarios de aceptación.

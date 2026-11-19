@@ -12,12 +12,12 @@ La disponibilidad legal de la denominación y de los dominios todavía no está 
 
 Una plataforma que reúne en un solo lugar:
 
-- **Punto de venta:** caja rápida, catálogo, lector de códigos, descuentos, promociones, medios de pago, devoluciones, cierres y periféricos.
-- **Gestión comercial:** productos, variantes, precios, inventario, compras, proveedores, clientes, cuentas corrientes y sucursales.
+- **Punto de venta y checkout:** escaneo rápido, edición del carrito antes de pagar, efectivo y vuelto exacto, pagos mixtos, integración con terminales, devoluciones y cierres.
+- **ERP y gestión comercial:** catálogo, precios, inventario/WMS, compras, proveedores, producción, CRM, clientes, cuentas corrientes y sucursales.
 - **Canales de venta:** local físico, tienda online, WhatsApp, marketplaces, pedidos telefónicos y delivery, con análisis por canal y consolidado.
 - **Operación sectorial:** supermercados y autoservicios, kioscos y almacenes, panaderías, rotiserías y gastronomía; perfiles configurables sobre un núcleo común.
 - **Administración y control:** usuarios, permisos, turnos, cajas, arqueos, autorizaciones, auditoría y movimientos internos.
-- **Inteligencia del negocio:** rentabilidad, demanda, estacionalidad, precios, marcas, categorías, promociones, abastecimiento, tendencias y escenarios.
+- **Inteligencia y automatización:** rentabilidad, demanda, estacionalidad, precios, marcas, categorías, promociones, abastecimiento, pronósticos, escenarios, workflows y alertas.
 - **Integraciones:** ARCA, Mercado Pago, marketplaces, mensajería y hardware comercial.
 - **Continuidad operativa:** registro local, sincronización confiable, recuperación y trazabilidad ante cortes de conexión.
 
@@ -52,15 +52,21 @@ Una plataforma que reúne en un solo lugar:
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
-| [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de Posnic y ERPNext con los mismos escenarios |
+| [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md) | Cobertura completa: ERP, POS, canales, WMS, producción, finanzas e inteligencia |
+| [Checkout y terminales](docs/CHECKOUT_AND_PAYMENT_TERMINALS.md) | Carrito, vuelto, pagos integrados, terminales y comprobantes |
+| [Composición de módulos](docs/MODULE_COMPOSITION.md) | Contratos, propiedad de datos, adaptadores y compatibilidad multiplataforma |
+| [Investigación de módulos ampliados](docs/MODULAR_COMPONENT_RESEARCH.md) | WMS, ERP, conectores, promociones, BI y automatización |
+| [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de las plataformas integrales con escenarios comunes |
 | [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md) | Instalación aislada, versiones fijadas y registro de evidencias |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
 
-**Ahora — Fase 0: elegir una base con pruebas reales**
+**Ahora — Fase 0: preservar el alcance integral y elegir una base con pruebas reales**
 - Consolidar reglas comerciales, dominio y contratos.
-- Preparar entornos aislados: Posnic 1.9.2 en Windows/Linux compatible y ERPNext 16.60.0 con Docker.
+- Mantener el mapa integral: no reducir el proyecto a POS; comparar ERP modular, WMS, canales, producción, promociones y analítica.
+- Ampliar la comparación integral a MyCompany/lsFusion 6.2, además de Posnic 1.9.2 y ERPNext 16.60.0.
+- Evaluar módulos especializados como Simple WMS, OpenLinker, OfferKit, DuckDB/Superset y Node-RED detrás de contratos.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions.
 - Comparar ambas plataformas con el mismo guion P01–P17.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
@@ -69,7 +75,7 @@ Una plataforma que reúne en un solo lugar:
 - Revisar las licencias de cada componente y dependencia del paquete concreto.
 - Elegir una sola fuente de verdad o confirmar el monolito modular propio.
 
-La prueba, versiones fijadas, datos sintéticos y criterios de aprobación están en [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md). Los pasos de instalación están en [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md). Posnic y ERPNext son candidatos de evaluación, no decisiones de adopción.
+El proyecto y sus dominios están en [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md). Los requisitos de caja y terminales están en [Checkout y terminales](docs/CHECKOUT_AND_PAYMENT_TERMINALS.md). La arquitectura de integración está en [Composición de módulos](docs/MODULE_COMPOSITION.md). La investigación ampliada está en [Investigación de módulos](docs/MODULAR_COMPONENT_RESEARCH.md). La evaluación y el laboratorio están documentados por separado. Ninguna plataforma o módulo está aprobado por aparecer en el catálogo.
 **Siguiente — Fase 1: núcleo transaccional**
 - Catálogo, precios y unidades de medida.
 - Carrito y venta POS.
