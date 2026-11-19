@@ -6,15 +6,18 @@ La dirección sigue siendo un **monolito modular con límites claros**, una base
 
 La estructura del negocio y las invariantes son propias. Los frameworks y módulos externos se evalúan como herramientas reemplazables: no deben decidir qué significa una venta, un pago, un movimiento de caja o un movimiento de inventario.
 
-## Candidato tecnológico para validar
+## Plataformas candidatas para validar
 
-La investigación de reutilización priorizó **Medusa v2 con TypeScript, React y PostgreSQL** como primer candidato para una prueba vertical. El núcleo de Medusa está bajo MIT, pero el repositorio separa materiales Enterprise sujetos a licencia comercial. Solo se considerarían módulos y archivos expresamente cubiertos por la licencia abierta.
+La arquitectura base sigue siendo un **monolito modular con límites claros**, pero la implementación se está comparando entre dos plataformas:
 
-El motivo para probarlo es que ofrece una arquitectura modular y código reutilizable para catálogo, precios, promociones, pedidos, pagos, inventario, canales, workflows y eventos. No incluye por sí solo las reglas críticas del producto: caja y turnos, arqueo, descuentos auditables según nuestras políticas, libro de stock y costos, producción, fiscalidad argentina ni continuidad offline robusta.
+- **Odoo Community 20.0:** candidato para acelerar la cobertura funcional. El repositorio público contiene bajo LGPL-3 módulos de POS, inventario, compras, fabricación, contabilidad base, fidelización y localización fiscal argentina base. Permite extender el sistema mediante módulos propios. Su adopción implica aceptar el framework, ORM, modelo de datos y ciclo de actualizaciones de Odoo. El offline documentado del POS se apoya en la caché del navegador y advierte no cerrar ni recargar antes de sincronizar; no cumple por sí solo la recuperación fuerte que requerimos. La licencia y disponibilidad Community de los módulos de facturación electrónica y reportes de Argentina deben confirmarse antes de contar con ellos.
+- **Medusa v2:** candidato para una plataforma propia en TypeScript. El núcleo comercial es MIT, con materiales Enterprise separados. Ofrece módulos para catálogo, precios, promociones, pedidos, pagos, inventario y workflows; no ofrece el POS/ERP completo que necesitamos, por lo que caja, arqueos, compras avanzadas, producción, fiscalidad, auditoría y offline serán módulos propios.
 
-**Medusa no está aprobado todavía como framework.** La prueba debe demostrar que las funciones propias se pueden implementar mediante módulos y contratos, sin modificar su núcleo ni duplicar las fuentes de verdad.
+La elección no se va a basar solo en la velocidad de mostrar una primera pantalla. Se ejecutará una prueba vertical equivalente sobre ambas alternativas, midiendo cuánta lógica se puede extender sin parches al núcleo, qué limitaciones de offline quedan, qué licencias aplican y cuánto esfuerzo real demanda cumplir los flujos críticos.
 
-Si no supera esa prueba, la alternativa preferida es un monolito modular propio en TypeScript sobre PostgreSQL, reutilizando únicamente bibliotecas permisivas aprobadas. Odoo Community 19 se mantiene como referencia funcional y alternativa de adopción integral, pero adoptarlo implicaría aceptar su framework, su modelo de datos y las obligaciones LGPLv3. La evaluación legal y técnica completa está en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
+Si Odoo requiere sobrescribir grandes partes de su POS o no permite recuperación offline duradera sin un fork profundo, pierde su ventaja de velocidad. Si Medusa obliga a construir casi todo el núcleo comercial o a duplicar sus conceptos de pedidos/stock, también pierde su ventaja modular.
+
+**Alternativa de salida:** si ninguna plataforma supera la evaluación sin comprometer la integridad, se construye un monolito modular propio en TypeScript sobre PostgreSQL y se reutilizan únicamente bibliotecas y componentes permisivos que hayan superado la revisión. No se ejecutarán Odoo y Medusa como dos fuentes de verdad ni se mezclará el código interno de sus POS.
 
 ## Principios
 
@@ -111,9 +114,11 @@ Logs estructurados, correlación por operación, métricas de latencia y sincron
 ## Decisiones y validaciones pendientes
 
 - [x] Dirección de monolito modular y propiedad de datos por módulo.
-- [x] PostgreSQL definido como candidato para el almacenamiento central.
 - [x] Estrategia de reutilización y revisión de licencias documentada.
-- [ ] Aprobar o descartar Medusa mediante la prueba vertical completa.
+- [x] Odoo Community 20 y Medusa v2 seleccionados como finalistas.
+- [ ] Comparar ambas plataformas con la misma prueba vertical.
+- [ ] Aprobar una plataforma o elegir el monolito propio.
+- [ ] Confirmar las licencias y disponibilidad real de los módulos de Argentina que resuelvan ARCA.
 - [ ] Cerrar interfaz React/PWA, persistencia local y eventual servicio local.
 - [ ] Definir motor de workflows/eventos durable según la plataforma elegida.
 - [ ] Elegir hosting, observabilidad y hardware inicial con pruebas.
