@@ -66,3 +66,15 @@ Multi-sucursal avanzada; servicio local si las pruebas lo justifican; automatiza
 ## Reglas de priorización
 
 Integridad antes que cantidad de funciones; POS y caja antes que tableros sofisticados; datos correctos antes que IA; sincronización verificada antes de prometer offline; homologación fiscal antes de producción; priorizar por beneficio, riesgo, dependencia y costo de mantenimiento.
+
+## Actualización de Fase 0 — inventario de reutilización
+
+Se incorporó [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). La siguiente actividad técnica es comparar Posnic y ERPNext con un mismo guion de POS, inventario, caja, devoluciones, compras, producción y recuperación offline. NexoPOS queda condicionado a aclarar la discrepancia de licencia.
+
+En paralelo, preparar pruebas aisladas de:
+- pos-toolkit para impresoras, cajón, lectores seriales y balanzas;
+- emupos y ESCPost para simular y validar hardware;
+- arca-sdks para homologación ARCA si se confirma TypeScript;
+- PowerSync Open Edition frente a Dexie para persistencia y sincronización.
+
+Criterio: primero ejecutar y medir. No incorporar código a la aplicación ni elegir framework por la descripción del README. Registrar versión/commit, licencia, dependencias, pruebas, límites y esfuerzo de adaptación. La elección integral debe evitar dos fuentes de verdad.
