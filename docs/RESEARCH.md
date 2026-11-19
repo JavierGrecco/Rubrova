@@ -2,7 +2,7 @@
 
 ## Cómo usar este documento
 
-Se estudiaron productos comerciales y proyectos abiertos para identificar soluciones útiles. La investigación no implica que sus funciones hayan sido auditadas ni que su código pueda reutilizarse. Antes de adoptar código, revisar licencia, seguridad, mantenimiento y compatibilidad.
+Se estudiaron productos comerciales y proyectos abiertos para identificar soluciones útiles. La investigación no implica que sus funciones hayan sido auditadas. El proyecto está destinado a uso interno y privado, sin distribución ni reventa previstas: por eso se pueden evaluar también proyectos GPL y AGPL, no solo licencias permisivas. Antes de adoptar código, revisar licencia aplicable a la versión exacta, seguridad, mantenimiento, dependencias, avisos y condiciones de uso. La AGPL requiere atención especial si usuarios interactúan remotamente por red con una versión modificada.
 
 Precios y cifras comerciales cambian. Las cifras de adopción publicadas por proveedores son declaraciones propias, salvo verificación independiente.
 
@@ -66,7 +66,7 @@ Precios y cifras comerciales cambian. Las cifras de adopción publicadas por pro
 ## Criterios de adopción
 
 1. Documentación oficial del proveedor o regulador tiene prioridad.
-2. Los proyectos se estudian para aprender diseño y operación; no se presume equivalencia funcional.
+2. Los proyectos se estudian tanto para aprender como para reutilizar código, módulos o soluciones completas; no se presume equivalencia funcional.
 3. Cifras comerciales se identifican como declaraciones del proveedor.
 4. Disponibilidad, licencia, versión y mantenimiento se revisan antes de adoptar código o servicios.
 5. Las decisiones importantes quedan registradas con alternativas y consecuencias.
@@ -122,3 +122,22 @@ Fuentes de código y documentación Odoo 20:
 - Código público LGPL-3 del POS y `l10n_ar`: https://github.com/odoo/odoo/blob/20.0/addons/point_of_sale/__manifest__.py y https://github.com/odoo/odoo/blob/20.0/addons/l10n_ar/__manifest__.py
 
 La consulta de código abierto no equivale a una auditoría de seguridad ni a la aprobación de una dependencia. No se incorporó código externo en esta etapa.
+
+
+## Criterio actualizado: uso privado interno
+
+La plataforma se construye para uso propio del negocio. No se prevé distribuir copias, revender el software ni ofrecerlo a terceros como servicio. En este escenario, la GPL permite modificar y utilizar internamente el programa sin publicar las modificaciones ni entregar el código a terceros, según la FAQ oficial de GNU. La AGPL añade una obligación específica para versiones modificadas con las que usuarios interactúan remotamente a través de una red: debe ofrecerse el código fuente correspondiente a esos usuarios.
+
+Por lo tanto:
+- No limitar la búsqueda a MIT/BSD/Apache. Incluir GPL, AGPL, LGPL y licencias duales.
+- Considerar proyectos completos como ERPNext, Odoo, Vendure, uniCenta, NexoPOS y módulos OCA si su cobertura ahorra trabajo.
+- Comparar adopción completa, fork, extensión y extracción de módulos; elegir la vía que minimice tiempo y mantenimiento.
+- Conservar licencias, copyright, avisos NOTICE y atribuciones aplicables, y registrar los cambios.
+- Revalidar el análisis si se habilita acceso remoto a terceros, se distribuye una copia, se contrata a otra entidad para operar el sistema o cambia el alcance del proyecto.
+
+Fuentes:
+- GNU GPL FAQ: https://www.gnu.org/licenses/gpl-faq.es.html
+- GNU AGPLv3, sección 13: https://www.gnu.org/licenses/agpl-3.0.html
+- Frappe, separación de licencias entre Framework y ERPNext: https://docs.frappe.io/legal/others/license-and-trademark
+
+Este criterio es una guía técnica general, no asesoramiento jurídico sobre un caso concreto.
