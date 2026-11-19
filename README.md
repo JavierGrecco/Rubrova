@@ -8,14 +8,6 @@ La denominación actual es provisoria y se mantiene únicamente en este README y
 
 La disponibilidad legal de la denominación y de los dominios todavía no está verificada. Antes de convertirla en marca pública habrá que consultar el buscador oficial del INPI, revisar variantes fonéticas y clases pertinentes, y comprobar los dominios.
 
-## Estado actual
-
-<sub>Fase 0 — definición del producto y base arquitectónica.</sub>
-
-Estamos consolidando el alcance, las reglas de negocio, los límites entre módulos, las decisiones técnicas, la reutilización intensiva de código abierto, incluidos proyectos GPL y AGPL aptos para uso interno y los criterios de calidad. **Todavía no hay una aplicación funcional implementada ni se incorporó código de terceros.** No se deben presentar las capacidades planificadas como funcionalidades disponibles.
-
-El avance se mide por decisiones documentadas, entregables verificables y pruebas ejecutadas, no por cantidad de archivos o commits.
-
 ## Qué estamos construyendo
 
 Una plataforma que reúne en un solo lugar:
@@ -60,20 +52,21 @@ Una plataforma que reúne en un solo lugar:
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
+| [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de Posnic y ERPNext con los mismos escenarios |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
 
-**Ahora — Fase 0: definición y fundamentos**
-- Consolidar los requisitos funcionales y operativos.
-- Acordar el modelo de dominio y las reglas económicas.
-- Definir límites de módulos y contratos.
-- Evaluar la adopción, modificación o integración de proyectos existentes bajo cualquier licencia compatible con el uso interno privado; comparar el costo real de adaptar frente a construir. Consultar el catálogo técnico actualizado.
-- Comparar Posnic, ERPNext/Frappe, NexoPOS y Odoo con el mismo flujo real de POS, caja, inventario, descuentos y recuperación offline; evaluar además componentes especializados del catálogo.
-- Confirmar la licencia y disponibilidad efectiva de los módulos de facturación argentina.
-- Identificar riesgos fiscales, de sincronización, seguridad y hardware.
-- Elegir la plataforma solo después de esa prueba; si ninguna encaja, construir el monolito modular propio.
+**Ahora — Fase 0: elegir una base con pruebas reales**
+- Consolidar reglas comerciales, dominio y contratos.
+- Comparar Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 con el mismo guion.
+- Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
+- Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
+- Verificar la adaptación argentina y la viabilidad de ARCA en homologación.
+- Revisar las licencias de cada componente y dependencia del paquete concreto.
+- Elegir una sola fuente de verdad o confirmar el monolito modular propio.
 
+La prueba, versiones fijadas, datos sintéticos y criterios de aprobación están en [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md). Posnic y ERPNext son candidatos de evaluación, no decisiones de adopción.
 **Siguiente — Fase 1: núcleo transaccional**
 - Catálogo, precios y unidades de medida.
 - Carrito y venta POS.
