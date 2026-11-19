@@ -50,3 +50,22 @@ La revisión se realiza sobre el diff de `main` antes de integrar. Para corregir
 Cada módulo explica responsabilidad, límites, entradas, salidas y pruebas. El roadmap refleja lo implementado, no lo deseado. Los ejemplos usan datos sintéticos.
 
 Cada entrega comunica qué cambió, por qué, pruebas y resultados, qué no se verificó y siguiente paso. No se declara una función completa por tener código escrito.
+
+
+## Reutilización de código abierto
+
+No se copia ni agrega una dependencia solo porque el repositorio sea público o tenga una etiqueta de licencia en su portada.
+
+Antes de integrar código externo:
+
+1. Identificar el repositorio original, versión o commit y archivos que se pretende usar.
+2. Leer la licencia efectiva, avisos, excepciones y licencias de dependencias transitivas.
+3. Confirmar que el uso previsto —incluida modificación y distribución local— está permitido.
+4. Revisar mantenimiento, seguridad, pruebas, compatibilidad y dependencias.
+5. Explicar qué responsabilidad resuelve y cómo se reemplaza si deja de mantenerse.
+6. Registrar origen, cambios y avisos en el inventario de terceros.
+7. Agregar la prueba que demuestre que el componente cumple nuestros contratos.
+
+Se prefieren dependencias y extensiones antes que modificar el núcleo de un proyecto externo. No se incorpora código GPL/AGPL al núcleo ni material Enterprise/comercial sin una decisión expresa y revisión legal. Tampoco se eliminan atribuciones exigidas por la licencia.
+
+Ver [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md) y [Calidad y pruebas](QUALITY_AND_TESTING.md).
