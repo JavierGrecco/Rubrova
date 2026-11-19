@@ -12,19 +12,16 @@ La dirección sigue siendo un **monolito modular con límites claros**, una base
 
 La estructura del negocio y las invariantes son propias. Los frameworks y módulos externos se evalúan como herramientas reemplazables: no deben decidir qué significa una venta, un pago, un movimiento de caja o un movimiento de inventario.
 
-## Plataformas candidatas para validar
+## Plataformas bajo evaluación
 
-La arquitectura base sigue siendo un **monolito modular con límites claros**, pero la implementación se está comparando entre dos plataformas:
+No hay framework ni base de datos aprobados todavía. La ronda de prueba se concentra en dos candidatos integrales, sin ejecutarlos juntos ni crear dos fuentes de verdad:
 
-- **Odoo Community 20.0:** candidato para acelerar la cobertura funcional. El repositorio público contiene bajo LGPL-3 módulos de POS, inventario, compras, fabricación, contabilidad base, fidelización y localización fiscal argentina base. Permite extender el sistema mediante módulos propios. Su adopción implica aceptar el framework, ORM, modelo de datos y ciclo de actualizaciones de Odoo. El offline documentado del POS se apoya en la caché del navegador y advierte no cerrar ni recargar antes de sincronizar; no cumple por sí solo la recuperación fuerte que requerimos. La licencia y disponibilidad Community de los módulos de facturación electrónica y reportes de Argentina deben confirmarse antes de contar con ellos.
-- **Medusa v2:** candidato para una plataforma propia en TypeScript. El núcleo comercial es MIT, con materiales Enterprise separados. Ofrece módulos para catálogo, precios, promociones, pedidos, pagos, inventario y workflows; no ofrece el POS/ERP completo que necesitamos, por lo que caja, arqueos, compras avanzadas, producción, fiscalidad, auditoría y offline serán módulos propios.
+- **Posnic 1.9.2:** POS de escritorio Electron/Node con API local y MongoDB/Mongoose. Es el candidato más directo para validar caja, ventas, inventario y operación local. Su código es AGPL-3.0-only; el paquete revisado incorpora MongoDB SSPL-1.0 y amCharts 4 comercial. La edición self-hosted permite varios clientes sobre una base común, pero no sincroniza varias bases independientes entre cajas o sucursales. La evidencia offline publicada es limitada y no demuestra recuperación ante pérdida de energía o cierre forzado.
+- **ERPNext 16.60.0 + Frappe Framework 16:** candidato de mayor cobertura administrativa: inventario, compras, producción, costos y contabilidad. ERPNext es GPL-3.0 y Frappe Framework es MIT. El POS y el modo offline de esta versión deben comprobarse en la instalación concreta; no se presume recuperación duradera por documentación de versiones anteriores.
 
-La elección no se va a basar solo en la velocidad de mostrar una primera pantalla. Se ejecutará una prueba vertical equivalente sobre ambas alternativas, midiendo cuánta lógica se puede extender sin parches al núcleo, qué limitaciones de offline quedan, qué licencias aplican y cuánto esfuerzo real demanda cumplir los flujos críticos.
+Las referencias exactas y el protocolo común están en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Posnic se prueba primero desde el tag `v1.9.2`; la rama `main` se revisa como comparación porque contiene commits posteriores y la rama `develop` estaba divergida. ERPNext se prueba sobre `v16.60.0`, fijando también el commit de Frappe Framework 16.
 
-Si Odoo requiere sobrescribir grandes partes de su POS o no permite recuperación offline duradera sin un fork profundo, pierde su ventaja de velocidad. Si Medusa obliga a construir casi todo el núcleo comercial o a duplicar sus conceptos de pedidos/stock, también pierde su ventaja modular.
-
-**Alternativa de salida:** si ninguna plataforma supera la evaluación sin comprometer la integridad, se construye un monolito modular propio en TypeScript sobre PostgreSQL y se reutilizan proyectos, módulos, bibliotecas y componentes de cualquier licencia compatible con el uso privado previsto, después de revisar y documentar sus condiciones. No se ejecutarán Odoo y Medusa como dos fuentes de verdad ni se mezclará el código interno de sus POS.
-
+**Alternativa de salida:** si ninguna opción supera los controles de integridad, operación local, recuperación y costo de adaptación, construir un monolito modular propio. En ese caso TypeScript y PostgreSQL son candidatos, no decisiones irrevocables. Los componentes especializados se integrarán detrás de contratos explícitos y nunca mantendrán un segundo libro de ventas, pagos o stock.
 ## Principios
 
 - Los módulos representan responsabilidades del negocio.
@@ -73,14 +70,18 @@ La estructura debe permitir encontrar responsabilidades sin imponer carpetas inn
 
 ## Datos y persistencia
 
-- PostgreSQL es el candidato para la base central, sujeto a la prueba de compatibilidad.
-- Almacenamiento local transaccional: IndexedDB para la primera prueba PWA; SQLite mediante un servicio local se evaluará si el navegador no ofrece la recuperación necesaria.
+La tecnología de persistencia depende de la plataforma que supere la prueba:
+
+- Si se adopta Posnic, evaluar su MongoDB/Mongoose como base transaccional única y medir el costo de conservar o migrar sus modelos.
+- Si se adopta ERPNext, aceptar y probar su persistencia MariaDB como parte del framework; PostgreSQL no se considera equivalente ni se fuerza durante esta ronda.
+- Si construimos el monolito propio, PostgreSQL es el candidato para el registro central. La persistencia local se decidirá con pruebas, comparando SQLite y almacenamiento de navegador según el empaquetado elegido.
 - Historial de movimientos para caja, pagos, inventario y cuentas corrientes.
 - Fotografía de valores relevantes al momento de la venta.
 - Identificadores globales para operaciones originadas sin conexión.
 - Migraciones y esquemas versionados.
 - Consultas analíticas separadas lógicamente del flujo de caja.
 
+No se elige una base de datos por preferencia aislada: debe acompañar a una única plataforma transaccional y permitir backup, restauración y auditoría demostrables.
 ## Aislamiento de negocios
 
 Toda entidad operativa pertenece a un negocio y, cuando corresponde, a sucursal o ubicación. El servidor valida el contexto del negocio; nunca confía en identificadores del cliente sin comprobar permisos. Se evaluará Row-Level Security como defensa adicional. Las pruebas deben intentar acceder a datos de otro negocio desde cada ruta.
@@ -105,8 +106,11 @@ No prometer offline total: ARCA, pagos externos y datos de otros dispositivos pu
 
 Usar Outbox/Inbox cuando una transacción deba producir un mensaje confiable. Cada evento incluye id, tipo, versión, fecha, negocio, origen y correlación. No incluir secretos ni datos personales innecesarios.
 
-Si se adopta Medusa, su motor en memoria no se considerará suficiente para producción: se deberá configurar y probar un motor durable de workflows/eventos acorde con la documentación del framework. Redis solo se incorpora si forma parte de esa solución elegida y se justifica operativamente.
+La cola de sincronización no reemplaza el registro transaccional. Una venta, su pago y su movimiento de inventario deben confirmarse de forma coherente antes de notificarse o replicarse. Los reintentos son idempotentes y la recuperación debe poder reconstruirse desde datos duraderos.
 
+Si se adopta una plataforma integral, primero se prueba su mecanismo de eventos y sincronización nativo. No se agrega PowerSync, Redis u otro servicio por anticipado: solo después de medir una necesidad concreta y demostrar que no crea una segunda autoridad de datos.
+
+Dos cajas aisladas no conocen los cambios mutuos. No usar "último cambio gana" para dinero, ventas, caja o stock. Si más adelante necesitamos varias cajas independientes sin internet, se evaluará un concentrador local de sucursal y un protocolo de conciliación explícito.
 ## Hardware
 
 La interfaz POS se comunica con una capa de dispositivos independiente. Los protocolos y controladores de impresoras, lectores, balanzas, cajones, pantallas y terminales se aíslan detrás de adaptadores. Se prioriza una pasarela local cuando sea necesaria para acceso USB, serie o red y para mantener la caja desacoplada de los servicios externos.
@@ -120,30 +124,30 @@ Logs estructurados, correlación por operación, métricas de latencia y sincron
 ## Decisiones y validaciones pendientes
 
 - [x] Dirección de monolito modular y propiedad de datos por módulo.
-- [x] Estrategia de reutilización y revisión de licencias documentada.
-- [x] Odoo Community 20 y Medusa v2 seleccionados como finalistas.
-- [ ] Comparar ambas plataformas con la misma prueba vertical.
-- [ ] Aprobar una plataforma o elegir el monolito propio.
-- [ ] Confirmar las licencias y disponibilidad real de los módulos de Argentina que resuelvan ARCA.
-- [ ] Cerrar interfaz React/PWA, persistencia local y eventual servicio local.
-- [ ] Definir motor de workflows/eventos durable según la plataforma elegida.
-- [ ] Elegir hosting, observabilidad y hardware inicial con pruebas.
-- [ ] Confirmar el modelo de despliegue: nube, local por sucursal o híbrido.
+- [x] Estrategia de reutilización compatible con uso interno privado, con control de licencias por componente.
+- [x] Ronda integral reducida a Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16.
+- [x] Protocolo común de aceptación y datos sintéticos documentados.
+- [ ] Instalar y ejecutar Posnic en entorno local aislado.
+- [ ] Instalar y ejecutar ERPNext/Frappe en entorno local aislado.
+- [ ] Completar P01–P17 del protocolo y registrar evidencia.
+- [ ] Elegir una plataforma o aprobar el monolito modular propio.
+- [ ] Confirmar una solución fiscal argentina con pruebas de homologación.
+- [ ] Cerrar interfaz, persistencia local y eventual servicio local según los resultados.
+- [ ] Validar hardware con modelos físicos concretos.
+- [ ] Establecer backup, restauración y observabilidad para la plataforma elegida.
 
-Ninguna de estas decisiones pendientes se considera implementada o validada por estar escrita en este documento.
-
+Ninguna validación pendiente se considera implementada por estar escrita en este documento.
 ## Candidatos de reutilización priorizados (19/11/2026)
 
-La comparación de plataformas integrales ahora incluye:
-- Posnic: primera prueba por su arquitectura local/offline y cobertura de caja, ventas e inventario. AGPL-3.0-only; el instalador incluye MongoDB SSPL-1.0. Evidencia offline acotada; requiere validar recuperación y sincronización.
-- ERPNext/Frappe: segunda prueba por ERP, compras, stock, fabricación y contabilidad; GPLv3 para ERPNext y MIT para Frappe.
-- NexoPOS: tercera prueba potencial por su cobertura POS y módulos, bloqueada hasta resolver discrepancia entre LICENSE (GPLv3) y composer.json (MIT).
-- Odoo Community: permanece como referencia integral, con limitaciones offline y verificación pendiente de ARCA.
+La evaluación integral se concentra en Posnic y ERPNext/Frappe. Posnic queda primero por la cercanía de su POS local; ERPNext queda segundo por su amplitud de ERP, abastecimiento, fabricación y contabilidad. Ninguno está aprobado: la recuperación offline y el esfuerzo de adaptación todavía deben demostrarse.
 
-La arquitectura puede reutilizar componentes especializados sin adoptar otra fuente de verdad:
-- Hardware: evaluar pos-toolkit (Apache-2.0) para ESC/POS, cajón, USB, serial y balanzas HID.
-- Pruebas: emupos y ESCPost (Apache-2.0) para simulación y validación de periféricos.
-- Fiscal: evaluar arca-sdks (MIT, TypeScript) o Afip.py (MIT, Python) según la plataforma; no emitir desde dos adaptadores a la vez.
-- Offline: comparar PowerSync Open Edition (Apache-2.0) con Dexie/IndexedDB; no delegar invariantes financieras o de stock al motor de sincronización.
+Componentes especializados que pueden acelerar el producto sin convertirse en otra fuente de verdad:
 
-Ver [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). Ninguno de estos candidatos está incorporado o aprobado todavía.
+- **Hardware y tickets:** pos-toolkit (Apache-2.0) contiene un plugin Rust/Tauri v2 para ESC/POS, cajón, scanners seriales y balanzas HID, además de un constructor TypeScript de tickets. No es universal para navegador y `register-core` figura como planificado.
+- **Pruebas de hardware:** emupos y ESCPost (Apache-2.0) para simulación, diagnóstico y render de tickets; la simulación no sustituye la prueba física.
+- **Fiscalidad:** arca-sdks / `@ramiidv/arca-facturacion` 7.1.0 (MIT, Node >=22.12) como candidato para WSAA/WSFE/WSFEX/CAEA, sujeto a homologación y control propio de idempotencia y estados inciertos.
+- **Offline:** evaluar primero el mecanismo nativo de la plataforma. PowerSync Open Edition (Apache-2.0) y Dexie (Apache-2.0) quedan como alternativas: PowerSync para sincronización SQLite/PostgreSQL según edición; Dexie para IndexedDB, no para sincronización distribuida completa.
+
+NexoPOS sigue bloqueado hasta aclarar la discrepancia entre su archivo LICENSE y composer.json. Odoo Community 20 y Medusa v2 se conservan como investigación histórica, no como finalistas activos.
+
+La decisión y los criterios de prueba están en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Ninguno de los candidatos se considera incorporado o probado en Rubrova.
