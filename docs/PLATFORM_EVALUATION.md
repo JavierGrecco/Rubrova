@@ -1,7 +1,7 @@
 # Evaluación comparativa de plataformas
 
 **Revisión:** 19 de noviembre de 2026  
-**Estado:** protocolo preparado; ejecución local pendiente.  
+**Estado:** laboratorio preparado; validación automática del dataset aprobada; ejecución local de plataformas pendiente.  
 **Alcance:** uso interno, personal y privado. No se prevé distribuir, revender ni ofrecer el sistema como servicio a terceros.
 
 Este documento convierte la investigación en una prueba repetible. No elige una plataforma por su README, una demo o la cantidad de módulos anunciados. La elección depende de ejecutar los mismos flujos, con datos sintéticos, y comprobar integridad, recuperación, esfuerzo de adaptación y mantenimiento.
@@ -174,6 +174,8 @@ Estos componentes no convierten por sí solos a una plataforma en la base del pr
 
 La revisión de licencias se hace para la versión y los archivos que realmente se incorporen. El uso privado permite considerar código GPL/AGPL, pero no elimina las licencias separadas de dependencias, fuentes, imágenes, servicios o componentes comerciales.
 
+El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial y restricciones del entorno fiscal de prueba. La ejecución de CI del 19/11/2026 terminó correctamente: seis pruebas aprobadas y dataset canónico válido. Esto valida el dataset y su aritmética; no valida todavía el comportamiento funcional de Posnic o ERPNext.
+
 ## Estado de ejecución
 
 | Actividad | Estado |
@@ -183,7 +185,7 @@ La revisión de licencias se hace para la versión y los archivos que realmente 
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y datos sintéticos | Preparados |
 | Instrucciones de instalación aislada y fijación de versiones | Preparadas |
-| Validación automatizada del dataset en GitHub Actions | En corrección inicial; 5 de 6 pruebas pasaron y se corrigió el caso restante |
+| Validación automatizada del dataset en GitHub Actions | Aprobada: 6/6 tests y dataset válido (19/11/2026) |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
 | Ejecución P01–P17 | Pendiente |
@@ -191,4 +193,4 @@ La revisión de licencias se hace para la versión y los archivos que realmente 
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** ejecutar el laboratorio documentado en [PLATFORM_LAB_SETUP.md](PLATFORM_LAB_SETUP.md): primero ERPNext v16.60.0 en Docker y luego Posnic v1.9.2 en una VM compatible con sus paquetes. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** ejecutar el laboratorio documentado en [PLATFORM_LAB_SETUP.md](PLATFORM_LAB_SETUP.md): primero ERPNext v16.60.0 en Docker y luego Posnic v1.9.2 en una VM compatible con sus paquetes. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. La CI cubre únicamente el validador y las reglas aritméticas; no simula una instalación real de ninguna de las dos plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
