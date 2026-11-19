@@ -115,7 +115,7 @@ La ronda integral compara **MyCompany/lsFusion 6.2**, **Posnic 1.9.2** y **ERPNe
 - PowerSync Open Edition: Apache-2.0, separada de Enterprise/Cloud.
 - Dexie.js: Apache-2.0, IndexedDB y no sincronización distribuida completa.
 
-La evaluación sigue sin ejecución local. El laboratorio fija MyCompany 6.2 con instalador/JAR verificados por SHA-256; Posnic 1.9.2 se prueba en Windows/Linux compatible (no tiene instalador macOS en esa release; en Mac se usa VM); ERPNext se levanta con el demo oficial Frappe Docker, fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. El dataset tiene validador Node.js y CI con 11 pruebas aprobadas. No se incorporó código externo; las pruebas funcionales P01–P19 siguen pendientes.
+La evaluación sigue sin ejecución local. El laboratorio fija MyCompany 6.2 con instalador/JAR verificados por SHA-256; Posnic 1.9.2 se prueba en Windows/Linux compatible (no tiene instalador macOS en esa release; en Mac se usa VM); ERPNext se levanta con el demo oficial Frappe Docker, fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. El dataset tiene validador Node.js y CI con 21 pruebas aprobadas en la última ejecución confirmada. Esas pruebas validan el dataset y sus invariantes sintéticas, no la instalación ni el comportamiento funcional de los candidatos. No se incorporó código externo; la ejecución local de MyCompany, Posnic y ERPNext y los escenarios funcionales P01–P26 siguen pendientes.
 
 Fuentes de código y licencias:
 - Posnic: https://github.com/Posnic/POS/releases/tag/v1.9.2 y https://github.com/Posnic/POS
@@ -146,3 +146,18 @@ Ver [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md) y [Comp
 Mercado Pago Point documenta Orders API, estados, webhooks, cancelaciones asíncronas e impresión de contenido personalizado en terminales compatibles. Getnet documenta soluciones POS Integrado con API/SDK según habilitación; Fiserv/Posnet ofrece una modalidad Trx a Trx cuya integración necesita protocolo y homologación; Payway mantiene documentación de desarrolladores que requiere acceso técnico adicional.
 
 La especificación y la matriz de capacidades están en [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md). Estos hallazgos son documentales; no se ha realizado homologación física con un adquirente.
+
+
+### Integraciones logísticas, contables y nuevas necesidades PyME — 19/11/2026
+
+- **Transportistas:** se documentaron las APIs directas de Andreani, PAQ.AR y OCA e-Pak; tracking de Vía Cargo mediante AfterShip/17TRACK; Envíopack como agregador comercial con webhooks; Kangu queda pendiente de demostrar disponibilidad argentina.
+- **Administración/contabilidad:** Tango/Axoft mantiene APIs y archivos con alcances distintos; Catedral se considera inicialmente mediante importación/exportación; Bejerman, Xubio y Colppy ofrecen APIs sujetas a plan y permisos. Se define un paquete canónico de exportación y conciliación.
+- **Proyectos de inventario y documentos:** InvenTree, OpenBoxes, OpenWMS, Paperless-ngx, OCRmyPDF e invoice2data; se revisan licencias y ownership para no duplicar inventario o libros.
+- **Analítica y workflows:** Temporal, Activepieces, Kestra, skforecast y Polars, con n8n separado por su licencia source-available. La automatización y el forecasting no toman decisiones contables/stock sin aprobación.
+- **Necesidades de PyME:** pérdida de pedidos por fallos de sincronización, offline, códigos/ubicaciones de inventario, márgenes reales, cobro tardío, caja y migración asistida. La evidencia, sus límites y el backlog están documentados.
+
+Documentación:
+- [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md)
+- [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md)
+- [Necesidades PyME y backlog](PYME_NEEDS_AND_PRODUCT_BACKLOG.md)
+- [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md)
