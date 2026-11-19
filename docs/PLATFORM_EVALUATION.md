@@ -203,7 +203,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y dataset sintético | Preparados |
 | Laboratorio de instalación para los tres candidatos | Preparado |
-| Validador y CI del dataset | Aprobados: 11/11 tests y dataset válido |
+| Validador y CI del dataset | Aprobados: 13/13 tests y dataset válido (19/11/2026) |
 | Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
