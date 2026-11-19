@@ -78,7 +78,7 @@ Una plataforma que reúne en un solo lugar:
 - Evaluar módulos especializados como Simple WMS, InvenTree, OpenBoxes, OpenWMS, DuckDB/Superset y automatización detrás de contratos.
 - Definir adaptadores de logística argentina y perfiles de exportación contable para sistemas existentes.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
-- Comparar las tres plataformas integrales con P01–P19 y los escenarios multiárea P20–P26.
+- Comparar las tres plataformas integrales con el protocolo completo P01–P26.
 - Preparar pruebas de conectividad y exportación para operadores logísticos y sistemas contables, sin afirmar integraciones activas.
 - Mantener el modelo de rentabilidad con eliminación de cargos internos entre áreas y distinguir transferencias gerenciales de operaciones intercompany reales.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
