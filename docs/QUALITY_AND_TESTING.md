@@ -55,3 +55,14 @@ Venta habitual con pocos pasos; teclado, lector y pantalla táctil; errores acci
 ## Evidencia
 
 Cada entrega registra qué se probó, entorno y versión, resultado, evidencia, limitaciones y riesgos pendientes. No se informa "aprobado" sin ejecutar las pruebas correspondientes. Los datos de prueba son sintéticos.
+
+
+## Marcos de calidad y accesibilidad
+
+- **ISO/IEC 25010:2023** como modelo de calidad de producto: adecuación funcional, eficiencia de desempeño, compatibilidad, capacidad de interacción, fiabilidad, seguridad, mantenibilidad, flexibilidad y seguridad operacional según el modelo vigente. Traducir las características aplicables en métricas y pruebas: https://www.iso.org/standard/78176.html.
+- **WCAG 2.2 nivel AA** como objetivo de accesibilidad para las interfaces web y administrativas. Validar teclado, foco, contraste, tamaño de objetivos, etiquetas, mensajes y compatibilidad con tecnologías de asistencia: https://www.w3.org/TR/wcag/.
+- **OWASP ASVS 5.0** para requisitos verificables de seguridad: https://asvs.owasp.org/.
+- **NIST SSDF SP 800-218 v1.1** como guía de prácticas de desarrollo seguro. La revisión 1.2 figuraba como borrador en la consulta del 19/11/2026 y se volverá a verificar antes de adoptar sus identificadores: https://csrc.nist.gov/Projects/ssdf/publications.
+- **PCI DSS v4.0.1** cuando el alcance de pagos lo requiera. Se busca reducir dicho alcance mediante terminales y proveedores certificados: https://www.pcisecuritystandards.org/es/document_library/.
+
+Estos marcos guían requisitos y pruebas. No se afirmará cumplimiento o certificación sin una evaluación formal y evidencia suficiente.
