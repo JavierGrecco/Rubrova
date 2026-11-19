@@ -328,3 +328,14 @@ Ver [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATI
 - **Asentia:** producto comercial de conciliación bancaria que acepta extractos y exporta asientos; referencia funcional, no código abierto.
 
 La arquitectura y las pruebas de estos destinos están en [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md). Los repositorios oficiales y manuales se consultan antes de cada implementación.
+
+
+## 13. OCR, pronóstico, procesamiento analítico y contabilidad
+
+- **invoice2data (MIT):** parser de facturas PDF basado en plantillas; candidato para extraer campos de proveedores. Necesita OCR previo para escaneos y revisión humana; no valida CAE ni reemplaza cuentas a pagar.
+- **OCRmyPDF (MPL-2.0):** OCR local, PDF/A y búsqueda sobre escaneos; el README declara soporte Windows/Linux/macOS. Ver dependencias Tesseract y binarios de cada paquete.
+- **skforecast (BSD-3-Clause):** forecasting estadístico/ML/foundation, backtesting, intervalos y explainability; usar como laboratorio/servicio analítico para demanda, no como módulo que compra automáticamente.
+- **Polars (MIT):** motor DataFrame/SQL en Rust con bindings Python y Node; candidato para importaciones y pipelines analíticos, nunca para reemplazar OLTP.
+- **Bigcapital (AGPL-3.0):** aplicación completa de contabilidad/inventario y API headless de doble partida. Útil para estudiar ledger y estados financieros; no está probada su adaptación argentina y no debe convertirse en otro libro contable paralelo.
+
+Investigación de detalle y límites: [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md). Requisitos de integración contable: [Interoperabilidad contable](ACCOUNTING_INTEROPERABILITY.md).

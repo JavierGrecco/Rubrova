@@ -213,3 +213,35 @@ Solicitar a cada proveedor una versión y documentación concreta:
 - Contador: plan de cuentas, conceptos, centros de costo, impuestos y formato de intercambio que realmente utiliza.
 
 No desarrollar el conector de un ERP en base a nombres comerciales únicamente; la versión, licencia y esquema real deben quedar registrados.
+
+
+## 9. Motor contable de referencia y documentos de proveedores
+
+### Bigcapital como código de referencia
+
+Bigcapital publica un sistema self-hosted de contabilidad e inventario bajo AGPL-3.0, con API headless para registrar transacciones en un esquema de doble partida. Lo incorporamos a la investigación por su modelo de journal, cuentas y reportes financieros, no como destino argentino ya homologado.
+
+Antes de considerar cualquier reutilización, revisar:
+- modelos de journal entry, account, balance y reversal;
+- reglas de cierre, períodos, numeración y multiempresa;
+- API, autenticación, idempotencia, permisos y auditoría;
+- inventario y método de valuación;
+- ausencia/presencia de reglas de IVA argentino, percepciones, retenciones y ARCA.
+
+No ejecutar Bigcapital y otro ERP como dos libros contables editables de la misma organización. Si se prueba, será en un laboratorio aislado y con un ledger de autoridad único.
+
+Fuentes:
+- https://github.com/bigcapitalhq/bigcapital
+- https://docs.bigcapital.app/api-reference
+
+### Ingestión de facturas y documentos
+
+Se investigan dos herramientas complementarias:
+- **OCRmyPDF (MPL-2.0):** crea una versión PDF con texto buscable de un escaneo; soporta Windows/Linux/macOS según su documentación.
+- **invoice2data (MIT):** extrae campos desde PDFs usando plantillas y parsers configurables.
+
+Flujo sugerido: archivo original inmutable → checksum → OCR cuando haga falta → extracción de campos → validación fiscal/contable → coincidencia con proveedor/orden/recepción → revisión humana → alta en cuentas a pagar → exportación al sistema contable. No se contabiliza únicamente porque OCR haya encontrado un total.
+
+Fuentes:
+- https://github.com/ocrmypdf/OCRmyPDF
+- https://github.com/invoice-x/invoice2data
