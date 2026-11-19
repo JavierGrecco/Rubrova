@@ -195,9 +195,9 @@ La comparación debe medir el producto que realmente necesitamos, no solo el arr
 | Offline resistente a cierre/reinicio | No demostrado; la guía advierte no cerrar el navegador antes de sincronizar | No viene resuelto; hay que diseñarlo |
 | ARCA | Localización documentada; licencia de EDI/reportes por confirmar | Adaptador propio o componente externo aprobado |
 | Dependencia de framework | Alta | Media/alta |
-| Trabajo nuevo estimado | Menor en funciones ERP; mayor donde se requiera alterar POS u offline | Mayor en POS/ERP; menor fricción para diseñar contratos propios |
+| Esfuerzo inicial esperado | Menor en funciones ERP; mayor donde se requiera alterar POS u offline | Mayor en POS/ERP; menor fricción para diseñar contratos propios |
 
-La elección final se hará con una prueba comparativa. PostgreSQL sigue siendo el candidato para el registro central si elegimos Medusa o el monolito propio; Odoo administra sus propios datos y motor de persistencia si gana la alternativa Odoo.
+La matriz es una hipótesis cualitativa basada en funcionalidades y arquitectura revisadas; no es el resultado de una prueba ejecutada. La elección final se hará con una prueba comparativa. PostgreSQL sigue siendo el candidato para el registro central si elegimos Medusa o el monolito propio; Odoo administra sus propios datos y motor de persistencia si gana la alternativa Odoo.
 
 Para una app propia, la capa local debe tener almacenamiento transaccional y cola duradera, identificadores globales, idempotencia, reintentos y conciliación explícita. IndexedDB es una alternativa inicial de PWA; si no garantiza recuperación, se evaluará SQLite mediante un servicio local. No se prometerá offline total: ARCA, pagos externos y datos de otros dispositivos pueden requerir conexión.
 
@@ -249,7 +249,7 @@ Una biblioteca no se aprueba solo porque sea popular o tenga muchas estrellas. T
 - [x] Se definió una estrategia para conservar un único núcleo transaccional.
 - [x] Se seleccionaron Odoo Community 20 y Medusa v2 como finalistas de una comparación acotada.
 - [x] Se identificó un módulo ARCA externo AGPL-3 que se mantiene como referencia, no como dependencia aprobada.
-- [ ] No se incorporó código de terceros.
+- [x] No se incorporó código de terceros.
 - [ ] No se eligió ni fijó todavía una versión de framework.
 - [ ] Falta ejecutar la prueba vertical de compatibilidad.
 - [ ] Falta generar el primer inventario/SBOM del software propio y sus dependencias.
