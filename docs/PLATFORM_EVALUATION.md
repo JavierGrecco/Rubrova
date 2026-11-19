@@ -142,6 +142,8 @@ Los importes son datos didácticos y no representan precios de mercado ni reglas
 | P15 | Backup y restauración | Restaurar en una instancia limpia y conciliar conteos/saldos | Backup ilegible o restauración incompleta |
 | P16 | Hardware | Ticket de 80/57 mm, lector, balanza y cajón; primero simulado, luego físico | Confirmar compatibilidad por marca sin prueba |
 | P17 | Fiscalidad argentina | Adaptador separado, comprobantes en homologación y recuperación de estado incierto | Emisión duplicada o reintento ciego |
+| P18 | Retiro de productos antes del pago | Eliminar una línea y comprobar total, descuentos/impuestos, reserva y ausencia de venta/salida/pago para el artículo retirado | La línea retirada queda cobrada o descuenta stock |
+| P19 | Terminal integrada | Enviar importe, recibir aprobado/rechazado/cancelado/pendiente, procesar webhook repetido y conciliar voucher | Marcar cobrado antes de confirmación o duplicar transacción |
 
 En P11 se debe distinguir pérdida de internet de pérdida de red local. En un servidor local compartido, los otros puestos pueden seguir conectados por LAN; una caja con su propia base desconectada es un caso distinto y debe documentarse como tal.
 
@@ -164,12 +166,12 @@ Ponderación propuesta:
 
 | Área | Peso |
 |---|---:|
-| Integridad transaccional, offline, reinicio y restauración | 35% |
+| Integridad transaccional, offline, reinicio y restauración | 30% |
 | POS, pagos, caja, devoluciones y operación del cajero | 20% |
 | Inventario, compras, costos y producción | 15% |
-| Extensibilidad, actualizaciones y esfuerzo de mantenimiento | 10% |
+| Extensibilidad, contratos, actualizaciones y esfuerzo de mantenimiento | 10% |
 | Argentina, ARCA y adaptación fiscal | 10% |
-| Hardware y tickets | 5% |
+| Hardware, terminales y compatibilidad de sistemas operativos | 10% |
 | Simplicidad de operación y experiencia de uso | 5% |
 
 No se calculará un ganador ponderado si falla una condición excluyente. Para pasar la prueba, cada candidato debe demostrar: una venta confirmada y sus efectos asociados exactamente una vez; recuperación tras cierre forzado; backup restaurable; auditoría; roles correctos; y una ruta fiscal argentina viable. Si no supera esos mínimos, no compensa tener más pantallas o módulos.
@@ -188,12 +190,14 @@ Estos componentes no convierten por sí solos a una plataforma en la base del pr
 
 La revisión de licencias se hace para la versión y los archivos que realmente se incorporen. El uso privado permite considerar código GPL/AGPL, pero no elimina las licencias separadas de dependencias, fuentes, imágenes, servicios o componentes comerciales.
 
-El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial y restricciones del entorno fiscal de prueba. La ejecución de CI del 19/11/2026 terminó correctamente: seis pruebas aprobadas y dataset canónico válido. Esto valida el dataset y su aritmética; no valida todavía el comportamiento funcional de Posnic o ERPNext.
+El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 19/11/2026 terminó correctamente: seis pruebas aprobadas y dataset canónico válido. Esto valida el dataset y su aritmética; no valida todavía el comportamiento funcional de Posnic o ERPNext.
 
 ## Estado de ejecución
 
 | Actividad | Estado |
 |---|---|
+| Inspección inicial de MyCompany/lsFusion 6.2 y mecanismo de módulos | Hecha; prueba funcional pendiente |
+| Procedimiento de instalación y hashes de MyCompany 6.2 | Preparados; runtime debe registrarse |
 | Inspección documental y manifiestos de Posnic | Hecha |
 | Inspección inicial de MyCompany/lsFusion 6.2 y mecanismo de módulos | Hecha; pruebas funcionales pendientes |
 | Fijación de release/commit para Posnic | Hecha |
@@ -202,6 +206,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Instrucciones de instalación aislada y fijación de versiones | Preparadas |
 | Validación automatizada del dataset en GitHub Actions | Aprobada: 6/6 tests y dataset válido (19/11/2026) |
 | Instalación/evaluación de MyCompany 6.2 | Pendiente |
+| Instalación/evaluación de MyCompany 6.2 | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
 | Ejecución P01–P17 | Pendiente |
@@ -209,4 +214,4 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** ampliar el laboratorio con MyCompany 6.2 y comparar los tres candidatos. ERPNext v16.60.0 y Posnic v1.9.2 conservan sus procedimientos fijados; MyCompany se instala desde el tag 6.2 y se registra el runtime lsFusion exacto. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. La CI cubre únicamente el validador y las reglas aritméticas; no simula una instalación real de ninguna de las dos plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.
+**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P19 con el mismo dataset. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. Cargar el mismo dataset, registrar `bench version` y ejecutar el guion sin desarrollar aún módulos propios de Rubrova. La CI cubre únicamente el validador y las reglas aritméticas; no simula una instalación real de ninguna de las dos plataformas. Después de medir, decidiremos si adoptamos una base integral o construimos nuestro monolito modular tomando componentes especializados.

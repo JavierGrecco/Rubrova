@@ -1,15 +1,16 @@
 # Preparación del laboratorio de evaluación
 
 **Revisión:** 19 de noviembre de 2026  
-**Objetivo:** instalar Posnic y ERPNext en entornos aislados, usando datos sintéticos y versiones fijadas.  
+**Objetivo:** instalar MyCompany/lsFusion, Posnic y ERPNext en entornos aislados, usando datos sintéticos y versiones fijadas.  
 **Regla principal:** no usar datos reales, instalaciones comerciales existentes, certificados fiscales de producción ni credenciales reales.
 
-Este laboratorio no instala Rubrova ni incorpora código de terceros. Sirve para comprobar las dos plataformas antes de decidir si adoptamos una como base o construimos nuestro núcleo.
+Este laboratorio no instala Rubrova ni incorpora código de terceros. Sirve para comparar tres plataformas integrales antes de decidir si adoptamos una como base o construimos nuestro núcleo.
 
 ## 1. Qué vamos a instalar
 
 | Candidato | Forma recomendada de evaluación | Versión |
 |---|---|---|
+| MyCompany/lsFusion | Instalador Windows x64 o servidor Linux con cliente web; desde Mac se accede por navegador a una VM local aislada | MyCompany 6.2 / lsFusion 6.x |
 | Posnic | Aplicación de escritorio en una VM limpia con Windows x64 o Ubuntu Desktop x86_64 | 1.9.2 |
 | ERPNext | Demo desechable oficial con Docker Compose, publicada solo en localhost | 16.60.0 |
 
@@ -174,9 +175,105 @@ Fuentes:
 - [Configuración oficial pwd.yml](https://github.com/frappe/frappe_docker/blob/ef24ebc0a411b6237694765f0b51d8f8f8dd13ce/pwd.yml)
 - [Guía oficial de demostración desechable](https://github.com/frappe/frappe_docker#demo-setup)
 
-## 4. Cargar exactamente los mismos datos
+## 4. Preparar MyCompany / lsFusion 6.2
 
-Usar [platform-evaluation.json](fixtures/platform-evaluation.json) como fuente canónica. El archivo contiene productos ficticios, importes enteros en centavos, pagos, devolución parcial, compra y existencias esperadas.
+MyCompany es el tercer candidato integral. Para esta prueba se fija la release 6.2 y no se deben mezclar instrucciones o imágenes de la documentación 7.0.
+
+### Procedencia y archivos fijados
+
+- Repositorio: https://github.com/lsfusion-solutions/mycompany
+- Release: https://github.com/lsfusion-solutions/mycompany/releases/tag/6.2
+- Commit del tag: d21ca6978717b98b6300d90267f9767db7414008
+- Instalador Windows x64: mycompany-6.2-x64.exe
+- SHA-256 del instalador: 0167322fea03e269abfae2a140ab4df5205f07633d2520a3d78e381346fbce75
+- JAR de lógica MyCompany 6.2: mycompany-6.2.jar
+- SHA-256 del JAR: fe5a9bda49295f2292ae229a30c9461a16c137fc350a0aa944df7812a1e2f392
+
+La release identifica el JAR y el instalador como artefactos de la versión 6.2. La etiqueta del código está sin firma; verificar los artefactos por SHA-256 y conservar las fuentes.
+
+### Opción A — Windows x64 (camino inicial recomendado)
+
+Realizarlo en una VM Windows x64 limpia, no en el equipo principal ni sobre una instalación previa.
+
+1. Crear una carpeta de laboratorio:
+
+    New-Item -ItemType Directory -Force "$HOME\rubrova-lab\mycompany"
+
+2. Descargar el instalador desde el servidor oficial:
+
+    Invoke-WebRequest "https://download.lsfusion.org/solutions/mycompany-6.2-x64.exe" -OutFile "$HOME\rubrova-lab\mycompany\mycompany-6.2-x64.exe"
+
+3. Verificar el SHA-256:
+
+    Get-FileHash "$HOME\rubrova-lab\mycompany\mycompany-6.2-x64.exe" -Algorithm SHA256
+
+   Debe coincidir exactamente con el hash publicado arriba. Si no coincide, detenerse.
+
+4. Descargar el JAR de lógica fijado:
+
+    Invoke-WebRequest "https://download.lsfusion.org/solutions/mycompany-6.2.jar" -OutFile "$HOME\rubrova-lab\mycompany\mycompany-6.2.jar"
+
+5. Verificar el JAR:
+
+    Get-FileHash "$HOME\rubrova-lab\mycompany\mycompany-6.2.jar" -Algorithm SHA256
+
+   Debe coincidir exactamente con el hash publicado arriba.
+
+6. Comprobar la firma Authenticode del instalador. Si la firma existe y no es válida, no ejecutar. El hash es el control obligatorio incluso si la firma no está disponible.
+7. Ejecutar el instalador dentro de la VM aislada y completar la instalación. El proceso requiere conexión a Internet para descargar componentes.
+8. La guía indica que el cliente web utiliza el puerto 8080 y el cliente de escritorio el 7652. Mantener la VM en una red host-only o sin acceso entrante desde la LAN.
+9. Abrir el cliente web desde la propia VM:
+
+    http://127.0.0.1:8080
+
+10. El manual indica un usuario inicial admin sin contraseña. No exponer la instalación así a la LAN ni a Internet. Mantenerla aislada hasta configurar credenciales y permisos de prueba.
+
+### Opción B — Linux x86_64
+
+Para evaluar en Linux, utilizar una VM limpia. La guía oficial soporta Ubuntu/Debian y RHEL/Fedora. El instalador rápido descarga componentes desde el servidor del proveedor, por lo que se debe revisar el script antes de ejecutarlo.
+
+La guía de instalación Linux coloca el JAR de lógica en /var/lib/lsfusion y reinicia el servicio lsfusion6-server. Después de instalar el runtime:
+
+1. Detener el servicio lsFusion Server.
+2. Conservar una copia del JAR que haya instalado el script.
+3. Colocar el artefacto mycompany-6.2.jar verificado por SHA-256 en /var/lib/lsfusion.
+4. Asegurarse de que exista un solo JAR de MyCompany en el classpath.
+5. Iniciar el servicio y revisar /var/log/lsfusion6-server/start.log.
+6. Registrar la versión efectiva del runtime lsFusion y los hashes utilizados. Si no se puede confirmar el runtime 6.x exacto, marcar la comparación de esa instalación como bloqueada hasta fijarlo.
+
+No utilizar una descarga SNAPSHOT ni la rama master como sustituto de la release 6.2.
+
+### Evaluación desde macOS
+
+La release 6.2 no publica un cliente/instalador macOS. Eso no descarta la plataforma: el cliente web funciona en el navegador del Mac si el servidor corre en una VM Windows o Linux local. Para la prueba desde macOS, abrir el navegador del host hacia la IP host-only de la VM o configurar un reenvío de puerto estrictamente local. No abrir 8080 ni 7652 a Internet.
+
+Esto prueba acceso web desde macOS; no demuestra un cliente de escritorio nativo para macOS. Rubrova mantiene como objetivo final Windows, Linux y macOS mediante su arquitectura y adaptadores.
+
+### Prueba de composición de módulos
+
+La documentación de lsFusion 6.x permite añadir un archivo de módulo propio, declarar dependencias con REQUIRE y seleccionarlo como módulo superior sin editar el código de MyCompany.
+
+En una copia desechable del laboratorio, crear un módulo de prueba que declare únicamente las capacidades seleccionadas. La documentación 6.x muestra como ejemplo:
+
+    MODULE RubrovaProbe;
+    REQUIRE Eval, ProcessMonitor, Backup, Chat, Documentation,
+            MasterDataP, Inventory,
+            Invoicing, InvoicingInventory,
+            Purchase, Sales, Retail;
+
+Agregar el archivo a la ruta de módulos indicada por la instalación y configurar logics.topModule = RubrovaProbe en settings.properties, siguiendo la guía correspondiente al runtime. Reiniciar y comprobar que el servidor arranque y que los módulos declarados estén disponibles.
+
+No modificar el JAR base ni reutilizar datos reales. Registrar el módulo de prueba, el archivo de configuración y los errores. Este ensayo debe demostrar que una extensión propia puede convivir con la aplicación base y sobrevivir una actualización controlada.
+
+Fuentes:
+- [Release MyCompany 6.2 y hashes](https://github.com/lsfusion-solutions/mycompany/releases/tag/6.2)
+- [Instalación oficial MyCompany](https://mycompany-docs.lsfusion.org/administration/installation/)
+- [Desarrollo y módulos propios para lsFusion 6.x](https://mycompany-docs.lsfusion.org/v6/administration/development/)
+- [Docker lsFusion 6.x](https://docs.lsfusion.org/v6/Docker/)
+
+## 5. Cargar exactamente los mismos datos
+
+Usar [platform-evaluation.json](fixtures/platform-evaluation.json) como fuente canónica. El archivo contiene productos ficticios, importes enteros en centavos, pagos, devolución parcial, compra, carrito editable, vuelto, flujo de terminal y existencias esperadas.
 
 No importar el JSON como si ambos productos compartieran un formato de importación. Cargar o crear los mismos datos mediante las pantallas de cada aplicación y conservar un registro de las diferencias de mapeo. La prueba compara resultados comerciales, no nombres de campos internos.
 
@@ -184,11 +281,11 @@ Antes de iniciar cada plataforma, ejecutar el validador del fixture desde la ra�
 
     node scripts/evaluation/validate-fixture.mjs
 
-El validador comprueba aritmética de venta, descuentos, pagos mixtos, caja, cantidades, devolución, recepción parcial y límites de homologación.
+El validador comprueba aritmética de venta, descuentos, pagos mixtos, caja, cantidades, devolución, recepción parcial, retiro de artículos del carrito, vuelto, estados de terminal y límites de homologación.
 
-## 5. Registro de evidencia
+## 6. Registro de evidencia
 
-Por cada prueba P01–P17, registrar:
+Por cada prueba P01–P19, registrar:
 
 | Campo | Qué guardar |
 |---|---|
@@ -203,15 +300,16 @@ Por cada prueba P01–P17, registrar:
 
 No marcar una prueba como aprobada por ver una pantalla o completar una demo. Para los controles críticos se necesita repetir el caso, comprobar los registros y reconciliar caja, pagos e inventario.
 
-## 6. Orden de ejecución
+## 7. Orden de ejecución
 
 1. Validar el dataset.
 2. Levantar ERPNext 16.60.0 y comprobar versión.
 3. Cargar datos sintéticos y ejecutar P01–P10.
 4. Ejecutar cortes, reinicio, idempotencia y restauración (P11–P15).
-5. Registrar qué casos no puede demostrar la demo desechable por sus límites.
-6. Preparar Posnic 1.9.2 en la VM compatible y repetir el mismo guion.
-7. Ejecutar hardware simulado y fiscalidad en homologación (P16–P17) solo cuando existan adaptadores y dispositivos de prueba adecuados.
-8. Comparar esfuerzo, limitaciones, licencias y costo de mantenimiento antes de elegir una base.
+5. Preparar MyCompany/lsFusion 6.2; probar composición de módulos, POS, inventario, compras y producción; repetir el mismo conjunto P01–P19.
+6. Registrar qué casos no puede demostrar la demo desechable por sus límites.
+7. Preparar Posnic 1.9.2 en la VM compatible y repetir el mismo guion.
+8. Ejecutar hardware y terminales simuladas/físicas y fiscalidad en homologación (P16–P19) solo cuando existan adaptadores y dispositivos de prueba adecuados.
+9. Comparar esfuerzo, limitaciones, licencias y costo de mantenimiento antes de elegir una base.
 
 **Estado:** este documento prepara instalaciones reproducibles; no afirma que ya se hayan desplegado o probado en el equipo.

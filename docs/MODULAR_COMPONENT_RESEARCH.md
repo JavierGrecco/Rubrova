@@ -111,3 +111,19 @@ Fuente: https://github.com/openoms-org/openoms/blob/main/LICENSE
 | Condicionado | OpenOMS | Revisar licencia, no incorporar aún |
 
 La regla de integración está en [Composición de módulos y contratos](MODULE_COMPOSITION.md). No integrar varios sistemas como fuentes de verdad paralelas.
+
+
+## H. Alternativa comercial de terminales: Mobbex Smart POS
+
+- Fuente: https://www.mobbex.com/smart-pos/
+- El proveedor describe Smart POS multi-adquirente para Payway, Fiserv, Global Processing y Getnet, terminales Ingenico, Urovo, Verifone, NexGo y Newland, integración por API desde el software de caja y conciliación automática.
+- No es un proyecto de código abierto ni un módulo para copiar. Es una vía comercial alternativa a implementar una integración directa con cada adquirente.
+- Puede reducir el número de adaptadores, pero crea dependencia operativa y comercial de un proveedor. Solicitar tarifas, disponibilidad local, documentación de API, pruebas, política de reversos, cierres de lote, impresiones, conectividad y terminales compatibles antes de evaluarlo.
+- Compararlo contra las integraciones directas de Mercado Pago Point, Getnet, Fiserv/Posnet y Payway; no asumir que soporta todos los modelos ni que elimina certificaciones.
+
+Fuentes de terminales:
+- Mercado Pago Point: https://www.mercadopago.com.ar/developers/es/docs/mp-point/payment-processing
+- Getnet POS integrado: https://www.getnet.net/ar/ayuda/terminales-getpos/get-pos-integrado
+- Fiserv/Posnet: https://www.fiserv.com.ar/content/dam/firstdata/ar/es/pdf/Reglamento_de_Comerciantes_13-04-26.pdf
+- Payway PayStore Terminals: https://developers.payway.com.ar/catalog?category=Pagos
+- Mobbex Smart POS: https://www.mobbex.com/smart-pos/

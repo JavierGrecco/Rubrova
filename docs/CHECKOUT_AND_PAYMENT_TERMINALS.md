@@ -52,17 +52,19 @@ Rubrova necesita un adaptador por adquirente/proveedor y modelo de terminal. No 
 |---|---|---|---|
 | Mercado Pago Point | Orders API, asignación de terminal, estados, consulta, cancelación, reembolso y webhooks | Access Token en backend; referencia/idempotencia. La terminal Smart puede imprimir acciones personalizadas según versión y configuración. | Primer adaptador a evaluar |
 | Getnet Get POS Integrado | Importe enviado desde sistema y resultado devuelto a la caja | API cloud-to-cloud o SDK local USB/Wi-Fi según solución/partner; requiere habilitación y terminal integrada. | Segundo adaptador a evaluar |
-| Fiserv / Posnet | POS Integrado “Trx a Trx”: conecta sistema de facturación con medio de captura y transmite transacciones en línea | La documentación comercial/reglamentaria menciona programa y cable. Se deben solicitar protocolo, equipos, certificación y homologación a Fiserv; no asumir SDK público. | Investigar en prioridad |
-| Payway | Portal de desarrolladores incluye capacidades de terminal/PINpad | La información funcional pública no basta para implementar; solicitar manual técnico, acceso, OAuth y matriz de modelos. No prometer impresión sin confirmar. | En investigación |
+| Fiserv / Posnet | POS Integrado “Trx a Trx”: conecta sistema de facturación con medio de captura y transmite transacciones al sistema del comercio en línea | El reglamento Fiserv describe programa y cable; el uso de sistemas/equipos propios está sujeto a certificación y homologación. Se debe solicitar protocolo y modelos compatibles. | Investigar en prioridad |
+| Payway / Prisma PayStore Terminals | El portal oficial publica APIs de Terminal Payments, Terminal Refunds, Terminal Reversals y Terminal Settlements; también ofrece terminales integradas y PINpad conectados al sistema de gestión | Requiere revisar catálogo técnico, credenciales, modelo, certificación y disponibilidad para el comercio. Los comprobantes pueden ser digitales y no siempre imprimirse en papel. | Candidato prioritario para prueba técnica |
+| Mobbex Smart POS | Plataforma comercial multi-adquirente con API de integración de terminal y conciliación; anuncia compatibilidad con Ingenico, Urovo, Verifone, NexGo y Newland | No es código abierto ni un componente para incorporar sin costo: requiere revisar alta, tarifas, adquirentes, contrato, API y hardware. Puede reducir el número de integraciones directas. | Alternativa comercial a cotizar y comparar |
 
 ### Mercado Pago Point: estados relevantes
 
-- created: la orden existe pero la terminal aún no la tomó; no significa cobrado.
-- at_terminal: la terminal obtuvo la orden; no significa cobrado.
-- action_required: requiere atención/confirmación; no significa cobrado.
-- processed: pago procesado/acreditado; permite confirmar el cobro.
-- failed, canceled o expired: no se completó.
-- refunded/partially_refunded: importe devuelto total o parcialmente.
+- created: la orden existe, pero la terminal todavía no la obtuvo.
+- at_terminal: la terminal obtuvo la orden; aún no significa cobrado.
+- action_required: se requiere revisar/confirmar el resultado en la terminal; aún no se acredita.
+- processed con el detalle de transacción acreditada: pago completado y acreditado.
+- failed, canceled o expired: pago no completado.
+- refunded o partially_refunded: reembolso total o parcial.
+- at_terminal con status_detail cancellation_requested: la solicitud de cancelación fue aceptada, pero es asíncrona. Una respuesta HTTP 202 no confirma que la terminal haya cancelado; hay que esperar el webhook final y conciliar.
 
 Las notificaciones incluyen procesamiento, cancelación, reembolso, acción requerida, error y expiración. Rubrova valida la firma, registra el evento de forma idempotente y consulta el estado cuando necesita recuperarse.
 
@@ -74,7 +76,7 @@ Para nuevas integraciones se sigue Orders API, no la API heredada Payment Intent
 2. **Voucher de la terminal:** comprobante del adquirente con resultado de la transacción.
 3. **Comprobante fiscal:** factura, ticket fiscal o nota emitida por ARCA o por el emisor autorizado del canal.
 
-Mercado Pago documenta impresión de contenido personalizado en dispositivos Point compatibles. Esto no significa que cualquier Point, Posnet, Getnet o Payway imprima el ticket detallado de Rubrova o una factura fiscal.
+Mercado Pago documenta acciones de impresión de contenido personalizado en terminales compatibles y permite consultar el estado de la acción. La función, el papel y el formato exacto deben confirmarse en el modelo/firmware disponible. Payway informa que ciertos comprobantes de tarjeta pueden enviarse por email y no imprimirse en papel. Esto no significa que cualquier Point, Posnet, Getnet o Payway imprima el ticket detallado de Rubrova o una factura fiscal.
 
 ## Desconexión y fallos
 
@@ -115,7 +117,9 @@ La lógica de checkout y pagos vive en contratos neutrales. La comunicación fí
 - Mercado Pago Point — impresión: https://www.mercadopago.com.ar/developers/es/docs/mp-point/configure-printings
 - Getnet — POS Integrado: https://www.getnet.net/ar/ayuda/terminales-getpos/get-pos-integrado
 - Getnet — solución: https://www.getnet.net/ar/nuestras-soluciones/cobros-presenciales/pos-integrado
-- Fiserv — Reglamento de Comerciantes 10/03/2026: https://www.fiserv.com.ar/content/dam/firstdata/ar/es/pdf/Reglamento_de_Comerciantes_10-03-26-2.pdf
-- Payway — portal: https://developers.payway.com.ar/
+- Fiserv — Reglamento de Comerciantes 13/04/2026: https://www.fiserv.com.ar/content/dam/firstdata/ar/es/pdf/Reglamento_de_Comerciantes_13-04-26.pdf
+- Payway — catálogo de APIs: https://developers.payway.com.ar/catalog?category=Pagos
+- Payway — terminales/PINpad: https://www.payway.com.ar/terminales-punto-venta
+- Mobbex — Smart POS multi-adquirente: https://www.mobbex.com/smart-pos/
 
 La habilitación comercial, modelos, firmware y certificación deben confirmarse con cada adquirente antes de producción.
