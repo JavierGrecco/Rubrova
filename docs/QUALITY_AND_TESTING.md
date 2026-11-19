@@ -66,3 +66,34 @@ Cada entrega registra qué se probó, entorno y versión, resultado, evidencia, 
 - **PCI DSS v4.0.1** cuando el alcance de pagos lo requiera. Se busca reducir dicho alcance mediante terminales y proveedores certificados: https://www.pcisecuritystandards.org/es/document_library/.
 
 Estos marcos guían requisitos y pruebas. No se afirmará cumplimiento o certificación sin una evaluación formal y evidencia suficiente.
+
+
+## Código de terceros y licencias
+
+Toda dependencia, plugin, fragmento de código, plantilla, fuente, icono o recurso externo debe pasar una revisión antes de incorporarse.
+
+La revisión registra:
+
+- Repositorio y URL de origen.
+- Versión, etiqueta o commit exacto.
+- Licencia efectiva del archivo y del proyecto, más avisos y excepciones.
+- Licencias de dependencias transitivas y recursos incluidos.
+- Partes comerciales, Enterprise, duales o con condiciones especiales.
+- Archivos modificados, avisos que deben conservarse y obligaciones de distribución.
+- Mantenimiento, vulnerabilidades conocidas, cobertura de pruebas y compatibilidad.
+
+Reglas de aceptación:
+
+1. Preferir MIT, ISC, BSD y Apache 2.0 cuando el componente cubra la necesidad y su calidad sea suficiente.
+2. Revisar LGPL con detalle antes de combinar, modificar o distribuir.
+3. No incorporar GPL o AGPL al núcleo sin una decisión explícita sobre la licencia y el modelo de distribución del producto.
+4. No usar código sin licencia identificable ni asumir que un repositorio público concede permiso de reutilización.
+5. No incorporar código o recursos de una edición Enterprise/comercial sin contrato válido.
+6. Conservar avisos, archivos LICENSE y NOTICE, atribuciones y fuentes de origen según las condiciones aplicables.
+7. Fijar versiones; no depender de ramas flotantes para software de producción.
+8. Mantener un SBOM en SPDX o CycloneDX y analizar dependencias, vulnerabilidades y licencias en CI.
+9. Un cambio de versión obliga a revisar cambios de licencia y dependencias transitivas.
+
+La guía completa y las licencias de los candidatos están en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
+
+La aprobación legal de una licencia no reemplaza la revisión técnica; una biblioteca permisiva también puede ser insegura, estar abandonada o no cumplir nuestras invariantes.
