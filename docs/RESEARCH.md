@@ -98,62 +98,32 @@ El nombre de producto no se considera legalmente disponible hasta realizar búsq
 
 ## Proyectos abiertos y reutilización de código
 
-La comparación de licencias, arquitectura, alcance y posibilidad de adaptación está desarrollada en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
+El catálogo de repositorios, módulos, licencias y condiciones está en [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). La evaluación técnica y el guion común están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
-Resumen de la revisión del 19/11/2026:
+### Estado actualizado — 19/11/2026
 
-- **Medusa:** núcleo MIT con materiales Enterprise separados; primer candidato para probar módulos de comercio reutilizables.
-- **Odoo Community 20.0:** los manifiestos públicos de POS, inventario, compras, fabricación, contabilidad base, fidelización y `l10n_ar` declaran LGPL-3. Es finalista por cobertura funcional, pero el offline del POS no garantiza recuperación tras cierre del navegador. La disponibilidad y licencia de `l10n_ar_edi` y `l10n_ar_reports` no se confirmaron en el repositorio Community.
-- **Frappe / ERPNext:** Frappe es MIT, ERPNext es GPLv3; no confundir las dos licencias.
-- **Apache OFBiz:** Apache 2.0; suite ERP muy completa, pero con costo de adaptación elevado.
-- **Saleor:** BSD 3-Clause; referencia de comercio electrónico, no una base POS completa.
-- **Vendure, uniCenta y NexoPOS:** GPLv3 por defecto; no incorporar su núcleo sin una decisión explícita sobre copyleft.
-- **OSPOS:** su archivo LICENSE agrega una exigencia de atribución visible en cada pantalla; no encaja con una interfaz completamente rebrandeada.
-- **TastyIgniter:** MIT; referencia o posible fuente acotada para flujos gastronómicos.
+La ronda integral se concentra en **Posnic 1.9.2** y **ERPNext 16.60.0 + Frappe Framework 16**. Odoo Community 20 y Medusa v2 quedan como referencias históricas fuera de la comparación activa; NexoPOS no se aprueba mientras siga la discrepancia entre su LICENSE raíz GPLv3 y composer.json MIT.
 
-- **ARCA externo para Odoo:** `leonobitech/l10n_ar_arca_edi` declara AGPL-3, Odoo 19 y estado Beta en su manifiesto; estudiar su protocolo y pruebas, no incorporarlo al producto sin una decisión expresa sobre AGPL.
-- **OCA `l10n-argentina`:** repositorio raíz AGPL-3; la licencia de cada módulo se determina por su propio manifiesto. La rama 19.0 revisada no presentaba módulos listos para integrar.
+**Posnic** aporta POS local, ventas, inventario, compras y caja. La prueba debe fijarse en el tag `v1.9.2`: la rama `main` consultada tenía seis commits posteriores y `develop` estaba divergida. Su self-hosted comparte una base en LAN, pero no sincroniza varias bases independientes; esa función se ofrece mediante Cloud. La evidencia offline publicada es limitada. El código es AGPL-3.0-only, mientras que el instalador revisado incluye MongoDB SSPL-1.0 y amCharts 4 comercial. Sus campos GST/India requieren adaptación para Argentina.
 
-Fuentes de código y documentación Odoo 20:
-- Soporte de versiones: https://www.odoo.com/documentation/20.0/es/administration/supported_versions.html
-- POS offline: https://www.odoo.com/documentation/20.0/es_419/applications/sales/point_of_sale/use.html
-- Descuentos y promociones: https://www.odoo.com/documentation/20.0/es_419/applications/sales/point_of_sale/extra/pricing.html
-- Localización argentina y ARCA: https://www.odoo.com/documentation/20.0/es_419/applications/finance/fiscal_localizations/argentina.html
-- Código público LGPL-3 del POS y `l10n_ar`: https://github.com/odoo/odoo/blob/20.0/addons/point_of_sale/__manifest__.py y https://github.com/odoo/odoo/blob/20.0/addons/l10n_ar/__manifest__.py
+**ERPNext/Frappe** aporta mayor profundidad en inventario, compras, costos, fabricación y contabilidad. ERPNext es GPL-3.0 y Frappe Framework MIT. ERPNext v16.60.0 debe probarse con Frappe Framework 16 fijado; no presumir recuperación offline ni soporte PostgreSQL equivalente.
 
-La consulta de código abierto no equivale a una auditoría de seguridad ni a la aprobación de una dependencia. No se incorporó código externo en esta etapa.
+**Componentes especializados:**
+- pos-toolkit: Apache-2.0; plugin Tauri/Rust para hardware y paquete TypeScript para tickets. `register-core` está planificado.
+- emupos y ESCPost: Apache-2.0; simulación y diagnóstico de periféricos.
+- arca-sdks: `@ramiidv/arca-facturacion` 7.1.0, MIT, Node >=22.12; candidato de homologación, no garantía de cumplimiento por sí solo.
+- PowerSync Open Edition: Apache-2.0, separada de Enterprise/Cloud.
+- Dexie.js: Apache-2.0, IndexedDB y no sincronización distribuida completa.
 
+La evaluación es todavía documental. No se instalaron ni ejecutaron localmente Posnic o ERPNext para Rubrova; no se incorporó código externo. La decisión debe basarse en la prueba P01–P17, sin declarar como realizadas las pruebas pendientes.
 
-## Criterio actualizado: uso privado interno
+Fuentes de código y licencias:
+- Posnic: https://github.com/Posnic/POS/releases/tag/v1.9.2 y https://github.com/Posnic/POS
+- ERPNext: https://github.com/frappe/erpnext/releases/tag/v16.60.0
+- Frappe Framework: https://github.com/frappe/frappe/tree/version-16
+- pos-toolkit: https://github.com/narisolutions/pos-toolkit
+- arca-sdks: https://github.com/ramiidv/arca-sdks
+- PowerSync: https://github.com/powersync-ja/powersync-js
+- Dexie.js: https://github.com/dexie/Dexie.js
 
-La plataforma se construye para uso propio del negocio. No se prevé distribuir copias, revender el software ni ofrecerlo a terceros como servicio. En este escenario, la GPL permite modificar y utilizar internamente el programa sin publicar las modificaciones ni entregar el código a terceros, según la FAQ oficial de GNU. La AGPL añade una obligación específica para versiones modificadas con las que usuarios interactúan remotamente a través de una red: debe ofrecerse el código fuente correspondiente a esos usuarios.
-
-Por lo tanto:
-- No limitar la búsqueda a MIT/BSD/Apache. Incluir GPL, AGPL, LGPL y licencias duales.
-- Considerar proyectos completos como ERPNext, Odoo, Vendure, uniCenta, NexoPOS y módulos OCA si su cobertura ahorra trabajo.
-- Comparar adopción completa, fork, extensión y extracción de módulos; elegir la vía que minimice tiempo y mantenimiento.
-- Conservar licencias, copyright, avisos NOTICE y atribuciones aplicables, y registrar los cambios.
-- Revalidar el análisis si se habilita acceso remoto a terceros, se distribuye una copia, se contrata a otra entidad para operar el sistema o cambia el alcance del proyecto.
-
-Fuentes:
-- GNU GPL FAQ: https://www.gnu.org/licenses/gpl-faq.es.html
-- GNU AGPLv3, sección 13: https://www.gnu.org/licenses/agpl-3.0.html
-- Frappe, separación de licencias entre Framework y ERPNext: https://docs.frappe.io/legal/others/license-and-trademark
-
-Este criterio es una guía técnica general, no asesoramiento jurídico sobre un caso concreto.
-
-## Catálogo de código reutilizable
-
-La revisión detallada de repositorios, manifiestos, licencias, cobertura y límites está en [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md).
-
-Hallazgos principales verificados el 19/11/2026:
-- Posnic: código propio AGPL-3.0-only; paquetes con MongoDB SSPL-1.0; operación local/offline documentada con límites y evidencia acotada.
-- ERPNext GPL-3.0 y Frappe MIT.
-- NexoPOS presenta discrepancia: LICENSE GPLv3 frente a composer.json MIT. Bloqueado hasta aclaración.
-- pos-toolkit y emupos y ESCPost: Apache-2.0; hardware, simulación y diagnóstico.
-- arca-sdks: monorepo activo; paquete de facturación MIT; el repo anterior fue archivado.
-- PowerSync Open Edition: Apache-2.0; separar funciones open source de Enterprise/Cloud.
-- Dexie.js: Apache-2.0 para IndexedDB, no sync completo.
-- TastyIgniter MIT; DearPOS Apache-2.0 y ElitaleRestro AGPLv3 como referencias sectoriales con límites.
-
-No se clonó ni ejecutó código de estos proyectos en esta fase.
+Este resumen es una guía de investigación, no asesoramiento jurídico ni auditoría de seguridad.
