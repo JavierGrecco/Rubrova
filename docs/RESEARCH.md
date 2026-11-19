@@ -94,3 +94,21 @@ Estos ejemplos ayudan a definir una matriz propia de hardware compatible. No se 
 - INPI — buscador oficial de marcas: https://portaltramites.inpi.gov.ar/marcasconsultas/busqueda.
 
 El nombre de producto no se considera legalmente disponible hasta realizar búsqueda de denominaciones idénticas y similares, variantes fonéticas, titulares y clases pertinentes. La consulta web no sustituye el análisis del INPI ni asesoramiento especializado.
+
+
+## Proyectos abiertos y reutilización de código
+
+La comparación de licencias, arquitectura, alcance y posibilidad de adaptación está desarrollada en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
+
+Resumen de la revisión del 19/11/2026:
+
+- **Medusa:** núcleo MIT con materiales Enterprise separados; primer candidato para probar módulos de comercio reutilizables.
+- **Odoo Community 19:** LGPLv3; referencia funcional principal para POS, offline, descuentos y hardware. Community y Enterprise deben analizarse por separado.
+- **Frappe / ERPNext:** Frappe es MIT, ERPNext es GPLv3; no confundir las dos licencias.
+- **Apache OFBiz:** Apache 2.0; suite ERP muy completa, pero con costo de adaptación elevado.
+- **Saleor:** BSD 3-Clause; referencia de comercio electrónico, no una base POS completa.
+- **Vendure, uniCenta y NexoPOS:** GPLv3 por defecto; no incorporar su núcleo sin una decisión explícita sobre copyleft.
+- **OSPOS:** su archivo LICENSE agrega una exigencia de atribución visible en cada pantalla; no encaja con una interfaz completamente rebrandeada.
+- **TastyIgniter:** MIT; referencia o posible fuente acotada para flujos gastronómicos.
+
+La consulta de código abierto no equivale a una auditoría de seguridad ni a la aprobación de una dependencia. No se incorporó código externo en esta etapa.
