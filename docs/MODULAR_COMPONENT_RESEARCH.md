@@ -222,74 +222,6 @@ En el tag 24.0 se inspeccionaron las clases de envío, contrato, intervención, 
 **Conclusión revisada:** Dolibarr contiene código reutilizable especialmente interesante para shipment, contratos e intervenciones. Sigue siendo un candidato integral de inspección, pero su adaptación multiárea y el resultado de gestión por unidad probablemente requieran modelado/extensión adicional. Antes de elevarlo a cuarto candidato formal hay que demostrar asignación de BU en líneas, ledger de costos, consolidación y actualización sin romper módulos.
 
 
-## S. invoice2data — extracción asistida de facturas PDF
-
-- Repositorio: https://github.com/invoice-x/invoice2data
-- Versión/metadata inspeccionada: 1.0.1; Python >=3.10; licencia declarada MIT en pyproject.toml.
-- Extrae campos de facturas mediante plantillas configurables y parsers de PDF/texto/tablas; tiene extras opcionales para OCR engines, PDF parsers y modelos de extracción.
-- Valor para Rubrova: acelerar la carga de facturas de proveedores, CUIT, fechas, número, moneda, total e ítems cuando la estructura del proveedor es conocida.
-- Límite: la extracción basada en plantillas es frágil ante formatos nuevos y no valida la autenticidad fiscal ni reemplaza la revisión. Un PDF escaneado necesita OCR previo; un campo extraído no equivale a un asiento ni a una factura verificada.
-- Recomendación: ejecutar como proceso aislado de ingestión; devolver campos propuestos, nivel de confianza, página/fragmento de origen y errores para revisión humana. Guardar el original y su checksum. No escribir automáticamente en cuentas a pagar sin aprobar.
-- Prueba: facturas reales anonimizadas de varios proveedores, formatos de texto y escaneados, cambios de plantilla, importes con coma/punto, IVA/percepciones y detección de duplicados.
-
-Fuentes:
-- https://github.com/invoice-x/invoice2data
-- https://invoice2data.readthedocs.io/
-
-## T. OCRmyPDF — OCR local y archivado documental
-
-- Repositorio: https://github.com/ocrmypdf/OCRmyPDF
-- Licencia: Mozilla Public License 2.0.
-- La documentación indica soporte para Linux, Windows, macOS y FreeBSD; agrega una capa de texto OCR a PDFs escaneados, corrige inclinación, optimiza y puede generar PDF/A.
-- Valor: digitalizar facturas, remitos, órdenes, recibos, contratos y constancias de entrega manteniendo la imagen y haciendo buscable el contenido. Encaja con el requisito multiplataforma y puede ejecutarse en el equipo o servidor local.
-- Límite: OCR solo reconoce texto; no clasifica ni valida documento fiscal, proveedor, CUIT, importe o CAE. Depende de Tesseract y binarios/lenguajes adicionales; registrar la licencia de cada dependencia distribuida.
-- Recomendación: combinarlo con invoice2data o extractor propio. El original permanece inmutable; OCR produce una versión derivada con checksum, idioma y versión del motor. Se requiere revisión humana para valores económicos y fiscales.
-
-Fuentes:
-- https://github.com/ocrmypdf/OCRmyPDF
-- https://ocrmypdf.readthedocs.io/en/latest/
-
-## U. skforecast — pronóstico de demanda y reposición
-
-- Repositorio: https://github.com/skforecast/skforecast
-- Licencia: BSD-3-Clause.
-- Biblioteca Python que unifica modelos estadísticos, regresores machine learning y modelos foundation; permite entrenar, predecir, hacer backtesting, pronóstico probabilístico, ajustar parámetros, crear features de calendario y explicar variables.
-- Valor: construir pronósticos por SKU, familia, sucursal o canal y simular reposición. Puede usar eventos, estacionalidad, promociones y ventas históricas cuando haya suficiente cobertura.
-- Límite: no es un motor de inventario ni conoce por sí solo lead time, mínimos, cajas, roturas de stock, demanda censurada por faltantes ni compras comprometidas. Los modelos foundation pueden añadir dependencias/descargas y no se deben usar para datos privados sin estudiar el flujo.
-- Recomendación: extraer patrones y evaluar la biblioteca en un servicio analítico opcional (Python), manteniendo el núcleo transaccional independiente. Comparar siempre contra baseline ingenuo/estacional y evaluar backtesting temporal; medir WAPE/MAE/bias y cobertura de intervalos. No pedirle que cambie compras o precios automáticamente.
-- Criterio: solo activar pronóstico para series con historial y calidad suficientes; para demanda intermitente o SKUs nuevos mostrar reglas simples y nivel de confianza bajo.
-
-Fuentes:
-- https://github.com/skforecast/skforecast
-- https://skforecast.org/latest/
-
-## V. Polars — procesamiento analítico de alto rendimiento
-
-- Repositorio: https://github.com/pola-rs/polars
-- Licencia: MIT.
-- Motor de consultas/DataFrames escrito en Rust con API Python, Rust, Node.js y SQL; soporta ejecución perezosa, optimización y spill a disco.
-- Valor: procesar importaciones grandes, exportaciones contables, conciliaciones y datasets analíticos sin cargar todos los registros en memoria.
-- Límite: es una herramienta de procesamiento, no una base OLTP ni un ledger; no usar DataFrame para sustituir las restricciones transaccionales de PostgreSQL.
-- Recomendación: candidato de rendimiento para pipelines de lectura/transformación analítica, con pruebas de memoria, precisión decimal, redondeo, zonas horarias y tipos antes de adoptarlo.
-
-Fuente:
-- https://github.com/pola-rs/polars
-
-## W. Bigcapital — contabilidad de doble partida como referencia de código
-
-- Repositorio: https://github.com/bigcapitalhq/bigcapital
-- Licencia del repositorio: AGPL-3.0.
-- README describe una aplicación self-hosted de accounting + inventory, estados financieros y reportes; ofrece API para integrar transacciones de un sistema externo en contabilidad de doble partida.
-- Valor: estudiar modelo de cuentas, journal entries, documentos, saldos, cuentas por cobrar/pagar, estados financieros e integración headless. Puede ayudar a comparar la construcción de un ledger propio frente a un motor contable existente.
-- Límite: no se comprobó localización argentina, ARCA, IVA/percepciones/retenciones, libros/regímenes argentinos, multiárea con eliminación de costos internos ni integración con Tango/Catedral. Tampoco es un módulo pequeño; es otra aplicación con autoridad financiera.
-- Recomendación: referencia de arquitectura/contratos y posible laboratorio separado, no añadirlo como segundo libro contable en Rubrova. AGPL-3.0 y sus obligaciones deben revisarse si se adapta o integra código; el uso privado no equivale a exención automática de licencias.
-- Prueba documental siguiente: identificar modelos/servicios de journal, accounts, billing, inventory, API de creación de transacciones, reversión y conciliación; comparar con el modelo canónico de ACCOUNTING_INTEROPERABILITY.md.
-
-Fuente:
-- https://github.com/bigcapitalhq/bigcapital
-- https://docs.bigcapital.app/api-reference
-
-
 ## M. InvenTree — inventario, trazabilidad y extensión por plugins
 
 - Repositorio: https://github.com/inventree/InvenTree
@@ -389,3 +321,73 @@ Fuentes:
 - https://github.com/apache/superset
 
 Las referencias son candidatas de código, patrones o servicios de soporte; ninguna está incorporada ni ejecutada en Rubrova. La decisión de integración exige revisión de licencias, dependencias, versión, seguridad, ownership de datos y pruebas locales.
+
+
+## S. invoice2data — extracción asistida de facturas PDF
+
+- Repositorio: https://github.com/invoice-x/invoice2data
+- Versión/metadata inspeccionada: 1.0.1; Python >=3.10; licencia declarada MIT en pyproject.toml.
+- Extrae campos de facturas mediante plantillas configurables y parsers de PDF/texto/tablas; tiene extras opcionales para OCR engines, PDF parsers y modelos de extracción.
+- Valor para Rubrova: acelerar la carga de facturas de proveedores, CUIT, fechas, número, moneda, total e ítems cuando la estructura del proveedor es conocida.
+- Límite: la extracción basada en plantillas es frágil ante formatos nuevos y no valida la autenticidad fiscal ni reemplaza la revisión. Un PDF escaneado necesita OCR previo; un campo extraído no equivale a un asiento ni a una factura verificada.
+- Recomendación: ejecutar como proceso aislado de ingestión; devolver campos propuestos, nivel de confianza, página/fragmento de origen y errores para revisión humana. Guardar el original y su checksum. No escribir automáticamente en cuentas a pagar sin aprobar.
+- Prueba: facturas reales anonimizadas de varios proveedores, formatos de texto y escaneados, cambios de plantilla, importes con coma/punto, IVA/percepciones y detección de duplicados.
+
+Fuentes:
+- https://github.com/invoice-x/invoice2data
+- https://invoice2data.readthedocs.io/
+
+## T. OCRmyPDF — OCR local y archivado documental
+
+- Repositorio: https://github.com/ocrmypdf/OCRmyPDF
+- Licencia: Mozilla Public License 2.0.
+- La documentación indica soporte para Linux, Windows, macOS y FreeBSD; agrega una capa de texto OCR a PDFs escaneados, corrige inclinación, optimiza y puede generar PDF/A.
+- Valor: digitalizar facturas, remitos, órdenes, recibos, contratos y constancias de entrega manteniendo la imagen y haciendo buscable el contenido. Encaja con el requisito multiplataforma y puede ejecutarse en el equipo o servidor local.
+- Límite: OCR solo reconoce texto; no clasifica ni valida documento fiscal, proveedor, CUIT, importe o CAE. Depende de Tesseract y binarios/lenguajes adicionales; registrar la licencia de cada dependencia distribuida.
+- Recomendación: combinarlo con invoice2data o extractor propio. El original permanece inmutable; OCR produce una versión derivada con checksum, idioma y versión del motor. Se requiere revisión humana para valores económicos y fiscales.
+
+Fuentes:
+- https://github.com/ocrmypdf/OCRmyPDF
+- https://ocrmypdf.readthedocs.io/en/latest/
+
+## U. skforecast — pronóstico de demanda y reposición
+
+- Repositorio: https://github.com/skforecast/skforecast
+- Licencia: BSD-3-Clause.
+- Biblioteca Python que unifica modelos estadísticos, regresores machine learning y modelos foundation; permite entrenar, predecir, hacer backtesting, pronóstico probabilístico, ajustar parámetros, crear features de calendario y explicar variables.
+- Valor: construir pronósticos por SKU, familia, sucursal o canal y simular reposición. Puede usar eventos, estacionalidad, promociones y ventas históricas cuando haya suficiente cobertura.
+- Límite: no es un motor de inventario ni conoce por sí solo lead time, mínimos, cajas, roturas de stock, demanda censurada por faltantes ni compras comprometidas. Los modelos foundation pueden añadir dependencias/descargas y no se deben usar para datos privados sin estudiar el flujo.
+- Recomendación: extraer patrones y evaluar la biblioteca en un servicio analítico opcional (Python), manteniendo el núcleo transaccional independiente. Comparar siempre contra baseline ingenuo/estacional y evaluar backtesting temporal; medir WAPE/MAE/bias y cobertura de intervalos. No pedirle que cambie compras o precios automáticamente.
+- Criterio: solo activar pronóstico para series con historial y calidad suficientes; para demanda intermitente o SKUs nuevos mostrar reglas simples y nivel de confianza bajo.
+
+Fuentes:
+- https://github.com/skforecast/skforecast
+- https://skforecast.org/latest/
+
+## V. Polars — procesamiento analítico de alto rendimiento
+
+- Repositorio: https://github.com/pola-rs/polars
+- Licencia: MIT.
+- Motor de consultas/DataFrames escrito en Rust con API Python, Rust, Node.js y SQL; soporta ejecución perezosa, optimización y spill a disco.
+- Valor: procesar importaciones grandes, exportaciones contables, conciliaciones y datasets analíticos sin cargar todos los registros en memoria.
+- Límite: es una herramienta de procesamiento, no una base OLTP ni un ledger; no usar DataFrame para sustituir las restricciones transaccionales de PostgreSQL.
+- Recomendación: candidato de rendimiento para pipelines de lectura/transformación analítica, con pruebas de memoria, precisión decimal, redondeo, zonas horarias y tipos antes de adoptarlo.
+
+Fuente:
+- https://github.com/pola-rs/polars
+
+## W. Bigcapital — contabilidad de doble partida como referencia de código
+
+- Repositorio: https://github.com/bigcapitalhq/bigcapital
+- Licencia del repositorio: AGPL-3.0.
+- README describe una aplicación self-hosted de accounting + inventory, estados financieros y reportes; ofrece API para integrar transacciones de un sistema externo en contabilidad de doble partida.
+- Valor: estudiar modelo de cuentas, journal entries, documentos, saldos, cuentas por cobrar/pagar, estados financieros e integración headless. Puede ayudar a comparar la construcción de un ledger propio frente a un motor contable existente.
+- Límite: no se comprobó localización argentina, ARCA, IVA/percepciones/retenciones, libros/regímenes argentinos, multiárea con eliminación de costos internos ni integración con Tango/Catedral. Tampoco es un módulo pequeño; es otra aplicación con autoridad financiera.
+- Recomendación: referencia de arquitectura/contratos y posible laboratorio separado, no añadirlo como segundo libro contable en Rubrova. AGPL-3.0 y sus obligaciones deben revisarse si se adapta o integra código; el uso privado no equivale a exención automática de licencias.
+- Prueba documental siguiente: identificar modelos/servicios de journal, accounts, billing, inventory, API de creación de transacciones, reversión y conciliación; comparar con el modelo canónico de ACCOUNTING_INTEROPERABILITY.md.
+
+Fuente:
+- https://github.com/bigcapitalhq/bigcapital
+- https://docs.bigcapital.app/api-reference
+
+
