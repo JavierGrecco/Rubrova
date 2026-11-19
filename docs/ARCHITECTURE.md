@@ -2,9 +2,19 @@
 
 ## Dirección técnica
 
-La dirección inicial es un **monolito modular con límites claros**, una base transaccional central y capacidad local para operar durante interrupciones de conectividad. No se dividirá en microservicios sin una necesidad medida.
+La dirección sigue siendo un **monolito modular con límites claros**, una base transaccional central y capacidad local para operar durante interrupciones de conectividad. No se dividirá en microservicios sin una necesidad medida.
 
-La arquitectura es objetivo y las decisiones tecnológicas siguen abiertas. Lenguaje, framework, almacenamiento local y despliegue se elegirán mediante pruebas técnicas antes de la implementación principal.
+La estructura del negocio y las invariantes son propias. Los frameworks y módulos externos se evalúan como herramientas reemplazables: no deben decidir qué significa una venta, un pago, un movimiento de caja o un movimiento de inventario.
+
+## Candidato tecnológico para validar
+
+La investigación de reutilización priorizó **Medusa v2 con TypeScript, React y PostgreSQL** como primer candidato para una prueba vertical. El núcleo de Medusa está bajo MIT, pero el repositorio separa materiales Enterprise sujetos a licencia comercial. Solo se considerarían módulos y archivos expresamente cubiertos por la licencia abierta.
+
+El motivo para probarlo es que ofrece una arquitectura modular y código reutilizable para catálogo, precios, promociones, pedidos, pagos, inventario, canales, workflows y eventos. No incluye por sí solo las reglas críticas del producto: caja y turnos, arqueo, descuentos auditables según nuestras políticas, libro de stock y costos, producción, fiscalidad argentina ni continuidad offline robusta.
+
+**Medusa no está aprobado todavía como framework.** La prueba debe demostrar que las funciones propias se pueden implementar mediante módulos y contratos, sin modificar su núcleo ni duplicar las fuentes de verdad.
+
+Si no supera esa prueba, la alternativa preferida es un monolito modular propio en TypeScript sobre PostgreSQL, reutilizando únicamente bibliotecas permisivas aprobadas. Odoo Community 19 se mantiene como referencia funcional y alternativa de adopción integral, pero adoptarlo implicaría aceptar su framework, su modelo de datos y las obligaciones LGPLv3. La evaluación legal y técnica completa está en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
 
 ## Principios
 
@@ -17,6 +27,8 @@ La arquitectura es objetivo y las decisiones tecnológicas siguen abiertas. Leng
 - Servicios externos quedan detrás de adaptadores.
 - La lógica de negocio no depende de una interfaz específica.
 - El modo local no depende de que una tarea del navegador siempre esté disponible.
+- El código externo no se incorpora sin revisión de licencia, mantenimiento, seguridad y compatibilidad.
+- Cada dato transaccional tiene un único sistema responsable; no se ejecutan dos motores de stock o ventas como fuentes de verdad.
 
 ## Módulos
 
@@ -52,8 +64,8 @@ La estructura debe permitir encontrar responsabilidades sin imponer carpetas inn
 
 ## Datos y persistencia
 
-- PostgreSQL es candidato inicial para la base central, sujeto a validación.
-- Almacenamiento local transaccional: SQLite para aplicación instalada o IndexedDB para cliente web, sujeto a prueba.
+- PostgreSQL es el candidato para la base central, sujeto a la prueba de compatibilidad.
+- Almacenamiento local transaccional: IndexedDB para la primera prueba PWA; SQLite mediante un servicio local se evaluará si el navegador no ofrece la recuperación necesaria.
 - Historial de movimientos para caja, pagos, inventario y cuentas corrientes.
 - Fotografía de valores relevantes al momento de la venta.
 - Identificadores globales para operaciones originadas sin conexión.
@@ -78,16 +90,33 @@ Toda entidad operativa pertenece a un negocio y, cuando corresponde, a sucursal 
 
 Dos dispositivos desconectados no pueden conocer cambios mutuos. Para varias cajas offline se evaluará un servicio local de sucursal o concentrador LAN. No usar "último cambio gana" para conflictos financieros o de stock.
 
-No prometer offline total: ARCA, pagos externos y datos de otros dispositivos pueden requerir conexión.
+No prometer offline total: ARCA, pagos externos y datos de otros dispositivos pueden requerir conexión. El offline POS debe ser probado incluso después de cerrar y volver a abrir la aplicación; mantener una pestaña abierta no alcanza.
 
 ## Eventos y sincronización
 
 Usar Outbox/Inbox cuando una transacción deba producir un mensaje confiable. Cada evento incluye id, tipo, versión, fecha, negocio, origen y correlación. No incluir secretos ni datos personales innecesarios.
 
+Si se adopta Medusa, su motor en memoria no se considerará suficiente para producción: se deberá configurar y probar un motor durable de workflows/eventos acorde con la documentación del framework. Redis solo se incorpora si forma parte de esa solución elegida y se justifica operativamente.
+
+## Hardware
+
+La interfaz POS se comunica con una capa de dispositivos independiente. Los protocolos y controladores de impresoras, lectores, balanzas, cajones, pantallas y terminales se aíslan detrás de adaptadores. Se prioriza una pasarela local cuando sea necesaria para acceso USB, serie o red y para mantener la caja desacoplada de los servicios externos.
+
+No se afirma compatibilidad por marca genérica: cada modelo, conexión y sistema operativo se registra en una matriz de pruebas físicas.
+
 ## Observabilidad
 
 Logs estructurados, correlación por operación, métricas de latencia y sincronización, trazas de flujos, alertas de fallos fiscales y de pago, estado visible para operaciones pendientes, backups automáticos y pruebas de restauración.
 
-## Decisiones abiertas
+## Decisiones y validaciones pendientes
 
-Framework, frontend, PWA/escritorio, servicio local, motor de reportes, cola, hosting, observabilidad y hardware inicial deben decidirse con prototipos y evidencia.
+- [x] Dirección de monolito modular y propiedad de datos por módulo.
+- [x] PostgreSQL definido como candidato para el almacenamiento central.
+- [x] Estrategia de reutilización y revisión de licencias documentada.
+- [ ] Aprobar o descartar Medusa mediante la prueba vertical completa.
+- [ ] Cerrar interfaz React/PWA, persistencia local y eventual servicio local.
+- [ ] Definir motor de workflows/eventos durable según la plataforma elegida.
+- [ ] Elegir hosting, observabilidad y hardware inicial con pruebas.
+- [ ] Confirmar el modelo de despliegue: nube, local por sucursal o híbrido.
+
+Ninguna de estas decisiones pendientes se considera implementada o validada por estar escrita en este documento.
