@@ -82,3 +82,16 @@ El adaptador publica capacidades reales: iniciar pago, consultar, recibir notifi
 El estado externo no se deduce de la pantalla ni de un timeout. Las órdenes creadas o recibidas por la terminal siguen pendientes hasta confirmación final. Un resultado incierto se consulta y concilia. La clave de idempotencia y la referencia de operación impiden duplicados.
 
 La guía de flujo, estados, impresión y pruebas está en [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md).
+
+
+## Logística y transportistas argentinos
+
+El módulo de logística no está acoplado a un proveedor. Separa el despacho del pedido/venta y expone adaptadores para cotizar, crear envíos, obtener etiquetas, recibir seguimiento y registrar prueba de entrega según las capacidades de cada operador.
+
+La investigación de APIs, proyectos y límites está en [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md). No asumir que un agregador de tracking puede crear una guía ni contratar un flete.
+
+## Interoperabilidad contable
+
+El sistema debe exportar ventas, compras, cobros, pagos, asientos, centros de costo y dimensiones de gestión a los paquetes contables que use la empresa o su estudio. La compatibilidad con Tango, Catedral, Bejerman, Xubio, Colppy y perfiles de archivos se documenta en [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md).
+
+La integración no debe emitir dos comprobantes fiscales ni mantener dos libros contables editables. La fuente de verdad y las claves externas se definen por tipo de documento.
