@@ -59,6 +59,7 @@ Una plataforma que reúne en un solo lugar:
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
+| [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
