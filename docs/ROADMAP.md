@@ -10,7 +10,10 @@ La prueba común, versiones fijadas, conjunto sintético y criterios de aprobaci
 
 - Consolidar reglas comerciales, modelo de dominio, estados y contratos.
 - Comparar Posnic 1.9.2, ERPNext 16.60.0/Frappe 16 y MyCompany/lsFusion 6.2 como plataformas integrales con pruebas equivalentes.
-- Evaluar módulos dedicados de WMS/TMS, integraciones, promociones, servicios de campo, analítica y automatización detrás de contratos.
+- Evaluar módulos dedicados de WMS/TMS, integraciones, promociones, servicios de campo, analítica, automatización y archivo documental detrás de contratos.
+- Definir adaptadores para Andreani, PAQ.AR, OCA e-Pak, Vía Cargo y agregadores; Kangu queda pendiente de confirmar en Argentina.
+- Diseñar perfiles contables para Tango, Catedral, Bejerman, Xubio y Colppy, con lotes idempotentes y conciliación.
+- Incorporar mejoras derivadas de necesidades PyME: recuperación de sincronizaciones, importación asistida, costo de reposición, cobranza/flujo de caja y WMS por ubicación.
 - Definir y validar unidades de negocio, centros de beneficio/costo y dimensiones de canal, sucursal, territorio, proyecto y contrato.
 - Probar mínimos y escalas mayoristas, crédito B2B, despachos parciales y tracking agregado después de la venta.
 - Probar contratos de servicio, SLA, agenda, órdenes de trabajo, evidencia, aceptación y facturación.
@@ -88,6 +91,11 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Investigación de Dolibarr, OCA Field Service, OpenFieldPro y Open TMS para los nuevos dominios.
 - [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
 - [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
+- [ ] Inspección dirigida de InvenTree, OpenBoxes y componentes públicos de OpenWMS; fijar módulos/commits y límites de licencia.
+- [ ] Solicitar credenciales de QA a Andreani, PAQ.AR y OCA; comparar Envíopack, AfterShip y 17TRACK para tracking multioperador.
+- [ ] Confirmar si existe una API/operativa Kangu aplicable a Argentina; no asumir disponibilidad.
+- [ ] Solicitar layouts de importación/exportación de Catedral y licencias/versiones de Tango, Bejerman, Xubio y Colppy.
+- [ ] Probar importación/migración, exportación contable balanceada, conciliación y recuperación de lotes.
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
 - [ ] Ejecutar escenarios P20–P26: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios, rentabilidad y transferencias internas.
 - [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
