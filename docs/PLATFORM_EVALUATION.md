@@ -85,7 +85,7 @@ ERPNext aporta procesos ERP profundos: inventario, abastecimiento, compras, fabr
 
 ## Datos sintéticos compartidos
 
-La prueba debe representar una operación argentina sencilla, sin utilizar información real:
+La prueba debe representar una operación argentina sencilla, sin utilizar información real. Los datos canónicos, con importes en unidades menores enteras y resultados esperados, están en [dataset sintético](fixtures/platform-evaluation.json):
 
 | Dato | Valor de prueba |
 |---|---|
