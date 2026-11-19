@@ -269,3 +269,27 @@ Una biblioteca no se aprueba solo porque sea popular o tenga muchas estrellas. T
 - [ ] Falta ejecutar la prueba vertical de compatibilidad.
 - [ ] Falta generar el primer inventario/SBOM del software propio y sus dependencias.
 
+ 
+
+## Catálogo técnico ampliado — revisión 19/11/2026
+
+Se creó [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md), con una evaluación por módulo y enlaces a repositorios y licencias verificadas. La búsqueda deja de limitarse a dos plataformas y ahora contempla:
+
+- Plataformas integrales: Posnic, ERPNext/Frappe, NexoPOS y Odoo.
+- Hardware: pos-toolkit para ESC/POS, impresoras, cajón, scanners seriales y balanzas HID.
+- Pruebas físicas simuladas: emupos y ESCPost.
+- Fiscalidad argentina: arca-sdks como primera opción para TypeScript; Afip.py como alternativa Python; OCA y módulos Odoo como candidatos condicionados.
+- Offline: PowerSync Open Edition y Dexie.js, con responsabilidades y límites diferenciados.
+- Gastronomía: TastyIgniter, ElitaleRestro y DearPOS para módulos o referencias concretas.
+
+### Hallazgos que cambian la evaluación
+
+1. Posnic pasa a ser el primer candidato para una prueba vertical integral por su arquitectura local/offline y cobertura POS retail/restaurante. No está aprobado: la evidencia offline publicada es acotada, el código propio es AGPL-3.0-only y los instaladores incluyen MongoDB bajo SSPL-1.0.
+2. ERPNext/Frappe queda como segundo candidato integral por la cobertura de ERP, fabricación, compras, inventario y contabilidad.
+3. NexoPOS es candidato, pero el LICENSE raíz declara GPLv3 y composer.json declara MIT. No aprobar incorporación hasta resolver la discrepancia con el mantenedor.
+4. pos-toolkit es el componente más prometedor para hardware; register-core figura como planificado y no debe contarse como implementado.
+5. arca-sdks reemplaza al repositorio arca-facturacion archivado. El paquete de facturación revisado declara MIT y requiere Node >=22.12.
+6. PowerSync Open Edition es Apache-2.0; sus funciones Enterprise y Cloud tienen condiciones comerciales separadas. Dexie es almacenamiento IndexedDB, no sincronización completa.
+7. emupos y ESCPost pueden reducir compras tempranas de periféricos y hacer reproducibles las pruebas de hardware.
+
+La evaluación es documental. Todavía no se clonaron ni ejecutaron los proyectos y no se incorporó código externo. Las prioridades indican qué probar primero, no aprobación de producción.
