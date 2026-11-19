@@ -141,3 +141,19 @@ Fuentes:
 - Frappe, separación de licencias entre Framework y ERPNext: https://docs.frappe.io/legal/others/license-and-trademark
 
 Este criterio es una guía técnica general, no asesoramiento jurídico sobre un caso concreto.
+
+## Catálogo de código reutilizable
+
+La revisión detallada de repositorios, manifiestos, licencias, cobertura y límites está en [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md).
+
+Hallazgos principales verificados el 19/11/2026:
+- Posnic: código propio AGPL-3.0-only; paquetes con MongoDB SSPL-1.0; operación local/offline documentada con límites y evidencia acotada.
+- ERPNext GPL-3.0 y Frappe MIT.
+- NexoPOS presenta discrepancia: LICENSE GPLv3 frente a composer.json MIT. Bloqueado hasta aclaración.
+- pos-toolkit y emupos y ESCPost: Apache-2.0; hardware, simulación y diagnóstico.
+- arca-sdks: monorepo activo; paquete de facturación MIT; el repo anterior fue archivado.
+- PowerSync Open Edition: Apache-2.0; separar funciones open source de Enterprise/Cloud.
+- Dexie.js: Apache-2.0 para IndexedDB, no sync completo.
+- TastyIgniter MIT; DearPOS Apache-2.0 y ElitaleRestro AGPLv3 como referencias sectoriales con límites.
+
+No se clonó ni ejecutó código de estos proyectos en esta fase.
