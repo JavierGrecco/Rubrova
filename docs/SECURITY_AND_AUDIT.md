@@ -110,3 +110,14 @@ El tratamiento documental y fiscal de cada salida debe configurarse con asesoram
 Usar OWASP ASVS 5.0 como catálogo verificable de controles. La adopción se registra con requisitos, pruebas y evidencias; no se declara certificación por el solo hecho de consultar el estándar.
 
 Para pagos con tarjeta se priorizan terminales y proveedores externos, minimizando el alcance de datos de tarjeta. El alcance PCI aplicable debe ser revisado por especialistas antes de procesar o almacenar datos.
+
+
+## Referencias y normativa a validar
+
+- OWASP ASVS 5.0: catálogo de requisitos verificables para controles de aplicación. Se seleccionará el nivel de requisitos según riesgo y se mantendrá evidencia de pruebas: https://asvs.owasp.org/.
+- NIST SSDF SP 800-218 v1.1 es la referencia final publicada. NIST SP 800-218 Rev. 1 / v1.2 seguía figurando como borrador en la consulta del 19/11/2026; no se tratará como versión final hasta su publicación: https://csrc.nist.gov/Projects/ssdf/publications.
+- PCI DSS v4.0.1: revisar el alcance aplicable con un especialista y el adquirente. La primera estrategia es no almacenar ni procesar datos completos de tarjeta y delegar el pago a terminales/proveedores: https://www.pcisecuritystandards.org/es/document_library/.
+- Ley argentina 25.326 y normativa complementaria: definir finalidad, minimización, acceso, retención, derechos del titular y seguridad de datos personales: https://www.argentina.gob.ar/normativa/nacional/ley-25326-64790/actualizacion.
+- RG 1415 actualizada: el texto vigente incluye modificaciones posteriores, entre ellas RG 5678/2025 y RG 5866/2026. El artículo 27 contempla documentación del traslado y entrega aun cuando no sea una compraventa, con el detalle y excepciones que establezca la norma: https://www.argentina.gob.ar/normativa/nacional/resoluci%C3%B3n-1415-2003-81316/actualizacion.
+
+La aplicación concreta de normas fiscales y de privacidad debe revisarse con profesionales responsables antes de producción. Esta documentación no reemplaza asesoramiento legal o contable.
