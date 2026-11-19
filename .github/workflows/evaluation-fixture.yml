@@ -1,0 +1,38 @@
+name: Validación del dataset de evaluación
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/fixtures/platform-evaluation.json"
+      - "scripts/evaluation/**"
+      - ".github/workflows/evaluation-fixture.yml"
+  pull_request:
+    paths:
+      - "docs/fixtures/platform-evaluation.json"
+      - "scripts/evaluation/**"
+      - ".github/workflows/evaluation-fixture.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validar dataset y reglas aritméticas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Ejecutar pruebas del validador
+        run: node --test scripts/evaluation/fixture-validator.test.mjs
+
+      - name: Validar el dataset canónico
+        run: node scripts/evaluation/validate-fixture.mjs
