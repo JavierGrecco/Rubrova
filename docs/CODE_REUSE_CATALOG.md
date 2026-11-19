@@ -291,3 +291,40 @@ La investigación detallada está en [Investigación ampliada de módulos](MODUL
 - **ERPNext:** referencia fuerte para venta mayorista: price lists por cliente, Item Price con mínimos y packing units, Pricing Rules y Promotional Schemes por cantidad/importe; Sales Orders con entrega y facturación parciales; dimensiones contables para informes por unidad/centro.
 
 La estrategia multiárea mantiene una sola cuenta de cliente y asigna la unidad de negocio a nivel de documento/línea. El despacho y tracking son objetos posteriores y separados de la venta. Ninguna referencia queda aprobada hasta ejecutar pruebas.
+
+
+## 10. Logística, inventario, automatización y documentos
+
+- **InvenTree (MIT):** backend Django con REST API y plugins; stock, partes, ubicaciones, trazabilidad y aplicaciones extensibles. Muy útil como referencia de inventario, ubicaciones, barcode y API; no adoptar como segundo dueño de stock sin una decisión explícita.
+- **OpenBoxes (EPL-1.0):** WMS/inventario orientado a supply chain, lotes, transferencias, recepción y almacenes. Su aplicación completa es pesada para Rubrova; estudiar flujos y modelo, no duplicar el ledger de stock.
+- **OpenWMS.org:** plataforma WMS/MFC Java/Spring y servicios distribuidos; el root publica Apache-2.0, pero el propio catálogo mezcla componentes públicos Apache-2.0 con módulos privados/GPLv3. Referencia arquitectónica de warehouse execution y flujos físicos; no copiar componentes sin verificar licencia y disponibilidad individuales.
+- **Apache Superset (Apache-2.0):** BI de solo lectura para datasets/vistas analíticas; ya figura como candidato, conviene conservar la separación del OLTP.
+- **Temporal (MIT):** ejecución durable de procesos largos, reintentos y recuperación con historial; candidato para workflows críticos de ARCA, conciliación y logística si la complejidad justifica operar su infraestructura.
+- **Activepieces:** MIT para core fuera de directorios enterprise, con capacidades empresariales bajo licencia aparte; automatización periférica e integraciones no críticas, no propietario de pagos o stock.
+- **n8n:** Sustainable Use License, source-available y no OSI open source; no es la base de una estrategia de código abierto aunque su licencia contemple determinados usos internos. Evitar incorporar carpetas .ee sin licencia empresarial.
+- **Paperless-ngx (GPL-3.0):** archivo documental OCR con etiquetas y búsqueda; candidato de referencia o servicio local separado para facturas, remitos y documentos, no libro contable.
+- **OpenBoxes / InvenTree / OpenWMS:** son aplicaciones/plataformas, no pequeñas bibliotecas neutrales. No ejecutar varias como autoridad de inventario a la vez.
+
+La investigación de alcance, stack, licencias, madurez y recomendaciones está en [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md).
+
+## 11. Logística argentina y seguimiento
+
+- **Andreani:** API oficial y wrapper TypeScript MIT de la comunidad; revisar compatibilidad con la API actual.
+- **Correo Argentino PAQ.AR:** API oficial y wrapper TypeScript MIT; endpoints publicados incluyen cotización, agencias y alta de envíos.
+- **OCA e-Pak:** Web Services oficiales y wrappers MIT en Ruby/Python.
+- **Vía Cargo:** AfterShip publica integración de tracking; 17TRACK también lista soporte. No encontramos API pública oficial de creación de envíos/cotización.
+- **Envíopack:** agregador comercial con tracking normalizado y webhooks; confirmar operadores incluidos.
+- **Kangu:** la información pública revisada sobre la adquisición por Mercado Libre menciona Brasil, Colombia y México; no demuestra disponibilidad API/servicio para Argentina.
+
+Ver [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md).
+
+## 12. Interoperabilidad administrativa/contable
+
+- **Tango/Axoft:** TangoDeltaApi y APIeCommerce son repositorios oficiales de la organización verificada; ApiClientes expone JSON de comprobantes con CAE; Tango Contabilidad publica capacidades de API para asientos bajo condiciones de versión/abono.
+- **Catedral:** exportación/importación de Excel y otros formatos, intercambio Empresa–Estudio; API pública de desarrollador no confirmada.
+- **Bejerman:** API abierta y WebService como adicionales según plan.
+- **Xubio:** API REST OAuth2, documentación de comprobantes, asientos, centros de costo, bancos, depósitos, impuestos y retenciones/percepciones.
+- **Colppy:** API REST documentada en su portal; declara comprobantes, clientes/proveedores, asientos e inventario.
+- **Asentia:** producto comercial de conciliación bancaria que acepta extractos y exporta asientos; referencia funcional, no código abierto.
+
+La arquitectura y las pruebas de estos destinos están en [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md). Los repositorios oficiales y manuales se consultan antes de cada implementación.
