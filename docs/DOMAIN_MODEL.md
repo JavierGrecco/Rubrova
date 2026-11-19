@@ -1,18 +1,99 @@
-undefined
+# Modelo de dominio
 
-## Checkout editable y terminales de pago
+**Estado:** modelo conceptual inicial; entidades y límites se ajustarán durante la evaluación técnica.
 
-- Cart y CartRevision: carrito de trabajo y revisiones previas a confirmar la venta.
-- CartLine y CartLineRemoved: línea activa y retiro/cambio previo al pago; una línea retirada no produce SaleLine ni InventoryMovement.
-- CheckoutSession: congelación del carrito al iniciar el pago y correlación de los medios.
-- PaymentIntent: obligación de cobro por importe y moneda, interna o externa.
-- PaymentAttempt: intento individual con proveedor, terminal, idempotency key, referencia externa y estado.
-- PaymentAllocation: distribución del total entre efectivo, terminal, transferencia, QR o cuenta.
-- TerminalOrder: orden del proveedor y sus estados externos; se vincula con PaymentAttempt.
-- PaymentReceiptReference: referencia del voucher de la terminal, distinta del ticket de venta y del FiscalDocument.
-- CashTender y CashChange: efectivo recibido y vuelto entregado, con su impacto neto en CashMovement.
-- FiscalDocument permanece separado: una terminal que imprime un voucher no se convierte por ello en emisor fiscal.
+## Organización y dimensiones
 
-## Módulos externos y autoridad
+- Organization: propietario lógico del entorno privado.
+- LegalEntity: entidad fiscal con CUIT, libros, impuestos y numeración propia.
+- BusinessUnit: área de negocio, con responsables, políticas, objetivos y resultado.
+- ProfitCenter: unidad responsable de un resultado económico.
+- CostCenter: equipo o función donde se originan gastos.
+- SalesChannel: canal de captación/atención; no equivale a BusinessUnit.
+- Branch / Location / Warehouse: establecimientos, ubicaciones y depósitos.
+- Territory: zona comercial/logística.
+- Project: trabajo u objetivo acotado.
+- ServiceContract / SupplyAgreement: compromisos con cliente y reglas de cumplimiento.
 
-Cada agregado tiene un módulo propietario. Los sistemas especializados reciben comandos y publican resultados por contrato; no escriben tablas de otros módulos. La referencia al módulo, proveedor, versión de esquema, evento y correlación se conserva para auditoría y conciliación.
+## Personas y clientes
+
+- Party: identidad común de persona u organización.
+- CustomerAccount: relación comercial con una o varias unidades de negocio.
+- OrganizationAccount: cliente empresa con identificador fiscal, sedes y contactos.
+- CustomerContact: comprador, autorizante, referente técnico o receptor.
+- CustomerSite / Address: lugar de entrega o prestación.
+- CustomerCommercialProfile: listas, crédito, territorio y políticas por unidad.
+
+## Catálogo y reglas comerciales
+
+- Product / Service / Variant / SKU / Barcode.
+- UOM / UOMConversion / PackagingRule.
+- PriceList / CustomerPrice / ContractPrice / PriceTier.
+- PromotionRule / RebateAgreement / Coupon.
+- MinimumOrderRule: mínimo por SKU, grupo, cesta, valor, territorio o período.
+- CommercialSnapshot: reglas, precios, descuentos, impuestos y vigencia aplicados a una operación.
+
+## Venta, pedido y cobro
+
+- Quote / SalesOrder / SalesOrderLine: oferta, compromiso y líneas.
+- OrderLineAllocation: unidad de negocio, centro de costo, canal, proyecto/contrato y distribución por línea.
+- Cart / CartRevision / CheckoutSession: carrito editable y sesión de cobro.
+- Sale / SaleLine: venta confirmada y sus líneas.
+- PaymentIntent / PaymentAttempt / PaymentAllocation: intención, intento y distribución del cobro.
+- CashTender / CashChange / CashMovement / RegisterShift: efectivo recibido, vuelto, libro de caja y turno.
+- Invoice / CreditNote / FiscalDocument: factura, nota de crédito y documento fiscal separado.
+
+## Fulfillment y logística
+
+- FulfillmentOrder: tareas de preparación derivadas de un pedido/venta.
+- Shipment: despacho físico, separado de la venta/factura.
+- ShipmentLine: cantidad de cada línea asignada a un envío.
+- HandlingUnit: bulto, caja, pallet o contenedor.
+- ShipmentLeg: tramo propio o de transportista.
+- Carrier / CarrierService / CarrierBooking: operador y servicio contratado.
+- TrackingReference: guía, código o ID externo, que puede incorporarse después de la venta.
+- TrackingEvent: historial de estados y ubicaciones.
+- HandoverEvent / ProofOfDelivery: entrega al transportista y prueba de entrega.
+- DeliveryRoute / Stop / Vehicle / Driver: reparto propio.
+
+Un pedido puede tener varias entregas. Un envío puede consolidar pedidos compatibles. La referencia del transportista no es requisito del pedido ni de la venta; sí se registra antes de publicar estados que requieren seguimiento externo.
+
+## Inventario y compras
+
+- StockLedger / InventoryMovement / StockReservation.
+- Warehouse / Bin / Lot / Serial / Expiry.
+- PurchaseOrder / PurchaseReceipt / SupplierInvoice.
+- PickList / PackList / Transfer / StockCount.
+- ProductionOrder / BOM / Recipe / Workstation / Waste / Yield.
+
+## Servicios y contratos
+
+- ServiceCatalogItem / ServiceAgreement / ContractVersion.
+- ContractLine / Entitlement / SLA / ServiceCalendar.
+- ServiceObligation / Recurrence / Appointment.
+- WorkOrder / WorkTask / Assignment / Technician.
+- TimeEntry / MaterialConsumption / TravelExpense / Subcontract.
+- Evidence / CustomerAcceptance / ServiceVisit.
+- ServiceInvoice / ContractConsumption / Renewal.
+
+El contrato define lo prometido; las obligaciones definen qué debe suceder; las órdenes de trabajo registran qué se ejecutó; los consumos y evidencias soportan facturación y rentabilidad.
+
+## Gestión económica y analítica
+
+- LedgerEntry: hecho económico contabilizado.
+- BusinessDimension: unidad, canal, sucursal, centro de costo, territorio, cliente, proyecto o contrato.
+- DirectCost: costo atribuible directamente a una operación/unidad.
+- SharedCostPool: costo común aún no distribuido.
+- AllocationPolicy / AllocationRun / AllocationLine: método versionado de reparto y sus resultados.
+- ProfitabilitySnapshot: estado de resultados por área y consolidado, con fecha, fuente y versión.
+- KPI / MetricDefinition / Forecast: métricas y estimaciones reproducibles.
+
+## Reglas de integridad
+
+1. Cada agregado tiene un módulo propietario y una sola autoridad.
+2. Los documentos conservan su fotografía de condiciones y dimensiones.
+3. La venta, el pago, el movimiento de stock, el despacho y la factura son hechos relacionados pero distintos.
+4. Los envíos y las órdenes de trabajo pueden dividirse y evolucionar sin duplicar el pedido origen.
+5. Los costos compartidos se asignan con reglas explícitas; la suma asignada debe coincidir con el costo original.
+6. Las integraciones usan IDs, correlación, idempotencia, estados tipados y conciliación.
+7. Las dimensiones económicas se guardan a nivel de línea cuando una operación pertenece a varias áreas.

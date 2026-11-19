@@ -183,3 +183,30 @@ Windows, Linux y macOS son objetivos del producto. No obligan a que todos los co
 Un componente valioso de Linux, Android o Windows no se descarta por sí solo. Se incorpora detrás de una capacidad estable y se crean adaptadores para los sistemas faltantes. La matriz de compatibilidad registra qué está probado de verdad.
 
 La selección de plataformas integrales y la investigación de módulos son decisiones distintas: MyCompany, Posnic y ERPNext se comparan como posibles bases; Simple WMS, OpenLinker, OfferKit y las herramientas analíticas se estudian como módulos/adaptadores.
+
+
+## Modelo multiárea y dimensiones de responsabilidad
+
+Rubrova separa entidad legal, unidad de negocio/centro de beneficio, centro de costo, canal, sucursal, depósito, territorio, cliente, proyecto y contrato. Una venta mayorista originada por WhatsApp no se transforma en una venta del área digital solo por el canal. Las dimensiones no se sustituyen unas a otras.
+
+Cada documento tiene una dimensión principal por defecto y cada línea puede conservar su propia unidad de negocio y asignación económica. Los recursos y maestros pueden compartirse con políticas de disponibilidad, permisos y costo de uso.
+
+Ver [Áreas de negocio y dimensiones](BUSINESS_LINES_AND_SEGMENTS.md) y [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md).
+
+## Separación de pedido, venta, fulfillment y despacho
+
+El pedido es el compromiso comercial; la venta/factura es el hecho económico/fiscal; el fulfillment es la preparación; el envío es el movimiento físico; el tracking es una referencia externa que puede conocerse después.
+
+Un pedido puede dividirse en entregas parciales, y un envío puede consolidar pedidos compatibles. El número de guía/seguimiento es opcional hasta que el operador lo emite; se añade después como una actualización auditada. Las entregas propias, retiro en depósito y handoff a transporte externo son modalidades diferentes.
+
+Ver [Mayorista y distribución](WHOLESALE_AND_DISTRIBUTION.md).
+
+## Servicios y compromisos B2B
+
+Los servicios son líneas de catálogo con unidad de cobro y costo. Los contratos versionados originan obligaciones, calendarios, visitas y órdenes de trabajo. Las órdenes conservan SLA, tareas, responsable, recursos, horas, materiales, evidencia y aceptación. Un contrato puede estar vinculado a ventas mayoristas y a servicios, sin replicar el cliente.
+
+Ver [Servicios B2B y contratos](B2B_SERVICES_AND_CONTRACTS.md).
+
+## Resultado por área y consolidación
+
+Los hechos económicos llevan dimensiones de unidad de negocio, centro de costo, canal, sucursal, cliente, producto, proyecto o contrato según corresponda. Los costos directos se imputan donde suceden; los compartidos permanecen visibles y pueden distribuirse mediante reglas versionadas. La vista consolidada elimina la duplicación de las asignaciones y reconcilia con el libro contable.

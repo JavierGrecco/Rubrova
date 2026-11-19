@@ -1,15 +1,63 @@
-undefined
+# Alcance funcional
 
-## Dominios de expansión que forman parte del producto
+**Estado:** definición funcional; no representa capacidades ya implementadas.
 
-El alcance no se limita a la caja ni a los módulos enumerados en la primera etapa. Deben conservarse como áreas de producto, aunque se implementen por fases:
+## Propósito
 
-- CRM: leads, clientes, segmentación, campañas, actividad comercial, historial, referidos y fidelización.
-- WMS/logística: recepción, putaway, picking, packing, despacho, transferencias, tareas de almacén, pallets, contenedores, etiquetas, tracking y devoluciones logísticas.
-- Finanzas/administración: flujo de caja, cuentas a cobrar/pagar, conciliación de liquidaciones y gastos; la contabilidad general completa se evalúa como módulo de expansión.
-- RR. HH. y operación: empleados, asistencia, horarios, tareas, centros de trabajo, proyectos y costos de trabajo cuando sean útiles.
-- Integración y automatización: conectores reusables, webhooks, reglas, workflows, notificaciones y procesos supervisados.
-- Inteligencia avanzada: almacén analítico, dashboards, series temporales, pronósticos, escenarios y análisis de datos externos con fuente y fecha.
-- Hardware y dispositivos: scanners, impresoras, balanzas, cajones, terminales integradas y pantallas, con soporte por adaptadores según plataforma.
+Rubrova es una plataforma integral para administrar, operar y analizar actividades comerciales y de servicios. El POS es una parte del núcleo operativo, no el producto completo.
 
-Ver [Mapa integral de capacidades](PRODUCT_CAPABILITY_MAP.md) para la cobertura completa y [Investigación de módulos ampliados](MODULAR_COMPONENT_RESEARCH.md) para candidatos.
+## Núcleo transversal
+
+- Organización, entidades legales, sucursales, cajas, depósitos, ubicaciones, usuarios, roles y permisos.
+- Catálogo de productos y servicios, variantes, códigos, unidades, conversiones, precios, costos y proveedores.
+- Clientes personas y empresas, contactos, sedes, domicilios, historial y condiciones comerciales.
+- Pedidos, cotizaciones, venta, checkout, facturación, pagos, cuentas corrientes, devoluciones y caja.
+- Inventario basado en movimientos, reservas, recepción, transferencias, picking, packing, despacho y devoluciones.
+- Compras, abastecimiento, producción, recetas/BOM, mermas, costos y trazabilidad.
+- Canales locales y digitales, marketplaces, mensajería, delivery, retiro y logística.
+- Fiscalidad argentina, ARCA en homologación, conciliación y recuperación de estados inciertos.
+- Auditoría, seguridad, continuidad local, sincronización, backup y restauración.
+
+## Áreas de negocio
+
+Una organización puede tener varias unidades: minorista, comercio electrónico, mayorista/distribución y servicios B2B. Cada una posee reglas y responsables propios y comparte, según configuración, clientes, catálogo, stock, compras, infraestructura y administración.
+
+La asignación económica se realiza por unidad de negocio en la operación y, cuando haga falta, por línea. Canal, sucursal, centro de costo, territorio y proyecto son dimensiones distintas.
+
+## Mayorista y distribución
+
+- Cuentas empresariales, sedes, compradores, condiciones y límites de crédito.
+- Mínimos por línea, familia, cantidad, múltiplo de empaque y total de pedido.
+- Precios por cliente/segmento/territorio, escalas por volumen, promociones, rebates y vigencias.
+- Cotización, pedido confirmado, reserva, entrega parcial, factura y cobro como hechos distintos.
+- Retiro por cliente, reparto con flota propia y despacho por transportista.
+- Creación de envíos después de la venta; guía y tracking opcionales hasta que el transportista los emita.
+- Costos logísticos asociados a pedido, envío y unidad de negocio.
+
+## Servicios B2B
+
+- Catálogo y cotización de servicios, acuerdos y contratos versionados.
+- Agenda, calendarios, recurrencia, órdenes de trabajo, técnicos y recursos.
+- SLA, fechas comprometidas, alertas, evidencia, aceptación y seguimiento.
+- Horas, materiales, viáticos, subcontratos, consumo de bolsa de horas y facturación.
+- Rentabilidad por contrato, servicio, cliente y unidad de negocio.
+
+## Áreas de expansión
+
+CRM/fidelización, WMS avanzado, logística/TMS, recursos humanos, proyectos, finanzas y contabilidad avanzada, automatización, dashboards, pronósticos y análisis de contexto externo.
+
+## Perfiles sectoriales
+
+Kioscos y almacenes; supermercados y autoservicios; panaderías y pastelerías; rotiserías y comidas preparadas; restaurantes/cafeterías; comercios especializados; venta mayorista; distribuidoras; y empresas de servicios.
+
+Los perfiles agregan flujos, campos y pantallas sobre el mismo núcleo; no duplican clientes, ventas, pagos, inventario o auditoría.
+
+## Documentos de alcance detallado
+
+- [Mapa integral de capacidades](PRODUCT_CAPABILITY_MAP.md)
+- [Áreas de negocio y dimensiones](BUSINESS_LINES_AND_SEGMENTS.md)
+- [Mayorista y distribución](WHOLESALE_AND_DISTRIBUTION.md)
+- [Servicios B2B y contratos](B2B_SERVICES_AND_CONTRACTS.md)
+- [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md)
+- [Arquitectura](ARCHITECTURE.md)
+- [Roadmap](ROADMAP.md)

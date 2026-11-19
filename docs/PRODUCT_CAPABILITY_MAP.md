@@ -68,3 +68,22 @@ Que algo sea posterior en el roadmap no significa que se haya perdido del diseñ
 [Visión](PRODUCT_VISION.md) · [Alcance funcional](FUNCTIONAL_SCOPE.md) · [Modelo de dominio](DOMAIN_MODEL.md) · [POS](POS_REQUIREMENTS.md) · [Perfiles](SECTOR_PROFILES.md) · [Canales](CHANNELS_AND_INTEGRATIONS.md) · [Inteligencia](BUSINESS_INTELLIGENCE.md) · [Seguridad](SECURITY_AND_AUDIT.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](ROADMAP.md).
 
 Este mapa es la referencia de cobertura: una investigación o comparación de POS no debe reducir el proyecto a una caja registradora.
+
+
+## Unidades de negocio y operaciones empresariales
+
+El alcance incluye la gestión de varias áreas dentro de una organización: venta minorista, venta online, mayorista/distribución y servicios B2B. Cada área puede tener su catálogo habilitado, listas, reglas, responsables, contratos, presupuestos y estado de resultados, sin duplicar los maestros compartidos.
+
+Las dimensiones deben distinguir entidad legal, unidad de negocio/centro de beneficio, centro de costo, canal, sucursal, depósito, territorio, cliente, proyecto y contrato. Un canal no define el área: una venta mayorista por WhatsApp sigue perteneciendo a la unidad mayorista.
+
+La venta mayorista contempla clientes empresa, mínimos y múltiplos de empaque, precios escalonados, acuerdos, crédito, pedidos parciales, retiro, reparto propio y transporte externo con guía incorporada después de la venta.
+
+Los servicios empresariales contemplan contratos versionados, SLA, calendarios, recurrencias, órdenes de trabajo, técnicos/recursos, evidencia, aceptación, consumo y facturación.
+
+La rentabilidad debe poder consultarse por área y de forma consolidada, con ingresos netos, costo de mercadería/prestación, costos variables de servir, gastos directos y costos compartidos asignados por reglas explícitas. Las áreas no se fuerzan a ser sistemas separados.
+
+Documentos de detalle:
+- [Áreas de negocio y dimensiones](BUSINESS_LINES_AND_SEGMENTS.md)
+- [Mayorista y distribución](WHOLESALE_AND_DISTRIBUTION.md)
+- [Servicios B2B y contratos](B2B_SERVICES_AND_CONTRACTS.md)
+- [Rentabilidad por área](BUSINESS_UNIT_PROFITABILITY.md)

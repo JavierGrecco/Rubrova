@@ -14,8 +14,10 @@ Una plataforma que reúne en un solo lugar:
 
 - **Punto de venta y checkout:** escaneo rápido, edición del carrito antes de pagar, efectivo y vuelto exacto, pagos mixtos, integración con terminales, devoluciones y cierres.
 - **ERP y gestión comercial:** catálogo, precios, inventario/WMS, compras, proveedores, producción, CRM, clientes, cuentas corrientes y sucursales.
+- **Múltiples áreas de negocio:** minorista, online, mayorista/distribución y servicios B2B, con reglas, recursos y rentabilidad propios sobre datos compartidos.
 - **Canales de venta:** local físico, tienda online, WhatsApp, marketplaces, pedidos telefónicos y delivery, con análisis por canal y consolidado.
 - **Operación sectorial:** supermercados y autoservicios, kioscos y almacenes, panaderías, rotiserías y gastronomía; perfiles configurables sobre un núcleo común.
+- **Mayorista y servicios empresariales:** mínimos y escalas por volumen, crédito, contratos de suministro, SLA, agendas, órdenes de trabajo, logística y seguimiento.
 - **Administración y control:** usuarios, permisos, turnos, cajas, arqueos, autorizaciones, auditoría y movimientos internos.
 - **Inteligencia y automatización:** rentabilidad, demanda, estacionalidad, precios, marcas, categorías, promociones, abastecimiento, pronósticos, escenarios, workflows y alertas.
 - **Integraciones:** ARCA, Mercado Pago, marketplaces, mensajería y hardware comercial.
@@ -53,6 +55,10 @@ Una plataforma que reúne en un solo lugar:
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
 | [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md) | Cobertura completa: ERP, POS, canales, WMS, producción, finanzas e inteligencia |
+| [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md) | Varias actividades, clientes y recursos compartidos con resultados separados |
+| [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md) | B2B, mínimos, escalas, crédito, retiros, reparto y envíos posteriores |
+| [Servicios B2B y contratos](docs/B2B_SERVICES_AND_CONTRACTS.md) | Contratos, SLA, agendas, órdenes de trabajo y cumplimiento |
+| [Rentabilidad por área](docs/BUSINESS_UNIT_PROFITABILITY.md) | Costos directos/compartidos y resultados por unidad y consolidados |
 | [Checkout y terminales](docs/CHECKOUT_AND_PAYMENT_TERMINALS.md) | Carrito, vuelto, pagos integrados, terminales y comprobantes |
 | [Composición de módulos](docs/MODULE_COMPOSITION.md) | Contratos, propiedad de datos, adaptadores y compatibilidad multiplataforma |
 | [Investigación de módulos ampliados](docs/MODULAR_COMPONENT_RESEARCH.md) | WMS, ERP, conectores, promociones, BI y automatización |
@@ -68,14 +74,14 @@ Una plataforma que reúne en un solo lugar:
 - Ampliar la comparación integral a MyCompany/lsFusion 6.2, además de Posnic 1.9.2 y ERPNext 16.60.0.
 - Evaluar módulos especializados como Simple WMS, OpenLinker, OfferKit, DuckDB/Superset y Node-RED detrás de contratos.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions.
-- Comparar ambas plataformas con el mismo guion P01–P17.
+- Comparar las tres plataformas integrales con P01–P19 y preparar escenarios multiárea P20–P25.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
 - Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
 - Verificar la adaptación argentina y la viabilidad de ARCA en homologación.
 - Revisar las licencias de cada componente y dependencia del paquete concreto.
 - Elegir una sola fuente de verdad o confirmar el monolito modular propio.
 
-El proyecto y sus dominios están en [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md). Los requisitos de caja y terminales están en [Checkout y terminales](docs/CHECKOUT_AND_PAYMENT_TERMINALS.md). La arquitectura de integración está en [Composición de módulos](docs/MODULE_COMPOSITION.md). La investigación ampliada está en [Investigación de módulos](docs/MODULAR_COMPONENT_RESEARCH.md). La evaluación y el laboratorio están documentados por separado. Ninguna plataforma o módulo está aprobado por aparecer en el catálogo.
+El proyecto y sus dominios están en [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md). La estructura multiárea está en [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md). Los procesos mayoristas están en [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md), los servicios en [Servicios B2B y contratos](docs/B2B_SERVICES_AND_CONTRACTS.md) y la medición económica en [Rentabilidad por área](docs/BUSINESS_UNIT_PROFITABILITY.md). Ninguna plataforma o módulo está aprobado por aparecer en el catálogo.
 **Siguiente — Fase 1: núcleo transaccional**
 - Catálogo, precios y unidades de medida.
 - Carrito y venta POS.
