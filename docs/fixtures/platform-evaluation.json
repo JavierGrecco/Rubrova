@@ -226,7 +226,21 @@
       "unknownStatusPolicy": "query-and-reconcile-before-any-new-emission",
       "printOnTerminalCapability": "point-smart-compatible-only",
       "terminalSlipIsFiscalDocument": false,
-      "itemizedReceiptOwner": "Rubrova"
+      "itemizedReceiptOwner": "Rubrova",
+      "printRequirement": {
+        "itemizedReceiptMustPrintFromTerminal": true,
+        "expectedPrintAfterStatus": "processed",
+        "contentOwner": "Rubrova",
+        "requiredContents": [
+          "items",
+          "quantities",
+          "unit-prices",
+          "discounts",
+          "total",
+          "payment-reference"
+        ],
+        "terminalPrintIsFiscalDocument": false
+      }
     }
   },
   "expectedInventory": {

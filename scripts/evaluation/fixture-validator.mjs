@@ -449,6 +449,41 @@ export function validateFixture(data) {
     compare(terminal.unknownStatusPolicy, "query-and-reconcile-before-any-new-emission", "terminalPayment.unknownStatusPolicy", errors);
     compare(terminal.terminalSlipIsFiscalDocument, false, "terminalPayment.terminalSlipIsFiscalDocument", errors);
     compare(terminal.itemizedReceiptOwner, "Rubrova", "terminalPayment.itemizedReceiptOwner", errors);
+    const printRequirement = terminal.printRequirement;
+    if (!isRecord(printRequirement)) {
+      errors.push("terminalPayment.printRequirement debe ser un objeto.");
+    } else {
+      compare(
+        printRequirement.itemizedReceiptMustPrintFromTerminal,
+        true,
+        "terminalPayment.printRequirement.itemizedReceiptMustPrintFromTerminal",
+        errors
+      );
+      compare(
+        printRequirement.expectedPrintAfterStatus,
+        "processed",
+        "terminalPayment.printRequirement.expectedPrintAfterStatus",
+        errors
+      );
+      compare(
+        printRequirement.contentOwner,
+        "Rubrova",
+        "terminalPayment.printRequirement.contentOwner",
+        errors
+      );
+      compare(
+        printRequirement.terminalPrintIsFiscalDocument,
+        false,
+        "terminalPayment.printRequirement.terminalPrintIsFiscalDocument",
+        errors
+      );
+      const requiredContents = new Set(printRequirement.requiredContents || []);
+      for (const content of ["items", "quantities", "unit-prices", "discounts", "total", "payment-reference"]) {
+        if (!requiredContents.has(content)) {
+          errors.push("Falta contenido obligatorio de impresión desde terminal: " + content + ".");
+        }
+      }
+    }
   }
 
   const resilience = data.resilience;

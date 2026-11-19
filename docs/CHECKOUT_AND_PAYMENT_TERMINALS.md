@@ -78,6 +78,19 @@ Para nuevas integraciones se sigue Orders API, no la API heredada Payment Intent
 
 Mercado Pago documenta acciones de impresión de contenido personalizado en terminales compatibles y permite consultar el estado de la acción. La función, el papel y el formato exacto deben confirmarse en el modelo/firmware disponible. Payway informa que ciertos comprobantes de tarjeta pueden enviarse por email y no imprimirse en papel. Esto no significa que cualquier Point, Posnet, Getnet o Payway imprima el ticket detallado de Rubrova o una factura fiscal.
 
+## Requisito de impresión desde la propia terminal
+
+Para el modelo de terminal que elijamos como principal, la aceptación de Rubrova exige que pueda imprimir desde el propio dispositivo el ticket detallado de la venta con contenido generado por Rubrova: artículos, cantidades, precios, descuentos, total y referencia de la operación.
+
+No alcanza con que la terminal muestre el importe y emita un voucher bancario reducido. Tampoco equivale a enviar el comprobante por email ni a imprimir el ticket de Rubrova en una impresora térmica conectada al PC.
+
+- Mercado Pago Point documenta acciones de impresión personalizadas en terminales compatibles; hay que comprobar el modelo, firmware y estado de la acción.
+- Para Fiserv/Posnet y Getnet se debe solicitar confirmación técnica de impresión de contenido del sistema de gestión y el protocolo/modelos que lo soportan.
+- Payway informa que determinados comprobantes pueden enviarse digitalmente y no imprimirse en papel; ese comportamiento debe contrastarse con el flujo de impresión del ticket de Rubrova.
+- Mobbex solo se considerará apto para este requisito si su API y el modelo terminal permiten imprimir el contenido detallado que Rubrova envía.
+
+**Puerta de aceptación:** al menos un modelo homologado para nuestro uso debe imprimir el ticket detallado desde la terminal. Si un proveedor solo confirma el pago y emite su voucher estándar, no pasa esta puerta como solución única de caja. Una impresora local puede servir como respaldo, pero no se registra como cumplimiento de impresión desde la terminal.
+
 ## Desconexión y fallos
 
 - Sin terminal conectada, la venta no se marca como cobrada con tarjeta.
@@ -106,6 +119,7 @@ La lógica de checkout y pagos vive en contratos neutrales. La comunicación fí
 - Impedir cambios silenciosos del carrito mientras la terminal procesa.
 - Reconciliar un pago posiblemente aprobado sin crear otro.
 - Comprobar por separado voucher terminal, ticket de venta y comprobante fiscal.
+- En el modelo terminal seleccionado, imprimir desde el dispositivo el ticket detallado de Rubrova después de confirmar el pago y verificar el estado de la acción de impresión.
 - Reembolsar total/parcial y comprobar efectos.
 - Probar cada terminal/modelo/OS, no solo un emulador.
 

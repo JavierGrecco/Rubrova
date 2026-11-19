@@ -143,7 +143,7 @@ Los importes son datos didácticos y no representan precios de mercado ni reglas
 | P16 | Hardware | Ticket de 80/57 mm, lector, balanza y cajón; primero simulado, luego físico | Confirmar compatibilidad por marca sin prueba |
 | P17 | Fiscalidad argentina | Adaptador separado, comprobantes en homologación y recuperación de estado incierto | Emisión duplicada o reintento ciego |
 | P18 | Retiro de productos antes del pago | Eliminar una línea y comprobar total, descuentos/impuestos, reserva y ausencia de venta/salida/pago para el artículo retirado | La línea retirada queda cobrada o descuenta stock |
-| P19 | Terminal integrada | Enviar importe, recibir aprobado/rechazado/cancelado/pendiente, procesar webhook repetido y conciliar voucher | Marcar cobrado antes de confirmación o duplicar transacción |
+| P19 | Terminal integrada e impresión desde el dispositivo | Enviar importe, detectar estado final, procesar webhook repetido, conciliar voucher e imprimir desde la terminal el ticket detallado de Rubrova | Marcar cobrado antes de confirmación, duplicar transacción o no poder imprimir el ticket requerido |
 
 En P11 se debe distinguir pérdida de internet de pérdida de red local. En un servidor local compartido, los otros puestos pueden seguir conectados por LAN; una caja con su propia base desconectada es un caso distinto y debe documentarse como tal.
 

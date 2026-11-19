@@ -112,7 +112,7 @@ No incorporar dos motores para el mismo dato. La plataforma elegida será la ún
 - [x] Uso interno privado confirmado como alcance previsto.
 - [x] GPL/AGPL incluidas en la estrategia de evaluación.
 - [x] Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 definidos como ronda activa.
-- [x] Protocolo P01–P17 documentado.
+- [x] Protocolo P01–P19 documentado.
 - [x] Componentes de hardware, fiscalidad y offline separados de las plataformas integrales.
 - [ ] Instalación y pruebas locales de MyCompany/lsFusion 6.2, incluido módulo custom.
 - [ ] Instalación y pruebas locales de Posnic.

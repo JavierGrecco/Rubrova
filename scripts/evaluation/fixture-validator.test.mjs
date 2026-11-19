@@ -98,3 +98,22 @@ test("rechaza un importe terminal diferente del total final del checkout", () =>
   assert.equal(result.valid, false);
   assert.ok(result.errors.some(message => message.includes("terminalPayment.amountMinor")));
 });
+
+
+test("exige impresión del ticket detallado desde la terminal", () => {
+  const result = validateFixture(readFixture());
+  assert.equal(result.valid, true, result.errors.join("\\n"));
+  const fixture = readFixture();
+  assert.equal(
+    fixture.scenarios.terminalPayment.printRequirement.itemizedReceiptMustPrintFromTerminal,
+    true
+  );
+});
+
+test("rechaza una terminal que solo devuelve el voucher sin imprimir el ticket de Rubrova", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.terminalPayment.printRequirement.itemizedReceiptMustPrintFromTerminal = false;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("itemizedReceiptMustPrintFromTerminal")));
+});
