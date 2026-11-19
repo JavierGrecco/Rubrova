@@ -131,3 +131,19 @@ Logs estructurados, correlación por operación, métricas de latencia y sincron
 - [ ] Confirmar el modelo de despliegue: nube, local por sucursal o híbrido.
 
 Ninguna de estas decisiones pendientes se considera implementada o validada por estar escrita en este documento.
+
+## Candidatos de reutilización priorizados (19/11/2026)
+
+La comparación de plataformas integrales ahora incluye:
+- Posnic: primera prueba por su arquitectura local/offline y cobertura de caja, ventas e inventario. AGPL-3.0-only; el instalador incluye MongoDB SSPL-1.0. Evidencia offline acotada; requiere validar recuperación y sincronización.
+- ERPNext/Frappe: segunda prueba por ERP, compras, stock, fabricación y contabilidad; GPLv3 para ERPNext y MIT para Frappe.
+- NexoPOS: tercera prueba potencial por su cobertura POS y módulos, bloqueada hasta resolver discrepancia entre LICENSE (GPLv3) y composer.json (MIT).
+- Odoo Community: permanece como referencia integral, con limitaciones offline y verificación pendiente de ARCA.
+
+La arquitectura puede reutilizar componentes especializados sin adoptar otra fuente de verdad:
+- Hardware: evaluar pos-toolkit (Apache-2.0) para ESC/POS, cajón, USB, serial y balanzas HID.
+- Pruebas: emupos y ESCPost (Apache-2.0) para simulación y validación de periféricos.
+- Fiscal: evaluar arca-sdks (MIT, TypeScript) o Afip.py (MIT, Python) según la plataforma; no emitir desde dos adaptadores a la vez.
+- Offline: comparar PowerSync Open Edition (Apache-2.0) con Dexie/IndexedDB; no delegar invariantes financieras o de stock al motor de sincronización.
+
+Ver [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). Ninguno de estos candidatos está incorporado o aprobado todavía.
