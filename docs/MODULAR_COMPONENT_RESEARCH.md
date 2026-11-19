@@ -206,3 +206,17 @@ Fuente:
 | Rentabilidad multiárea | ERPNext / Dolibarr | Dimensiones y P&L por unidad con costos compartidos |
 
 Las referencias se analizan por módulo y versión; no se integran como fuentes de verdad paralelas.
+
+
+### Inspección de código de Dolibarr 24.0.3: matiz multiárea importante
+
+En el tag 24.0 se inspeccionaron las clases de envío, contrato, intervención, proyecto, categorías y margen:
+
+- `Expedition` es un objeto separado del pedido/venta y contiene `tracking_number`, `tracking_url`, almacén y líneas de expedición. Esto confirma que puede modelarse un despacho y asignar su guía al envío sin que la venta tenga que contenerla.
+- `Contrat` posee tercero/cliente y líneas contractuales. `Fichinter` (intervención) puede vincularse con cliente, proyecto y contrato; contiene fechas/duración y líneas propias. Es una base real para estudiar cumplimiento de servicios.
+- El proyecto incluye presupuesto, cliente y configuración de tareas/tiempo facturable.
+- El módulo de márgenes tiene vistas para margen de producto, cliente y agente comercial. Esto no demuestra por sí solo un P&L completo por unidad de negocio ni un modelo de costos compartidos.
+- El campo `entity` que aparece en varios objetos representa el contexto de entidad de Dolibarr/multiempresa; no debe interpretarse como unidad de negocio o centro de beneficio.
+- Las categorías pueden etiquetar distintos tipos de objetos, pero no equivalen automáticamente a dimensiones de contabilidad analítica.
+
+**Conclusión revisada:** Dolibarr contiene código reutilizable especialmente interesante para shipment, contratos e intervenciones. Sigue siendo un candidato integral de inspección, pero su adaptación multiárea y el resultado de gestión por unidad probablemente requieran modelado/extensión adicional. Antes de elevarlo a cuarto candidato formal hay que demostrar asignación de BU en líneas, ledger de costos, consolidación y actualización sin romper módulos.

@@ -77,9 +77,9 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Estrategia de uso interno privado y revisión de licencias.
 - [x] Posnic fijado en tag v1.9.2 para una prueba reproducible.
 - [x] ERPNext v16.60.0 y Frappe Framework 16 identificados como alternativa integral.
-- [x] Protocolo común P01–P19 con datos sintéticos y puertas críticas.
+- [x] Protocolo común P01–P26 con datos sintéticos y puertas críticas.
 - [x] Laboratorio de instalación para MyCompany 6.2, Posnic 1.9.2 y ERPNext 16.60.0.
-- [x] Validador automático del dataset y workflow de GitHub Actions; última ejecución confirmada: 6/6 pruebas aprobadas y dataset válido.
+- [x] Validador automático del dataset y workflow de GitHub Actions; última ejecución confirmada: 21/21 pruebas aprobadas y dataset válido.
 - [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
 - [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.

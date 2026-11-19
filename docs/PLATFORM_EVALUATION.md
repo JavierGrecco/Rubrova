@@ -197,7 +197,7 @@ Estos componentes no convierten por sí solos a una plataforma en la base del pr
 
 La revisión de licencias se hace para la versión y los archivos que realmente se incorporen. El uso privado permite considerar código GPL/AGPL, pero no elimina las licencias separadas de dependencias, fuentes, imágenes, servicios o componentes comerciales.
 
-El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 19/11/2026 terminó correctamente: seis pruebas aprobadas y dataset canónico válido. Esto valida el dataset y sus reglas aritméticas; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
+El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 19/11/2026 terminó correctamente: 21 pruebas aprobadas y dataset canónico válido. Esto valida las reglas aritméticas y las invariantes modeladas de multiárea, mayorista, envíos, servicios, costos internos y rentabilidad; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
 
 ## Estado de ejecución
 
@@ -210,7 +210,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y dataset sintético | Preparados |
 | Laboratorio de instalación para los tres candidatos | Preparado |
-| Validador y CI del dataset | Aprobados: 13/13 tests y dataset válido (19/11/2026) |
+| Validador y CI del dataset | Aprobados: 21/21 tests y dataset válido (19/11/2026) |
 | Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |

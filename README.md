@@ -73,8 +73,9 @@ Una plataforma que reúne en un solo lugar:
 - Mantener el mapa integral: no reducir el proyecto a POS; comparar ERP modular, WMS, canales, producción, promociones y analítica.
 - Ampliar la comparación integral a MyCompany/lsFusion 6.2, además de Posnic 1.9.2 y ERPNext 16.60.0.
 - Evaluar módulos especializados como Simple WMS, OpenLinker, OfferKit, DuckDB/Superset y Node-RED detrás de contratos.
-- Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions.
+- Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
 - Comparar las tres plataformas integrales con P01–P19 y los escenarios multiárea P20–P26.
+- Mantener el modelo de rentabilidad con eliminación de cargos internos entre áreas y distinguir transferencias gerenciales de operaciones intercompany reales.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
 - Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
 - Verificar la adaptación argentina y la viabilidad de ARCA en homologación.

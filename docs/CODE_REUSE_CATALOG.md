@@ -221,14 +221,14 @@ Stack Next.js/Expo/Prisma/PostgreSQL/SQLite. Declara diseño de perfiles sobre e
 1. **MyCompany/lsFusion 6.2** se suma como candidato integral por su POS, CRM, compras, inventario, producción, facturación y mecanismo de módulos seleccionables. No está aprobado: deben comprobarse el runtime, la localización argentina, los pagos y el offline.
 2. **Posnic 1.9.2** conserva prioridad para probar una caja local; su evidencia offline es limitada, la sincronización entre bases independientes es un servicio aparte y el paquete contiene MongoDB SSPL-1.0 y amCharts comercial.
 3. **ERPNext 16.60.0/Frappe 16** aporta profundidad en compras, inventario, producción y contabilidad; su POS y continuidad offline deben probarse.
-4. La ronda integral contiene ahora tres candidatos. Odoo Community 20 y Medusa v2 quedan fuera de la ronda activa; NexoPOS continúa bloqueado por discrepancia de licencia.
+4. La ronda integral compara MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16. Dolibarr 24.0.3 queda como candidato de inspección dirigida: ya se comprobó que tiene objetos propios de contrato, intervención, envío y margen, pero todavía no se demostró una dimensión nativa de unidad de negocio que satisfaga nuestra rentabilidad multiárea. Odoo Community 20 y Medusa v2 quedan fuera de la ronda activa; NexoPOS continúa bloqueado por discrepancia de licencia.
 4. **pos-toolkit** aporta código concreto para hardware y tickets. La parte de hardware requiere Tauri v2; `register-core` está planificado.
 5. **emupos + ESCPost** pueden reducir la compra temprana de periféricos y hacer reproducibles las pruebas de hardware.
 6. **arca-sdks** es el adaptador fiscal candidato para TypeScript; el paquete de facturación 7.1.0 declara MIT y requiere Node >=22.12. La homologación y la recuperación de estados inciertos siguen siendo responsabilidad de nuestra integración.
 7. **PowerSync** se evalúa como motor de sincronización, distinguiendo Open Edition de Enterprise/Cloud; **Dexie** es almacenamiento IndexedDB, no sincronizador completo.
 8. No integrar varios ERP/POS como fuentes de verdad. El sistema elegido será dueño de ventas, pagos, caja y stock; el resto aporta herramientas o módulos aislados.
 9. El uso privado permite considerar GPL/AGPL, pero no elimina obligaciones ni licencias separadas de dependencias, fuentes, recursos comerciales y servicios.
-10. La evaluación completa, con versiones fijadas, datos sintéticos y escenarios P01–P19, está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+10. La evaluación completa, con versiones fijadas, datos sintéticos y escenarios P01–P26, está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
 Ninguno de estos candidatos está incorporado ni ejecutado dentro de Rubrova.
 ## 7. Prueba técnica siguiente
