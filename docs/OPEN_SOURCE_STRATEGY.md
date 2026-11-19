@@ -17,7 +17,7 @@ La evaluación integral compara ahora tres candidatos:
 2. **Posnic 1.9.2:** candidato directo para POS local, Electron, ventas, caja e inventario. Código propio AGPL-3.0-only; el paquete incluye componentes con licencias distintas, entre ellos MongoDB SSPL-1.0 y amCharts 4 comercial. La edición self-hosted puede compartir una base local entre varios equipos, pero no sincroniza bases independientes de distintas cajas/sucursales. Su evidencia offline publicada es acotada.
 3. **ERPNext 16.60.0 + Frappe Framework 16:** candidato de profundidad administrativa en compras, inventario, fabricación, costos y contabilidad. ERPNext es GPL-3.0; Frappe Framework es MIT. Hay que verificar POS, facilidad de uso, recuperación offline y localización argentina.
 
-Ninguno está elegido ni aprobado. **No se debe construir la aplicación definitiva hasta ejecutar la prueba común** descrita en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Si ambas alternativas fallan los controles críticos, la salida es un monolito modular propio, reutilizando únicamente componentes que encajen.
+Ninguno está elegido ni aprobado. **No se debe construir la aplicación definitiva hasta ejecutar la prueba común** descrita en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Si los tres candidatos fallan los controles críticos, la salida es un monolito modular propio, reutilizando únicamente componentes que encajen.
 
 Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda. No se borran de la investigación, pero tampoco deben seguir apareciendo como decisión vigente en la arquitectura o el roadmap. NexoPOS queda condicionado a la aclaración de su discrepancia de licencia.
 
@@ -79,7 +79,7 @@ Se ejecuta el mismo conjunto de datos y escenarios sobre MyCompany, Posnic y ERP
 - Impresión, cajón, lector y balanza; simulación primero y hardware físico después.
 - Adaptación fiscal argentina y ARCA exclusivamente en homologación.
 
-La pauta completa, la tabla de evidencia P01–P19 y la escala de puntuación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+La pauta completa, la tabla de evidencia P01–P26 y la escala de puntuación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
 ## Componentes especializados a evaluar por separado
 
@@ -111,7 +111,7 @@ No incorporar dos motores para el mismo dato. La plataforma elegida será la ún
 
 - [x] Uso interno privado confirmado como alcance previsto.
 - [x] GPL/AGPL incluidas en la estrategia de evaluación.
-- [x] Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 definidos como ronda activa.
+- [x] MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 definidos como ronda activa.
 - [x] Protocolo P01–P19 documentado.
 - [x] Componentes de hardware, fiscalidad y offline separados de las plataformas integrales.
 - [ ] Instalación y pruebas locales de MyCompany/lsFusion 6.2, incluido módulo custom.
