@@ -69,7 +69,7 @@ ERPNext aporta procesos de contabilidad, pedidos, inventario, abastecimiento, fa
 - La localización argentina y ARCA deben verificarse módulo por módulo. No contar una integración por una pantalla documentada si no se encuentra el código, licencia y prueba correspondiente.
 - ERPNext GPL-3 no se convierte en MIT por estar construido sobre Frappe Framework MIT.
 
-**Prueba requerida:** ejecutar P01–P19 del protocolo común, incluyendo venta rápida, retiro de artículos, pagos mixtos/vuelto, terminal, arqueo, compra/recepción, costo, producción y recuperación offline.
+**Prueba requerida:** ejecutar P01–P26 del protocolo común, incluyendo venta rápida, retiro de artículos, pagos mixtos/vuelto, terminal, arqueo, compra/recepción, costo, producción y recuperación offline.
 
 **Recomendación:** segundo candidato integral. Puede ahorrar mucho trabajo de back-office, pero gana solo si el costo de adaptar caja, experiencia offline y operación argentina es menor que construir esas capacidades.
 ### NexoPOS
