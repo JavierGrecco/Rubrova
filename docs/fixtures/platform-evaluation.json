@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "purpose": "synthetic-platform-comparison",
+  "dataClassification": "synthetic-no-personal-data",
+  "locale": "es-AR",
+  "timeZone": "America/Argentina/Cordoba",
+  "currency": "ARS",
+  "moneyRepresentation": "integer-minor-units",
+  "minorUnitDigits": 2,
+  "taxMode": "neutral-test-profile",
+  "taxModeNote": "Use the same neutral tax configuration in both platforms for P01-P16. Tax calculation and ARCA behavior are evaluated separately in P17.",
+  "business": {
+    "code": "RUBROVA-TEST",
+    "name": "Comercio de prueba",
+    "branchCode": "SUC-TEST-01",
+    "registerCode": "CAJA-TEST-01"
+  },
+  "users": [
+    {
+      "code": "USR-OWNER-001",
+      "role": "owner",
+      "displayName": "Titular de prueba"
+    },
+    {
+      "code": "USR-CASHIER-001",
+      "role": "cashier",
+      "displayName": "Cajero de prueba"
+    }
+  ],
+  "cashRegister": {
+    "openingCashMinor": 2000000,
+    "openingCashDisplay": "20000.00"
+  },
+  "catalog": [
+    {
+      "sku": "SKU-UNIT-001",
+      "barcode": "TEST-UNIT-0001",
+      "name": "Artículo de prueba A",
+      "saleUnit": "unit",
+      "unitPriceMinor": 550000,
+      "openingStockMilli": 10000,
+      "tracksInventory": true
+    },
+    {
+      "sku": "SKU-VAR-001",
+      "barcode": "TEST-VAR-0001",
+      "name": "Artículo de prueba B",
+      "saleUnit": "unit",
+      "variant": "Variante azul",
+      "unitPriceMinor": 500000,
+      "openingStockMilli": 10000,
+      "tracksInventory": true
+    },
+    {
+      "sku": "SKU-WEIGHT-001",
+      "barcode": "TEST-WEIGHT-0001",
+      "name": "Producto de prueba por peso",
+      "saleUnit": "kg",
+      "unitPriceMinorPerUnit": 1800000,
+      "quantityPrecision": 3,
+      "openingStockMilli": 25000,
+      "tracksInventory": true
+    }
+  ],
+  "customers": [
+    {
+      "code": "CLI-TEST-001",
+      "name": "Cliente ficticio",
+      "taxId": null,
+      "notes": "No corresponde a una persona real."
+    }
+  ],
+  "suppliers": [
+    {
+      "code": "PROV-TEST-001",
+      "name": "Proveedor ficticio"
+    }
+  ],
+  "scenarios": {
+    "mixedPaymentSale": {
+      "reference": "SALE-TEST-001",
+      "lines": [
+        {
+          "sku": "SKU-UNIT-001",
+          "quantityMilli": 1000,
+          "unitPriceMinor": 550000,
+          "discountPercent": 0,
+          "expectedLineTotalMinor": 550000
+        },
+        {
+          "sku": "SKU-VAR-001",
+          "quantityMilli": 1000,
+          "unitPriceMinor": 500000,
+          "discountPercent": 10,
+          "expectedDiscountMinor": 50000,
+          "expectedLineTotalMinor": 450000
+        }
+      ],
+      "expectedSubtotalMinor": 1050000,
+      "expectedDiscountMinor": 50000,
+      "expectedTotalMinor": 1000000,
+      "payments": [
+        {
+          "method": "cash",
+          "amountMinor": 600000
+        },
+        {
+          "method": "bank-transfer-simulated",
+          "amountMinor": 400000
+        }
+      ],
+      "expectedCashChangeMinor": 0,
+      "expectedRegisterCashAfterSaleMinor": 2600000
+    },
+    "weightedSale": {
+      "reference": "SALE-WEIGHT-TEST-001",
+      "sku": "SKU-WEIGHT-001",
+      "quantity": "0.325",
+      "unit": "kg",
+      "unitPriceMinorPerUnit": 1800000,
+      "expectedTotalMinor": 585000
+    },
+    "partialReturn": {
+      "reference": "RETURN-TEST-001",
+      "originalSale": "SALE-TEST-001",
+      "sku": "SKU-UNIT-001",
+      "quantityMilli": 1000,
+      "refundMethod": "cash",
+      "expectedRefundMinor": 550000,
+      "stockDisposition": "resalable",
+      "expectedRegisterCashAfterRefundMinor": 2050000
+    },
+    "purchaseReceiving": {
+      "reference": "PURCHASE-TEST-001",
+      "supplier": "PROV-TEST-001",
+      "sku": "SKU-UNIT-001",
+      "orderedQuantityMilli": 10000,
+      "receivedQuantityMilli": 6000,
+      "unitCostMinor": 320000,
+      "expectedPendingQuantityMilli": 4000,
+      "expectedStockAfterReceiptMilli": 16000
+    }
+  },
+  "expectedInventory": {
+    "SKU-UNIT-001": {
+      "afterSaleMilli": 9000,
+      "afterReturnMilli": 10000,
+      "afterPartialReceiptMilli": 16000
+    },
+    "SKU-VAR-001": {
+      "afterSaleMilli": 9000
+    }
+  },
+  "resilience": {
+    "repeatSubmissionCount": 3,
+    "requiredOutcomes": [
+      "one-sale-record",
+      "one-cash-payment",
+      "one-transfer-payment",
+      "one-stock-decrement-per-sold-line",
+      "no-data-loss-after-forced-close",
+      "backup-restores-consistent-ledger"
+    ]
+  },
+  "fiscal": {
+    "environment": "homologation-only",
+    "productionCredentialsAllowed": false,
+    "realCustomerDataAllowed": false,
+    "retryAfterUnknownResult": "query-and-reconcile-before-any-new-emission"
+  }
+}
