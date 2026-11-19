@@ -12,7 +12,7 @@ La disponibilidad legal de la denominación y de los dominios todavía no está 
 
 <sub>Fase 0 — definición del producto y base arquitectónica.</sub>
 
-Estamos consolidando el alcance, las reglas de negocio, los límites entre módulos, las decisiones técnicas, las opciones de reutilización de código abierto y los criterios de calidad. **Todavía no hay una aplicación funcional implementada ni se incorporó código de terceros.** No se deben presentar las capacidades planificadas como funcionalidades disponibles.
+Estamos consolidando el alcance, las reglas de negocio, los límites entre módulos, las decisiones técnicas, la reutilización intensiva de código abierto, incluidos proyectos GPL y AGPL aptos para uso interno y los criterios de calidad. **Todavía no hay una aplicación funcional implementada ni se incorporó código de terceros.** No se deben presentar las capacidades planificadas como funcionalidades disponibles.
 
 El avance se mide por decisiones documentadas, entregables verificables y pruebas ejecutadas, no por cantidad de archivos o commits.
 
@@ -58,7 +58,7 @@ Una plataforma que reúne en un solo lugar:
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
-| [Investigación de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
+| [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
@@ -67,7 +67,7 @@ Una plataforma que reúne en un solo lugar:
 - Consolidar los requisitos funcionales y operativos.
 - Acordar el modelo de dominio y las reglas económicas.
 - Definir límites de módulos y contratos.
-- Evaluar la reutilización de código abierto, las licencias y el framework más conveniente.
+- Evaluar la adopción, modificación o integración de proyectos existentes bajo cualquier licencia compatible con el uso interno privado; comparar el costo real de adaptar frente a construir.
 - Comparar Odoo Community 20 y Medusa v2 con el mismo flujo real de POS, caja, inventario, descuentos y recuperación offline.
 - Confirmar la licencia y disponibilidad efectiva de los módulos de facturación argentina.
 - Identificar riesgos fiscales, de sincronización, seguridad y hardware.
