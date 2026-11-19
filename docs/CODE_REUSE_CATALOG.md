@@ -26,42 +26,49 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 
 ## 1. Plataformas integrales
 
-### Posnic — candidato principal para prueba vertical
+### Posnic — primer candidato para prueba local
 
 Repositorio: https://github.com/Posnic/POS  
+Release fijado: `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680` (16/11/2026).  
 Licencia del código propio: AGPL-3.0-only.  
-Tecnología observada: Electron, Node.js y frontend/API local; el paquete revisado declara MongoDB.
+Tecnología observada: Electron, Node.js >=22.12, Express, Mongoose y MongoDB.
 
-El proyecto se presenta como POS offline-first para retail y restaurantes, con API y base de datos ejecutándose en el equipo de caja o servidor propio. Incluye ventas, devoluciones, pagos parciales, productos, variantes, compras, inventario, cuentas de clientes, permisos, reportes y flujos gastronómicos. Distingue la edición local de servicios cloud opcionales.
+El código revisado cubre POS, ventas, devoluciones, pagos parciales, productos, variantes, compras, inventario, cuentas de clientes, permisos, reportes y gastronomía. La aplicación de escritorio mantiene API y base principal local; el modo self-hosted puede atender varios equipos de una LAN sobre una base compartida.
 
-**Por qué importa:** coincide con nuestra necesidad de uso local, caja rápida y continuidad sin internet. Puede permitir partir de un sistema operativo real en lugar de construir la caja completa.
+**Hallazgos nuevos de la inspección del código y documentación:**
+- El modo self-hosted no sincroniza varias bases de datos independientes. La documentación del proyecto reserva esa sincronización entre cajas o sucursales para Posnic Cloud.
+- La prueba offline que el README publica está limitada a una venta sintética en efectivo que se completó y reabrió en Electron, en una versión anterior. No demuestra pérdida de energía, cierre forzado, jornada completa ni terminales de pago.
+- `api/src/sync/outbox.js` describe una cola local opcional para acelerar la sincronización. El propio código aclara que no es el mecanismo de registro de la venta: el escaneo periódico de cambios sigue como respaldo.
+- El modelo de venta incluye campos y reglas orientados a GST/India. La adaptación de IVA, CUIT, comprobantes y ARCA requiere evaluación real.
+- El tag `v1.9.2` es más reproducible que usar ramas móviles. En la consulta del 19/11/2026, `main` tenía seis commits posteriores; `develop` estaba divergida respecto del tag (2 commits delante y 27 detrás). Se probará primero el tag y se revisarán por separado los cambios posteriores de `main`.
 
-**Riesgos y límites:**
-- La licencia del código propio es AGPL-3.0-only. Si usuarios interactúan remotamente con una versión modificada por red, revisar la obligación de ofrecer el código fuente de esa versión a esos usuarios.
-- Los instaladores incluyen MongoDB Community Server bajo SSPL-1.0, licencia distinta y no aprobada por OSI. La licencia del POS no describe por sí sola todo el instalador.
-- La evidencia publicada de operación offline está acotada a flujos y versiones concretos; no prueba todos los medios de pago, cortes de energía, sincronización multi-sucursal ni todos los periféricos.
-- La edición self-hosted descrita no equivale a sincronización entre varias bases/cajas; esa función se documenta como servicio separado.
-- Debemos comprobar si el modelo de datos y los puntos de extensión permiten nuestras reglas de descuentos, fiscalidad argentina, trazabilidad y analítica sin reescribir el núcleo.
+**Licencias del paquete:**
+- La raíz declara AGPL-3.0-only.
+- El aviso de terceros identifica MongoDB Community Server 7.0.14 bajo SSPL-1.0.
+- El mismo aviso identifica amCharts 4 como comercialmente licenciado. No reutilizarlo sin confirmar permiso; contemplar reemplazo.
+- Las dependencias npm y los recursos visuales/fuentes requieren inventario propio. La licencia raíz no cubre automáticamente todo el instalador.
 
-**Prueba requerida:** fijar una versión, levantarla localmente y ejecutar venta, descuento, pago mixto, cierre de caja, devolución parcial, movimiento de inventario, corte de red, cierre forzado, reinicio y recuperación. Inspeccionar ventas, stock, pagos, caja, migraciones, roles y sincronización.
-
-**Recomendación:** máxima prioridad de evaluación; no aprobado todavía como base definitiva.
-
+**Recomendación:** priorizar una prueba integral de escritorio/local, pero no aprobar todavía como base. Medir si la adaptación argentina y la recuperación offline pasan los controles sin un fork profundo. La referencia de ejecución está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 ### ERPNext + Frappe
 
 Repositorios: https://github.com/frappe/erpnext y https://github.com/frappe/frappe  
+Release evaluada: ERPNext `v16.60.0` (17/11/2026); framework de la línea 16.  
 Licencias: ERPNext GPL-3.0; Frappe Framework MIT.
 
-ERPNext declara cobertura de contabilidad, pedidos, inventario, abastecimiento, fabricación, activos y otras áreas. Frappe proporciona framework, autenticación, API, base de datos y estructura de aplicaciones.
+ERPNext aporta procesos de contabilidad, pedidos, inventario, abastecimiento, fabricación y administración. Frappe aporta framework de aplicaciones, modelos de documentos, autenticación, permisos, API, formularios y tareas en segundo plano.
 
-**Valor:** candidato fuerte para reutilizar procesos ERP profundos: compras, proveedores, inventario, costos, órdenes de producción, recetas/BOM, contabilidad y reportes. Frappe permite crear aplicaciones propias y extender documentos y flujos.
+**Valor:** fuerte candidato para reutilizar compras, proveedores, recepciones, costos, producción/recetas, stock, contabilidad y reportes. Sus perfiles POS configuran empresa, almacén, medios de pago, precios y comportamiento de caja.
 
-**Riesgos:** Python/MariaDB y modelo de aplicación propio; adaptar el POS, experiencia de caja, offline-first fuerte e integración fiscal argentina puede requerir trabajo considerable. No asumir que el POS resuelve hardware ni recuperación tras apagado.
+**Riesgos y límites:**
+- El POS debe evaluarse en una caja realista; una interfaz ERP funcional no garantiza velocidad ni claridad para el cajero.
+- No se considera demostrado el offline duradero de v16. Debe sobrevivir al cierre del navegador o proceso, corte de red, reinicio y reintento.
+- Frappe se utiliza habitualmente con MariaDB; PostgreSQL no debe asumirse como alternativa equivalente para esta evaluación.
+- La localización argentina y ARCA deben verificarse módulo por módulo. No contar una integración por una pantalla documentada si no se encuentra el código, licencia y prueba correspondiente.
+- ERPNext GPL-3 no se convierte en MIT por estar construido sobre Frappe Framework MIT.
 
-**Prueba requerida:** recorrido equivalente al de Posnic y además recepción parcial de compras, costo de inventario y producción con receta/lote. Verificar qué funciones POS están incluidas en Community.
+**Prueba requerida:** ejecutar P01–P17 del protocolo común, incluyendo venta rápida, arqueo, pagos mixtos, compra/recepción, costo, producción y recuperación offline.
 
-**Recomendación:** máxima prioridad como alternativa integral, especialmente si gestión, producción y contabilidad listas reducen más trabajo que el costo de adaptar.
-
+**Recomendación:** segundo candidato integral. Puede ahorrar mucho trabajo de back-office, pero gana solo si el costo de adaptar caja, experiencia offline y operación argentina es menor que construir esas capacidades.
 ### NexoPOS
 
 Repositorio: https://github.com/Blair2004/NexoPOS  
@@ -81,26 +88,24 @@ Se mantiene como candidato integral por su cobertura POS, inventario, compras, f
 
 ## 2. Hardware, tickets y periféricos
 
-### pos-toolkit — candidato directo
+### pos-toolkit — candidato directo para hardware y tickets
 
 Repositorio: https://github.com/narisolutions/pos-toolkit  
-Licencia: Apache-2.0.
+Licencia: Apache-2.0.  
+Revisión de código: commit `a3fcd401b002d6112068667359f41d1438796e46` (03/11/2026).
 
 El repositorio contiene:
 - Plugin Tauri v2 y librería Rust para ESC/POS por red, USB y Windows spooler.
-- Apertura de cajón de dinero y enumeración de impresoras USB.
+- Apertura de cajón y enumeración de impresoras USB.
 - Lectores seriales Virtual COM.
 - Balanzas POS USB HID.
-- Constructor de tickets de ancho fijo para papel de 80 mm y 57 mm.
+- Constructor de tickets TypeScript de 80 mm/57 mm.
 
-El paquete register-core aparece como **planned**, no disponible terminado. El README indica que los paquetes no incorporan dependencias específicas del producto y que el plugin expone funciones de librería además de comandos Tauri.
+**Qué se puede reutilizar:** `packages/receipt-builder` es un paquete TypeScript Apache-2.0, versión 0.1.0, sin dependencias runtime declaradas. Recibe un documento ya compuesto por el host; Rubrova conserva el cálculo de IVA, totales, pagos, idioma y fechas. Admite formato de importes delegado al host y codificaciones ASCII/UTF-8/CP852/transliteración.
 
-**Valor:** coincidencia directa con nuestra capa de hardware. Evita escribir desde cero protocolos de impresora, lectura serial y soporte HID.
+**Límites:** el plugin de hardware es Rust/Tauri v2, no un driver universal de navegador/PWA. Requiere comprobar el empaquetado y los permisos del sistema operativo. El mantenedor declara compromisos de soporte modestos. `packages/register-core` figura como **planned**, no implementado.
 
-**Límites:** soporte y compromiso de mantenimiento declarados modestos; validar modelos, sistemas operativos, reconexión, permisos USB y balanzas reales. Un protocolo genérico no equivale a compatibilidad con todas las marcas.
-
-**Recomendación:** evaluar primero pos-hardware y receipt-builder; no contar register-core como existente hasta verificar su código.
-
+**Recomendación:** evaluar el constructor de tickets como componente aislado y el plugin solo si la arquitectura final elige una aplicación de escritorio Tauri o una pasarela compatible. Validar impresoras, lectores, balanzas y cajón físicos concretos.
 ### emupos — simulador de hardware
 
 Repositorio: https://github.com/ahmedalrifai/emupos  
@@ -210,34 +215,31 @@ Stack Next.js/Expo/Prisma/PostgreSQL/SQLite. Declara diseño de perfiles sobre e
 
 ## 6. Hallazgos y decisiones
 
-1. **Posnic pasa a ser el primer candidato a prueba integral**, por su enfoque local/offline y cobertura POS retail/restaurante.
-2. **ERPNext queda como segundo candidato integral**, especialmente por gestión, inventario, compras, fabricación y contabilidad.
-3. **NexoPOS queda como tercer candidato**, pero no se aprueba hasta resolver la contradicción GPLv3 vs MIT entre LICENSE y composer.json.
-4. **pos-toolkit** es el candidato más concreto para acelerar hardware.
-5. **emupos + ESCPost** forman una posible caja de herramientas para probar hardware sin depender siempre de dispositivos físicos.
-6. **arca-sdks** es el candidato principal para ARCA si la plataforma termina en TypeScript; afip.py es alternativa para Python.
-7. **PowerSync** merece prueba como motor de sincronización; **Dexie** como opción de almacenamiento browser, no como sincronizador.
-8. No integrar varios ERP/POS como fuentes de verdad. Si adoptamos una plataforma integral, los demás proyectos aportan módulos aislados, herramientas de prueba o conocimiento, no una segunda contabilidad o inventario paralelo.
-9. No copiar componentes sin revisar dependencias transitivas, archivos de licencia, marcas, fuentes de datos, avisos y scripts de instalación.
-10. El uso previsto es privado e interno. GPL/AGPL no son descartes automáticos; para AGPL evaluar expresamente interacción remota de usuarios por red. SSPL y licencias source-available se revisan por separado: no se deben llamar open source ni asumir equivalencia con GPL.
+1. **Posnic 1.9.2** es el primer candidato a prueba por su POS local. No está aprobado: la evidencia offline es limitada, la sincronización entre bases independientes es un servicio aparte y el paquete contiene MongoDB SSPL-1.0 y amCharts comercial.
+2. **ERPNext 16.60.0/Frappe 16** es la alternativa integral por la profundidad de compras, inventario, producción y contabilidad; su POS y continuidad offline deben probarse.
+3. La ronda integral queda limitada a esos dos candidatos. Odoo Community 20 y Medusa v2 quedan fuera de la ronda activa; NexoPOS continúa bloqueado por discrepancia de licencia.
+4. **pos-toolkit** aporta código concreto para hardware y tickets. La parte de hardware requiere Tauri v2; `register-core` está planificado.
+5. **emupos + ESCPost** pueden reducir la compra temprana de periféricos y hacer reproducibles las pruebas de hardware.
+6. **arca-sdks** es el adaptador fiscal candidato para TypeScript; el paquete de facturación 7.1.0 declara MIT y requiere Node >=22.12. La homologación y la recuperación de estados inciertos siguen siendo responsabilidad de nuestra integración.
+7. **PowerSync** se evalúa como motor de sincronización, distinguiendo Open Edition de Enterprise/Cloud; **Dexie** es almacenamiento IndexedDB, no sincronizador completo.
+8. No integrar varios ERP/POS como fuentes de verdad. El sistema elegido será dueño de ventas, pagos, caja y stock; el resto aporta herramientas o módulos aislados.
+9. El uso privado permite considerar GPL/AGPL, pero no elimina obligaciones ni licencias separadas de dependencias, fuentes, recursos comerciales y servicios.
+10. La evaluación completa, con versiones fijadas, datos sintéticos y escenarios P01–P17, está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
+Ninguno de estos candidatos está incorporado ni ejecutado dentro de Rubrova.
 ## 7. Prueba técnica siguiente
 
-No construir aún una aplicación definitiva ni copiar módulos de manera aislada. Primero comparar Posnic y ERPNext (y NexoPOS cuando se resuelva su licencia) con el mismo guion:
+Seguir el protocolo único de [Evaluación de plataformas](PLATFORM_EVALUATION.md). No duplicar guiones ni comenzar a copiar módulos antes de ejecutar las dos plataformas.
 
-- Alta/importación de producto con código, variante y unidad.
-- Venta con lector simulado, descuentos por línea y carrito, autorización y registro de impacto.
-- Pago mixto, vuelto, apertura/cierre y arqueo.
-- Salida de inventario, devolución parcial, reembolso y disposición del producto.
-- Impresión y apertura de cajón con emupos; vista previa de ticket con ESCPost.
-- Desconexión, cierre forzado, reinicio y reconciliación sin pérdida ni duplicación.
-- Compra, recepción parcial, actualización de costo y producción por receta/lote.
-- Emisión ARCA en homologación desde adaptador separado; estado incierto sin reintento ciego.
+La prueba debe dejar evidencia de versiones, commits, entorno, escenarios, fallos, recuperación, licencias y esfuerzo de adaptación. La elección se hace con condiciones excluyentes: venta/pago/stock exactamente una vez, cierre forzado recuperable, backup restaurable, auditoría, permisos y ruta fiscal argentina viable.
 
-Medir porcentaje de flujo resuelto sin tocar el core, módulos que hay que modificar, complejidad de actualización, cobertura real de tests, tiempo de adaptación, offline, compatibilidad física y claridad de datos.
+Después de la evaluación integral, probar por separado los componentes especializados:
+- pos-toolkit receipt-builder y, si la arquitectura lo permite, pos-hardware;
+- emupos y ESCPost con escenarios físicos simulados;
+- arca-sdks en homologación;
+- PowerSync Open Edition frente a almacenamiento local más protocolo propio.
 
-**Criterio de decisión:** gana la plataforma que reduzca más trabajo total y riesgo operativo, no la que tenga más pantallas ni la demo más vistosa. Si ninguna supera el guion, tomar solo módulos y componentes y construir el monolito modular propio.
-
+No se declara reutilizado un proyecto hasta fijar su versión, conservar avisos, revisar dependencias y ejecutar las pruebas pertinentes.
 ## Fuentes primarias consultadas
 
 - Posnic: https://github.com/Posnic/POS y https://www.posnic.com/posnic-facts
