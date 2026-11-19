@@ -97,3 +97,28 @@ Reglas de aceptación:
 La guía completa y las licencias de los candidatos están en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
 
 La aprobación legal de una licencia no reemplaza la revisión técnica; una biblioteca permisiva también puede ser insegura, estar abandonada o no cumplir nuestras invariantes.
+
+
+## Contratos entre módulos externos
+
+- Prueba de contrato de cada puerto/API con ejemplos válidos, inválidos y esquemas versionados.
+- Reintentos repetidos con la misma clave no duplican venta, pago, movimiento, cupón ni factura.
+- Webhooks duplicados o fuera de orden se deduplican y no retroceden estados finales.
+- Un módulo no puede leer ni modificar el agregado de otro módulo por acceso directo a tablas.
+- Aislamiento por negocio, sucursal, caja, dispositivo y permiso.
+- Caída del servicio externo, timeout, respuesta parcial y recuperación.
+- Outbox/inbox durables, dead-letter, replay autorizado y conciliación.
+- Sustitución de adaptador sin modificar la lógica de negocio.
+- Compatibilidad y build de cada puente en Windows, Linux y macOS por separado.
+
+## Pruebas de checkout y terminal
+
+- Retirar un producto del carrito antes del pago: total, descuentos e impuestos recalculados; sin venta ni salida de stock para esa línea.
+- No permitir cambios silenciosos del importe una vez enviada la orden a terminal.
+- Efectivo exacto, exceso y faltante: vuelto y neto de caja correctos al centavo.
+- Pago mixto: suma de asignaciones igual al total; cada medio conserva su importe y estado.
+- Terminal creada/en terminal/no confirmada: nunca se marca pagada.
+- Aprobación, rechazo, cancelación, expiración, acción requerida y reembolso.
+- Timeout después de que el cliente pudo haber pagado: consulta de estado antes de otro intento.
+- Repetición de webhook y request: un único efecto.
+- Voucher de terminal, ticket de venta y documento fiscal se concilian por separado.

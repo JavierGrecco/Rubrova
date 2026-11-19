@@ -66,3 +66,19 @@ Cada integración tiene contrato y versión, autenticación mínima, idempotenci
 ## Reportes por canal
 
 Global, físico y online comparten definiciones de ventas netas, costos, margen y devoluciones. Cada canal suma sus costos: comisión, envío, embalaje, publicidad, contracargos y adquisición cuando se conozcan. Los pedidos externos y las ventas locales se reconcilian sin doble conteo.
+
+
+## Terminales de pago presenciales
+
+Los pagos presenciales se conectan por adaptador del adquirente, separado de la venta y del módulo fiscal. La matriz inicial de investigación incluye:
+
+- Mercado Pago Point: Orders API, terminales, webhooks y consulta de estado.
+- Getnet Get POS Integrado: API cloud-to-cloud o SDK local USB/Wi-Fi, sujeto a habilitación.
+- Fiserv/Posnet: modalidad POS Integrado Trx a Trx, con programa/cable y homologación.
+- Payway: capacidades de terminal/PINpad a confirmar con documentación técnica y acceso de desarrollador.
+
+El adaptador publica capacidades reales: iniciar pago, consultar, recibir notificación, cancelar, reembolsar, imprimir voucher y cerrar lote. No todas estarán disponibles en todos los proveedores.
+
+El estado externo no se deduce de la pantalla ni de un timeout. Las órdenes creadas o recibidas por la terminal siguen pendientes hasta confirmación final. Un resultado incierto se consulta y concilia. La clave de idempotencia y la referencia de operación impiden duplicados.
+
+La guía de flujo, estados, impresión y pruebas está en [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md).

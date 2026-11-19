@@ -9,12 +9,14 @@ La prueba común, versiones fijadas, conjunto sintético y criterios de aprobaci
 ## Fase 0 — decidir la base
 
 - Consolidar reglas comerciales, modelo de dominio, estados y contratos.
-- Evaluar Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 con el mismo conjunto de datos y flujo.
+- Comparar Posnic 1.9.2, ERPNext 16.60.0/Frappe 16 y MyCompany/lsFusion 6.2 como plataformas integrales con pruebas equivalentes.
+- Evaluar módulos dedicados de WMS, integraciones, promociones, analítica y automatización detrás de contratos.
+- Completar la especificación del checkout: línea removible antes de pagar, efectivo recibido/vuelto y pago integrado con terminales locales.
 - Probar caja, ventas, pagos mixtos, descuentos, devoluciones, inventario, compras y producción.
 - Demostrar corte de internet, cierre forzado, reinicio, reintento, conciliación y backup/restauración.
 - Medir esfuerzo real de extensión, actualizaciones, dependencias y licencias.
 - Verificar adaptación argentina, ARCA en homologación y hardware.
-- Elegir una única plataforma transaccional o construir el monolito modular propio.
+- Elegir una única base transaccional o construir el monolito modular propio; los módulos secundarios solo se integran con autoridad de datos y contratos explícitos.
 
 **Criterio de salida:** se completa la prueba sin pérdida ni duplicación de ventas, pagos o movimientos; la recuperación y restauración son demostrables; las extensiones son mantenibles; existe una ruta fiscal viable; y se documenta el costo de conservar la base elegida. Si ninguna opción supera los controles excluyentes, se descartan como base y se reutilizan solo los componentes que hayan pasado su revisión.
 
@@ -74,8 +76,13 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Protocolo común P01–P17 con datos sintéticos y puertas críticas.
 - [x] Laboratorio de instalación reproducible para Posnic y ERPNext.
 - [x] Validador automático del dataset y workflow de GitHub Actions; última ejecución confirmada: 6/6 pruebas aprobadas y dataset válido.
-- [ ] Instalación local de Posnic.
-- [ ] Instalación local de ERPNext/Frappe.
+- [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
+- [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
+- [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
+- [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
+- [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
+- [ ] Instalar/evaluar Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
+- [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
 - [ ] Ejecución y evidencia de los escenarios.
 - [ ] Decisión de base y plan de adaptación.
 

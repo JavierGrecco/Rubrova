@@ -75,3 +75,17 @@ Cada indicador comunica fuente, actualización, cobertura, datos faltantes, oper
 ## Asistente
 
 Consulta métricas verificables, explica cálculos y escenarios. No inventa resultados ni ejecuta cambios sensibles sin aprobación. Cada recomendación incluye hallazgo, evidencia, impacto y supuestos, confianza, acción propuesta y medición posterior.
+
+
+## Plataforma analítica y herramientas candidatas
+
+La caja y las escrituras operativas no deben competir con consultas analíticas pesadas. La dirección es generar proyecciones/read models sobre datos conciliados y mantener el camino transaccional separado.
+
+Candidatos a evaluar:
+- DuckDB como motor analítico embebido y multiplataforma para prototipos, consultas locales y archivos Parquet.
+- Apache Superset como entorno self-hosted de exploración y dashboards, sujeto a evaluación de operación y permisos.
+- Modelos de datos derivados del ledger y con fecha de corte, fuente, cobertura y versión.
+
+Estas herramientas no reemplazan la base transaccional ni pueden escribir ventas, pagos o stock. Los dashboards deben ser de solo lectura y sus definiciones financieras deben coincidir con las del dominio.
+
+Ver [Investigación de módulos ampliados](MODULAR_COMPONENT_RESEARCH.md).
