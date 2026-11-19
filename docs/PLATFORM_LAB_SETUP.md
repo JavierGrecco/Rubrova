@@ -221,12 +221,14 @@ Realizarlo en una VM Windows x64 limpia, no en el equipo principal ni sobre una 
 
 6. Comprobar la firma Authenticode del instalador. Si la firma existe y no es válida, no ejecutar. El hash es el control obligatorio incluso si la firma no está disponible.
 7. Ejecutar el instalador dentro de la VM aislada y completar la instalación. El proceso requiere conexión a Internet para descargar componentes.
-8. La guía indica que el cliente web utiliza el puerto 8080 y el cliente de escritorio el 7652. Mantener la VM en una red host-only o sin acceso entrante desde la LAN.
-9. Abrir el cliente web desde la propia VM:
+8. Detener el servicio lsFusion 6 Server desde Servicios de Windows. Conservar una copia del JAR instalado y colocar el archivo verificado mycompany-6.2.jar en C:\\Program Files\\lsFusion 6\\Server\\lib. Asegurarse de que quede un solo archivo mycompany*.jar en esa carpeta y reiniciar el servicio. La guía oficial documenta esa ubicación para el JAR de MyCompany.
+9. Registrar versión del runtime, hash del JAR activo y hash del instalador. Si no se puede confirmar que el JAR activo corresponde al artefacto 6.2 verificado, marcar la evaluación como bloqueada.
+10. La guía indica que el cliente web utiliza el puerto 8080 y el cliente de escritorio el 7652. Mantener la VM en una red host-only o sin acceso entrante desde la LAN.
+11. Abrir el cliente web desde la propia VM:
 
     http://127.0.0.1:8080
 
-10. El manual indica un usuario inicial admin sin contraseña. No exponer la instalación así a la LAN ni a Internet. Mantenerla aislada hasta configurar credenciales y permisos de prueba.
+12. El manual indica un usuario inicial admin sin contraseña. No exponer la instalación así a la LAN ni a Internet. Mantenerla aislada hasta configurar credenciales y permisos de prueba.
 
 ### Opción B — Linux x86_64
 
