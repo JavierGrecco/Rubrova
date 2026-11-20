@@ -84,12 +84,13 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
 - [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
 - [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
+- [x] Shortlist transversal ampliada: PowerSync, Spree, Saleor, InvenTree, addons OCA Manufacturing, Superset, Keycloak, OpenTelemetry, Prometheus, Grafana, pgBackRest, restic y Kopia; versiones y licencias registradas.
 - [x] Alcance multiárea, mayorista/distribución, servicios B2B y rentabilidad por unidad documentados.
 - [x] Investigación de Dolibarr, OCA Field Service, OpenFieldPro y Open TMS para los nuevos dominios.
 - [ ] Instalar/evaluar Dolibarr 24.0.3 de forma comparable o documentar por qué no supera el costo de evaluación.
 - [ ] Instalar/evaluar InvenTree 1.7.3 para ubicaciones, código, trazabilidad, BOM y API.
 - [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
-- [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
+- [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Tryton serie 7.8 (incluido `sale_point`), Dolibarr 24.0.3, ERPNext/Frappe 16 y Posnic 1.9.2 en entornos aislados y según la responsabilidad que cada uno pueda asumir.
 - [ ] Inspección dirigida de InvenTree, OpenBoxes y componentes públicos de OpenWMS; fijar módulos/commits y límites de licencia.
 - [ ] Solicitar credenciales de QA a Andreani, PAQ.AR y OCA; comparar Envíopack, AfterShip y 17TRACK para tracking multioperador.
 - [ ] Confirmar si existe una API/operativa Kangu aplicable a Argentina; no asumir disponibilidad.
@@ -100,6 +101,12 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
 - [ ] Ejecutar P27–P44 y validar backup/restauración, idempotencia concurrente, CAS, cuotas offline y rollback individual de servicios.
 - [ ] Ejecución y evidencia de todos los escenarios.
+- [ ] Probar PowerSync como caché offline de catálogo y tareas de dispositivo; comprobar desconexión, reinicio, reintentos y dos terminales en conflicto sin delegarle la autoridad del stock.
+- [ ] Comparar Spree v6.0.5 y Saleor 3.23.50 como canal online/B2B; seleccionar como máximo uno y probar pedidos, cancelaciones, reservas, webhooks duplicados y conciliación con la autoridad comercial central.
+- [ ] Evaluar InvenTree para componentes/BOM y addons OCA Manufacturing sólo si Odoo entra en la composición; revisar cada addon por licencia y dependencias.
+- [ ] Probar DuckDB con exports Parquet/CSV canónicos y conciliar los resultados analíticos contra los reportes transaccionales; evaluar Superset sólo si se necesita un servicio BI multiusuario.
+- [ ] Probar pgBackRest (si PostgreSQL forma parte de la solución) con recuperación PITR a instancia alternativa; probar restic/Kopia para documentos/archivos y restauración verificada.
+- [ ] Diferir Keycloak y la pila OpenTelemetry/Prometheus/Grafana hasta que haya varias aplicaciones/servicios o una necesidad de SSO/observabilidad que el sistema elegido no cubra.
 - [ ] Decisión de tecnología y almacenamiento por servicio, despliegue local y plan de adaptación de plataformas reutilizadas.
 
 No se marca una prueba como aprobada por haber leído documentación, ejecutar una demo o completar un formulario. Se necesita evidencia reproducible.
