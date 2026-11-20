@@ -54,13 +54,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+JavierGrecco@users.noreply.github.com"
           git add vendor/
-          if ! git diff --cached --quiet; then
-            git commit -m "vendor: incorporate pinned MyCompany 6.2 and lsFusion 6.2 sources"
-            git fetch origin main
-            git rebase origin/main
-            git push origin HEAD:main
-          else
+          if git diff --cached --quiet; then
             echo "Los snapshots ya están incorporados; no hay un nuevo commit."
+          else
+            git commit -m "vendor: incorporate pinned MyCompany 6.2 and lsFusion 6.2 sources"
+            pushed=false
+            for attempt in 1 2 3 4 5; do
+              echo "Sincronización con main, intento $attempt/5."
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort || true
+                echo "No se pudo rebasar el snapshot sobre main. Se requiere revisión manual." >&2
+                exit 1
+              fi
+              if git push origin HEAD:refs/heads/main; then
+                pushed=true
+                break
+              fi
+              echo "main avanzó durante el push; se volverá a leer y rebasar antes de reintentar." >&2
+              sleep 2
+            done
+            if [[ "$pushed" != "true" ]]; then
+              echo "No se pudo integrar el snapshot después de cinco intentos. No se fuerza el push." >&2
+              exit 1
+            fi
           fi
 
       - name: Compilar desde el código fuente incorporado
