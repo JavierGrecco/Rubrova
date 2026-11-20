@@ -569,6 +569,72 @@ def inspect_page(url: str) -> int:
                     )
 
                 print("UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true")
+
+                # Ejecutar pruebas de resiliencia sólo contra el simulador local.
+                # Las operaciones de prueba no crean ventas, pagos ni movimientos de caja.
+                api_base = url.rstrip("/") + "/exec/Rubrova."
+                timeout_started = time.monotonic()
+                timeout_response = context.request.get(
+                    api_base + "rubrovaTestHttpTimeout", timeout=12_000
+                )
+                timeout_elapsed = time.monotonic() - timeout_started
+                if timeout_response.status != 200:
+                    raise RuntimeError(
+                        "La prueba de timeout respondió HTTP "
+                        f"{timeout_response.status}: {timeout_response.text()[:1200]}"
+                    )
+                timeout_payload = timeout_response.json()
+                if isinstance(timeout_payload, list):
+                    timeout_payload = timeout_payload[0] if timeout_payload else {}
+                print("UI_INTEGRATION_TIMEOUT_RESPONSE=" + json.dumps(timeout_payload, ensure_ascii=False))
+                print(f"UI_INTEGRATION_TIMEOUT_ELAPSED_SECONDS={timeout_elapsed:.3f}")
+                if timeout_payload.get("outcome") != "failure-captured":
+                    raise RuntimeError(
+                        "El timeout del proveedor simulado no quedó capturado por Rubrova."
+                    )
+                if timeout_payload.get("category") != "TIMEOUT_OR_NETWORK":
+                    raise RuntimeError(
+                        "La categoría de fallo no fue TIMEOUT_OR_NETWORK: "
+                        + str(timeout_payload.get("category"))
+                    )
+                if timeout_elapsed > 4.0:
+                    raise RuntimeError(
+                        f"El límite de 1 segundo no se respetó; la API tardó {timeout_elapsed:.3f}s."
+                    )
+                print("UI_INTEGRATION_TIMEOUT_CAPTURED=true")
+
+                recovery_response = context.request.get(
+                    api_base + "rubrovaTestHttpRecovery", timeout=12_000
+                )
+                if recovery_response.status != 200:
+                    raise RuntimeError(
+                        "La prueba de recuperación respondió HTTP "
+                        f"{recovery_response.status}: {recovery_response.text()[:1200]}"
+                    )
+                recovery_payload = recovery_response.json()
+                if isinstance(recovery_payload, list):
+                    recovery_payload = recovery_payload[0] if recovery_payload else {}
+                print("UI_INTEGRATION_RECOVERY_RESPONSE=" + json.dumps(recovery_payload, ensure_ascii=False))
+                if recovery_payload.get("outcome") != "success":
+                    raise RuntimeError("El proveedor simulado no se recuperó tras el timeout.")
+                print("UI_INTEGRATION_RECOVERY_SUCCEEDED=true")
+
+                incident_response = context.request.get(
+                    api_base + "rubrovaTestIncidentCountApi", timeout=12_000
+                )
+                if incident_response.status != 200:
+                    raise RuntimeError(
+                        "La consulta de incidencias respondió HTTP "
+                        f"{incident_response.status}: {incident_response.text()[:1200]}"
+                    )
+                incident_payload = incident_response.json()
+                if isinstance(incident_payload, list):
+                    incident_payload = incident_payload[0] if incident_payload else {}
+                incident_count = int(incident_payload.get("incidentCount", 0))
+                print(f"UI_INTEGRATION_INCIDENT_COUNT={incident_count}")
+                if incident_count < 1:
+                    raise RuntimeError("El timeout no quedó persistido en IntegrationIncident.")
+                print("UI_INTEGRATION_INCIDENT_PERSISTED=true")
                 item_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-item" + screenshot_path.suffix
                 )

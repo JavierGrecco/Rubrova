@@ -31,6 +31,8 @@ IMAGE_OVERRIDE_FILE="$COMPOSE_DIR/compose.images.override.yaml"
 WEB_URL="${RUBROVA_WEB_URL:-http://127.0.0.1:8080/}"
 STARTUP_TIMEOUT_SECONDS="${RUBROVA_STARTUP_TIMEOUT_SECONDS:-900}"
 KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
+MOCK_PROVIDER_PORT="${RUBROVA_MOCK_PROVIDER_PORT:-18765}"
+MOCK_PROVIDER_PID=""
 
 mkdir -p "$CACHE_DIR" "$COMPOSE_DIR"
 
@@ -42,6 +44,10 @@ cleanup() {
   local exit_code=$?
   trap - EXIT
   set +e
+  if [[ -n "$MOCK_PROVIDER_PID" ]]; then
+    kill "$MOCK_PROVIDER_PID" 2>/dev/null || true
+    wait "$MOCK_PROVIDER_PID" 2>/dev/null || true
+  fi
   if [[ -s "$COMPOSE_FILE" && -s "$EXTENSION_OVERRIDE_FILE" && -s "$IMAGE_OVERRIDE_FILE" ]]; then
     if [[ "$exit_code" -ne 0 ]]; then
       echo "=== Estado final de los contenedores ===" >&2
@@ -71,6 +77,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
+echo "Preparando simulador HTTP local para probar timeout y recuperación."
+python3 "$SCRIPT_DIR/mock-integration-provider.py" --host 0.0.0.0 --port "$MOCK_PROVIDER_PORT" > "$WORK_DIR/mock-provider.log" 2>&1 &
+MOCK_PROVIDER_PID=$!
+MOCK_READY=false
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  if curl --silent --fail --connect-timeout 1 --max-time 2 "http://127.0.0.1:$MOCK_PROVIDER_PORT/health" >/dev/null; then
+    MOCK_READY=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$MOCK_READY" != "true" ]]; then
+  echo "El simulador HTTP local no inició correctamente." >&2
+  cat "$WORK_DIR/mock-provider.log" >&2 || true
+  exit 1
+fi
+echo "Simulador HTTP local disponible en el puerto $MOCK_PROVIDER_PORT."
+
 echo "1/6 Preparando el JAR y Compose oficiales MyCompany 6.2"
 RUBROVA_CACHE_DIR="$CACHE_DIR" bash "$PREPARE_SCRIPT"
 cp "$CACHE_DIR/compose.yaml" "$COMPOSE_FILE"
@@ -87,6 +111,8 @@ services:
   logics:
     image: lsfusion/mycompany:6.2@sha256:9dacff96577de49a56633a53801c7bcd78b5e7df501cd4ebd61098124276bd11
   server:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
   client:
     image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
@@ -181,6 +207,35 @@ grep -q "rubrova-ci" "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" || 
   echo "No se agregó el puesto POS efímero para CI." >&2
   exit 1
 }
+
+MOCK_PROVIDER_URL="http://host.docker.internal:$MOCK_PROVIDER_PORT"
+cat >> "$COMPOSE_DIR/docker-server/RubrovaIntegrationResilience.lsf" <<LSF
+
+// Endpoints exclusivos de la base efímera CI: nunca se instalan en Rubrova.
+rubrovaTestHttpTimeout () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de timeout', 'ci-timeout-001',
+        '$MOCK_PROVIDER_URL/slow?delay=5', 1000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'failure-captured',
+        category = rubrovaHttpFailureCategory(),
+        httpStatus = statusHttp();
+} @@api;
+
+rubrovaTestHttpRecovery () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de recuperación', 'ci-recovery-001',
+        '$MOCK_PROVIDER_URL/ok', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'success' ELSE 'failure',
+        category = rubrovaHttpFailureCategory();
+} @@api;
+
+rubrovaMockIncidentCount () = GROUP SUM 1
+    IF provider(IntegrationIncident i) = 'Rubrova Mock Provider';
+
+rubrovaTestIncidentCountApi () {
+    EXPORT JSON FROM incidentCount = rubrovaMockIncidentCount();
+} @@api;
+LSF
 
 echo "3/6 Validando la configuración efectiva de Docker Compose"
 compose config --quiet
@@ -502,4 +557,4 @@ if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVI
 fi
 echo "Los registros confirman los tres módulos Rubrova: RubrovaCustom, RubrovaPOSLocalization y RubrovaIntegrationResilience."
 
-echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los dos módulos Rubrova. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."
+echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los tres módulos Rubrova. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."

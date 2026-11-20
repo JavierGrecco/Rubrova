@@ -18,6 +18,7 @@ const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
 const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
+const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 
 function parseProperties(source) {
   const entries = new Map();

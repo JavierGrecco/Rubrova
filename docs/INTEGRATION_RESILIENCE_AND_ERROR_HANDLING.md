@@ -194,3 +194,7 @@ Se agrega una puerta de aceptación por proveedor: una integración no se habili
 No se acepta "manejo de errores" por tener un TRY/CATCH superficial. Deben existir timeout por intento y deadline total, clasificación, política de retry, circuit breaker, idempotencia, Outbox durable para procesos diferidos, estado visible, logging saneado, alertas, límites de concurrencia y pruebas de fallo. La política es común; cada adaptador declara sus particularidades y no puede relajar los mínimos.
 
 La aceptación final requiere demostrar que la caída de un proveedor no rompe el funcionamiento local y que ninguna operación con resultado incierto se duplica.
+
+## Prueba ejecutable de timeout y recuperación
+
+El smoke test efímero incorpora un proveedor HTTP simulado en la propia máquina de CI. El módulo de Rubrova ejecuta un GET con límite de 1 segundo contra un endpoint que demora 5 segundos, captura el resultado sin propagar la excepción a la API, registra una incidencia local y luego vuelve a consultar un endpoint saludable. La prueba verifica también que la incidencia quede persistida. No usa credenciales ni un servicio real y no crea ventas ni pagos. Esta prueba inicial cubre el patrón GET; los métodos de escritura, los circuit breakers y la Outbox requieren sus propias pruebas de idempotencia y recuperación.

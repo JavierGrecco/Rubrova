@@ -106,6 +106,7 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
     rubrovaHttpSucceeded() <- FALSE;
     rubrovaHttpFailureCategory() <- NULL;
     rubrovaHttpFailureMessage() <- NULL;
+    statusHttp() <- NULL;
 
     IF timeoutMilliseconds < 1 OR timeoutMilliseconds > 30000 THEN {
         rubrovaHttpFailureCategory() <- 'CONFIGURATION_ERROR';
