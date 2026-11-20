@@ -273,19 +273,54 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
     )
 
 
-def click_exact_link(page: Any, label: str) -> bool:
-    links = page.locator("a").evaluate_all(
-        """elements => elements.map((element, index) => ({
-            index,
-            text: (element.innerText || element.textContent || "").trim(),
-            visible: !!(element.offsetWidth || element.offsetHeight)
-        }))"""
+def wait_for_exact_link(page: Any, label: str, timeout_seconds: int = 12) -> int | None:
+    deadline = time.monotonic() + timeout_seconds
+    last_links: list[dict[str, Any]] = []
+
+    while time.monotonic() < deadline:
+        last_links = page.locator("a").evaluate_all(
+            """elements => elements.map((element, index) => ({
+                index,
+                text: (element.innerText || element.textContent || "").trim(),
+                visible: getComputedStyle(element).display !== "none" &&
+                    getComputedStyle(element).visibility !== "hidden" &&
+                    !!(element.offsetWidth || element.offsetHeight),
+                href: element.getAttribute("href") || "",
+                className: typeof element.className === "string" ? element.className : "",
+                role: element.getAttribute("role") || "",
+                ariaLabel: element.getAttribute("aria-label") || "",
+                title: element.getAttribute("title") || "",
+                outerHTML: element.outerHTML.slice(0, 700),
+                parentHTML: element.parentElement ? element.parentElement.outerHTML.slice(0, 1000) : ""
+            }))"""
+        )
+        matches = [
+            link for link in last_links
+            if link["visible"] and link["text"] == label
+        ]
+        if matches:
+            print(
+                f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_TARGET="
+                + json.dumps(matches[0], ensure_ascii=False)
+            )
+            return int(matches[0]["index"])
+        page.wait_for_timeout(250)
+
+    print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
+    print(
+        f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
+        + json.dumps(last_links, ensure_ascii=False)
     )
-    matches = [link for link in links if link["visible"] and link["text"] == label]
-    if not matches:
-        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
+    return None
+
+
+def click_exact_link(page: Any, label: str) -> bool:
+    index = wait_for_exact_link(page, label)
+    if index is None:
         return False
-    page.locator("a").nth(matches[0]["index"]).click(no_wait_after=True)
+    link = page.locator("a").nth(index)
+    link.scroll_into_view_if_needed()
+    link.click(no_wait_after=True)
     page.wait_for_timeout(1_000)
     print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
     return True
@@ -351,22 +386,31 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
                 # Explore navigation only. Do not open a cash session or create business data.
-                if click_exact_link(page, "Comercio"):
-                    retail_text = visible_snapshot(page, "UI_RETAIL_NAVIGATION")
+                if not click_exact_link(page, "Comercio"):
+                    raise RuntimeError("No se pudo seleccionar el módulo Comercio.")
+
+                # The submenu is loaded asynchronously by the lsFusion navigator.
+                if wait_for_exact_link(page, "Punto de venta", timeout_seconds=12) is None:
+                    visible_snapshot(page, "UI_RETAIL_NAVIGATION_FAILED")
                     page.screenshot(path=str(retail_screenshot), full_page=True)
                     print(f"UI_RETAIL_SCREENSHOT={retail_screenshot}")
-                    if not click_exact_link(page, "Punto de venta"):
-                        print("UI_POS_SCREEN_AVAILABLE=false")
-                    else:
-                        # The menu click can return before the GWT form finishes rendering.
-                        pos_text = wait_until_form_loaded(page, "UI_POS_SCREEN", timeout_seconds=30)
-                        visible_snapshot(page, "UI_POS_SCREEN")
-                        page.screenshot(path=str(pos_screenshot), full_page=True)
-                        print(f"UI_POS_SCREENSHOT={pos_screenshot}")
-                        if not pos_text.strip():
-                            raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
-                else:
-                    print("UI_POS_SCREEN_AVAILABLE=false")
+                    raise RuntimeError("El menú Comercio no mostró la opción 'Punto de venta'.")
+
+                visible_snapshot(page, "UI_RETAIL_NAVIGATION")
+                page.screenshot(path=str(retail_screenshot), full_page=True)
+                print(f"UI_RETAIL_SCREENSHOT={retail_screenshot}")
+
+                if not click_exact_link(page, "Punto de venta"):
+                    raise RuntimeError("La opción 'Punto de venta' desapareció antes de abrirse.")
+
+                # The menu click can return before the GWT form finishes rendering.
+                pos_text = wait_until_form_loaded(page, "UI_POS_SCREEN", timeout_seconds=45)
+                visible_snapshot(page, "UI_POS_SCREEN")
+                page.screenshot(path=str(pos_screenshot), full_page=True)
+                print(f"UI_POS_SCREENSHOT={pos_screenshot}")
+                print("UI_POS_SCREEN_AVAILABLE=true")
+                if not pos_text.strip():
+                    raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
 
             elif not initial_text.strip():
                 raise RuntimeError(
