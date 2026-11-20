@@ -453,3 +453,31 @@ Investigación de detalle y límites: [Investigación ampliada de módulos](MODU
 La [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) reúne calidad/importación de datos, documentos, hardware, ARCA, logística multi-carrier, sincronización offline, ecommerce, inventario/fabricación, BI, identidad, observabilidad y backups. Incluye licencias, versiones observadas, límites y orden de prueba, incluidos los límites comerciales del embedding de Metabase y las licencias individuales de addons OCA.
 
 Ninguno está aprobado ni incorporado. La shortlist distingue componentes candidatos a prueba controlada, proyectos de referencia y piezas que conviene diferir por complejidad, licencias o madurez.
+
+
+## 15. Forecasting, rentabilidad y preferencia de marcas
+
+El diseño de producto, los datos mínimos y los criterios de aceptación están en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md). La siguiente tabla separa bibliotecas incorporables, aplicaciones de referencia y lógica que debe pertenecer a Rubrova.
+
+| Proyecto | Licencia observada | Qué aporta | Decisión y límites |
+|---|---|---|---|
+| [StatsForecast](https://github.com/Nixtla/statsforecast) | Apache-2.0 | Modelos estadísticos/econométricos rápidos para series temporales, como ETS, AutoARIMA y Theta. | Primera biblioteca a probar contra baselines con datos sintéticos y backtesting. Integración detrás del servicio analítico; fijar versión, commit y dependencias. |
+| [MLForecast](https://github.com/Nixtla/mlforecast) | Apache-2.0 | Features temporales y modelos ML con covariables/variables exógenas y estáticas. | Segunda etapa, sólo si promociones, precios, calendario y canales agregan valor medido y existe historial confiable. |
+| [HierarchicalForecast](https://github.com/Nixtla/hierarchicalforecast) | Apache-2.0 | Reconciliación de pronósticos probabilísticos jerárquicos. | Etapa posterior para reconciliar SKU/familia/marca/categoría/local/canal/total; requiere claves y jerarquía consistentes. |
+| [DemandSense](https://github.com/mercer14k/DemandSense) | MIT | Referencia ejecutable de Croston-SBA/TSB, demanda intermitente, comparación de modelos, intervalos empíricos, rolling backtests y escenarios. | Inspeccionar selectivamente; 4 commits y 2 estrellas en la consulta del 20/11/2026. No adoptar como dependencia productiva sin revisión profunda de pruebas, seguridad y mantenibilidad. |
+| [DemandOS](https://github.com/RaulMermans/demand-OS) | No declara licencia | Referencia de diseño de riesgo de quiebre, features, backtesting y recomendaciones con aprobación humana. | No copiar ni incorporar código; estudiar únicamente los flujos funcionales. |
+| [DuckDB](https://github.com/duckdb/duckdb) | MIT | Motor analítico in-process para snapshots, Parquet y consultas locales. | Primera opción a probar si los reportes nativos no bastan; no usar como OLTP o autoridad de inventario. |
+| [Apache Superset](https://github.com/apache/superset) | Apache-2.0 | Exploración de datos y dashboards self-hosted. | Alternativa futura si hace falta BI multiusuario; acceso de sólo lectura y operación independiente. Elegir como máximo una herramienta BI externa. |
+| [ERPNext](https://github.com/frappe/erpnext) | GPL-3.0 en el repositorio principal revisado | Referencia del Stock Ledger, FIFO/promedio móvil y reportes de utilidad bruta. | Evaluar como plataforma POS+ERP, no como biblioteca aislada. Su informe de Gross Profit usa fuentes/alcances distintos al P&L; estudiar ledger y conciliación. |
+| [Retail Sales & Margin Analysis](https://github.com/EkaterinaA83/Retail-sales-ABC-margin-analysis) | No se observó archivo LICENSE | Notebook exploratorio de análisis de ventas, promociones, margen y ABC. | Referencia metodológica; no reutilizar su código sin licencia clara. ABC no clasifica primera/segunda marca. |
+
+### Decisión de arquitectura
+
+- El ERP seleccionado conserva la autoridad del costo vendido, valorización de stock y contabilidad. No crear un segundo ledger para alimentar reportes.
+- Primero probar los reportes nativos y su conciliación; después construir read models analíticos de sólo lectura.
+- StatsForecast es la primera prueba de biblioteca; MLForecast y HierarchicalForecast se habilitan sólo tras superar las puertas de datos y calidad.
+- La clasificación de primeras/segundas/económicas/propias/alternativas y el análisis de preferencia/sustitución se desarrollan en el dominio de Rubrova. No se encontró un paquete especializado suficientemente sólido que sustituya ese modelo.
+- DemandSense, DemandOS y los notebooks exploratorios no son equivalentes en madurez ni licencia; sus diferencias quedan visibles en la decisión.
+- Ninguna sugerencia de forecast crea una compra, cambia un precio, activa una promoción o mueve stock sin aprobación.
+
+**Estado:** candidatos investigados y documentados; no hay biblioteca, dashboard ni código de forecasting instalado en Rubrova.
