@@ -114,7 +114,7 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 7. Espera la respuesta web y el final de la inicialización de la lógica. La imagen MyCompany 6.2 inicializa 712 módulos base; la prueba exige al menos 714 al incorporar los dos módulos propios.
 8. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 
-La prueba no carga datos de negocio ni confirma el POS, pagos, devoluciones, idioma o backup/restore. En macOS Apple Silicon no se ejecuta el stack mediante emulación; esa plataforma continúa cubierta por las pruebas estáticas y el uso previsto como cliente web.
+La ejecución de referencia del 20/11/2026 finalizó correctamente: HTTP 200, ambos módulos propios en la secuencia de inicialización (713/714 y 714/714), imágenes verificadas por digest y limpieza completa del entorno efímero. El resultado confirma el arranque y la carga de módulos; no carga datos de negocio ni confirma visualmente el POS, pagos, devoluciones, idioma o backup/restore. En macOS Apple Silicon no se ejecuta el servidor MyCompany 6.2 mediante emulación; esa plataforma está cubierta por las pruebas estáticas y el uso previsto como cliente web.
 
 ## 6. Criterio de finalización del Bloque 0
 

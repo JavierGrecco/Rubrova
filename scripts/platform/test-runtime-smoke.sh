@@ -294,7 +294,8 @@ while IFS= read -r image_name; do
 done <<< "$IMAGES"
 
 LOG_DIR="$COMPOSE_DIR/docker-server/logs"
-RUBROVA_LOG_EVIDENCE=false
+RUBROVA_CUSTOM_LOG_EVIDENCE=false
+RUBROVA_LOCALIZATION_LOG_EVIDENCE=false
 echo "Archivos creados en docker-server (primeros 80):"
 find "$COMPOSE_DIR/docker-server" -maxdepth 3 -type f -print | sort | head -n 80 || true
 if [[ -d "$LOG_DIR" ]]; then
@@ -312,7 +313,10 @@ if [[ -d "$LOG_DIR" ]]; then
     if [[ -n "$matches" ]]; then
       printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
       if grep -Fq 'RubrovaCustom' <<< "$matches"; then
-        RUBROVA_LOG_EVIDENCE=true
+        RUBROVA_CUSTOM_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaPOSLocalization' <<< "$matches"; then
+        RUBROVA_LOCALIZATION_LOG_EVIDENCE=true
       fi
     fi
   done
@@ -326,17 +330,20 @@ if [[ -n "$SERVER_MATCHES" ]]; then
   echo "Mensajes relevantes del servicio server:"
   printf '%s\n' "$SERVER_MATCHES"
   if grep -Fq 'RubrovaCustom' <<< "$SERVER_MATCHES"; then
-    RUBROVA_LOG_EVIDENCE=true
+    RUBROVA_CUSTOM_LOG_EVIDENCE=true
+  fi
+  if grep -Fq 'RubrovaPOSLocalization' <<< "$SERVER_MATCHES"; then
+    RUBROVA_LOCALIZATION_LOG_EVIDENCE=true
   fi
 else
   echo "Últimas líneas del servicio server:"
   printf '%s\n' "$SERVER_LOGS" | tail -n 60
 fi
 
-if [[ "$RUBROVA_LOG_EVIDENCE" == "true" ]]; then
-  echo "Los registros del servidor mencionan RubrovaCustom."
-else
-  echo "AVISO: no se encontró una línea explícita con RubrovaCustom. Se imprimieron los registros y la configuración montada; la carga funcional del POS aún requiere una prueba de interfaz."
+if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" ]]; then
+  echo "No se encontró evidencia de carga de ambos módulos propios: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE." >&2
+  exit 1
 fi
+echo "Los registros confirman RubrovaPOSLocalization y RubrovaCustom."
 
-echo "OK: MyCompany 6.2 arrancó y el cliente web respondió. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."
+echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los dos módulos Rubrova. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."

@@ -59,13 +59,13 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Validar por CI que cada identificador `rubrova.*` utilizado en el módulo tiene traducción.
 - [x] Definir comprobaciones de CI para lock, glosario, extensión y scripts.
 - [ ] Descargar y ejecutar el instalador en Windows x64 o levantar el Compose en un equipo anfitrión compatible.
-- [ ] Ejecutar en CI el nuevo smoke test de runtime MyCompany 6.2 en Linux x86_64; comprobar cuatro servicios, respuesta HTTP del cliente web y evidencia de carga del módulo personalizado.
+- [x] Ejecutar en CI el smoke test de runtime MyCompany 6.2 en Linux x86_64: cuatro servicios, cuatro digests fijados, HTTP 200 y carga de RubrovaPOSLocalization + RubrovaCustom (714/714 módulos) en unos 30 segundos.
 - [ ] Confirmar que RubrovaCustom carga en el proceso real, que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
 - [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación estática pasó en Linux, Windows y macOS Apple Silicon, incluidos los hashes fijados y el staging BSD. Se añadió un segundo job Linux x86_64 que descarga los artefactos verificados, prepara la extensión, valida el Compose, inicia el stack y espera una respuesta HTTP del cliente web. El test registra y verifica los digests fijados de las cuatro imágenes, imprime los archivos y logs de inicio del servidor y limpia los directorios temporales incluso cuando los contenedores crean archivos root-owned. El cliente web respondió HTTP 200, pero MyCompany siguió inicializando sus 712 módulos base y no aplicó el valor presente en `settings.properties`. La documentación de lsFusion establece que `-D...` en el arranque Java tiene prioridad sobre ese archivo. El override del smoke test ahora fija `JAVA_OPTS=-Dlogics.topModule=RubrovaCustom` en el servicio `server` y verifica que el argumento llegue al proceso Java antes de esperar 714 módulos. Los flujos POS, idioma, seguridad, periféricos y backup/restore continúan como puertas independientes.
+La validación estática pasó en Linux, Windows y macOS Apple Silicon. En el run [44791693036](https://github.com/JavierGrecco/Rubrova/actions/runs/44791693036), los cuatro jobs aprobaron. El runtime Linux x86_64 levantó PostgreSQL, MyCompany, lsFusion Server y el cliente web; verificó los cuatro digests fijados, confirmó que `-Dlogics.topModule=RubrovaCustom` llegó al proceso Java y registró `RubrovaPOSLocalization` como módulo 713 y `RubrovaCustom` como 714. El cliente respondió HTTP 200 y la inicialización terminó en unos 30 segundos. El job eliminó los contenedores, la red, los volúmenes y los archivos temporales. Este resultado demuestra carga de módulos y disponibilidad web; todavía no equivale a una aceptación funcional de ventas, pagos, devoluciones, localización visual, seguridad o backup/restore.
 
 ## Guía operativa del primer arranque
 
@@ -145,7 +145,7 @@ Ecommerce, marketplaces, WhatsApp, delivery y, al final, integraciones de transp
 
 ## Estado honesto al iniciar
 
-La lectura de código, la selección de candidato y el diseño de bloques están realizados. La extensión `RubrovaPOSLocalization` amplía ahora la localización del circuito de devolución, la configuración de medios de pago y los tipos de ingreso/retiro de efectivo; su compilación y visualización en el runtime siguen pendientes de comprobar. El repositorio contiene el lock de versión, el punto de entrada RubrovaCustom, el módulo RubrovaPOSLocalization y el ResourceBundle es_AR. **Todavía no instalamos MyCompany, no compilamos/cargamos el módulo en un servidor, no tenemos un POS ejecutable de Rubrova y no probamos ARCA, hardware, modo offline ni restauración real.** Los tests de CI de este primer bloque sólo validan los archivos de integración, hashes declarados y glosario; no prueban la plataforma upstream.
+La lectura de código y la selección del candidato están realizadas. `RubrovaPOSLocalization` y `RubrovaCustom` ya compilaron y se inicializaron en el runtime MyCompany 6.2 de CI. Aún falta ingresar a la interfaz para comprobar que los captions `es_AR` se muestran correctamente y recorrer las operaciones reales del POS. **Todavía no instalamos el sistema en tu equipo, no tenemos un POS aceptado para uso diario y no probamos ARCA, hardware, modo offline ni restauración real.**
 
 ## Fuentes técnicas
 

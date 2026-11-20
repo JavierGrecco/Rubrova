@@ -57,6 +57,9 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /JAVA_OPTS: "-Dlogics\.topModule=RubrovaCustom"/);
   assert.match(runtimeSmokeSource, /JAVA_OPTS=-Dlogics\.topModule=RubrovaCustom/);
   assert.match(runtimeSmokeSource, /Argumento Java activo/);
+  assert.match(runtimeSmokeSource, /RUBROVA_CUSTOM_LOG_EVIDENCE/);
+  assert.match(runtimeSmokeSource, /RUBROVA_LOCALIZATION_LOG_EVIDENCE/);
+  assert.match(runtimeSmokeSource, /Los registros confirman RubrovaPOSLocalization y RubrovaCustom/);
   assert.match(runtimeSmokeSource, /docker inspect/);
   assert.match(runtimeSmokeSource, /docker exec/);
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
