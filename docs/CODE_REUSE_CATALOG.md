@@ -47,6 +47,9 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Condicionada | [OCA/manufacture](https://github.com/OCA/manufacture) | Addons Odoo para BOM, planificación multinivel y fabricación | Revisar licencia y dependencias por addon; sólo si se elige Odoo |
 | Alta | [DuckDB](https://github.com/duckdb/duckdb) | Motor analítico local para CSV, Parquet, JSON, Excel y cálculos | MIT; analítica/read models, no OLTP |
 | Media | [Apache Superset](https://github.com/apache/superset) | Dashboards y exploración BI sobre fuentes SQL | Apache-2.0; requiere servicio/operación propia y modelo analítico de sólo lectura |
+| Media-alta | [Metabase](https://github.com/metabase/metabase) | BI y dashboards para usuarios de negocio | Community AGPL-3.0; Enterprise y embedding tienen licencias separadas |
+| Condicionada | [OCA/stock-logistics-workflow](https://github.com/OCA/stock-logistics-workflow) | Addons Odoo para operaciones y flujos de depósito | Sólo si se elige Odoo; licencia individual por addon |
+| Condicionada | [OCA/purchase-workflow](https://github.com/OCA/purchase-workflow) | Addons Odoo para procesos de compras | Sólo si se elige Odoo; licencia individual por addon |
 | Media-alta | [pgBackRest](https://github.com/pgbackrest/pgbackrest) | Backup PostgreSQL, WAL, retención, verificación y restauración | MIT; sólo si la plataforma usa PostgreSQL |
 | Alta | [restic](https://github.com/restic/restic) | Backup cifrado y multiplataforma de documentos y archivos | BSD-2-Clause; complementa, no reemplaza backup consistente de DB |
 | Condicionada | [Keycloak](https://github.com/keycloak/keycloak) | Identidad y SSO central para múltiples aplicaciones | Apache-2.0; diferir si la plataforma elegida ya cubre autenticación |
@@ -403,6 +406,6 @@ Investigación de detalle y límites: [Investigación ampliada de módulos](MODU
 
 ## 14. Componentes transversales investigados (20/11/2026)
 
-La [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) reúne calidad/importación de datos, documentos, hardware, ARCA, logística multi-carrier, sincronización offline, ecommerce, inventario/fabricación, BI, identidad, observabilidad y backups. Incluye licencias, versiones observadas, límites y orden de prueba.
+La [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) reúne calidad/importación de datos, documentos, hardware, ARCA, logística multi-carrier, sincronización offline, ecommerce, inventario/fabricación, BI, identidad, observabilidad y backups. Incluye licencias, versiones observadas, límites y orden de prueba, incluidos los límites comerciales del embedding de Metabase y las licencias individuales de addons OCA.
 
 Ninguno está aprobado ni incorporado. La shortlist distingue componentes candidatos a prueba controlada, proyectos de referencia y piezas que conviene diferir por complejidad, licencias o madurez.
