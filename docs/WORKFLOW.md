@@ -32,7 +32,7 @@ Mantener cambios pequeños y enfocados; no mezclar grandes refactorizaciones con
 - Ejecutar pruebas completas si cambia una regla transversal.
 - Revisar diff, archivos generados y migraciones.
 - Verificar permisos, efectos en inventario/dinero y auditoría.
-- Revisar compatibilidad y rollback de migración.
+- Revisar compatibilidad entre versiones de servicios y rollback de aplicación y datos por separado.
 - Confirmar claridad de estados y mensajes.
 
 ## Commits
@@ -44,6 +44,18 @@ Cada commit representa un cambio entendible. Evitar mensajes vagos.
 ## Revisiones y errores
 
 La revisión se realiza sobre el diff de `main` antes de integrar. Para corregir algo ya integrado, crear commit correctivo o revertir con un commit; no reescribir historia compartida.
+
+## Versiones y rollback
+
+- Cada servicio libera un artefacto inmutable con versión, commit, digest, dependencias, SBOM y versión de esquema.
+- Los tags de release identifican puntos de código aprobados; no sustituyen el backup de datos.
+- Para revertir código ya integrado en main, preferir un commit correctivo o git revert. git revert registra el cambio inverso y conserva la historia compartida.
+- No usar git reset --hard ni force-push para borrar historia compartida de main. reset sólo se considera para trabajo local aún no publicado y con conocimiento de los cambios que se descartan.
+- El rollback de datos se realiza desde el catálogo de backups/PITR, restaurando primero a un entorno separado y conciliando las operaciones posteriores. Nunca se confunde git revert con restaurar una base.
+- Un despliegue de servicio debe permitir volver a la versión estable anterior sin actualizar los otros servicios, siempre que los contratos y migraciones se hayan mantenido compatibles.
+- Las migraciones destructivas se retrasan hasta cerrar la ventana de compatibilidad; se prefiere expand-contract y corrección forward antes que SQL inverso improvisado.
+
+La diferencia entre rollback de código, recuperación de datos y compensación de efectos externos está especificada en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
 
 ## Documentación y comunicación
 
