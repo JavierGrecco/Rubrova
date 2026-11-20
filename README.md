@@ -49,6 +49,7 @@ Una plataforma que reúne en un solo lugar:
 | [Captura de datos y base analítica](docs/DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md) | Fechas históricas, áreas/canales, compras, stock, pagos, cajeros, reclamos, exportaciones e IA de lectura |
 | [Inteligencia del negocio](docs/BUSINESS_INTELLIGENCE.md) | Métricas, rentabilidad, estacionalidad, tendencias y pronósticos |
 | [Perfil 360 e inteligencia por cliente](docs/CUSTOMER_360_AND_INTELLIGENCE.md) | Preferencias, marcas, productos, RFM, retención, CLV y rentabilidad por cliente |
+| [Identidad del pagador y conciliación](docs/PAYMENT_IDENTITY_AND_RECONCILIATION.md) | Datos de QR, tarjeta, transferencia y efectivo; integraciones de cobro, privacidad e identidad transversal |
 | [Implementación de demanda, rentabilidad y marcas](docs/DEMAND_AND_MARGIN_INTELLIGENCE.md) | Datos fuente, herramientas reutilizables, costos, pronósticos, primeras/segundas marcas y pruebas de aceptación |
 | [Benchmark de demanda](scripts/forecasting/benchmark.py) | Comparación reproducible de baselines y StatsForecast sobre datos mensuales sintéticos |
 | [Canales e integraciones](docs/CHANNELS_AND_INTEGRATIONS.md) | Omnicanalidad, ARCA, Mercado Libre y pagos |
@@ -80,6 +81,7 @@ Una plataforma que reúne en un solo lugar:
 | [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de las plataformas integrales con escenarios comunes |
 | [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md) | Instalación aislada, versiones fijadas y registro de evidencias |
 | [Revisión competitiva](docs/COMPETITIVE_MARKET_REVIEW.md) | Comparación con POS/ERP/CRM disponibles en Argentina e internacionales |
+| [Evaluación de S-Tech](docs/S_TECH_EVALUATION.md) | Terminales, kioscos, efectivo inteligente, CashFore, CashSchedule y posible integración |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
