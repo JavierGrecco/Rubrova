@@ -8,28 +8,48 @@ Este documento convierte la investigación en una prueba repetible. No elige una
 
 ## Decisión de evaluación
 
-La ronda integral se amplía a tres candidatos porque la inspección de código encontró una plataforma adicional con POS, cobertura ERP amplia y extensibilidad explícita por módulos:
+La prueba pasa a un esquema de selección por etapas para respetar la estrategia reuse-first. No vamos a obligar a todos los proyectos a superar un protocolo idéntico ni a ampliar indefinidamente la lista de candidatos.
 
-1. **MyCompany/lsFusion 6.2**, para comprobar POS, CRM, compras, multi-depósito, facturación, producción y la composición de módulos.
-2. **Posnic 1.9.2**, para comprobar cuánto resuelve de POS local, caja, ventas e inventario y qué tan real es su continuidad offline.
-3. **ERPNext 16.60.0 + Frappe Framework 16**, para comprobar cuánto adelanta de compras, inventario, producción, costos y contabilidad, sin asumir que su POS satisface nuestro requisito offline.
+**Ronda ERP/gestión (filtro corto):**
+1. MyCompany/lsFusion 6.2.
+2. Tryton 7.8.4.
+3. Dolibarr 24.0.3.
+4. ERPNext 16.60.0 + Frappe 16.
 
-No se adoptan varias como fuentes de verdad paralelas. Los módulos especializados se evalúan aparte y se conectan por contratos explícitos. Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda; pueden reabrirse si aparece evidencia que cambie la comparación.
+**Ronda POS (responsabilidad específica):**
+1. POS incluido en las plataformas ERP anteriores.
+2. Posnic 1.9.2 como POS dedicado.
+3. uniCenta 5.5.2 sólo cuando podamos verificar el código fuente actual y su licencia; la descarga oficial consultada requiere iniciar sesión.
 
-**Restricción arquitectónica nueva:** Rubrova no adoptará ninguna de estas plataformas como una aplicación única que fusione todos los dominios. Se evalúan como posibles componentes o servicios de dominio delimitados. Cada candidato debe demostrar API/contrato, aislamiento de datos, integración sin escrituras cruzadas, compatibilidad de versiones y posibilidad de desplegar/volver atrás el servicio sin actualizar todo Rubrova. Si sólo puede operar como una plataforma inseparable, podrá servir como referencia o herramienta temporal de laboratorio, pero no será la base de la arquitectura objetivo. La arquitectura obligatoria está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
+**Regla:** primero se realiza un filtro de código, licencia, instalación, exportación, API, persistencia y extensión. Sólo los dos mejores candidatos de gestión pasan a P01–P44. El protocolo POS se aplica a quien vaya a asumir ventas y caja. Los módulos especializados —InvenTree, OpenBoxes, hardware, ARCA, logística, BI— se evalúan contra una responsabilidad concreta, no como plataformas equivalentes.
 
-**Resultado actual: ninguna plataforma está aprobada.** No se ha instalado ni ejecutado localmente MyCompany, Posnic o ERPNext para Rubrova; no se ha incorporado código externo y no hay una aplicación de Rubrova implementada.
+**MyCompany no es ganador por ser modular:** su documentación confirma que todos los módulos de una instalación comparten una base de datos. Su mecanismo de módulos externos y su API son fortalezas, pero la prueba debe determinar si ese conjunto puede ser una aplicación de dominio aislada sin imponer acceso cruzado ni impedir un ciclo de vida controlado.
+
+**Tryton entra en la primera ronda:** aporta una arquitectura de tres capas con aplicación servidor, PostgreSQL y clientes web/de escritorio, incluyendo Windows y macOS. Sus módulos de negocio se ejecutan sobre el servidor común; se evalúa como aplicación integrada, no como una colección de servicios independientes.
+
+**Dolibarr se reincorpora:** su API REST, triggers y hooks ofrecen un camino de integración y extensión. La existencia de módulos no significa que cada uno pueda desplegarse o recuperar datos independientemente.
+
+**ERPNext sigue vigente:** Frappe permite instalar aplicaciones, pero un site/bench es una unidad de operación con servicios y persistencia compartidos. Debe evaluarse como aplicación completa o límite de dominio, no declarar sus módulos microservicios.
+
+**Posnic queda acotado a POS:** probar su funcionamiento local y el modo multi-terminal. Revisar el paquete y sus dependencias por separado: el código AGPL-3.0-only no vuelve AGPL a MongoDB SSPL ni a componentes comerciales incluidos. También se debe verificar el costo de adaptación de impuestos, comprobantes y procesos argentinos.
+
+No se adopta más de una autoridad para el mismo dominio. Una plataforma puede ser descartada como base, pero sus bibliotecas o módulos sí pueden aprobarse por separado después de comprobar dependencias, licencia y mantenimiento.
+
+**Resultado actual: ninguna plataforma está aprobada.** El repositorio no contiene una aplicación de Rubrova ni código externo incorporado; leer documentación o validar el dataset sintético no equivale a haber instalado y probado un candidato.
 
 ## Versiones y procedencia que se deben fijar
 
-| Proyecto | Referencia de prueba | Procedencia comprobada | Precaución |
-| MyCompany | Tag 6.2 | Commit del tag d21ca6978717b98b6300d90267f9767db7414008 | Aplicación Apache-2.0; plataforma lsFusion LGPL v3. No mezclar tag 6.2 con documentación online 7.0/master. |
+| Proyecto | Referencia para laboratorio | Licencia declarada / dato relevante | Precaución |
 |---|---|---|---|
-| Posnic | Tag `v1.9.2` | Commit `4096126edb1ff4fd337069697776254215dc2680`; release publicada el 16/11/2026 | No probar desde una rama móvil sin registrar commit. |
-| Posnic, revisión adicional | Rama `main` | HEAD consultado: `bf97ab2e2cdfba88121d369cacf48dd877ac8b55`, seis commits posterior al tag | Comparar diferencias con el tag antes de decidir si un arreglo posterior cambia la evaluación. |
-| ERPNext | Release `v16.60.0` | Tag asociado al commit `886ab6ae187244e7f1b852393384ab6019d56264`; publicada el 17/11/2026 | Mantener fija la versión durante la prueba. |
-| Frappe Framework | Incluido en la imagen ERPNext fijada | Versión efectiva registrada con `bench version` dentro del contenedor | No combinar una rama independiente del framework con una imagen ERPNext ya construida. |
-| Frappe Docker | Configuración de demo | Commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce`; su `pwd.yml` fija `frappe/erpnext:v16.60.0` | Demo desechable, no instalación de producción. Mantener el archivo local separado y limitar el puerto a localhost. |
+| MyCompany | Tag 6.2, commit `d21ca6978717b98b6300d90267f9767db7414008` | Aplicación Apache-2.0; lsFusion LGPL-3.0 | La documentación online puede referirse a otra versión. Los módulos comparten una base de datos. |
+| Tryton | Serie 7.8; módulo de producto 7.8.4 publicado el 16/09/2026 | Proyecto GPL; confirmar la licencia de cada módulo externo | Cliente/servidor y PostgreSQL; respaldar antes de actualizar porque la migración modifica la base. |
+| Dolibarr | 24.0.3, release estable consultada | Proyecto GPL-3.0; verificar módulos externos individualmente | API REST y hooks/triggers; probar autenticación y límites de API. |
+| ERPNext | Release 16.60.0, tag/commit fijados en el laboratorio existente | ERPNext GPL-3.0; Frappe Framework MIT | Registrar la versión efectiva del framework y no mezclar tags. |
+| Posnic | Tag `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680` | Código AGPL-3.0-only | Verificar MongoDB SSPL-1.0, amCharts comercial y todas las dependencias del instalador. |
+| uniCenta oPOS | Release 5.5.2 publicada el 29/10/2026 | No aprobar hasta obtener el código actual y revisar sus avisos | La descarga del código requiere login; mirrors antiguos no fijan el paquete actual. |
+| Apache OFBiz | Release 24.09.08, noviembre de 2026 | Apache-2.0 | Serie 24.09 congelada en funciones desde septiembre de 2024; mantener en observación salvo necesidad concreta. |
+
+Los hashes de artefactos descargados, las instrucciones exactas y los resultados del laboratorio se registran en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md). Una versión citada en esta tabla no implica que haya sido instalada, ejecutada o aprobada.
 
 El repositorio Posnic declara `develop` como rama predeterminada, pero en la consulta del 19/11/2026 esa rama estaba divergida respecto del tag estable: dos commits por delante y 27 por detrás. La rama `main` tenía seis commits por delante del tag. Por reproducibilidad, la primera prueba debe usar el tag estable `v1.9.2`; las diferencias de `main` se revisan aparte. No usar `develop` como sustituto silencioso del release.
 

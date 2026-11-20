@@ -54,7 +54,7 @@ Una plataforma que reúne en un solo lugar:
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P44 |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
-| [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
+| [Estrategia reuse-first](docs/REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) | Decisión vigente: reutilizar primero, selección de plataformas, puertas y plan de evaluación |\n| [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
 | [Logística argentina](docs/ARGENTINA_LOGISTICS_INTEGRATION.md) | Andreani, PAQ.AR, OCA, Vía Cargo, agregadores y tracking unificado |
 | [Interoperabilidad contable](docs/ACCOUNTING_INTEROPERABILITY.md) | Tango, Catedral, Bejerman, Xubio, Colppy y reportes de gestión |
@@ -74,37 +74,28 @@ Una plataforma que reúne en un solo lugar:
 
 ## Etapa actual y próximos resultados
 
-**Ahora — Fase 0: preservar el alcance integral y elegir una base con pruebas reales**
-- Consolidar reglas comerciales, dominio y contratos.
-- Mantener el mapa integral: no reducir el proyecto a POS; comparar ERP modular, WMS, canales, producción, promociones y analítica.
-- Ampliar la comparación integral a MyCompany/lsFusion 6.2, además de Posnic 1.9.2 y ERPNext 16.60.0.
-- Evaluar módulos especializados como Simple WMS, InvenTree, OpenBoxes, OpenWMS, DuckDB/Superset y automatización detrás de contratos.
-- Ampliar la investigación con Dolibarr 24.0.3 e InvenTree 1.7.3; mantenerlos como candidatos sin aprobar hasta ejecutar pruebas comparables.
-- Convertir los hallazgos de mercado argentino en criterios de producto para continuidad, conciliación, tesorería, migración e inventario multiárea.
-- Ejecutar y documentar las pruebas de continuidad P27–P44, además del protocolo funcional P01–P26.
-- Evaluar la coordinación de stock con reservas/CAS y cuotas offline; no usar idempotencia como sustituto de control de concurrencia.
-- Definir adaptadores de logística argentina y perfiles de exportación contable para sistemas existentes.
-- Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
-- Comparar MyCompany, Posnic y ERPNext con el protocolo completo P01–P26; sumar Dolibarr sólo si puede ejecutarse con la misma profundidad y puertas de aceptación.
-- Preparar pruebas de conectividad y exportación para operadores logísticos y sistemas contables, sin afirmar integraciones activas.
-- Mantener el modelo de rentabilidad con eliminación de cargos internos entre áreas y distinguir transferencias gerenciales de operaciones intercompany reales.
-- Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
-- Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
-- Verificar la adaptación argentina y la viabilidad de ARCA en homologación.
-- Revisar las licencias de cada componente y dependencia del paquete concreto.
-- Validar servicios independientes por dominio, almacenamiento propio, contratos versionados y rollback individual; una autoridad por cada dato transaccional.
+**Ahora — Fase 0: selección basada primero en reutilización**
 
-El proyecto y sus dominios están en [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md). La estructura multiárea está en [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md). Los procesos mayoristas están en [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md), los servicios en [Servicios B2B y contratos](docs/B2B_SERVICES_AND_CONTRACTS.md) y la medición económica en [Rentabilidad por área](docs/BUSINESS_UNIT_PROFITABILITY.md). Ninguna plataforma o módulo está aprobado por aparecer en el catálogo.
-**Siguiente — Fase 1: núcleo transaccional**
-- Gateway local y servicios independientes de Identidad/Organización, Ventas e Inventario.
-- Contratos versionados, almacenamiento aislado y comunicación por APIs/eventos.
-- Reservas de stock con CAS e idempotencia desde la primera venta.
-- Outbox/Inbox, correlación y recuperación tras reiniciar un proceso (sin apagar el equipo).
-- Luego incorporar Pagos/Caja como tercer dominio y continuar con Fiscal e Integraciones.
-- Pruebas de contratos, concurrencia, reintentos, recuperación y restauración.
+- Evaluar primero aplicaciones completas y módulos existentes; no comenzar creando servicios propios sin evidencia de que hagan falta.
+- Primera comparación ERP/gestión: MyCompany/lsFusion 6.2, Tryton 7.8.4 y Dolibarr 24.0.3; ERPNext 16.60.0 permanece en el filtro comparativo.
+- Comparar Posnic 1.9.2 como candidato POS especializado. uniCenta 5.5.2 queda a la espera de verificar acceso al código fuente y licencias del paquete.
+- Revalidar releases, dependencias, licencias, extensiones, APIs, instalación, exportación y restauración antes de elegir.
+- Aplicar el mismo conjunto sintético y las puertas P01–P44 sólo según la responsabilidad del producto; llevar los dos mejores candidatos a la prueba profunda.
+- Asignar una autoridad única por dominio. No mantener plataformas paralelas para ventas, pagos, caja, inventario o fiscalidad.
+- Reutilizar módulos, plugins, SDK, drivers y conectores cuando encajen; desarrollar sólo las brechas demostradas.
+- Definir lenguaje, base de datos, gateway y broker después de conocer la plataforma o servicio que va a integrarse.
 
-Las etapas posteriores incorporarán sincronización offline, compras, canales, fiscalidad, perfiles sectoriales e inteligencia avanzada según el orden documentado en el roadmap.
+La decisión completa, el orden de evaluación y los criterios de aprobación están en [Estrategia reuse-first](docs/REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) contiene el protocolo de comparación.
 
+**Siguiente — primera entrega funcional, después de elegir la base**
+
+- Construir un flujo real sobre la plataforma o combinación que supere las pruebas.
+- Incorporar extensiones y adaptadores por contratos, sin parchear el núcleo salvo decisión documentada.
+- Añadir sólo los servicios independientes que no estén resueltos por los componentes elegidos.
+- Verificar concurrencia, duplicados, reinicio de procesos, backup/restore y actualización antes de declarar la entrega operativa.
+
+No se ha elegido una plataforma ni se ha incorporado código externo. El estado real se registra en la estrategia y en el roadmap.
+ 
 ## Forma de trabajo
 
 - La única rama viva es `main`.

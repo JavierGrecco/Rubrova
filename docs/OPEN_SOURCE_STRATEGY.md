@@ -1,133 +1,83 @@
 # Estrategia de reutilización de código abierto
 
-**Revisión:** 19 de noviembre de 2026  
-**Estado:** evaluación de plataformas y componentes; no se incorporó código externo a Rubrova.
+**Revisión:** 20 de noviembre de 2026  
+**Estado:** uso interno privado confirmado; selección técnica pendiente; no se incorporó código externo.
 
-## Contexto de uso
+## Objetivo
 
-El sistema se desarrolla para uso interno, personal y privado. No está previsto distribuir copias, revenderlo ni ofrecerlo como servicio a terceros. Por eso, GPL y AGPL no se descartan automáticamente: pueden permitirnos adoptar, modificar y utilizar internamente una aplicación completa. Aun así, se deben respetar los términos de cada licencia y las licencias independientes de componentes, paquetes, imágenes, fuentes, servicios y dependencias.
+Rubrova se construye para uso interno. La prioridad es aprovechar aplicaciones, módulos, plugins y bibliotecas existentes que ahorren desarrollo real, sin sumar dependencias que terminen siendo más difíciles de mantener que una implementación pequeña.
 
-La AGPL merece una revisión específica si usuarios interactúan remotamente a través de una red con una versión modificada. Si cambia el alcance del proyecto —distribución, acceso por terceros o comercialización— se vuelve a evaluar la arquitectura y las obligaciones antes del cambio. Este documento es una guía técnica, no asesoramiento jurídico.
+No vamos a desarrollar desde cero funciones maduras de ERP, POS, inventario, compras, fabricación, fiscalidad, logística, hardware o analítica si podemos adoptarlas o integrarlas con garantías. La estrategia operativa se define en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md).
 
-## Conclusión ejecutiva
+## Qué opciones evaluamos
 
-La evaluación integral compara ahora tres candidatos:
+1. **Adoptar una aplicación existente** y configurarla como autoridad de un dominio o de un conjunto coherente de procesos.
+2. **Extenderla con módulos/plugins soportados**, manteniendo las modificaciones fuera del núcleo cuando sea posible.
+3. **Integrar una aplicación especializada** como unidad de dominio independiente mediante su API y persistencia propias.
+4. **Incorporar SDK, drivers o bibliotecas** para funciones técnicas concretas.
+5. **Mantener un fork o extraer código** cuando se haya probado que es más económico que reemplazarlo y se pueda sostener con cada actualización.
+6. **Crear código propio** sólo para necesidades que no estén cubiertas razonablemente.
 
-1. **MyCompany/lsFusion 6.2:** ERP/POS modular con CRM, ventas, compras, inventario, fabricación, facturación, proyectos y RR. HH. La aplicación MyCompany declara Apache-2.0 y la plataforma lsFusion LGPL-3.0 por separado. Se debe probar la release 6.2 y su mecanismo de módulos, sin asumir que la documentación online 7.0 aplica a esa versión.
-2. **Posnic 1.9.2:** candidato directo para POS local, Electron, ventas, caja e inventario. Código propio AGPL-3.0-only; el paquete incluye componentes con licencias distintas, entre ellos MongoDB SSPL-1.0 y amCharts 4 comercial. La edición self-hosted puede compartir una base local entre varios equipos, pero no sincroniza bases independientes de distintas cajas/sucursales. Su evidencia offline publicada es acotada.
-3. **ERPNext 16.60.0 + Frappe Framework 16:** candidato de profundidad administrativa en compras, inventario, fabricación, costos y contabilidad. ERPNext es GPL-3.0; Frappe Framework es MIT. Hay que verificar POS, facilidad de uso, recuperación offline y localización argentina.
+No se adopta una plataforma por cantidad de pantallas, popularidad o amplitud declarada. Cada producto debe pasar pruebas de los flujos que le asignaríamos.
 
-Ninguno está elegido ni aprobado. **No se debe construir la aplicación definitiva hasta ejecutar la prueba común** descrita en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Si los tres candidatos fallan los controles críticos, la salida es un monolito modular propio, reutilizando únicamente componentes que encajen.
+## Candidatos vigentes
 
-Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda. No se borran de la investigación, pero tampoco deben seguir apareciendo como decisión vigente en la arquitectura o el roadmap. NexoPOS queda condicionado a la aclaración de su discrepancia de licencia.
+- **MyCompany/lsFusion 6.2:** primera prueba por la amplitud ERP/POS, módulos propios externos y API HTTP. MyCompany declara Apache-2.0; lsFusion se licencia por separado bajo LGPL-3.0. Todos los módulos de una instalación comparten base de datos, por lo que no se deben describir como microservicios.
+- **Tryton 7.8.4:** comparación prioritaria por arquitectura de tres capas, PostgreSQL, módulos de servidor y clientes Windows/macOS. Los módulos viven en el mismo servidor y deben evaluarse como una aplicación de dominio integrada.
+- **Dolibarr 24.0.3:** comparación prioritaria por CRM/ERP modular y API REST, triggers y hooks. Sigue siendo una aplicación integrada, no una separación automática en microservicios.
+- **ERPNext 16.60.0 + Frappe 16:** alternativa de amplia cobertura administrativa. ERPNext declara GPL-3.0 y Frappe Framework MIT; las licencias de otras apps y dependencias se revisan por separado.
+- **Posnic 1.9.2:** candidato específico para POS local. El código propio declara AGPL-3.0-only; el paquete revisado incluye componentes con licencias independientes (MongoDB SSPL-1.0 y amCharts comercial). No se aprueba el paquete completo por su licencia raíz.
+- **uniCenta oPOS 5.5.2:** queda pendiente de obtener y verificar el código fuente de esa versión; la descarga disponible requiere iniciar sesión. Los mirrors históricos no prueban la licencia ni la integridad del código actual.
+- **Apache OFBiz 24.09.08:** referencia de arquitectura orientada a servicios de negocio; la serie 24.09 está congelada en funciones y recibe correcciones, y su complejidad requiere justificar una prueba específica.
+- **InvenTree y OpenBoxes:** opciones especializadas para inventario técnico y WMS. Se evalúan si la profundidad de depósito/manufactura lo requiere y si pueden asumir una autoridad de stock sin duplicarla.
 
-## Qué significa reutilizar código
+La lista y el estado de cada proyecto están en [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). Los releases, resultados y puntuaciones se registran en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
-Evaluamos cuatro formas, de mayor a menor alcance:
+## Licencias y uso privado
 
-| Forma | Qué hacemos | Cuándo conviene |
-|---|---|---|
-| Adopción integral | Ejecutamos el producto existente y lo configuramos | Cuando cubre la mayor parte del flujo sin alterar el núcleo |
-| Extensión | Construimos módulos propios sobre APIs y puntos de extensión | Cuando el modelo del framework encaja y es mantenible |
-| Componente | Incorporamos una biblioteca o módulo acotado | Cuando resuelve una responsabilidad aislada |
-| Fork | Mantenemos nuestra propia variante del proyecto | Cuando adaptar el producto completo es más barato que construirlo y podemos mantener los cambios |
+El sistema es para uso propio y no está previsto distribuirlo ni venderlo. Eso permite considerar proyectos GPL y AGPL como opciones reales, pero no elimina automáticamente sus obligaciones. Hay que revisar el modo de uso, si se modifican y ofrecen por red, si se entregan copias a terceros y las condiciones de cada paquete.
 
-La preferencia es aprovechar tanto código maduro como sea posible, pero no acumular frameworks ni mantener dos sistemas para ventas, caja, contabilidad o stock.
+La licencia del repositorio no cubre necesariamente todos los artefactos instalados. Se revisan en forma independiente:
 
-## Comparación de plataformas activas
+- Código fuente, archivos y módulos que realmente se incorporan.
+- Dependencias directas y transitivas.
+- Bases de datos, motores, extensiones y servicios incluidos en instaladores.
+- Fuentes tipográficas, iconos, imágenes, plantillas y documentación.
+- Componentes comerciales, Enterprise, duales, source-available o con restricciones especiales.
+- Avisos de copyright, LICENSE, NOTICE, atribuciones y modificaciones.
 
-### Posnic 1.9.2
+No se incorporan dependencias sin licencia identificable ni se califica como open source a un componente que no cumpla una licencia reconocida como tal. Si cambia el alcance a distribución, acceso de terceros o servicio comercial, se vuelve a evaluar el modelo antes de habilitarlo. Esta guía técnica no sustituye asesoramiento jurídico.
 
-- **Tecnología:** Electron, Node.js, Express, Mongoose y MongoDB; la aplicación local mantiene su propia API y persistencia.
-- **Aporte:** POS minorista/gastronómico, ventas, devoluciones, pagos parciales, catálogo, variantes, compras, stock, clientes, permisos y reportes.
-- **Uso local:** el escritorio opera en el equipo de caja; el modo self-hosted permite varios clientes en una red local sobre una misma base. No es sincronización entre bases independientes.
-- **Offline:** el README describe una prueba sintética acotada en una versión previa. No demuestra cierre forzado, pérdida de energía, jornada completa ni todos los medios de pago. El outbox de sincronización es un acelerador opcional, no el registro contable de la venta.
-- **Adaptación argentina:** hay campos y reglas orientados a India/GST. Se debe medir la adaptación de IVA, CUIT, comprobantes, puntos de venta, ARCA, nomencladores y reportes.
-- **Licencias:** AGPL-3.0-only para su código. El instalador revisado incluye MongoDB Community Server 7.0.14 bajo SSPL-1.0 y amCharts 4 comercial. Cada dependencia del paquete necesita revisión propia.
-- **Fijación de prueba:** tag `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680`. La rama `main` tenía seis commits posteriores; `develop` estaba divergida. Se debe comparar, no cambiar de fuente silenciosamente.
-- **Riesgo principal:** puede resolver bien una caja local, pero aún no sabemos si sus límites de offline, localización y modelo de datos permiten cumplir nuestros requisitos sin una reescritura profunda.
+## Registro obligatorio por componente
 
-### ERPNext 16.60.0 + Frappe Framework 16
+Antes de aprobar una dependencia se registra:
 
-- **Tecnología:** framework Python/JavaScript, aplicaciones Frappe, MariaDB como base habitual y módulos ERPNext.
-- **Aporte:** abastecimiento, compras, recepción, inventario, fabricación, costos, contabilidad, usuarios, permisos y reportes; perfiles de POS con configuración de empresa, almacén, medios de pago y precios.
-- **Offline:** no asumimos que el POS actual resuelva recuperación duradera tras cerrar o matar el proceso. Se debe probar la versión fijada; las guías antiguas no prueban el comportamiento de v16.
-- **Adaptación argentina:** evaluar impuestos, comprobantes, CUIT, puntos de venta y ARCA por módulo y extensión. No contar como disponible una integración cuyo código, licencia y pruebas no se hayan verificado.
-- **Licencias:** ERPNext GPL-3.0; Frappe Framework MIT. La licencia del framework no cambia la del código de ERPNext.
-- **Fijación de prueba:** ERPNext `v16.60.0`; fijar también el commit exacto de Frappe Framework 16 durante la instalación.
-- **Riesgo principal:** puede ahorrar trabajo administrativo y de producción, pero la experiencia de caja y la continuidad offline pueden exigir adaptación considerable.
+- Repositorio, URL, proveedor y responsable.
+- Tag, release o commit exacto y hash del artefacto.
+- Licencia de cada proyecto, paquete, recurso y dependencia relevante.
+- Lenguaje, runtime, base, servicios auxiliares y sistemas operativos soportados.
+- API, eventos, extensiones, permisos y límites de datos.
+- Estado de mantenimiento, vulnerabilidades, pruebas y política de actualización.
+- Cambios propios, parches, archivos reemplazados y costo de rebase.
+- Datos que importa/exporta, backup y prueba de restauración.
+- Evidencia de las pruebas funcionales y de recuperación.
 
-### Candidatos fuera de la ronda activa
+Se conserva un inventario de dependencias y un SBOM SPDX o CycloneDX cuando el formato de distribución y las herramientas lo permitan. Los cambios de versión vuelven a disparar las verificaciones de licencia y seguridad.
 
-- **Odoo Community 20:** se mantiene como referencia histórica de cobertura POS/ERP, pero su offline documentado advierte que no se cierre ni recargue el navegador antes de sincronizar. No es finalista de la prueba actual.
-- **Medusa v2:** su núcleo TypeScript/MIT sirve para una plataforma de comercio propia, pero no aporta por sí solo POS, caja, compras, producción, contabilidad y offline. No es finalista de esta ronda.
-- **NexoPOS:** sigue siendo interesante por POS e inventario, pero el archivo LICENSE raíz declara GPLv3 y composer.json declara MIT. No incorporar ni aprobar hasta resolverlo.
+## Reglas de arquitectura
 
-## Prueba técnica obligatoria
+- Cada dato transaccional tiene un único dueño.
+- Un producto integrado puede compartir internamente su runtime y base sólo si se acepta como una unidad de dominio acotada; otros servicios no consultan ni modifican sus tablas.
+- Los módulos independientes se conectan por APIs/eventos versionados, no por SQL directo.
+- Una biblioteca se incorpora dentro del servicio que la necesita; no se convierte en un servicio adicional sin razón operativa.
+- No se construyen dos versiones de stock, ventas o facturación en paralelo.
+- Ningún código externo puede saltarse idempotencia, concurrencia, permisos, auditoría, backups o conciliación.
+- La sustitución de una plataforma debe incluir migración, reconciliación y transición explícita de autoridad.
 
-Se ejecuta el mismo conjunto de datos y escenarios sobre MyCompany, Posnic y ERPNext. Además de los flujos comunes, en MyCompany se prueba un módulo propio separado que declare sus dependencias mediante REQUIRE. Se debe probar como mínimo:
+## Criterio de aprobación
 
-- Alta de artículos, variantes, códigos, unidades y productos vendidos por peso.
-- Venta rápida con lector simulado, descuentos manuales y promociones.
-- Pagos mixtos, vuelto, apertura, cierre y arqueo de caja.
-- Devolución parcial, reintegro y efecto de stock.
-- Compra, recepción parcial y actualización de costo.
-- Producción mediante receta/BOM, consumo y merma.
-- Dos puestos conectados por LAN.
-- Corte de internet, cierre forzado, reinicio, reintentos y conciliación.
-- Backup y restauración en una instalación limpia.
-- Impresión, cajón, lector y balanza; simulación primero y hardware físico después.
-- Adaptación fiscal argentina y ARCA exclusivamente en homologación.
+La selección usa puertas obligatorias para fuente/licencia, instalación reproducible, API/aislamiento, propiedad de datos, exportación, backup/restore, seguridad y flujos transaccionales. Los candidatos que pasan reciben una puntuación con evidencia; el mejor candidato no se elige sólo por documentación.
 
-La pauta completa, la tabla de evidencia P01–P26 y la escala de puntuación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+La estrategia completa define el orden reuse-first, los candidatos y la selección en etapas. No hay decisión aprobada de lenguaje, base de datos o broker hasta conocer las plataformas que sobrevivan a las pruebas.
 
-## Componentes especializados a evaluar por separado
-
-- **pos-toolkit** (Apache-2.0): plugin Rust/Tauri v2 para ESC/POS, cajón, USB, lectores seriales y balanzas HID; además, constructor TypeScript de tickets de 57/80 mm. El plugin no es universal para navegador. `register-core` figura como planificado.
-- **emupos** y **ESCPost** (Apache-2.0): simulación y diagnóstico de periféricos, render de tickets y escenarios de error. No reemplazan pruebas con dispositivos reales.
-- **arca-sdks**: `@ramiidv/arca-facturacion` 7.1.0 declara MIT y Node >=22.12. Candidato para WSAA/WSFE/WSFEX/CAEA; las emisiones no se reintentan ciegamente y los estados inciertos necesitan recuperación. Solo homologación en esta fase.
-- **PowerSync Open Edition** (Apache-2.0): opción de sincronización SQLite/PostgreSQL; distinguir funciones Enterprise/Cloud.
-- **Dexie.js** (Apache-2.0): almacenamiento IndexedDB, no sincronización completa.
-
-Se evalúan estos componentes contra la arquitectura finalmente elegida. No se importan solo porque sus README los describan como útiles.
-
-## Reglas de licencias y procedencia
-
-1. Registrar repositorio, commit/tag, autor, licencia por archivo/paquete y fecha de revisión.
-2. Revisar dependencias directas y transitivas del paquete que realmente se ejecuta.
-3. Conservar LICENSE, NOTICE, copyright, atribuciones y modificaciones.
-4. Tratar licencias comerciales, SSPL, source-available, marcas y recursos visuales por separado.
-5. No llamar “open source” a una dependencia que no cumpla una licencia reconocida como tal.
-6. No asumir que uso privado elimina todas las condiciones de licencia.
-7. Repetir la revisión si cambia versión, modo de despliegue, acceso remoto o intención de distribución.
-
-## Control de dependencias incorporadas
-
-Antes de integrar un componente aprobado se debe guardar su origen exacto, licencia, hash, versión, SBOM si está disponible, pruebas ejecutadas, cambios realizados y responsable de mantenimiento. Las dependencias deben poder actualizarse o reemplazarse sin alterar las reglas propias de venta, pago, caja, inventario y fiscalidad.
-
-No incorporar dos motores para el mismo dato. La plataforma elegida será la única fuente de verdad; los componentes externos actuarán como adaptadores, herramientas o módulos claramente delimitados.
-
-## Estado de la decisión
-
-- [x] Uso interno privado confirmado como alcance previsto.
-- [x] GPL/AGPL incluidas en la estrategia de evaluación.
-- [x] MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16 definidos como ronda activa.
-- [x] Protocolo P01–P26 documentado.
-- [x] Componentes de hardware, fiscalidad y offline separados de las plataformas integrales.
-- [ ] Instalación y pruebas locales de MyCompany/lsFusion 6.2, incluido módulo custom.
-- [ ] Instalación y pruebas locales de Posnic.
-- [ ] Instalación y pruebas locales de ERPNext/Frappe.
-- [ ] Puntuación con evidencias y cálculo de esfuerzo de adaptación.
-- [ ] Elección de plataforma o aprobación del monolito modular propio.
-- [ ] Incorporación de código externo con inventario de licencias y procedencia.
-
-**No hay código externo incorporado ni módulos funcionales implementados en Rubrova todavía.** El siguiente avance debe surgir de ejecutar el protocolo, no de ampliar indefinidamente la lista de repositorios.
-
-
-## Composición de módulos heterogéneos y compatibilidad
-
-La meta no es que un solo repositorio cubra todos los dominios. Podemos adoptar una plataforma integral y complementarla con módulos especializados, siempre que cada agregado tenga un único propietario, los módulos se comuniquen por puertos/contratos, los eventos sean idempotentes y las operaciones externas se concilien.
-
-Windows, Linux y macOS son objetivos del producto final, no una condición para que cada biblioteca soporte los tres desde el primer día. Los drivers de hardware pueden ser específicos por OS detrás de una interfaz común. Un módulo de servidor/web se evalúa por su runtime y el acceso desde navegador, no por el OS del puesto.
-
-Ver [Composición de módulos y contratos](MODULE_COMPOSITION.md) y [Investigación ampliada](MODULAR_COMPONENT_RESEARCH.md).
+**Estado:** la documentación y el validador de datos sintéticos están versionados. No existe todavía una aplicación funcional de Rubrova ni código externo incorporado.

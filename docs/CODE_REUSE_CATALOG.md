@@ -5,12 +5,18 @@
 
 Este catálogo no declara componentes aprobados para producción. Distingue evidencia documental, hipótesis de reutilización y validaciones pendientes. Antes de incorporar código se debe fijar un commit o release, revisar licencias y dependencias, ejecutar pruebas y conservar procedencia.
 
+**Orden de selección actualizado (20/11/2026):** adoptar/extender primero una aplicación existente; comparar MyCompany/lsFusion, Tryton, Dolibarr y ERPNext como base ERP/gestión; evaluar Posnic como candidato POS. uniCenta no pasa a reutilización de fuente hasta disponer de la release actual y sus avisos. La regla vigente y los límites para no convertir una aplicación modular en falsos microservicios están en [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md).
+
 ## Resumen ejecutivo
 
 | Prioridad | Proyecto | Qué puede adelantarnos | Estado |
 |---|---|---|---|
 | Muy alta | [MyCompany/lsFusion](https://github.com/lsfusion-solutions/mycompany) | ERP/POS modular, CRM, compras, inventario, producción, RR. HH. y proyectos | Nuevo candidato integral; evaluar release 6.2 |
 | Muy alta | [Posnic](https://github.com/Posnic/POS) | POS local/offline, retail y gastronomía, ventas, inventario, compras y devoluciones | Evaluar como base integral |
+| Muy alta | [Tryton](https://www.tryton.org/) | ERP modular de tres capas, PostgreSQL, ventas, compras, inventario, contabilidad y fabricación | Nueva primera ronda; validar módulos y límites de servicio |
+| Alta | [Dolibarr](https://www.dolibarr.org/) | ERP/CRM modular con REST API, hooks y triggers | Reincorporado a la primera ronda |
+| Media-alta | [Apache OFBiz](https://ofbiz.apache.org/) | ERP y Service Engine orientado a SOA | Referencia de segunda etapa; complejidad y serie 24.09 feature-frozen |
+| Condicionada | [uniCenta oPOS](https://unicenta.com/) | POS multiplataforma, periféricos y caja | Fuente 5.5.2 requiere login; no aprobar reutilización hasta revisar código y licencia |
 | Muy alta | [ERPNext](https://github.com/frappe/erpnext) + [Frappe](https://github.com/frappe/frappe) | ERP, contabilidad, compras, stock, fabricación, pedidos y POS | Evaluar como base integral |
 | Alta | [NexoPOS](https://github.com/Blair2004/NexoPOS) | POS, caja, ventas, compras, stock, clientes, permisos y módulos | Evaluar; licencia contradictoria |
 | Muy alta | [pos-toolkit](https://github.com/narisolutions/pos-toolkit) | ESC/POS, impresoras, cajón, scanners seriales, balanzas HID y tickets | Candidato modular |

@@ -2,66 +2,38 @@
 
 ## Estado actual
 
-**Fase 0 — decisión técnica basada en evidencia.** Rubrova contiene definición de producto, arquitectura e investigación, pero todavía no tiene una aplicación funcional ni código externo incorporado. El paso inmediato es consolidar el modelo multiárea y ejecutar una evaluación local reproducible de las plataformas integrales y módulos especializados. Rubrova debe cubrir comercio minorista, online, mayorista/distribución y servicios B2B sobre datos compartidos, con rentabilidad por unidad y consolidada.
+**Fase 0 — selección técnica basada primero en reutilización.** Rubrova tiene definición funcional, modelos de dominio, arquitectura y un laboratorio de fixtures sintéticos; todavía no tiene una aplicación funcional ni código externo incorporado. La prioridad no es comenzar con servicios propios: es encontrar la mejor combinación de aplicaciones, módulos, plugins y bibliotecas existentes que podamos mantener y adaptar.
 
-La prueba común, versiones fijadas, conjunto sintético y criterios de aprobación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+La decisión vigente y las puertas de selección están en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La comparación reproducible está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
-La investigación de mercado y los nuevos proyectos candidatos están en [Investigación de mercado y oportunidades](MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md). La arquitectura objetivo de servicios independientes está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md). Los escenarios de continuidad, recuperación y backup/restauración están en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+## Fase 0 — evaluar antes de construir
 
-## Fase 0 — decidir la base
+1. **Base ERP/gestión:** comparar MyCompany/lsFusion 6.2, Tryton 7.8.4 y Dolibarr 24.0.3. Mantener ERPNext 16.60.0 en el filtro comparativo.
+2. **POS:** probar el POS incluido en cada plataforma; comparar Posnic 1.9.2 como candidato dedicado. No aprobar uniCenta 5.5.2 hasta verificar acceso a fuente, release y licencias.
+3. **Componentes especializados:** revisar hardware/tickets, ARCA, WMS, tracking, contabilidad, importación, BI y automatización sólo cuando haya una necesidad concreta y un contrato compatible.
+4. Fijar tag/commit, licencias, dependencias, instalación, APIs, extensiones, exportación, respaldo y restauración de cada candidato.
+5. Probar los mismos datos sintéticos y flujos esenciales para evitar decidir por demos o promesas.
+6. Elegir como máximo dos finalistas para el protocolo completo P01–P44; la prueba de cada producto se limita a los dominios que podría asumir.
+7. Medir costo de adaptación y de actualización: módulos propios externos, cantidad de parches al core, dependencias, pasos manuales, conflictos y tiempo de recuperación.
+8. Definir autoridad por dominio antes de conectar aplicaciones. No duplicar ventas, pagos, caja, inventario, comprobantes o contabilidad en sistemas paralelos.
+9. Recién entonces elegir runtime, almacenamiento, broker, gateway y método de despliegue para las piezas propias que hagan falta.
 
-- Consolidar reglas comerciales, modelo de dominio, estados y contratos.
-- Comparar Posnic 1.9.2, ERPNext 16.60.0/Frappe 16 y MyCompany/lsFusion 6.2 como plataformas integrales con pruebas equivalentes.
-- Evaluar módulos dedicados de WMS/TMS, integraciones, promociones, servicios de campo, analítica, automatización y archivo documental detrás de contratos.
-- Evaluar Dolibarr 24.0.3 como cuarto candidato integral sólo si puede ejecutarse con los mismos escenarios y puertas críticas; comparar InvenTree 1.7.3 como componente de inventario/producción, no como ERP ni autoridad paralela.
-- Convertir los hallazgos de adopción digital y necesidades PyME en criterios medibles: conciliación entre canales, datos importables, margen real, cuentas corrientes y visibilidad de errores.
-- Ejecutar escenarios de continuidad P27–P44: terminación abrupta de procesos (sin apagar el equipo), pagos inciertos, webhooks y comandos repetidos, conflictos CAS, cuotas offline, restauración, migraciones, Sagas y rollback por servicio.
-- Definir adaptadores para Andreani, PAQ.AR, OCA e-Pak, Vía Cargo y agregadores; Kangu queda pendiente de confirmar en Argentina.
-- Diseñar perfiles contables para Tango, Catedral, Bejerman, Xubio y Colppy, con lotes idempotentes y conciliación.
-- Incorporar mejoras derivadas de necesidades PyME: recuperación de sincronizaciones, importación asistida, costo de reposición, cobranza/flujo de caja y WMS por ubicación.
-- Definir y validar unidades de negocio, centros de beneficio/costo y dimensiones de canal, sucursal, territorio, proyecto y contrato.
-- Probar mínimos y escalas mayoristas, crédito B2B, despachos parciales y tracking agregado después de la venta.
-- Probar contratos de servicio, SLA, agenda, órdenes de trabajo, evidencia, aceptación y facturación.
-- Probar consumo interárea de stock/servicios y su eliminación en el resultado consolidado.
-- Completar la especificación del checkout: línea removible antes de pagar, efectivo recibido/vuelto y pago integrado con terminales locales.
-- Probar caja, ventas, pagos mixtos, descuentos, devoluciones, inventario, compras y producción.
-- Demostrar terminación abrupta/reinicio de un proceso, desconexión de red, reinicio de un servicio independiente, reintento idempotente, conflicto CAS, conciliación y restauración desde un punto registrado.
-- Medir esfuerzo real de extensión, actualizaciones, dependencias y licencias.
-- Verificar adaptación argentina, ARCA en homologación y hardware.
-- Validar una plataforma distribuida de servicios por dominio: almacenamiento propio, APIs/eventos versionados, Outbox/Inbox, observabilidad y despliegue/rollback por servicio. Las plataformas integrales candidatas sólo se adoptan si pueden cubrir dominios sin fusionar sus autoridades ni imponer una base compartida.
+**Criterio de salida:** una solución o composición aprobada con evidencia de cobertura, licencias, integridad, API, extensión, portabilidad, backup/restore y esfuerzo de mantenimiento. Si ninguna plataforma cubre un dominio, se reutilizan sus componentes compatibles y se implementa sólo esa brecha como servicio independiente. No se cambia automáticamente a un monolito propio.
 
-**Criterio de salida:** los servicios cumplen aislamiento de datos, contratos compatibles, idempotencia, recuperación y despliegue independiente. Se demuestran operaciones sin pérdida/duplicación, restauración verificable y ruta fiscal viable. Si una plataforma candidata no respeta estos límites, se descarta como base aunque tenga muchas funciones; sólo se reutilizan componentes que pasen sus pruebas.
+## Fase 1 — primera entrega funcional basada en la selección
 
-## Primera entrega ejecutable — dos servicios y un flujo completo
+La primera entrega será un flujo vertical completo sobre la plataforma o combinación que supere la Fase 0. Su alcance exacto depende de los resultados, pero debe demostrar:
 
-Antes de ampliar el número de servicios, construir una prueba funcional pequeña pero real, con límites que ya sean los de producción:
+- Un recorrido operativo de extremo a extremo con datos persistentes y autoridad única.
+- Extensiones propias separadas del núcleo cuando el producto lo permita.
+- Integración mediante API/eventos versionados y adaptadores, sin acceso SQL cruzado.
+- Idempotencia, concurrencia, permisos, auditoría y estados inciertos.
+- Backup/restauración y actualización reproducibles.
+- Pruebas de uso real y una ruta clara para reemplazar un componente sin perder datos.
 
-1. **Gateway local**: un único punto de entrada para el POS; autenticación, permisos, correlación y routing.
-2. **Servicio de Ventas**: crea pedidos/ventas y es dueño de sus registros, estados e idempotency keys.
-3. **Servicio de Inventario**: es dueño exclusivo del ledger, reservas, disponibilidad y versiones CAS.
-4. **Almacenamientos aislados**: una base/namespace y credenciales por servicio; prohibidas las escrituras SQL cruzadas.
-5. **Contrato de reserva**: comando versionado con clave idempotente estable, artículo, ubicación, cantidad y versión esperada; resultado reservado, conflicto o estado incierto.
-6. **Mensajería y Outbox/Inbox**: incorporar sólo el broker que demuestre persistencia local, operación simple y recuperación en Windows/macOS/Linux. Comparar NATS JetStream y RabbitMQ antes de fijarlo.
-7. **Pruebas automatizadas y de fallos**: comando repetido, mismo ID con contenido distinto, dos ventas concurrentes por la última unidad, evento repetido/fuera de orden, caída/reinicio del proceso, broker detenido y recuperación de Outbox.
+Sólo si las plataformas candidatas fallan las puertas obligatorias se diseña el conjunto mínimo de servicios Rubrova para cubrir la brecha. En ese escenario se mantiene la arquitectura distribuida por dominio, se reutilizan SDK/bibliotecas y no se decide por anticipado un lenguaje, base o broker.
 
-**Recorrido de aceptación inicial:** el POS envía una venta al Gateway; Ventas persiste el intento de forma idempotente; Inventario concede una reserva atómica por CAS; Ventas confirma o deja la operación en un estado explícito pendiente/conflicto. Todo paso tiene correlation ID y puede reconstruirse tras reiniciar el proceso afectado, sin apagar el equipo.
-
-No construir todavía quince servicios ni adoptar Kubernetes, Kafka o service mesh. Después de demostrar este recorrido se incorpora Pagos/Caja como tercer dominio, luego Fiscal e Integraciones, y recién entonces los demás servicios. Los servicios comparten estándares de seguridad, logging, contratos y despliegue, no una base de datos compartida.
-
-## Fase 1 — núcleo transaccional
-
-Se implementa como servicios independientes. Un componente ERP/POS externo puede cubrir un dominio si respeta contratos, aislamiento, idempotencia, versionado y despliegue independiente; no se fusiona toda la plataforma en un único runtime.
-
-1. Identidad/organización y Gateway local.
-2. Catálogo/precios como API de consulta versionada.
-3. Servicio de Ventas independiente.
-4. Servicio de Inventario independiente con ledger, reservas y CAS.
-5. Contratos, Outbox/Inbox, idempotencia y observabilidad compartida.
-6. Pagos/Caja como siguiente servicio, después de aprobar el flujo Ventas–Inventario.
-7. Auditoría, devoluciones y reportes como servicios/dominios siguientes.
-8. Pruebas automatizadas de contratos, concurrencia, fallos y recuperación.
-
-**Criterio de salida:** una venta se registra, cobra, audita y reconcilia con caja e inventario en un entorno repetible.
+La secuencia anterior de construir directamente Gateway + Ventas + Inventario queda **condicionada**, no aprobada como inicio. Si finalmente hace falta, será una implementación propia justificada por evidencia y usará idempotencia, reservas/CAS, Outbox/Inbox y recuperación desde el primer flujo.
 
 ## Fase 2 — continuidad y gestión
 
