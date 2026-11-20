@@ -16,6 +16,8 @@ La ronda integral se amplía a tres candidatos porque la inspección de código 
 
 No se adoptan varias como fuentes de verdad paralelas. Los módulos especializados se evalúan aparte y se conectan por contratos explícitos. Odoo Community 20 y Medusa v2 dejan de ser finalistas de esta ronda; pueden reabrirse si aparece evidencia que cambie la comparación.
 
+**Restricción arquitectónica nueva:** Rubrova no adoptará ninguna de estas plataformas como una aplicación única que fusione todos los dominios. Se evalúan como posibles componentes o servicios de dominio delimitados. Cada candidato debe demostrar API/contrato, aislamiento de datos, integración sin escrituras cruzadas, compatibilidad de versiones y posibilidad de desplegar/volver atrás el servicio sin actualizar todo Rubrova. Si sólo puede operar como una plataforma inseparable, podrá servir como referencia o herramienta temporal de laboratorio, pero no será la base de la arquitectura objetivo. La arquitectura obligatoria está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
+
 **Resultado actual: ninguna plataforma está aprobada.** No se ha instalado ni ejecutado localmente MyCompany, Posnic o ERPNext para Rubrova; no se ha incorporado código externo y no hay una aplicación de Rubrova implementada.
 
 ## Versiones y procedencia que se deben fijar
@@ -134,12 +136,12 @@ Los importes son datos didácticos y no representan precios de mercado ni reglas
 | P07 | Devolución parcial | Línea devuelta, motivo, reintegro y destino del stock diferenciados | Borrar o sobrescribir la venta original |
 | P08 | Compra y recepción parcial | Proveedor, orden, cantidades recibidas, costo y stock | Stock o costo actualizado sin documento trazable |
 | P09 | Producción básica | Receta/BOM, consumo, rendimiento y merma | Consumo de insumos sin trazabilidad |
-| P10 | Dos puestos en la misma LAN | Permisos, concurrencia y consistencia sobre una única base local | Doble numeración, saldo o stock inconsistente |
+| P10 | Dos puestos en la misma LAN a través de APIs de servicios | Gateway, contratos, autoridad de Inventario/Pagos, correlación y aislamiento entre servicios | Acceso SQL cruzado, doble numeración o saldo/stock inconsistente |
 | P11 | Corte de internet | Venta local guardada y estado de servicios externos visible | Bloquear o perder una venta local ya confirmada |
-| P12 | Cierre forzado/reinicio | Reiniciar con operaciones pendientes y verificar recuperación | Pérdida, duplicación o corrupción |
-| P13 | Reintento y sincronización repetida | Repetir el envío tres veces y conservar una única operación | Doble venta, pago, factura o movimiento |
-| P14 | Conflicto de precio/stock | Conflicto explícito y conciliación con registro de decisión | Sobrescritura silenciosa o último cambio gana en dinero/stock |
-| P15 | Backup y restauración | Restaurar en una instancia limpia y conciliar conteos/saldos | Backup ilegible o restauración incompleta |
+| P12 | Terminación abrupta del proceso POS/servicio y reinicio | Reiniciar sólo el proceso afectado y verificar operaciones/Outbox/Inbox | Pérdida, duplicación o corrupción |
+| P13 | Reintento con la misma clave idempotente | Repetir el comando tres veces y devolver el mismo resultado registrado | Doble venta, pago, factura o movimiento |
+| P14 | Conflicto de precio/stock | Precio versionado y reserva/CAS con expected_version; conciliación auditada | Sobrescritura silenciosa o último cambio gana en dinero/stock |
+| P15 | Backup y restauración distribuida | Restaurar manifiesto de servicios, bases y offsets/eventos en una instancia limpia | Backup ilegible, corte inconsistente o restauración incompleta |
 | P16 | Hardware | Ticket de 80/57 mm, lector, balanza y cajón; primero simulado, luego físico | Confirmar compatibilidad por marca sin prueba |
 | P17 | Fiscalidad argentina | Adaptador separado, comprobantes en homologación y recuperación de estado incierto | Emisión duplicada o reintento ciego |
 | P18 | Retiro de productos antes del pago | Eliminar una línea y comprobar total, descuentos/impuestos, reserva y ausencia de venta/salida/pago para el artículo retirado | La línea retirada queda cobrada o descuenta stock |
@@ -176,10 +178,12 @@ Ponderación propuesta:
 | Integridad transaccional, offline, reinicio y restauración | 30% |
 | POS, pagos, caja, devoluciones y operación del cajero | 20% |
 | Inventario, compras, costos y producción | 15% |
-| Extensibilidad, contratos, actualizaciones y esfuerzo de mantenimiento | 10% |
+| Límites de servicio, APIs, despliegue/rollback independiente y esfuerzo de mantenimiento | 15% |
 | Argentina, ARCA y adaptación fiscal | 10% |
 | Hardware, terminales y compatibilidad de sistemas operativos | 10% |
 | Simplicidad de operación y experiencia de uso | 5% |
+
+La matriz debe incluir una evaluación obligatoria de arquitectura distribuida: propiedad del almacenamiento por servicio, contratos públicos, compatibilidad hacia atrás, Outbox/Inbox, idempotencia atómica, correlación de extremo a extremo, rollback y despliegue independiente. Los escenarios P27–P44 de [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md) forman parte de las puertas de aceptación.
 
 No se calculará un ganador ponderado si falla una condición excluyente. Para pasar la prueba, cada candidato debe demostrar: una venta confirmada y sus efectos asociados exactamente una vez; recuperación tras cierre forzado; backup restaurable; auditoría; roles correctos; y una ruta fiscal argentina viable. Si no supera esos mínimos, no compensa tener más pantallas o módulos.
 
