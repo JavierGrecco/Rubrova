@@ -182,7 +182,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Arquitectura de servicios de dominio, APIs/eventos, ownership, idempotencia, CAS, Outbox/Inbox y recuperación.
 - [x] Dataset sintético y validador automático; última ejecución registrada: 21/21 pruebas de fixture aprobadas.
 - [x] Investigación de ERPNext, MyCompany/lsFusion, Tryton, Dolibarr y Posnic.
-- [x] Revisión de la localización argentina Odoo y de los módulos tryton-ar; incompatibilidades registradas.
+- [x] Revisión de la localización argentina Odoo y de tryton-ar; las ramas principales muestran manifiestos 7.1/8.1 y queda pendiente verificar un conjunto de tags compatible.
 - [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
 - [x] Requisitos de reportes, métricas y rentabilidad por área.
 
