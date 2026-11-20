@@ -172,12 +172,20 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
     "rubrova.pos.payment_title", "rubrova.pos.amount_due", "rubrova.pos.refunds",
     "rubrova.pos.return_payment_title", "rubrova.pos.previous_payment",
     "rubrova.pos.refund_by_method", "rubrova.pos.confirm_return",
-    "rubrova.payment.method_title"
+    "rubrova.payment.method_title",
+    "Attributes", "Companies", "Partners", "Countries", "Configuration",
+    "Images", "Operations", "Manufacturing", "Retail", "sales", "Settings",
+    "Employees", "Units_of_measure", "Contracts", "Positions", "Currencies",
+    "Exchange_rates", "Projects", "Human_resources", "Activities", "Fleet",
+    "Documentation"
   ];
   for (const key of required) assert.ok(entries.has(key), "Falta traducción obligatoria: " + key);
   assert.ok(entries.size >= 70, "Glosario inicial demasiado pequeño: " + entries.size);
   const customIds = [...moduleSource.matchAll(/\{(rubrova\.[^}]+)\}/g)].map((match) => match[1]);
   for (const id of customIds) assert.ok(entries.has(id), "Falta traducción del caption Rubrova: " + id);
+  for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {
+    assert.ok(entries.get(key), "Falta traducción de navegación: " + key);
+  }
   assert.equal(lock.extension.locale, "es_AR");
   assert.match(lock.extension.translationStatus, /partial/);
 });
