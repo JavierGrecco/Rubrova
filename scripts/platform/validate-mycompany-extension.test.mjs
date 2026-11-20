@@ -75,7 +75,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /input\[type="submit"\]/);
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
   assert.match(uiSmokeSource, /click_exact_link\(page, "Retail"\)/);
-  assert.match(uiSmokeSource, /click_exact_link\(page, "POS"\)/);
+  assert.match(uiSmokeSource, /click_exact_link\(page, "Punto de venta"\)/);
   assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN/);
   assert.match(uiSmokeSource, /-retail/);

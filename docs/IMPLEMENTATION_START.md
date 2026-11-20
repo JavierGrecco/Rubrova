@@ -63,7 +63,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Configurar los tres parámetros de instalación: `logics.topModule=RubrovaCustom`, `user.setLanguage=es` y `user.setCountry=AR`; el override Docker entrega los valores al proceso Java.
 - [x] Identificar con Chromium el formulario inicial de acceso: campos `username`, `password` y botón `submit`; la primera captura mostró un error RMI `server:7652` antes de que el servidor estuviera listo.
 - [x] Comprobar el registro RMI, autenticar en la instancia efímera y llegar a `/main`; Chromium confirma el menú principal.
-- [ ] Revisar las capturas de `Retail` y `POS`; confirmar disponibilidad de la pantalla y registrar los captions heredados que siguen en inglés.
+- [ ] Revisar las capturas de `Retail` y `Punto de venta`; confirmar disponibilidad de la pantalla del terminal y registrar los captions heredados que siguen en inglés.
 - [ ] Confirmar visualmente en el navegador que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
 - [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.

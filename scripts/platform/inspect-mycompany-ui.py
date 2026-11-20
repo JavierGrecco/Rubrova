@@ -225,7 +225,7 @@ def inspect_page(url: str) -> int:
                     retail_text = visible_snapshot(page, "UI_RETAIL_NAVIGATION")
                     page.screenshot(path=str(retail_screenshot), full_page=True)
                     print(f"UI_RETAIL_SCREENSHOT={retail_screenshot}")
-                    if not click_exact_link(page, "POS"):
+                    if not click_exact_link(page, "Punto de venta"):
                         print("UI_POS_SCREEN_AVAILABLE=false")
                     else:
                         pos_text = visible_snapshot(page, "UI_POS_SCREEN")
