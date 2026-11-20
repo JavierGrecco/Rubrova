@@ -48,12 +48,13 @@ La captura establece una barrera consistente: el corte del ledger, los archivos,
 La configuración será visible y editable. La política inicial a probar es:
 
 - proteger cada operación confirmada en el registro durable del motor transaccional;
-- generar puntos incrementales con la frecuencia que soporte el motor, con objetivo inicial de no más de 15 minutos entre puntos recuperables fuera del equipo;
-- generar una copia completa diaria;
+- mantener puntos locales incrementales según la capacidad del motor y del disco;
+- cuando el usuario configure un NAS o destino remoto cifrado siempre disponible, enviar puntos incrementales con una meta inicial de hasta 15 minutos entre puntos recuperables fuera del equipo;
+- sin NAS ni destino remoto, generar copia diaria en un disco externo y mostrar que el RPO real queda limitado a la última copia completada; recomendar rotar dos discos externos y desconectarlos tras cada respaldo;
+- generar una copia completa diaria cuando haya destino disponible;
 - conservar puntos horarios recientes y copias diarias durante 30 días;
 - conservar 12 cierres mensuales, sujeto al espacio disponible;
 - generar una copia antes de actualizar Rubrova o migrar el esquema;
-- hacer una copia semanal en un disco externo y desconectarlo al terminar;
 - ofrecer una segunda ubicación externa/cifrada opcional (NAS o almacenamiento remoto) sin exigir una cuenta cloud para usar Rubrova.
 
 Aplicar el principio 3-2-1 cuando la operación lo permita: tres copias, dos medios distintos y una copia fuera del equipo. Una copia en otra carpeta del mismo disco no protege contra la rotura de ese disco.
