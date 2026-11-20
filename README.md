@@ -83,7 +83,7 @@ Una plataforma que reúne en un solo lugar:
 - Ejecutar y documentar las pruebas de continuidad P27–P36, además del protocolo funcional P01–P26.
 - Definir adaptadores de logística argentina y perfiles de exportación contable para sistemas existentes.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
-- Comparar las tres plataformas integrales con el protocolo completo P01–P26.
+- Comparar MyCompany, Posnic y ERPNext con el protocolo completo P01–P26; sumar Dolibarr sólo si puede ejecutarse con la misma profundidad y puertas de aceptación.
 - Preparar pruebas de conectividad y exportación para operadores logísticos y sistemas contables, sin afirmar integraciones activas.
 - Mantener el modelo de rentabilidad con eliminación de cargos internos entre áreas y distinguir transferencias gerenciales de operaciones intercompany reales.
 - Probar funcionamiento local, cierre forzado, recuperación, caja, inventario y backup.
