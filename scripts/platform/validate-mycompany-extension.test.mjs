@@ -111,8 +111,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /selectedText/);
   assert.match(uiSmokeSource, /Caja de prueba Rubrova/);
   assert.match(uiSmokeSource, /Abrir turno/);
-  assert.match(uiSmokeSource, /UI_POS_REGISTER_FOUND=true/);
-  assert.match(uiSmokeSource, /UI_POS_SCREEN_RENDER_STATUS=ready/);
+  assert.match(uiSmokeSource, /\\{label\\}_POS_REGISTER_FOUND=true/);
+  assert.match(uiSmokeSource, /\\{label\\}_RENDER_STATUS=ready/);
   assert.match(uiSmokeSource, /_BUTTONS=/);
   assert.match(uiSmokeSource, /_LINKS=/);
   assert.match(uiSmokeSource, /_ALERTS=/);
