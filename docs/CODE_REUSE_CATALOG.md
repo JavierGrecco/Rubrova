@@ -481,3 +481,8 @@ El diseño de producto, los datos mínimos y los criterios de aceptación están
 - Ninguna sugerencia de forecast crea una compra, cambia un precio, activa una promoción o mueve stock sin aprobación.
 
 **Estado:** candidatos investigados y documentados; no hay biblioteca, dashboard ni código de forecasting instalado en Rubrova.
+
+
+## 16. Benchmark de demanda en CI
+
+El primer experimento ejecutable usa [StatsForecast 2.1.1](https://github.com/Nixtla/statsforecast) (Apache-2.0) con dependencias directas fijadas. La prueba compara AutoETS/AutoTheta para series regulares y CrostonSBA para series intermitentes contra naive, seasonal naive y medias móviles. El código y el fixture sintético están en scripts/forecasting/benchmark.py y docs/fixtures/demand-monthly-history.json. El workflow publica métricas y predicciones por fold; sus resultados no son una validación de precisión real ni una decisión automática de modelo.

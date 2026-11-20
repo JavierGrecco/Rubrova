@@ -359,3 +359,11 @@ El alcance funcional y las pruebas de demanda, rentabilidad y marcas están defi
 **Arquitectura de uso:** las bibliotecas de forecasting trabajan en un servicio/pipeline analítico separado sobre snapshots conciliados. DuckDB (MIT) puede soportar consultas locales; Superset (Apache-2.0) es una opción de BI posterior. Ninguna puede escribir en POS, pagos, stock o contabilidad. Metabase y Superset no se instalan juntos por defecto.
 
 **Estado:** investigación documental. No instalar ni fijar dependencias de producción hasta que la plataforma POS/ERP y el runtime estén seleccionados y las pruebas comparativas estén listas.
+
+
+## 16. Benchmark inicial de demanda mensual
+
+- [StatsForecast 2.1.1](https://github.com/Nixtla/statsforecast) (Apache-2.0; Python >=3.10) es la versión fijada para la primera prueba reproducible. Se comparan AutoETS y AutoTheta en demanda regular, CrostonSBA en demanda intermitente, y cuatro baselines sencillos (último valor, seasonal naive, media de 3 y media de 12 meses).
+- El fixture comprende 48 meses sintéticos (2022–2025) y cuatro cortes walk-forward (24, 30, 36 y 42 meses), con horizonte de tres meses. Se registran MAE, WAPE y sesgo.
+- No se elige un modelo productivo por el ganador sintético. Debe superar baselines en datos reales comparables y demostrar comportamiento con quiebres de stock, promociones, cambios de precio, productos nuevos y demanda intermitente.
+- La comparación se ejecuta en CI con versión fijada; el reporte incluye versión de StatsForecast/Pandas, folds, predicciones y métricas.
