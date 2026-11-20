@@ -51,12 +51,28 @@ jobs:
         run: |
           docker version
           docker compose version
+      - name: Preparar Chromium para inspección de interfaz
+        env:
+          PLAYWRIGHT_VENV: ${{ runner.temp }}/rubrova-playwright
+        run: |
+          python3 -m venv "$PLAYWRIGHT_VENV"
+          "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
+          "$PLAYWRIGHT_VENV/bin/python" -m playwright install --with-deps chromium
       - name: Validar sintaxis del smoke test
         run: bash -n scripts/platform/test-runtime-smoke.sh
-      - name: Levantar MyCompany, probar cliente web y limpiar datos efímeros
+      - name: Levantar MyCompany, inspeccionar interfaz y limpiar datos efímeros
         env:
           RUBROVA_STARTUP_TIMEOUT_SECONDS: 900
+          RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-playwright/bin/python
+          RUBROVA_UI_SCREENSHOT: ${{ runner.temp }}/rubrova-mycompany-ui.png
         run: bash scripts/platform/test-runtime-smoke.sh
+      - name: Conservar captura de la primera pantalla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubrova-mycompany-ui
+          path: ${{ runner.temp }}/rubrova-mycompany-ui.png
+          if-no-files-found: warn
   validate-windows:
     runs-on: windows-latest
     steps:

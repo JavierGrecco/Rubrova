@@ -15,6 +15,8 @@ const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
+const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
+const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 
 function parseProperties(source) {
   const entries = new Map();
@@ -56,6 +58,15 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
+  assert.match(runtimeSmokeSource, /RUBROVA_PLAYWRIGHT_PYTHON/);
+  assert.match(runtimeSmokeSource, /inspect-mycompany-ui\\.py/);
+  assert.match(runtimeSmokeSource, /Inspeccionando la primera pantalla con Chromium/);
+  assert.match(uiSmokeSource, /locale="es-AR"/);
+  assert.match(uiSmokeSource, /page\\.goto\\(url/);
+  assert.match(uiSmokeSource, /page\\.screenshot/);
+  assert.match(uiSmokeSource, /UI_INPUTS=/);
+  assert.match(runtimeWorkflowSource, /playwright==1\\.65\\.2/);
+  assert.match(runtimeWorkflowSource, /playwright install --with-deps chromium/);
   assert.match(runtimeSmokeSource, /EXTENSION_OVERRIDE_FILE/);
   assert.match(runtimeSmokeSource, /IMAGE_OVERRIDE_FILE/);
   assert.match(dockerOverrideSource, /JAVA_OPTS:/);

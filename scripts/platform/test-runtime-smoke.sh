@@ -271,6 +271,18 @@ if [[ "$MODULES_READY" != "true" ]]; then
 fi
 echo "Cliente web disponible: HTTP $HTTP_STATUS; carga de al menos $EXPECTED_TOTAL_MODULES módulos finalizada después de ${SECONDS}s."
 
+if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
+  [[ -x "$RUBROVA_PLAYWRIGHT_PYTHON" ]] || {
+    echo "No se encuentra el intérprete Playwright configurado: $RUBROVA_PLAYWRIGHT_PYTHON" >&2
+    exit 1
+  }
+  echo "6/7 Inspeccionando la primera pantalla con Chromium, sin modificar datos"
+  RUBROVA_UI_SCREENSHOT="${RUBROVA_UI_SCREENSHOT:-$WORK_DIR/mycompany-ui.png}" \
+    "$RUBROVA_PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
+else
+  echo "AVISO: se omitió la inspección de Chromium porque RUBROVA_PLAYWRIGHT_PYTHON no está configurado."
+fi
+
 echo "7/7 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
 
