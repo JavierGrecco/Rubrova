@@ -28,6 +28,7 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Media | [Dexie.js](https://github.com/dexie/Dexie.js) | Persistencia IndexedDB y consultas reactivas | Candidato PWA |
 | Media | [TastyIgniter](https://github.com/tastyigniter/TastyIgniter) | Pedidos online, reservas y gestión gastronómica | Reutilización sectorial |
 | Alta | [Odoo `l10n_ar`](https://github.com/odoo/odoo/tree/19.0/addons/l10n_ar) | Localización contable base argentina, plan de cuentas, impuestos, documentos y datos ARCA | Código público LGPL-3, v19/v20; no emite CAE por sí solo |
+| Exploratoria | [OCA/l10n-argentina 19.0](https://github.com/OCA/l10n-argentina/tree/19.0) | Proyecto OCA de localización argentina | AGPL-3; rama revisada sin addons ni manifiestos instalables |
 | Exploratoria | [leonobitech/l10n_ar_arca_edi](https://github.com/leonobitech/l10n_ar_arca_edi) | Addon comunitario Odoo 19 para WSAA/WSFEv1 y CAE | AGPL-3.0, versión 19.0.1.0.0; Beta, último push 17/03/2026 |
 | Exploratoria | [DearPOS](https://github.com/engindearing-projects/dearpos) | Perfiles, terminal local, SQLite y cola de sincronización | Proyecto temprano |
 | Exploratoria | [ElitaleRestro](https://github.com/tirforge/restro) | KDS, mesas, recetas, modificadores, stock por receta y PIN | AGPL; evaluar partes |
