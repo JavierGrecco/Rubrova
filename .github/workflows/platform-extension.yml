@@ -36,6 +36,7 @@ jobs:
         run: |
           bash -n scripts/platform/prepare-mycompany-6.2.sh
           bash -n scripts/platform/deploy-mycompany-6.2.sh
+          bash scripts/platform/test-deploy-mycompany-6.2.sh
   validate-windows:
     runs-on: windows-latest
     steps:
