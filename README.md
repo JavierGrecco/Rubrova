@@ -52,7 +52,7 @@ Una plataforma que reúne en un solo lugar:
 | [Perfiles sectoriales](docs/SECTOR_PROFILES.md) | Supermercados, panaderías, rotiserías y gastronomía |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P44 |
-| [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
+| [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |\n| [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia reuse-first](docs/REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) | Decisión vigente: reutilizar primero, selección de plataformas, puertas y plan de evaluación |
 | [Shortlist de componentes reutilizables](docs/REUSE_COMPONENTS_SHORTLIST.md) | Bibliotecas, SDK y aplicaciones para datos, ARCA, hardware, documentos, logística y automatización |
@@ -76,28 +76,28 @@ Una plataforma que reúne en un solo lugar:
 
 ## Etapa actual y próximos resultados
 
-**Ahora — Fase 0: selección basada primero en reutilización**
+**Ahora — Fase 0: elegir el núcleo POS + ERP**
 
-- Evaluar primero aplicaciones completas y módulos existentes; no comenzar creando servicios propios sin evidencia de que hagan falta.
-- Primera comparación ERP/gestión: MyCompany/lsFusion 6.2, Tryton serie 7.8 (incluye `sale_point`) y Dolibarr 24.0.3; ERPNext 16.60.0 permanece en el filtro comparativo.
-- Probar el módulo oficial `sale_point` de Tryton y comparar Posnic 1.9.2 como candidato POS especializado. uniCenta 5.5.2 queda a la espera de verificar acceso al código fuente y licencias del paquete.
-- Revalidar releases, dependencias, licencias, extensiones, APIs, instalación, exportación y restauración antes de elegir.
-- Aplicar el mismo conjunto sintético y las puertas P01–P44 sólo según la responsabilidad del producto; llevar los dos mejores candidatos a la prueba profunda.
-- Asignar una autoridad única por dominio. No mantener plataformas paralelas para ventas, pagos, caja, inventario o fiscalidad.
-- Reutilizar módulos, plugins, SDK, drivers y conectores cuando encajen; desarrollar sólo las brechas demostradas.
-- Definir lenguaje, base de datos, gateway y broker después de conocer la plataforma o servicio que va a integrarse.
+Rubrova debe comenzar por la operación del negocio. El seguimiento de envíos se mantiene en el diseño para no limitar futuras capacidades, pero sus integraciones se dejan para una etapa posterior.
 
-La decisión completa, el orden de evaluación y los criterios de aprobación están en [Estrategia reuse-first](docs/REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) contiene el protocolo de comparación.
+- Evaluar el circuito completo POS + gestión: catálogo, carrito editable, ventas, pagos, vuelto, caja, stock, devoluciones, compras y reportes básicos.
+- Probar primero ERPNext 16 y MyCompany 6.2 por cobertura de POS y ERP; evaluar Tryton 8.2 en paralelo, condicionado a portar/verificar sus módulos argentinos; filtrar Dolibarr 24.0.3 como alternativa de menor complejidad.
+- Mantener Posnic 1.9.2 como referencia POS secundaria, no como plataforma de gestión principal.
+- Aplicar el mismo dataset sintético y las puertas de instalación, licencia, API, exportación, backup, restauración, arquitectura y localización argentina.
+- Llevar como máximo dos finalistas a la prueba profunda. No elegir por cantidad de módulos ni por una demostración.
+- Capturar desde el inicio unidad de negocio, sucursal, canal, centro de costo y depósito para que los reportes posteriores sean correctos.
+- Mantener una autoridad única por dominio y construir/integrar servicios con APIs/eventos; no compartir tablas privadas entre aplicaciones.
 
-**Siguiente — primera entrega funcional, después de elegir la base**
+El orden completo y los criterios de salida están en el [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) contiene el protocolo comparativo.
 
-- Construir un flujo real sobre la plataforma o combinación que supere las pruebas.
-- Incorporar extensiones y adaptadores por contratos, sin parchear el núcleo salvo decisión documentada.
-- Añadir sólo los servicios independientes que no estén resueltos por los componentes elegidos.
-- Verificar concurrencia, duplicados, reinicio de procesos, backup/restore y actualización antes de declarar la entrega operativa.
+**Siguiente — primera entrega funcional**
 
-No se ha elegido una plataforma ni se ha incorporado código externo. El estado real se registra en la estrategia y en el roadmap.
- 
+Un circuito de mostrador completo: producto → carrito → venta → pago y vuelto → caja → stock → ticket/documento separado → devolución → cierre y conciliación. Debe sobrevivir reintentos, desconexión y reinicio del proceso sin pérdidas ni duplicados.
+
+Después se completa la gestión administrativa y contable, se construyen reportes de rentabilidad con costos validados, se amplían perfiles sectoriales y canales digitales, y por último se incorporan conectores avanzados de transportistas y tracking.
+
+Todavía no se ha elegido una plataforma ni se ha incorporado código externo. No existe una aplicación funcional de Rubrova; el estado real y las pruebas pendientes se registran en el plan maestro y el roadmap.
+
 ## Forma de trabajo
 
 - La única rama viva es `main`.
