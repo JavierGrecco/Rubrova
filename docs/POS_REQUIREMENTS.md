@@ -23,7 +23,7 @@ No es una caja aislada que mantenga productos o stock propios: utiliza los servi
 - Soportar variantes, presentaciones, packs, cajas, combos y servicios.
 - Soportar productos por unidad, peso y otras unidades configuradas; conservar cantidad y precisión.
 - Mostrar precio vigente, unidad, disponibilidad y avisos relevantes.
-- Permitir cliente opcional en ventas de mostrador y selección de cliente empresarial/cuenta corriente cuando corresponda.
+- Permitir cliente opcional en ventas de mostrador y selección de cliente empresarial/cuenta corriente cuando corresponda. Ofrecer asociar la compra a una cuenta existente mediante QR/código de fidelización, sesión autenticada o dato verificado; nunca forzar nombre, DNI, teléfono o email para cobrar.
 - Mantener el carrito como operación editable: antes de iniciar el cobro se pueden quitar líneas, reducir cantidades o cambiar artículos.
 - Recalcular descuentos, promociones, impuestos y total al editar; liberar reservas temporales de líneas retiradas.
 - No crear venta confirmada, salida de stock, pago ni documento fiscal por artículos retirados del carrito.
@@ -57,7 +57,10 @@ No es una caja aislada que mantenga productos o stock propios: utiliza los servi
 - No marcar una venta como pagada por una captura del cliente ni por una pantalla sin confirmación del proveedor.
 - Un timeout después de que el cliente pudo haber pagado exige consultar y conciliar antes de otro intento.
 - Una devolución o reembolso referencia la venta y el pago originales.
-- No guardar PAN completo, CVV ni credenciales de terminal.
+- No guardar PAN completo, CVV, PIN ni credenciales de terminal. El adquirente/PSP devuelve un resultado de pago y referencias de conciliación; esos datos no identifican automáticamente al comprador.
+- Diferenciar CustomerAccount, comprador, pagador y titular del instrumento. Un nombre/documento de pagador o una referencia de tarjeta/cuenta no fusiona clientes automáticamente.
+- Los campos de pagador que el proveedor limite a conciliación no se exponen a CRM/RFM/campañas. La ficha de cliente se vincula por identidad voluntaria/verificada y permanece anónima si no existe.
+- Cada componente de un pago mixto se concilia por separado, pero mantiene la misma venta y el cliente confirmado (o anónimo) de esa operación.
 
 ### Efectivo y vuelto
 
