@@ -62,6 +62,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(runtimeSmokeSource, /Inspeccionando el login y la pantalla autenticada con Chromium/);
   assert.match(runtimeSmokeSource, /RUBROVA_RMI_TIMEOUT_SECONDS/);
+  assert.match(runtimeSmokeSource, /RUBROVA_ONSTARTED_TIMEOUT_SECONDS/);
+  assert.match(runtimeSmokeSource, /Executing onStarted action finished/);
+  assert.match(runtimeSmokeSource, /ONSTARTED_READY/);
+  assert.match(runtimeSmokeSource, /onStarted terminó/);
   assert.match(runtimeSmokeSource, /RMI_READY/);
   assert.match(runtimeSmokeSource, /:1DE4/);
   assert.match(runtimeSmokeSource, /RUBROVA_UI_TEST_LOGIN/);

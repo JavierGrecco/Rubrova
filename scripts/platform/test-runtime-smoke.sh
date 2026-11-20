@@ -292,12 +292,34 @@ if [[ "$RMI_READY" != "true" ]]; then
 fi
 echo "Puerto RMI 7652 en escucha después de ${SECONDS}s."
 
+echo "7/9 Esperando que finalice el arranque de la aplicación"
+ONSTARTED_TIMEOUT_SECONDS="${RUBROVA_ONSTARTED_TIMEOUT_SECONDS:-180}"
+SECONDS=0
+ONSTARTED_READY=false
+while (( SECONDS < ONSTARTED_TIMEOUT_SECONDS )); do
+  SERVER_STARTUP_LOGS="$(compose logs --no-color --tail=100 server 2>/dev/null || true)"
+  if grep -Fq 'Executing onStarted action finished' <<< "$SERVER_STARTUP_LOGS"; then
+    ONSTARTED_READY=true
+    break
+  fi
+  if (( SECONDS % 30 < 2 )); then
+    echo "El servidor todavía está ejecutando onStarted; transcurridos=${SECONDS}s."
+  fi
+  sleep 2
+done
+if [[ "$ONSTARTED_READY" != "true" ]]; then
+  echo "El servidor no confirmó el fin de onStarted en ${ONSTARTED_TIMEOUT_SECONDS}s." >&2
+  printf '%s\n' "$SERVER_STARTUP_LOGS" | tail -n 100 >&2
+  exit 1
+fi
+echo "Arranque completo: onStarted terminó después de ${SECONDS}s."
+
 if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
   [[ -x "$RUBROVA_PLAYWRIGHT_PYTHON" ]] || {
     echo "No se encuentra el intérprete Playwright configurado: $RUBROVA_PLAYWRIGHT_PYTHON" >&2
     exit 1
   }
-  echo "7/8 Inspeccionando el login y la pantalla autenticada con Chromium"
+  echo "8/9 Inspeccionando el login y la pantalla autenticada con Chromium"
   RUBROVA_UI_SCREENSHOT="${RUBROVA_UI_SCREENSHOT:-$WORK_DIR/mycompany-ui.png}" \
     RUBROVA_UI_TEST_LOGIN="${RUBROVA_UI_TEST_LOGIN:-false}" \
     RUBROVA_UI_TEST_USERNAME="${RUBROVA_UI_TEST_USERNAME:-admin}" \
@@ -307,7 +329,7 @@ else
   echo "AVISO: se omitió la inspección de Chromium porque RUBROVA_PLAYWRIGHT_PYTHON no está configurado."
 fi
 
-echo "8/8 Recopilando evidencia del runtime, la extensión y las imágenes"
+echo "9/9 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
 
 echo "Configuración efectiva de los cuatro servicios (sin valores de entorno):"
