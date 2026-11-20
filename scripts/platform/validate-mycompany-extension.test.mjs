@@ -64,6 +64,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /Efectivo CI/);
   assert.match(runtimeSmokeSource, /Tarjeta CI/);
   assert.match(runtimeSmokeSource, /defaultCurrency\(\)/);
+  assert.match(runtimeSmokeSource, /invoiceType\(cashRegisterCI\) <- invoiceType\('retail'\)/);
+  assert.match(runtimeSmokeSource, /MyCompany requires an invoice type/);
   assert.match(runtimeSmokeSource, /CashAccount/);
   assert.match(runtimeSmokeSource, /account\(cashRegisterCI, PaymentMethod pm\)/);
   assert.match(runtimeSmokeSource, /inspect-mycompany-ui[.]py/);
