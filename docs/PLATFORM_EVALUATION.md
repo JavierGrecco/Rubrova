@@ -1,7 +1,7 @@
 # Evaluación comparativa de plataformas
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado:** laboratorio preparado; dataset de evaluación 27/27 y benchmark mensual de demanda aprobados en CI; ejecución local de plataformas pendiente.  
+**Estado:** laboratorio preparado; dataset de evaluación 34/34 y benchmark mensual de demanda aprobados en CI; ejecución local de plataformas pendiente.  
 **Alcance:** uso interno, personal y privado. No se prevé distribuir, revender ni ofrecer el sistema como servicio a terceros.
 
 Este documento convierte la investigación en una prueba repetible. No elige una plataforma por su README, una demo o la cantidad de módulos anunciados. La elección depende de ejecutar los mismos flujos, con datos sintéticos, y comprobar integridad, recuperación, esfuerzo de adaptación y mantenimiento.
@@ -274,7 +274,7 @@ Estos componentes no convierten por sí solos a una plataforma en la base del pr
 
 La revisión de licencias se hace para la versión y los archivos que realmente se incorporen. El uso privado permite considerar código GPL/AGPL, pero no elimina las licencias separadas de dependencias, fuentes, imágenes, servicios o componentes comerciales.
 
-El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 20/11/2026 terminó correctamente: 27 pruebas aprobadas y dataset canónico válido. El benchmark mensual de demanda (48 meses por serie, modelos regulares e intermitentes) también pasó su workflow; es una prueba matemática con datos sintéticos, no valida una plataforma. Esto valida las reglas aritméticas y las invariantes modeladas de multiárea, mayorista, envíos, servicios, costos internos y rentabilidad; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
+El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 20/11/2026 terminó correctamente: 34 pruebas aprobadas y dataset canónico válido. El benchmark mensual de demanda (48 meses por serie, modelos regulares e intermitentes) también pasó su workflow; es una prueba matemática con datos sintéticos, no valida una plataforma. Esto valida las reglas aritméticas y las invariantes modeladas de multiárea, mayorista, envíos, servicios, costos internos y rentabilidad; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
 
 ## Estado de ejecución
 
@@ -287,7 +287,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y dataset sintético | Preparados |
 | Laboratorio de instalación para los tres candidatos | Preparado |
-| Validador y CI del dataset | Aprobados: 27/27 tests y dataset válido (20/11/2026) |
+| Validador y CI del dataset | Aprobados: 34/34 tests y dataset válido (20/11/2026) |
 | Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
