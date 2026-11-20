@@ -35,6 +35,7 @@ Una plataforma que reúne en un solo lugar:
 8. La seguridad, la privacidad, la accesibilidad y la calidad se diseñan desde el inicio.
 9. La documentación usa lenguaje simple, directo y humano. Cada módulo debe explicar qué hace, qué no hace y cómo se prueba.
 10. El repositorio mantiene una sola rama viva: `main`. No se crean ramas de trabajo paralelas.
+11. Un proveedor externo puede fallar sin detener el POS/ERP local: todo conector tiene timeout, límites de reintentos, idempotencia, estado incierto y pruebas de fallo.
 
 ## Cómo leer la documentación
 
@@ -56,7 +57,8 @@ Una plataforma que reúne en un solo lugar:
 | [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Roles, permisos, turnos, autorizaciones y trazabilidad |
 | [Perfiles sectoriales](docs/SECTOR_PROFILES.md) | Supermercados, panaderías, rotiserías y gastronomía |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
-| [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P48 |
+| [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P55 |
+| [Resiliencia de integraciones y errores](docs/INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) | Timeouts, reintentos seguros, circuit breaker, Outbox, mensajes en español y simulación de fallos para cada proveedor |
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
 | [Estado real del proyecto](docs/PROJECT_STATUS.md) | Qué funciona, qué falta y el siguiente bloque de trabajo |

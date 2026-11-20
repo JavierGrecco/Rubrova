@@ -1,7 +1,7 @@
 # Continuidad operativa, confiabilidad y recuperación
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado:** especificación de arquitectura y aceptación. No representa una implementación ni una garantía de recuperación.
+**Estado:** especificación de arquitectura y aceptación. El manejo homogéneo de errores aún debe implementarse y probarse antes de producción.
 
 ## 1. Objetivo y alcance de las pruebas
 
@@ -169,7 +169,7 @@ El panel debe explicar en lenguaje claro:
 - pedidos externos no conciliados;
 - envíos sin guía o tracking atrasado.
 
-Cada error incluye fecha, servicio, operación de referencia, impacto, acción siguiente y si se puede reintentar sin riesgo. Logs y trazas se correlacionan de extremo a extremo, sin tokens, contraseñas, certificados ni datos completos de tarjetas.
+Cada error incluye fecha, servicio, operación de referencia, impacto, acción siguiente y si se puede reintentar sin riesgo. Logs y trazas se correlacionan de extremo a extremo, sin tokens, contraseñas, certificados ni datos completos de tarjetas. La política de timeout, retry, circuit breaker, Outbox, mensajes y pruebas simuladas está en [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md).
 
 ## 9. Seguridad y trazabilidad
 
@@ -209,6 +209,13 @@ Estas pruebas amplían P01–P26; no reemplazan el protocolo existente.
 | P46 | Corromper un paquete, perder una parte de la cadena incremental o presentar una clave incorrecta | Rechazo seguro, explicación clara y conservación intacta de las copias válidas |
 | P47 | Restaurar perfiles de periféricos y terminales en otro equipo | Recuperar configuración sin duplicar identidades; volver a probar y autorizar cada dispositivo físico |
 | P48 | Restaurar un backup con secretos/certificados excluidos | Re-vincular credenciales y certificados tras recuperar los datos; el paquete legible no debe contener secretos |
+| P49 | Ejecutar ER01–ER24 para cada proveedor simulado | Todos los fallos terminan dentro de deadline, quedan clasificados y no detienen otras operaciones |
+| P50 | Mantener Mercado Libre sin responder durante sincronización | Circuit breaker abierto, Outbox pendiente, mensaje claro y POS local disponible |
+| P51 | Recuperar Mercado Libre después de una caída prolongada | Prueba semia-bierta única; drenar backlog con límite sin duplicar pedidos/publicaciones |
+| P52 | Timeout después de una escritura externa que pudo confirmarse | Estado incierto; consulta por clave idempotente antes de un nuevo envío |
+| P53 | Caída simultánea de dos integraciones | Circuitos y colas aislados; ninguna consume recursos de la otra |
+| P54 | Caída de proveedor mientras se registra venta local en efectivo | La transacción local confirma; sincronización pendiente y caja no bloqueada |
+| P55 | Excepción inesperada en un adaptador | Captura en el borde, código de incidente, detalle saneado y proceso principal operativo |
 
 ## 11. Indicadores de confiabilidad
 
@@ -248,3 +255,6 @@ La continuidad está aprobada sólo cuando se demuestra con pruebas repetibles q
 10. el operador sabe qué está funcionando, qué está degradado y qué requiere intervención.
 
 La meta es que Rubrova pueda continuar operando, aislar un fallo, recuperar el servicio afectado y conservar evidencia de cada acción. La recuperación no debe depender de borrar historia ni de que el usuario manipule bases de datos manualmente.
+
+
+La aceptación de P49–P55 depende de la matriz ER01–ER24 y del criterio de terminado del documento de resiliencia. Cada adaptador debe superar las pruebas aplicables; una prueba verde no certifica a los demás proveedores.

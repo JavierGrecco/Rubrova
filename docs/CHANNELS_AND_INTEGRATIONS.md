@@ -49,11 +49,11 @@ WSFEv1, WSMTXCA y otras opciones se eligen según comprobante y caso fiscal. ARC
 - Importar comisiones, devoluciones y cargos por separado.
 - Conciliar pedidos, cobros, envíos, documentos y liquidaciones.
 
-Regla: no emitir desde dos sistemas para una misma obligación fiscal. Webhooks repetidos o fuera de orden deben procesarse con idempotencia. Validar permisos, endpoints, campos y flujos vigentes en documentación oficial y cuenta de prueba.
+Regla: no emitir desde dos sistemas para una misma obligación fiscal. Webhooks repetidos o fuera de orden deben procesarse con idempotencia. Una caída o timeout del proveedor no bloquea el POS local; la sincronización se registra pendiente. Si una publicación pudo ser aceptada y la respuesta se perdió, consultar antes de volver a enviarla. Validar permisos, endpoints, campos y flujos vigentes en documentación oficial y cuenta de prueba.
 
 ## Mercado Pago y pagos externos
 
-Usar identificador interno único y claves de idempotencia; verificar firma y autenticidad de notificaciones; consultar estado cuando sea necesario; no acreditar por una captura del cliente; relacionar pago, devolución y liquidación; separar comisión, retención, costo financiero y neto acreditado. No almacenar datos completos de tarjeta ni CVV.
+Usar identificador interno único y claves de idempotencia; verificar firma y autenticidad de notificaciones; consultar estado cuando sea necesario; no acreditar por una captura del cliente; relacionar pago, devolución y liquidación; separar comisión, retención, costo financiero y neto acreditado. El timeout no es rechazo ni aprobación: queda incierto y se consulta la misma operación antes de iniciar otro cobro. No almacenar datos completos de tarjeta ni CVV.
 
 ## WhatsApp y mensajería
 
@@ -61,7 +61,7 @@ Catálogo, consultas, pedidos e interpretación asistida de texto, audio e imág
 
 ## Hardware e integraciones
 
-Cada integración tiene contrato y versión, autenticación mínima, idempotencia, errores y reintentos, correlación, pruebas o sandbox, recuperación y responsable. La indisponibilidad externa no debe borrar una venta.
+Cada integración tiene contrato y versión, autenticación mínima, idempotencia, errores y reintentos, correlación, pruebas o sandbox, recuperación y responsable. Ningún conector puede dejar un timeout ilimitado ni propagar una excepción al POS. Debe usar timeout explícito, deadline total, política de retry, circuit breaker, estado Outbox/conciliación y mensajes en español. La indisponibilidad externa no debe borrar una venta ni consumir todos los hilos del servidor. La norma y las pruebas ER01–ER24 están en [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md).
 
 ## Reportes por canal
 
@@ -95,3 +95,8 @@ La investigación de APIs, proyectos y límites está en [Logística argentina y
 El sistema debe exportar ventas, compras, cobros, pagos, asientos, centros de costo y dimensiones de gestión a los paquetes contables que use la empresa o su estudio. La compatibilidad con Tango, Catedral, Bejerman, Xubio, Colppy y perfiles de archivos se documenta en [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md).
 
 La integración no debe emitir dos comprobantes fiscales ni mantener dos libros contables editables. La fuente de verdad y las claves externas se definen por tipo de documento.
+
+
+## Comportamiento cuando un canal externo está caído
+
+Mercado Libre, Mercado Pago, ARCA, mensajería, transportistas y demás proveedores quedan encapsulados por adaptadores independientes. Cada uno tiene timeout y circuito propios, y comparte el contrato común de resiliencia. Una falla no detiene otro proveedor ni la base comercial local. Las tareas se guardan en Outbox, se muestran como pendientes/atención requerida y se reanudan al recuperarse el proveedor. El sistema no simula respuestas, no marca cobros/documentos como confirmados por timeout y no reenvía a ciegas operaciones potencialmente duplicables.

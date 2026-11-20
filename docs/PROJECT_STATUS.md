@@ -28,7 +28,7 @@ La decisión arquitectónica cambió para priorizar la independencia del código
 | Build completamente offline | Pendiente | Debe pasar con Maven -o y repositorio local preparado |
 | Runtime local sin Internet | Pendiente | Faltan imágenes propias, paquete offline y prueba con red aislada |
 | Instalación y recuperación en la PC de uso | Pendiente | No se ha hecho instalación final ni restauración |
-| ARCA, pagos externos y logística | Pendiente | Son conectores externos; el núcleo local no dependerá de ellos para vender en efectivo |
+| ARCA, pagos externos y logística | Pendiente | Cada conector debe aprobar timeout, circuit breaker, idempotencia, fallos simulados y recuperación antes de habilitarse |
 
 ## Código que Rubrova mantiene
 
@@ -62,4 +62,9 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 8. Preparar paquete offline y probar en una PC limpia con Internet desactivado; luego backup, restauración y recuperación.
 9. Adaptar fiscalidad argentina y conectores externos sin bloquear el funcionamiento local.
 
-El proyecto no se declara listo por importar fuentes ni por tener CI verde. Se acepta cuando una instalación local conserva las operaciones y los datos después de reiniciar, concilia dinero y stock, y puede recuperarse desde un backup probado.
+El proyecto no se declara listo por importar fuentes ni por tener CI verde. Se acepta cuando una instalación local conserva las operaciones y los datos después de reiniciar, concilia dinero y stock, puede recuperarse desde un backup probado y demuestra que las fallas de integraciones quedan aisladas mediante timeout, estado persistido, mensajes claros y pruebas de fault injection.
+
+
+## Política transversal de errores
+
+Se añadió [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md). El motor lsFusion 6.2 ofrece timeoutHttp() y TRY/CATCH, pero eso no equivale a tener la política implementada. Falta incorporar el registro común de incidentes, los estados Outbox/circuit breaker y las pruebas simuladas ER01–ER24. Mercado Libre y los demás conectores no se habilitarán en producción sin esas puertas.

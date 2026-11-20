@@ -48,6 +48,21 @@ jobs:
         id: validate
         run: bash scripts/platform/validate-vendored-sources.sh
 
+      - name: Integrar las fuentes completas en main
+        if: steps.import.outcome == 'success' && steps.validate.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+JavierGrecco@users.noreply.github.com"
+          git add vendor/
+          if ! git diff --cached --quiet; then
+            git commit -m "vendor: incorporate pinned MyCompany 6.2 and lsFusion 6.2 sources"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          else
+            echo "Los snapshots ya están incorporados; no hay un nuevo commit."
+          fi
+
       - name: Compilar desde el código fuente incorporado
         id: source_build
         continue-on-error: true
@@ -68,20 +83,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Integrar las fuentes completas en main
-        if: steps.import.outcome == 'success' && steps.validate.outcome == 'success'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add vendor/
-          if git diff --cached --quiet; then
-            echo "Los snapshots ya están incorporados; no hay un nuevo commit."
-          else
-            git commit -m "vendor: incorporate pinned MyCompany 6.2 and lsFusion 6.2 sources"
-            git push origin HEAD:main
-          fi
-
       - name: Informar si la compilación inicial necesita correcciones
         if: steps.source_build.outcome == 'failure'
         run: |
-          echo "::warning::Las fuentes fueron incorporadas y validadas, pero el primer build Maven no terminó correctamente. Revisar el artefacto rubrova-build-from-vendored-sources antes de declarar compilación fuente aprobada."
+          echo "::warning::Las fuentes ya están incorporadas, pero el primer build Maven no terminó correctamente. Revisar el artefacto rubrova-build-from-vendored-sources antes de declarar compilación fuente aprobada."
