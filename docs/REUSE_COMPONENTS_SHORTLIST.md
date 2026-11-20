@@ -188,7 +188,29 @@ Ambos repositorios raíz declaran AGPL-3.0, pero cada addon puede declarar LGPL-
 
 
 
-## 11. Analítica y BI local
+## 11. Contabilidad y libro mayor
+
+### [Bigcapital](https://github.com/bigcapitalhq/bigcapital)
+
+- Release observada: `v0.25.46` (14/11/2026).
+- Licencia declarada en la raíz: AGPL-3.0.
+- Aplicación autohospedada con Docker, API y SDK TypeScript; su README la describe como software contable e inventario y permite integrar su API para registrar transacciones en un sistema de doble partida.
+- El código revisado incluye módulos para libro mayor, diarios manuales, facturas de venta, bills de proveedores, pagos, conciliación bancaria, reportes, inventario y webhooks.
+
+**Valor:** candidato real para estudiar un libro mayor, cuentas por cobrar/pagar, conciliación y reportes financieros mediante una API ya existente. Puede evitar escribir desde cero una gran parte de contabilidad.
+
+**Límites arquitectónicos y de operación:**
+- Es una aplicación integrada: sus módulos comparten el servidor y la base de datos por tenant. No equivale a servicios independientes de ventas, compras, inventario y finanzas.
+- Incluye inventario y documentos comerciales, que podrían duplicar datos si la plataforma principal ya tiene esos dominios. Sólo se puede adoptar si Rubrova define una autoridad única y evita registrar la misma operación en dos libros.
+- El despliegue de desarrollo declara MariaDB, Redis, ClickHouse, Garage y Gotenberg, además del servidor y la interfaz. La instalación autohospedada necesita medir recursos, backup, restauración y actualización; no tratarla como una biblioteca ligera.
+- El servidor `packages/server` aparece con `license: UNLICENSED` en su package manifest aunque el repositorio raíz declara AGPL-3.0. No extraer paquetes internos ni reutilizar código de forma aislada sin aclarar el alcance de la licencia y procedencia.
+- No se ha comprobado localización fiscal argentina, ARCA, CUIT, percepciones/retenciones ni exportación contable local.
+
+**Decisión:** candidato para una prueba de contabilidad como aplicación completa o autoridad financiera delimitada, no como microservicios internos. Compararlo contra la contabilidad nativa de Tryton/ERPNext/MyCompany. Nunca mantener Bigcapital y otro ERP como libros mayores paralelos.
+
+**Prueba requerida:** balance de comprobación, mayor, balance general, resultados, flujo de caja, facturas/bills y notas, pagos, cuentas por cobrar/pagar, conciliación bancaria, multimoneda, impuestos, datos por sucursal/área, API, webhooks duplicados, exportación, backup/restore y recuperación tras reinicio. Reconciliar saldos y débitos/créditos contra un conjunto de referencia. Homologar aparte cualquier integración fiscal argentina.
+
+## 12. Analítica y BI local
 
 ### [DuckDB](https://github.com/duckdb/duckdb)
 
@@ -222,7 +244,7 @@ Ambos repositorios raíz declaran AGPL-3.0, pero cada addon puede declarar LGPL-
 
 **Recomendación:** DuckDB para la primera prueba analítica con datasets exportados; Metabase es una alternativa más simple para BI independiente si su AGPL y licencia de embedding encajan; Superset es una alternativa Apache-2.0 con una operación más técnica. Elegir uno sólo después de una prueba de uso. No adoptar ambos automáticamente como una pila indivisible.
 
-## 12. Identidad, autenticación y observabilidad
+## 13. Identidad, autenticación y observabilidad
 
 | Proyecto | Versión / licencia observada | Uso potencial | Condición |
 |---|---|---|---|
@@ -233,7 +255,7 @@ Ambos repositorios raíz declaran AGPL-3.0, pero cada addon puede declarar LGPL-
 
 **Estrategia:** no instalar Keycloak, Prometheus, Grafana y Collector desde el primer prototipo. Primero comprobar el sistema de identidad y logs nativo de la plataforma. Adoptar una capa común sólo cuando haya varias unidades operativas y métricas que necesitemos correlacionar.
 
-## 13. Backups y restauración
+## 14. Backups y restauración
 
 ### [pgBackRest](https://github.com/pgbackrest/pgbackrest)
 
@@ -261,7 +283,7 @@ Puede ser más cómoda para operación asistida con GUI; comparar con restic, no
 
 **Decisión recomendada:** elegir una herramienta de backup de archivos (restic o Kopia) y, si usamos PostgreSQL, pgBackRest para la base. El catálogo de Rubrova debe registrar cada backup, su hash, alcance, versión de esquema, retención, ubicación, prueba de restauración y manifiesto multi-servicio. Nunca considerar que un snapshot de VM sustituye un backup verificado de datos.
 
-## 14. Puertas de aprobación
+## 15. Puertas de aprobación
 
 - Fijar release, commit y hash de artefactos.
 - Revisar licencia raíz, subdirectorios/paquetes, dependencias y recursos.
