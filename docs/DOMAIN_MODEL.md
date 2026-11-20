@@ -121,3 +121,12 @@ El modelo conceptual se completa con la especificación [Captura de datos y base
 4. Un quiebre de stock debe estar representado como disponibilidad en el tiempo, no inferido sólo desde ausencia de ventas.
 5. Los informes derivan de una capa de lectura conciliada y nunca escriben en los agregados transaccionales.
 6. Las exportaciones deben incluir tipos, relaciones, IDs, moneda, unidades, zona horaria, fórmula de métricas, filtros y corte de datos.
+
+
+## Cliente 360 y segmentación conductual
+
+El maestro Party/CustomerAccount comparte identidad y relaciones entre las áreas de negocio, pero no fuerza identificación en ventas anónimas. Para B2B soporta sedes, contactos y roles de comprador/aprobador/recepción/administración.
+
+Las clasificaciones estables (retail, mayorista, empresa, institucional) se distinguen de los segmentos conductuales temporales (RFM, activo, en riesgo, inactivo, leal). Cada evaluación de segmento guarda fecha de cálculo, período, regla/modelo, entradas, versión, confianza y explicación. Las preferencias derivadas de compras se separan de las declaradas por el cliente y de las recomendaciones predictivas.
+
+La especificación de entidades, métricas, privacidad y pruebas está en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md).
