@@ -68,6 +68,7 @@ jobs:
           RUBROVA_UI_TEST_LOGIN: "true"
           RUBROVA_UI_TEST_USERNAME: "admin"
           RUBROVA_RMI_TIMEOUT_SECONDS: 180
+          RUBROVA_UI_READY_TIMEOUT_SECONDS: 180
         run: bash scripts/platform/test-runtime-smoke.sh
       - name: Conservar capturas de acceso y pantalla autenticada
         if: always()

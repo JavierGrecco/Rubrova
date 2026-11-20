@@ -71,6 +71,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /input\[type="submit"\]/);
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
   assert.match(uiSmokeSource, /AppServerNotAvailableDispatchException/);
+  assert.match(uiSmokeSource, /NotBoundException/);
+  assert.match(uiSmokeSource, /wait_for_application_server/);
+  assert.match(uiSmokeSource, /RUBROVA_UI_READY_TIMEOUT_SECONDS/);
+  assert.match(uiSmokeSource, /UI_APPLICATION_SERVER_READY=true/);
   assert.match(uiSmokeSource, /page[.]screenshot/);
   assert.match(uiSmokeSource, /_INPUTS=/);
   assert.match(uiSmokeSource, /_BUTTONS=/);
@@ -80,6 +84,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);
   assert.match(runtimeWorkflowSource, /playwright install chromium/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
+  assert.match(runtimeWorkflowSource, /RUBROVA_UI_READY_TIMEOUT_SECONDS: 180/);
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
   assert.match(runtimeSmokeSource, /EXTENSION_OVERRIDE_FILE/);
   assert.match(runtimeSmokeSource, /IMAGE_OVERRIDE_FILE/);

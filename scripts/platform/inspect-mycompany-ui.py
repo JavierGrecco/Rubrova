@@ -19,6 +19,7 @@ SERVER_ERROR_MARKERS = (
     "AppServerNotAvailableDispatchException",
     "Application server [",
     "Connection refused",
+    "NotBoundException",
 )
 
 
@@ -64,6 +65,38 @@ def visible_snapshot(page: Any, label: str) -> str:
 
 def has_server_error(text: str) -> bool:
     return any(marker in text for marker in SERVER_ERROR_MARKERS)
+
+
+def wait_for_application_server(page: Any) -> str:
+    timeout_seconds = int(os.environ.get("RUBROVA_UI_READY_TIMEOUT_SECONDS", "180"))
+    deadline = time.monotonic() + timeout_seconds
+    attempts = 0
+    last_text = ""
+
+    while time.monotonic() < deadline:
+        last_text = page.locator("body").inner_text(timeout=10_000)
+        if (
+            not has_server_error(last_text)
+            and page.locator("#username").is_visible()
+            and page.locator("#password").is_visible()
+        ):
+            print(f"UI_APPLICATION_SERVER_READY=true; reloads={attempts}")
+            return last_text
+
+        if attempts == 0:
+            print("UI_APPLICATION_SERVER_READY=false; el login todavía muestra el estado de arranque.")
+        attempts += 1
+        page.wait_for_timeout(2_000)
+        response = page.reload(wait_until="domcontentloaded", timeout=60_000)
+        if response is not None and response.status >= 400:
+            raise RuntimeError(
+                f"La recarga de la pantalla de acceso respondió HTTP {response.status}."
+            )
+
+    raise RuntimeError(
+        "El servidor RMI todavía no publicó su RemoteLogicsLoader después de "
+        f"{timeout_seconds}s. Último texto visible: {last_text.strip()[:1600]}"
+    )
 
 
 def login_to_ephemeral_instance(page: Any) -> str:
@@ -143,15 +176,15 @@ def inspect_page(url: str) -> int:
             page.wait_for_timeout(1_000)
 
             print(f"UI_HTTP_STATUS={status}")
-            initial_text = visible_snapshot(page, "UI_INITIAL")
+            if os.environ.get("RUBROVA_UI_TEST_LOGIN", "false").lower() == "true":
+                initial_text = wait_for_application_server(page)
+            else:
+                initial_text = page.locator("body").inner_text(timeout=10_000)
+            visible_snapshot(page, "UI_INITIAL")
             page.screenshot(path=str(screenshot_path), full_page=True)
             print(f"UI_INITIAL_SCREENSHOT={screenshot_path}")
 
             if os.environ.get("RUBROVA_UI_TEST_LOGIN", "false").lower() == "true":
-                if has_server_error(initial_text):
-                    raise RuntimeError(
-                        "El cliente web aún muestra un error de conexión al servidor de aplicación."
-                    )
                 final_text = login_to_ephemeral_instance(page)
                 print(
                     "UI_LOGIN_STATUS=authenticated:"
