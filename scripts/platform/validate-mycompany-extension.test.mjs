@@ -72,6 +72,9 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   }
   assert.equal(lock.dockerImages.digestPlatform, "linux/amd64");
   assert.match(runtimeSmokeSource, /docker-server\/logs/);
+  assert.match(runtimeSmokeSource, /compose logs --no-color --tail=180 server/);
+  assert.match(runtimeSmokeSource, /tail -n 80/);
+  assert.match(runtimeSmokeSource, /successfully started/);
   assert.match(runtimeSmokeSource, /RubrovaPOSLocalization/);
 });
 

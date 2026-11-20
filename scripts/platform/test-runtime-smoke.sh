@@ -162,23 +162,48 @@ done <<< "$IMAGES"
 
 LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 RUBROVA_LOG_EVIDENCE=false
+echo "Archivos creados en docker-server (primeros 80):"
+find "$COMPOSE_DIR/docker-server" -maxdepth 3 -type f -print | sort | head -n 80 || true
 if [[ -d "$LOG_DIR" ]]; then
-  echo "Coincidencias relevantes en los registros del servidor:"
+  echo "Archivos de log del servidor:"
   for log_file in "$LOG_DIR"/*.log; do
     [[ -f "$log_file" ]] || continue
-    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|topModule|Exception|ERROR|Failed|not found|syntax|module' "$log_file" | tail -n 40 || true)"
+    printf '%s (%s bytes)\n' "$(basename "$log_file")" "$(wc -c < "$log_file" | tr -d ' ')"
+    case "$(basename "$log_file")" in
+      start.log|stdout.log|stderr.log|server-remote.log)
+        echo "--- Últimas 80 líneas: $(basename "$log_file") ---"
+        tail -n 80 "$log_file"
+        ;;
+    esac
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
     if [[ -n "$matches" ]]; then
-      printf '%s\n%s\n' "--- $(basename "$log_file") ---" "$matches"
+      printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
       if grep -Fq 'RubrovaCustom' <<< "$matches"; then
         RUBROVA_LOG_EVIDENCE=true
       fi
     fi
   done
+else
+  echo "No se encontró el directorio de logs esperado: $LOG_DIR"
 fi
+
+SERVER_LOGS="$(compose logs --no-color --tail=180 server 2>&1 || true)"
+SERVER_MATCHES="$(printf '%s\n' "$SERVER_LOGS" | grep -Ei 'Rubrova|topModule|module|logic|compile|ERROR|Exception|WARN|failed|successfully started' | tail -n 80 || true)"
+if [[ -n "$SERVER_MATCHES" ]]; then
+  echo "Mensajes relevantes del servicio server:"
+  printf '%s\n' "$SERVER_MATCHES"
+  if grep -Fq 'RubrovaCustom' <<< "$SERVER_MATCHES"; then
+    RUBROVA_LOG_EVIDENCE=true
+  fi
+else
+  echo "Últimas líneas del servicio server:"
+  printf '%s\n' "$SERVER_LOGS" | tail -n 60
+fi
+
 if [[ "$RUBROVA_LOG_EVIDENCE" == "true" ]]; then
   echo "Los registros del servidor mencionan RubrovaCustom."
 else
-  echo "AVISO: el cliente web respondió, pero los registros inspeccionados no exponen RubrovaCustom. La carga efectiva del módulo aún requiere una comprobación funcional del POS."
+  echo "AVISO: no se encontró una línea explícita con RubrovaCustom. Se imprimieron los registros y la configuración montada; la carga funcional del POS aún requiere una prueba de interfaz."
 fi
 
 echo "OK: MyCompany 6.2 arrancó y el cliente web respondió. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."
