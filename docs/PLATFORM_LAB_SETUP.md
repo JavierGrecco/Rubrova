@@ -312,7 +312,7 @@ No marcar una prueba como aprobada por ver una pantalla o completar una demo. Pa
 4. Preparar Tryton 8.0 y las ocho ramas tryton-ar 8.0 según el [lock de módulos](TRYTON_ARGENTINA_8_0_LOCK.md); instalar el conjunto completo, ejecutar suites de pruebas y probar WSFE/WSFEX en homologación. Mantener Tryton 8.2 como comparación de actualización posterior.
 5. Ejecutar un filtro corto de Dolibarr 24.0.3; ampliar sólo si pasa los mínimos de caja y gestión.
 6. Preparar Posnic 1.9.2 como referencia de POS secundario, no como sustituto del ERP.
-7. En los dos mejores candidatos, ejecutar escenarios P01–P26, y los P27–P44 que correspondan a sus límites de dominio y arquitectura.
+7. En los dos mejores candidatos, ejecutar P01–P26, P49 (fundación de datos comerciales) y los P27–P48 que correspondan a sus límites de dominio y arquitectura.
 8. Ejecutar hardware simulado, terminales y fiscalidad en homologación sólo cuando existan adaptadores y dispositivos de prueba adecuados.
 9. Comparar experiencia, esfuerzo de adaptación, licencias, APIs, exportación, backup/restore, reinicio y costo de actualización antes de elegir.
 

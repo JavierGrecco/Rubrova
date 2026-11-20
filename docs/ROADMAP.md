@@ -7,7 +7,7 @@
 
 Rubrova se encuentra en **Fase 0: selección del núcleo operativo**. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
 
-El validador del dataset tiene 27 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026). El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova. Esa validación no instala ni prueba un POS, ERP, API, integración, backup o flujo real de Rubrova. Las nuevas modificaciones documentales tampoco se deben presentar como pruebas funcionales.
+El validador del dataset tiene 27 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026). El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova.
 
 La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
@@ -49,7 +49,7 @@ No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circu
 - [ ] Instalar Tryton 8.0 con las ocho ramas tryton-ar fijadas en el [lock reproducible](TRYTON_ARGENTINA_8_0_LOCK.md), ejecutar tests y homologar WSFE/WSFEX; dejar Tryton 8.2 como upgrade posterior sujeto a port y revalidación.
 - [ ] Ejecutar filtro corto de Dolibarr y decidir si entra en la comparación profunda.
 - [ ] Mantener Posnic como comparador POS sólo si aporta una ventaja medible frente al POS incluido en los ERP.
-- [ ] Llevar como máximo dos candidatos a la prueba profunda P01–P44.
+- [ ] Llevar como máximo dos candidatos a la prueba profunda P01–P49.
 - [ ] Decidir qué responsabilidades pueden quedar en una aplicación de dominio externa y qué dominios requieren servicios Rubrova independientes.
 - [ ] Documentar decisión, evidencia, riesgos, licencias, costo de adaptación y camino de actualización.
 
@@ -210,8 +210,8 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 
 1. Ejecutar el filtro comparativo POS + ERPNext 16 y MyCompany 6.2 con el mismo dataset y circuito.
 2. Ejecutar Tryton 8.0 en paralelo con las ramas argentinas 8.0; instalar el conjunto, ejecutar tests y homologar. Tryton 8.2 se evalúa como actualización posterior.
-3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P44.
-4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
+3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P49.
+4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio. P49 añade la comprobación de historial comercial y exportación de datos para inteligencia desde el inicio.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
 6. Ampliar el benchmark con quiebres de stock censurados, promociones, cambios de precio, productos nuevos y más horizontes; preparar una entrada de datos reales una vez elegida la plataforma POS/ERP. Evaluar MLForecast y HierarchicalForecast sólo después de medir la mejora frente a baselines.
 

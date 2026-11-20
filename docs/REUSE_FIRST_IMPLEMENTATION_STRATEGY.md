@@ -23,7 +23,7 @@ Por lo tanto, queda en pausa la idea de comenzar directamente implementando Gate
 
 La arquitectura objetivo es modular, con servicios independientes cuando una capacidad necesite aislamiento real, pero puede apoyarse en una **suite POS+ERP integrada como núcleo operativo**. No queremos desarrollar una aplicación propia enorme ni crear microservicios diminutos que multipliquen el mantenimiento.
 
-Una unidad de dominio debe tener una responsabilidad clara, una autoridad única sobre sus datos, una interfaz de integración documentada, pruebas, backup/restore y un ciclo de actualización controlable. Una suite integrada puede agrupar varios dominios operativos dentro de su límite de aplicación cuando eso ofrece mejor consistencia y menor coste de adaptación. En ese caso, sus módulos son módulos, no microservicios. Se acepta si la suite completa el circuito, es la única autoridad para los ledgers incluidos, ofrece exportación y restauración portable, permisos, extensibilidad y ruta de actualización. Los componentes externos de Rubrova se mantienen fuera de su base privada y acceden por contratos soportados.
+Una unidad de dominio debe tener una responsabilidad clara, una autoridad única sobre sus datos, una interfaz de integración documentada, pruebas, backup/restore y un ciclo de actualización controlable. La suite POS+ERP debe superar P49: preservar y exportar historial de producto/marca/segmento, unidades comparables, precios/costos, promociones y disponibilidad, no sólo valores actuales. Una suite integrada puede agrupar varios dominios operativos dentro de su límite de aplicación cuando eso ofrece mejor consistencia y menor coste de adaptación. En ese caso, sus módulos son módulos, no microservicios. Se acepta si la suite completa el circuito, es la única autoridad para los ledgers incluidos, ofrece exportación y restauración portable, permisos, extensibilidad y ruta de actualización. Los componentes externos de Rubrova se mantienen fuera de su base privada y acceden por contratos soportados.
 
 Reglas que no cambian:
 
@@ -141,7 +141,7 @@ La prueba mínima cubre:
 
 ### Etapa C — finalistas
 
-Sólo los dos candidatos con mejor evidencia pasan al protocolo profundo P01–P44. Se prueban conflictos de stock por operaciones distintas, idempotencia concurrente, webhooks repetidos/fuera de orden, pagos inciertos, migraciones, backup distribuido y recuperación.
+Sólo los dos candidatos con mejor evidencia pasan al protocolo profundo P01–P49. Se prueban conflictos de stock por operaciones distintas, idempotencia concurrente, webhooks repetidos/fuera de orden, pagos inciertos, migraciones, backup distribuido y recuperación.
 
 ### Etapa D — prueba de extensión y actualización
 
