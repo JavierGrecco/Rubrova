@@ -11,11 +11,12 @@ Podemos incorporar partes útiles de proyectos distintos como servicios independ
 
 | Forma | Cuándo conviene | Cómo se conecta |
 |---|---|---|
-| Servicio de dominio | Capacidad de negocio que necesita aislamiento, ciclo de vida o despliegue propio | API versionada y eventos durables; almacenamiento propio |\n| Biblioteca compartida | Código técnico reutilizable que no necesita proceso o almacenamiento propio | Dependencia versionada, interfaz pequeña y tests del servicio consumidor |
+| Servicio de dominio | Capacidad de negocio que necesita aislamiento, ciclo de vida o despliegue propio | API versionada y eventos durables; almacenamiento propio |
+| Biblioteca compartida | Código técnico reutilizable que no necesita proceso o almacenamiento propio | Dependencia versionada, interfaz pequeña y tests del servicio consumidor |
 | Biblioteca/adaptador | Función técnica acotada, como ESC/POS, scanner o SDK fiscal | Puerto/capacidad implementada por el adaptador |
 | Servicio local (sidecar) | Driver nativo, hardware o componente con runtime independiente | HTTP/gRPC/IPC local autenticado y versionado |
 | Servicio externo | Adquirente, marketplace, ARCA o plataforma que no controlamos | API/webhooks con firma, idempotencia y conciliación |
-| Plataforma integral | Resuelve gran parte del negocio con menor costo de adaptación | Se evalúa como base única, no en paralelo como otra fuente de verdad |
+| Plataforma integral | Puede acelerar uno o varios dominios del negocio | Se evalúa como servicio de dominio encapsulado; nunca como autoridad paralela ni como obligación de fusionar todo Rubrova |
 
 Los módulos de la interfaz y las bibliotecas pueden agruparse por función, pero las capacidades operativas se comunican mediante APIs/eventos entre procesos. La descripción completa de gateway, broker, datos por servicio, Outbox/Inbox, Sagas y nodo local está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 
