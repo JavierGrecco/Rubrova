@@ -30,6 +30,9 @@ No se adopta una plataforma por cantidad de pantallas, popularidad o amplitud de
 - **uniCenta oPOS 5.5.2:** queda pendiente de obtener y verificar el código fuente de esa versión; la descarga disponible requiere iniciar sesión. Los mirrors históricos no prueban la licencia ni la integridad del código actual.
 - **Apache OFBiz 24.09.08:** referencia de arquitectura orientada a servicios de negocio; la serie 24.09 está congelada en funciones y recibe correcciones, y su complejidad requiere justificar una prueba específica.
 - **InvenTree y OpenBoxes:** opciones especializadas para inventario técnico y WMS. Se evalúan si la profundidad de depósito/manufactura lo requiere y si pueden asumir una autoridad de stock sin duplicarla.
+- **Odoo y localización argentina:** el addon público oficial `l10n_ar` existe en Odoo 19.0 y 20.0, declara LGPL-3 y cubre la base contable argentina; no es por sí solo el emisor electrónico. La documentación oficial enumera `l10n_ar_edi` para WSFE/CAE, pero esa ruta no aparece en el repositorio Community público consultado, por lo que el código/licencia de ese componente debe verificarse por separado.
+- **leonobitech/l10n_ar_arca_edi:** addon comunitario con código Odoo 19 para WSAA/WSFEv1, versión 19.0.1.0.0, AGPL-3 y estado Beta; candidato para laboratorio, no producción.
+- **OCA/l10n-argentina 19.0:** aunque el repositorio raíz declara AGPL-3, el árbol consultado no tiene módulos instalables. No contarlo como localización disponible hasta que se publiquen manifiestos y código de addons.
 
 La lista y el estado de cada proyecto están en [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). Los releases, resultados y puntuaciones se registran en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
