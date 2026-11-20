@@ -178,7 +178,7 @@ Ponderación propuesta:
 | Integridad transaccional, offline, reinicio y restauración | 30% |
 | POS, pagos, caja, devoluciones y operación del cajero | 20% |
 | Inventario, compras, costos y producción | 15% |
-| Límites de servicio, APIs, despliegue/rollback independiente y esfuerzo de mantenimiento | 15% |
+| Límites de servicio, APIs, despliegue/rollback independiente y esfuerzo de mantenimiento | 10% |
 | Argentina, ARCA y adaptación fiscal | 10% |
 | Hardware, terminales y compatibilidad de sistemas operativos | 10% |
 | Simplicidad de operación y experiencia de uso | 5% |
