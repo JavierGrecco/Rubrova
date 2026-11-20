@@ -53,8 +53,9 @@ No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2
 
 lsFusion permite cargar un módulo propio desde el classpath y establecer logics.topModule en settings.properties. Rubrova incorpora:
 
-- RubrovaCustom.lsf, que requiere MyCompany y agrega captions propios al POS, búsqueda, turno, pago, efectivo y devolución.
-- MyCompanyResourceBundle_es_AR.properties, con traducciones de recursos base y los identificadores `rubrova.*` de esos captions.
+- RubrovaCustom.lsf, el punto de entrada que requiere MyCompany y RubrovaPOSLocalization.
+- RubrovaPOSLocalization.lsf, que contiene los captions y overrides de presentación del POS.
+- MyCompanyResourceBundle_es_AR.properties, con traducciones de recursos base y los identificadores `rubrova.*`.
 
 Una limitación importante: varias cadenas del código 6.2 son literales ingleses en los módulos upstream. Los archivos ResourceBundle por sí solos sólo resuelven las cadenas que utilizan identificadores de localización. Por eso Rubrova cambia los captions necesarios mediante su propio `DESIGN` y claves entre llaves, sin editar los módulos originales. Los mensajes de error heredados y algunas etiquetas de filtros todavía no están traducidos; hay que registrarlos durante la prueba real y decidir si se resuelven con una extensión adicional o un parche de localización pequeño y mantenible.
 
