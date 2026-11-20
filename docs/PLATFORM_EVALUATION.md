@@ -29,9 +29,9 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 
 **Posnic:** mantenerlo acotado a POS. Revisar código AGPL-3.0-only, MongoDB SSPL-1.0 y amCharts comercial por separado, además de la adaptación argentina y los límites offline publicados.
 
-**Regla de arquitectura:** un producto existente puede funcionar como aplicación externa de un dominio acotado, con API y persistencia propias. Si comparte servidor/base para POS, ventas, inventario y contabilidad, no se describen sus módulos como microservicios. Si no puede ser encapsulado sin absorber o duplicar autoridades de otros dominios, se reutilizan componentes realmente separables o se descarta.
+**Regla de arquitectura:** hay dos resultados válidos. (A) Una suite POS+ERP se adopta como núcleo operativo integrado y autoridad única para los dominios que cubra; sus módulos comparten base/runtime y no se llaman microservicios. (B) Los dominios se resuelven con servicios independientes cuando exista una ventaja comprobable y contratos soportados. La base compartida se registra como coste de acoplamiento, actualización y salida, pero no descarta automáticamente una suite. En ambos casos, los componentes externos acceden mediante APIs/eventos/exportaciones soportadas; no por SQL cruzado ni replicando ventas, pagos, stock o costos.
 
-**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P48. Se debe demostrar instalación local, permisos, exportación, backup/restore, API, arquitectura, operación en español, integridad y camino fiscal argentino. Una demo o un README no cuentan como aprobación.
+**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P48. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup cifrado y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
 
 **Estado actual:** ninguna plataforma está aprobada, instalada y aceptada para producción. El repositorio todavía no contiene la aplicación funcional de Rubrova ni código externo incorporado. La validación de fixtures no prueba un POS ni un ERP.
 
@@ -206,7 +206,7 @@ Ponderación propuesta después de superar las puertas obligatorias:
 | POS y flujo de ventas/caja: velocidad, facilidad, devoluciones, pagos y hardware | 25% |
 | ERP diario: catálogo, clientes/proveedores, compras, stock y costos | 20% |
 | Contabilidad, fiscalidad y adaptación argentina | 15% |
-| Arquitectura, APIs, extensibilidad y separación de datos | 15% |
+| Arquitectura, APIs, extensibilidad, autoridad única y coste de acoplamiento/salida | 15% |
 | Reportes, dimensiones de negocio y trazabilidad hasta el movimiento | 10% |
 | Confiabilidad, offline, backup, restore y actualización | 10% |
 | Usabilidad administrativa y mantenimiento de la instalación | 5% |

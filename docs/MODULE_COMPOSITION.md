@@ -1,11 +1,11 @@
 # Composición de módulos y contratos de integración
 
-**Revisión:** 19 de noviembre de 2026  
-**Dirección:** servicios de dominio independientes, cada uno con datos, contrato, despliegue y rollback propios. Las bibliotecas compartidas son componentes técnicos, no sustitutos de los límites de servicio.
+**Revisión:** 20 de noviembre de 2026  
+**Dirección:** núcleo POS+ERP integrado cuando resulte la opción más sólida, combinado con servicios Rubrova independientes sólo donde aporten valor. Los servicios propios tienen datos/contratos/ciclo de vida propios; los módulos internos de una suite compartida no se describen como microservicios.
 
 ## La regla central
 
-Podemos incorporar partes útiles de proyectos distintos como servicios independientes o bibliotecas encapsuladas. La prioridad es reutilizar módulos maduros antes de escribir su equivalente. Pero la palabra «modular» no demuestra independencia: si varios módulos de una suite comparten base de datos, runtime y despliegue, son partes de una aplicación integrada. Para adoptarlos como servicios separados debemos demostrar aislamiento real; de lo contrario sólo pueden servir como referencia o como fuente de extracción. Un servicio tiene su propio almacenamiento y ciclo de despliegue; una biblioteca se integra dentro del servicio que la posee. Ningún componente puede ser dueño del mismo dato que otro ni escribir en tablas ajenas.
+Podemos incorporar proyectos completos, módulos, servicios o bibliotecas. La prioridad es reutilizar módulos maduros antes de escribir su equivalente. La modularidad lógica no demuestra independencia de despliegue: si varios módulos comparten base, runtime y migraciones son una aplicación integrada. Eso no impide adoptarla como núcleo POS+ERP si completa el circuito, mantiene una autoridad transaccional única, exporta y restaura todos los datos y permite conectar componentes externos por interfaces soportadas. Un servicio propio conserva su almacenamiento y ciclo de despliegue; una biblioteca se integra dentro del componente que la posee. Ningún segundo componente puede mantener el mismo ledger ni escribir directamente en tablas privadas ajenas.
 
 ## Formas de incorporación
 
@@ -16,7 +16,8 @@ Podemos incorporar partes útiles de proyectos distintos como servicios independ
 | Biblioteca/adaptador | Función técnica acotada, como ESC/POS, scanner o SDK fiscal | Puerto/capacidad implementada por el adaptador |
 | Servicio local (sidecar) | Driver nativo, hardware o componente con runtime independiente | HTTP/gRPC/IPC local autenticado y versionado |
 | Servicio externo | Adquirente, marketplace, ARCA o plataforma que no controlamos | API/webhooks con firma, idempotencia y conciliación |
-| Plataforma integrada | Puede aportar procesos y código ya maduro | No se aprueba por ser modular o tener API: se comprueba si el módulo coincide con un límite de dominio, dispone de almacenamiento/ciclo de vida aislables y no absorbe dominios ajenos. Si comparte DB/runtime entre dominios, queda como referencia o fuente de extracción salvo excepción arquitectónica explícita |
+| Núcleo operativo integrado POS+ERP | Una suite existente cubre de punta a punta caja, ventas, inventario, compras, costos y/o contabilidad con una autoridad única | Se acepta como una aplicación de dominio integrada si pasa P01–P48, exportación, backup/restore en otra PC, permisos, extensibilidad y actualización. Sus módulos no se llaman microservicios; Rubrova se conecta por APIs/eventos/exports soportados y no duplica ledgers |
+| Plataforma integrada especializada | Una aplicación cubre sólo un área (por ejemplo WMS, ecommerce o archivo documental) | Se adopta como servicio externo acotado si tiene contrato, datos/credenciales, backup/restore y ciclo de actualización propios; no absorbe autoridades ajenas |
 
 Los módulos de la interfaz y las bibliotecas pueden agruparse por función, pero las capacidades operativas se comunican mediante APIs/eventos entre procesos. La descripción completa de gateway, broker, datos por servicio, Outbox/Inbox, Sagas y nodo local está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 
@@ -38,6 +39,8 @@ Los módulos de la interfaz y las bibliotecas pueden agruparse por función, per
 | Auditoría y autorizaciones | Seguridad/Auditoría |
 
 Si se incorpora un WMS externo, decidir si ese WMS será dueño del stock físico de depósito y Rubrova mantendrá la vista comercial, o si el WMS solo aporta tareas. No permitir que ambos ajusten libremente la misma existencia.
+
+Cuando el núcleo ERP elegido sea la autoridad integrada de ventas, compras, inventario y costos, la tabla de propiedad se interpreta como límites lógicos dentro de esa aplicación. No obliga a separarlos en bases/procesos; sí prohíbe que otros componentes mantengan una copia editable de esos ledgers. Inteligencia recibe snapshots de sólo lectura y concilia sus métricas con la fuente.
 
 ## Contrato mínimo de un módulo
 

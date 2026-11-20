@@ -10,21 +10,20 @@ Rubrova debe aprovechar primero software existente, probado y mantenido. No vamo
 La estrategia queda definida así:
 
 1. **Buscar y evaluar soluciones completas antes de programar el dominio.**
-2. **Preferir configuración y módulos oficiales** antes que modificaciones del núcleo.
-3. **Integrar aplicaciones especializadas como unidades de dominio independientes** cuando tengan una API, persistencia, ciclo de actualización y autoridad de datos claros.
-4. **Reutilizar bibliotecas, SDK y adaptadores** para capacidades acotadas.
-5. **Mantener un fork únicamente cuando la adaptación sea demostrablemente más económica que reemplazarlo** y podamos absorber sus actualizaciones.
-6. **Escribir código propio sólo para brechas concretas**, reglas particulares de nuestra operación, integraciones argentinas o experiencia de uso que ninguna solución cubra bien.
+2. **Adoptar una suite POS+ERP como núcleo integrado cuando complete mejor el circuito y supere las pruebas**, aunque internamente comparta base/runtime; documentar el acoplamiento en vez de fingir microservicios.
+3. **Preferir configuración y módulos oficiales** antes que modificaciones del núcleo.
+4. **Integrar aplicaciones especializadas como unidades de dominio independientes** cuando tengan una API, persistencia, ciclo de actualización y autoridad de datos claros.
+5. **Reutilizar bibliotecas, SDK y adaptadores** para capacidades acotadas.
+6. **Mantener un fork únicamente cuando la adaptación sea demostrablemente más económica que reemplazarlo** y podamos absorber sus actualizaciones.
+7. **Escribir código propio sólo para brechas concretas**, reglas particulares de nuestra operación, integraciones argentinas o experiencia de uso que ninguna solución cubra bien.
 
 Por lo tanto, queda en pausa la idea de comenzar directamente implementando Gateway, Ventas e Inventario propios. Esa prueba sólo se hará si la evaluación demuestra que las plataformas y los componentes disponibles no resuelven las capacidades necesarias sin comprometer la arquitectura.
 
 ## Qué entendemos por modularidad
 
-La arquitectura objetivo sigue siendo una composición de aplicaciones y servicios de dominio independientes. No queremos una aplicación propia enorme, ni una colección de microservicios diminutos que multiplique el mantenimiento.
+La arquitectura objetivo es modular, con servicios independientes cuando una capacidad necesite aislamiento real, pero puede apoyarse en una **suite POS+ERP integrada como núcleo operativo**. No queremos desarrollar una aplicación propia enorme ni crear microservicios diminutos que multipliquen el mantenimiento.
 
-Una unidad de dominio debe tener una responsabilidad clara, una autoridad única sobre sus datos, una interfaz de integración documentada, pruebas, backup/restore y un ciclo de actualización controlable.
-
-Un producto existente puede tener módulos internos que comparten runtime o base de datos. Podemos evaluarlo como **una aplicación de dominio completa**, aislada del resto por API y con su propia persistencia. En ese caso no afirmaremos que sus módulos internos son microservicios. Sólo se acepta si el conjunto que administra forma un límite de negocio razonable y Rubrova no duplica esas mismas autoridades. Si la aplicación mezcla responsabilidades que necesitamos desplegar, recuperar o sustituir por separado, y no se puede encapsular sin modificarla profundamente, no será la base de esos dominios.
+Una unidad de dominio debe tener una responsabilidad clara, una autoridad única sobre sus datos, una interfaz de integración documentada, pruebas, backup/restore y un ciclo de actualización controlable. Una suite integrada puede agrupar varios dominios operativos dentro de su límite de aplicación cuando eso ofrece mejor consistencia y menor coste de adaptación. En ese caso, sus módulos son módulos, no microservicios. Se acepta si la suite completa el circuito, es la única autoridad para los ledgers incluidos, ofrece exportación y restauración portable, permisos, extensibilidad y ruta de actualización. Los componentes externos de Rubrova se mantienen fuera de su base privada y acceden por contratos soportados.
 
 Reglas que no cambian:
 
