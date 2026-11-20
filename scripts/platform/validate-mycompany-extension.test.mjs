@@ -108,7 +108,13 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_SESSION_OPEN=true/);
   assert.match(uiSmokeSource, /UI_SESSION_CLOSE_ACTION_FOUND=true/);
   assert.match(uiSmokeSource, /UI_SESSION_SCREENSHOT/);
-  assert.match(uiSmokeSource, /no se registra ninguna venta/);
+  assert.match(uiSmokeSource, /Buscar artículos/);
+  assert.match(uiSmokeSource, /Producto de prueba Rubrova/);
+  assert.match(uiSmokeSource, /UI_TEST_PRODUCT_FOUND=true/);
+  assert.match(uiSmokeSource, /UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true/);
+  assert.match(uiSmokeSource, /UI_RECEIPT_WITH_ITEM/);
+  assert.match(uiSmokeSource, /UI_ITEM_SCREENSHOT/);
+  assert.match(uiSmokeSource, /no se confirma el cobro/);
   assert.match(uiSmokeSource, /\{label\}_RENDER_STATUS=ready/);
   assert.match(uiSmokeSource, /stable_reads >= 2/);
   assert.match(uiSmokeSource, /timeout_seconds: int = 45/);

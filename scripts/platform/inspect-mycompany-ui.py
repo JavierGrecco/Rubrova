@@ -502,6 +502,80 @@ def inspect_page(url: str) -> int:
                 page.screenshot(path=str(session_screenshot), full_page=True)
                 print(f"UI_SESSION_SCREENSHOT={session_screenshot}")
 
+                # Primer paso comercial: buscar el producto ficticio y agregarlo al recibo.
+                search_tab = page.get_by_text("Buscar artículos", exact=True)
+                search_tab.wait_for(state="visible", timeout=15_000)
+                search_tab.click(no_wait_after=True)
+                page.wait_for_timeout(750)
+                visible_snapshot(page, "UI_ITEM_SEARCH")
+
+                product_name = "Producto de prueba Rubrova"
+                product_result = page.get_by_text(product_name, exact=True)
+                try:
+                    product_result.first.wait_for(state="visible", timeout=15_000)
+                except PlaywrightTimeoutError as error:
+                    print("UI_TEST_PRODUCT_FOUND=false")
+                    print(
+                        "UI_ITEM_SEARCH_VISIBLE_TEXT="
+                        + page.locator("body").inner_text(timeout=5_000)[:5000]
+                    )
+                    print(
+                        "UI_ITEM_SEARCH_INPUTS="
+                        + json.dumps(
+                            page.locator("input").evaluate_all(
+                                """elements => elements.slice(0, 60).map(element => ({
+                                    value: element.value || "",
+                                    type: element.type || "",
+                                    visible: !!(element.offsetWidth || element.offsetHeight),
+                                    outerHTML: element.outerHTML.slice(0, 600),
+                                    parentText: element.parentElement
+                                        ? (element.parentElement.innerText || "").trim().slice(0, 300)
+                                        : ""
+                                }))"""
+                            ),
+                            ensure_ascii=False
+                        )
+                    )
+                    raise RuntimeError(
+                        "El producto sintético no apareció en la búsqueda del POS; "
+                        "no se puede validar el catálogo."
+                    ) from error
+
+                search_match_count = product_result.count()
+                print(f"UI_TEST_PRODUCT_FOUND=true")
+                print(f"UI_TEST_PRODUCT_SEARCH_MATCHES={search_match_count}")
+                product_result.first.dblclick(no_wait_after=True)
+
+                cart_deadline = time.monotonic() + 20
+                cart_matches = 0
+                cart_text = ""
+                while time.monotonic() < cart_deadline:
+                    cart_text = page.locator("body").inner_text(timeout=5_000)
+                    cart_matches = page.get_by_text(product_name, exact=True).count()
+                    digits = "".join(character for character in cart_text if character.isdigit())
+                    if cart_matches >= 2 and "1250" in digits:
+                        break
+                    page.wait_for_timeout(500)
+
+                print(f"UI_TEST_PRODUCT_CART_MATCHES={cart_matches}")
+                if cart_matches < 2 or "1250" not in "".join(
+                    character for character in cart_text if character.isdigit()
+                ):
+                    raise RuntimeError(
+                        "El producto se encontró en la búsqueda, pero no se confirmó "
+                        "su incorporación al recibo con precio 1250. "
+                        f"Coincidencias visibles: {cart_matches}. "
+                        f"Texto: {cart_text.strip()[:3000]}"
+                    )
+
+                print("UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true")
+                item_screenshot = screenshot_path.with_name(
+                    screenshot_path.stem + "-item" + screenshot_path.suffix
+                )
+                visible_snapshot(page, "UI_RECEIPT_WITH_ITEM")
+                page.screenshot(path=str(item_screenshot), full_page=True)
+                print(f"UI_ITEM_SCREENSHOT={item_screenshot}")
+
             elif not initial_text.strip():
                 raise RuntimeError(
                     "Chromium abrió la URL, pero la interfaz no mostró texto visible."
