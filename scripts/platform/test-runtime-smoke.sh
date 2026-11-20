@@ -97,7 +97,7 @@ grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
   echo "No se configuró el punto de entrada RubrovaCustom." >&2
   exit 1
 }
-for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf MyCompanyResourceBundle_es_AR.properties; do
+for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf MyCompanyResourceBundle_es_AR.properties; do
   [[ -s "$COMPOSE_DIR/docker-server/$module_file" ]] || {
     echo "No se preparó el archivo de extensión: $module_file" >&2
     exit 1
@@ -229,7 +229,7 @@ print(matches[0])
 echo "docker-server está montado en: $SERVER_MOUNT_DESTINATION"
 docker exec "$SERVER_CONTAINER_ID" sh -ec '
   mount_dir="$1"
-  for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf MyCompanyResourceBundle_es_AR.properties; do
+  for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf MyCompanyResourceBundle_es_AR.properties; do
     test -s "$mount_dir/$module_file" || {
       echo "El contenedor server no ve $module_file en $mount_dir" >&2
       exit 1

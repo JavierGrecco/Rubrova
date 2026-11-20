@@ -10,6 +10,7 @@ const read = (relative) => readFileSync(path.join(root, relative), "utf8");
 const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
 const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
 const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
+const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
@@ -189,13 +190,24 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /tail -n 80/);
   assert.match(runtimeSmokeSource, /successfully started/);
   assert.match(runtimeSmokeSource, /RubrovaPOSLocalization/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience/);
 });
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
-  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
+  assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
+  assert.match(resilienceSource, /^REQUIRE MyCompany;/m);
+  assert.match(resilienceSource, /timeoutHttp/);
+  assert.match(resilienceSource, /NEWSESSION/);
+  assert.match(resilienceSource, /rubrovaRecordIntegrationIncident/);
+  assert.match(resilienceSource, /logToFile\('rubrova-integration-emergency'/);
+  assert.match(resilienceSource, /resolveIntegrationIncident/);
+  assert.match(resilienceSource, /safeToRetry/);
+  assert.match(resilienceSource, /technicalDetail/);
+  assert.match(resilienceSource, /DO NOT STORE|No almacenar tokens/i);
   assert.equal(lock.extension.topModule, "RubrovaCustom");
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
@@ -251,11 +263,13 @@ test("los scripts de despliegue configuran el módulo y conservan backups", () =
   assert.match(shell, /compose\.rubrova\.override\.yaml/);
   assert.match(shell, /OVERRIDE_SOURCE/);
   assert.match(deploySmokeSource, /cmp -s/);
+  assert.match(deploySmokeSource, /resilience_backup_count/);
   assert.match(deploySmokeSource, /override_backup_count/);
   assert.match(shell, /"user\.setLanguage": "es"/);
   assert.match(shell, /"user\.setCountry": "AR"/);
   assert.match(shell, /docker-server/);
   assert.match(shell, /RubrovaPOSLocalization\.lsf/);
+  assert.match(shell, /RubrovaIntegrationResilience\.lsf/);
   assert.match(shell, /systemctl restart lsfusion6-server|systemctl start lsfusion6-server/);
   assert.match(powershell, /"logics\.topModule" = "RubrovaCustom"/);
   assert.match(powershell, /"user\.setLanguage" = "es"/);
@@ -263,6 +277,7 @@ test("los scripts de despliegue configuran el módulo y conservan backups", () =
   assert.match(powershell, /"user\.setLanguage" = "es"/);
   assert.match(powershell, /"user\.setCountry" = "AR"/);
   assert.match(powershell, /RubrovaPOSLocalization\.lsf/);
+  assert.match(powershell, /RubrovaIntegrationResilience\.lsf/);
   assert.match(powershell, /rubrova-backup/);
   assert.match(powershell, /lsFusion 6 Server/);
 });

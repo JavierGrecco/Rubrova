@@ -56,6 +56,14 @@
         "requires": [
           "MyCompany"
         ]
+      },
+      {
+        "name": "RubrovaIntegrationResilience",
+        "path": "extensions/lsfusion/RubrovaIntegrationResilience.lsf",
+        "role": "shared durable incident register and safe error-handling helper for provider adapters",
+        "requires": [
+          "MyCompany"
+        ]
       }
     ]
   },
@@ -67,7 +75,9 @@
     "Build offline from a prepared integrity-checked Maven repository",
     "Run local runtime from Rubrova-built images with no image pulls or Internet egress",
     "Validate POS search, receipt, payment, stock, refund, cash session and closure",
-    "Test clean installation, backup/restore and rollback before production"
+    "Test clean installation, backup/restore and rollback before production",
+    "Load the RubrovaIntegrationResilience module and verify durable incident registration in an isolated database",
+    "Prove that an incident-log database failure falls back to local emergency logging without masking the original operation"
   ],
   "status": "source-fork-import-automation-added",
   "dockerImages": {

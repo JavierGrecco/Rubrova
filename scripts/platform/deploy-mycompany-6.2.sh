@@ -24,6 +24,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 MODULE_FILES=(
   "RubrovaCustom.lsf"
   "RubrovaPOSLocalization.lsf"
+  "RubrovaIntegrationResilience.lsf"
   "MyCompanyResourceBundle_es_AR.properties"
 )
 for file in "${MODULE_FILES[@]}"; do

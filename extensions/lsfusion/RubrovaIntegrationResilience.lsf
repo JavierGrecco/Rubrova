@@ -1,0 +1,85 @@
+MODULE RubrovaIntegrationResilience;
+REQUIRE MyCompany;
+
+NAMESPACE Rubrova;
+
+// Incidencias duraderas de adaptadores externos.
+// No almacenar tokens, cookies, certificados, payloads sensibles ni encabezados de autorización.
+CLASS IntegrationIncident 'Incidencia de integración';
+TABLE rubrovaIntegrationIncident (IntegrationIncident);
+
+provider 'Proveedor' = DATA ISTRING[80] (IntegrationIncident);
+operation 'Operación' = DATA ISTRING[120] (IntegrationIncident);
+correlationId 'Correlación' = DATA STRING[100] (IntegrationIncident);
+category 'Categoría' = DATA STRING[40] (IntegrationIncident);
+occurredAt 'Fecha' = DATA DATETIME (IntegrationIncident);
+httpStatus 'Estado HTTP' = DATA INTEGER (IntegrationIncident);
+attemptCount 'Intentos' = DATA INTEGER (IntegrationIncident);
+safeToRetry 'Reintentable' = DATA BOOLEAN (IntegrationIncident);
+localReference 'Referencia local' = DATA STRING[100] (IntegrationIncident);
+remoteReference 'Referencia externa' = DATA STRING[100] (IntegrationIncident);
+userMessage 'Mensaje para el operador' = DATA ISTRING[300] (IntegrationIncident);
+technicalDetail 'Detalle técnico saneado' = DATA TEXT (IntegrationIncident);
+resolved 'Resuelta' = DATA BOOLEAN (IntegrationIncident);
+resolutionNote 'Resolución' = DATA ISTRING[300] (IntegrationIncident);
+resolvedAt 'Fecha de resolución' = DATA DATETIME (IntegrationIncident);
+
+// Registrar la incidencia en una sesión independiente para que no dependa
+// de la transacción funcional que pudo fallar.
+rubrovaRecordIntegrationIncident 'Registrar incidencia Rubrova'
+    (STRING providerName, STRING operationName, STRING correlation,
+     STRING errorCategory, INTEGER responseStatus, INTEGER attempts,
+     BOOLEAN retryable, STRING localId, STRING remoteId,
+     STRING operatorMessage, TEXT sanitizedTechnicalDetail) {
+    TRY {
+        NEWSESSION {
+            NEW incident = IntegrationIncident {
+                provider(incident) <- providerName;
+                operation(incident) <- operationName;
+                correlationId(incident) <- correlation;
+                category(incident) <- errorCategory;
+                occurredAt(incident) <- currentDateTime();
+                httpStatus(incident) <- responseStatus;
+                attemptCount(incident) <- attempts;
+                safeToRetry(incident) <- retryable;
+                localReference(incident) <- localId;
+                remoteReference(incident) <- remoteId;
+                userMessage(incident) <- operatorMessage;
+                technicalDetail(incident) <- sanitizedTechnicalDetail;
+                resolved(incident) <- FALSE;
+            }
+            APPLY;
+        }
+    } CATCH {
+        // Último recurso: log local del servidor. El llamador no debe fallar
+        // otra vez por no poder guardar la incidencia en la base principal.
+        TRY {
+            logToFile('rubrova-integration-emergency',
+                providerName + ' / ' + operationName + ' / ' + errorCategory +
+                ' / ' + correlation + ' / ' + (OVERRIDE messageCaughtException(), ''));
+        } CATCH { }
+    }
+}
+
+resolveIntegrationIncident 'Marcar incidencia resuelta' (IntegrationIncident incident) {
+    INPUT note = ISTRING[300] DO {
+        TRY {
+            NEWSESSION {
+                resolved(incident) <- TRUE;
+                resolutionNote(incident) <- note();
+                resolvedAt(incident) <- currentDateTime();
+                APPLY;
+            }
+        } CATCH {
+            MESSAGE 'No se pudo guardar la resolución. La incidencia continúa abierta.';
+        }
+    }
+}
+
+EXTEND FORM integrationData
+    OBJECTS rubrovaIncidents = IntegrationIncident
+    PROPERTIES(rubrovaIncidents) READONLY occurredAt, provider, operation, category,
+        httpStatus, attemptCount, safeToRetry, localReference, remoteReference,
+        userMessage, resolved, resolveIntegrationIncident
+    FILTERS NOT resolved(rubrovaIncidents)
+;

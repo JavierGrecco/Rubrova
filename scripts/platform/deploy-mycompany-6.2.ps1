@@ -29,6 +29,7 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $scriptDirectory "..\.."))
 $moduleNames = @(
     "RubrovaCustom.lsf",
     "RubrovaPOSLocalization.lsf",
+    "RubrovaIntegrationResilience.lsf",
     "MyCompanyResourceBundle_es_AR.properties"
 )
 $sourceDirectory = Join-Path $repositoryRoot "extensions\lsfusion"

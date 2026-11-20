@@ -16,6 +16,7 @@ mkdir -p "$MODULE_DIR"
 printf 'services: {}\n' > "$INSTALL_DIR/compose.yaml"
 printf '# Existing local settings\nlogics.topModule = OldModule\nuser.setLanguage = ru\nuser.setCountry = RU\ncustom.setting = preserve-me\n' > "$MODULE_DIR/settings.properties"
 printf 'previous module content\n' > "$MODULE_DIR/RubrovaPOSLocalization.lsf"
+printf 'previous resilience module content\n' > "$MODULE_DIR/RubrovaIntegrationResilience.lsf"
 printf 'previous override content\n' > "$INSTALL_DIR/compose.rubrova.override.yaml"
 
 FAKE_BIN="$TEMP_DIR/bin"
@@ -32,6 +33,7 @@ PATH="$FAKE_BIN:$PATH" bash "$DEPLOY_SCRIPT" docker "$INSTALL_DIR"
 for file in \
   "RubrovaCustom.lsf" \
   "RubrovaPOSLocalization.lsf" \
+  "RubrovaIntegrationResilience.lsf" \
   "MyCompanyResourceBundle_es_AR.properties"
 do
   cmp -s "$REPO_ROOT/extensions/lsfusion/$file" "$MODULE_DIR/$file" || {
@@ -66,6 +68,9 @@ module_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSL
   echo "No se generó exactamente un backup del módulo existente." >&2
   exit 1
 }
+
+resilience_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaIntegrationResilience.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$resilience_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de resiliencia existente." >&2; exit 1; }
 
 settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$settings_backup_count" -eq 1 ]] || {
