@@ -114,7 +114,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true/);
   assert.match(uiSmokeSource, /UI_RECEIPT_WITH_ITEM/);
   assert.match(uiSmokeSource, /UI_ITEM_SCREENSHOT/);
-  assert.match(uiSmokeSource, /no se confirma el cobro/);
+  assert.match(uiSmokeSource, /no se registra ninguna venta/);
+  assert.doesNotMatch(uiSmokeSource, /click_exact_action\(page, "Cobrar"\)/);
   assert.match(uiSmokeSource, /\{label\}_RENDER_STATUS=ready/);
   assert.match(uiSmokeSource, /stable_reads >= 2/);
   assert.match(uiSmokeSource, /timeout_seconds: int = 45/);
