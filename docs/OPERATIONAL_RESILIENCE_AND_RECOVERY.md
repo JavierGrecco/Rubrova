@@ -70,9 +70,9 @@ Cada sucursal conserva su ledger local. El stock centralizado es una proyección
 
 ## 5. Backups y catálogo de puntos de recuperación
 
-Los backups deben ser automáticos, verificables, cifrados y estar registrados como recursos administrables. Deben cubrir las bases de cada servicio, archivos/documentos, configuración necesaria, el estado durable de mensajería y los datos que permiten correlacionar operaciones.
+Los backups deben ser automáticos, verificables y estar registrados como recursos administrables. La política inicial de Rubrova no cifra el paquete a nivel de aplicación; el cifrado de volumen completo es opcional y lo gestiona el sistema operativo. Deben cubrir las bases de cada servicio, archivos/documentos, configuración necesaria, el estado durable de mensajería y los datos que permiten correlacionar operaciones.
 
-La exigencia de producto no se limita a recuperar un servicio en la misma computadora: el paquete completo debe poder restaurarse después de reinstalar Windows o reemplazar el equipo. Se separan snapshot nativo, exportación lógica portable y secretos cifrados; el paso a paso de instalación limpia, validación, cutover y re-vinculación de periféricos está en el documento específico. Una copia local en el mismo disco no cuenta como protección frente a su falla.
+La exigencia de producto no se limita a recuperar un servicio en la misma computadora: el paquete completo debe poder restaurarse después de reinstalar Windows o reemplazar el equipo. Se separan snapshot nativo, exportación lógica portable y secretos/credenciales que no se incluyen en el paquete legible; el paso a paso de instalación limpia, validación, cutover y re-vinculación de periféricos está en el documento específico. Una copia local en el mismo disco no cuenta como protección frente a su falla.
 
 Cada backup tendrá un registro de catálogo con:
 - ID único del backup y fecha/hora UTC;
@@ -81,13 +81,13 @@ Cada backup tendrá un registro de catálogo con:
 - tipo: completo, incremental, snapshot o punto-en-tiempo;
 - rango de WAL/logs/eventos cuando aplique;
 - manifiesto de servicios y offsets del broker para recuperar un punto coherente entre servicios;
-- tamaño, checksum, cifrado y referencia a la clave (nunca la clave en el catálogo);
+- tamaño, checksums, destino y estado de integridad; el catálogo no almacena contraseñas ni secretos;
 - ubicación, copia secundaria, política de retención y fecha de expiración;
 - estado: solicitado, ejecutando, correcto, fallido, verificado o restauración probada;
 - último test de restauración, resultado y duración;
 - persona/proceso que lo generó y correlación de la operación.
 
-La política incluirá copias automáticas, una segunda copia en otro medio y una copia fuera del equipo principal cuando la política de privacidad y operación lo permita. Los secretos y certificados se respaldan aparte, cifrados y con control de acceso estricto. Nunca se incluyen en Git, logs o fixtures.
+La política incluirá copias automáticas, una segunda copia en otro medio y una copia fuera del equipo principal cuando la política de privacidad y operación lo permita. Los secretos y certificados no se incluyen en el paquete legible; se vuelven a vincular o se gestionan aparte mediante el almacén del sistema operativo. Nunca se incluyen en Git, logs o fixtures.
 
 Cada backup verifica su checksum y consistencia. La restauración completa se ensaya periódicamente en un entorno aislado y después de cambios importantes de plataforma o esquema. Un backup que nunca fue restaurado no se considera probado.
 
@@ -208,7 +208,7 @@ Estas pruebas amplían P01–P26; no reemplazan el protocolo existente.
 | P45 | Reinstalar Windows o reemplazar la PC y restaurar desde una copia externa | Recuperar ventas, pagos, caja, stock, compras, costos, documentos, auditoría y configuraciones en un equipo limpio; conciliar estados externos sin duplicados |
 | P46 | Corromper un paquete, perder una parte de la cadena incremental o presentar una clave incorrecta | Rechazo seguro, explicación clara y conservación intacta de las copias válidas |
 | P47 | Restaurar perfiles de periféricos y terminales en otro equipo | Recuperar configuración sin duplicar identidades; volver a probar y autorizar cada dispositivo físico |
-| P48 | Restaurar un backup con secretos/certificados separados | Recuperar mediante almacén cifrado independiente o re-vincular credenciales; nunca exponer secretos en el paquete legible |
+| P48 | Restaurar un backup con secretos/certificados excluidos | Re-vincular credenciales y certificados tras recuperar los datos; el paquete legible no debe contener secretos |
 
 ## 11. Indicadores de confiabilidad
 
