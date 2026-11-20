@@ -5,19 +5,19 @@
 
 Este catálogo no declara componentes aprobados para producción. Distingue evidencia documental, hipótesis de reutilización y validaciones pendientes. Antes de incorporar código se debe fijar un commit o release, revisar licencias y dependencias, ejecutar pruebas y conservar procedencia.
 
-**Orden de selección actualizado (20/11/2026):** adoptar/extender primero una aplicación existente; comparar MyCompany/lsFusion, Tryton, Dolibarr y ERPNext como base ERP/gestión; evaluar Posnic como candidato POS. uniCenta no pasa a reutilización de fuente hasta disponer de la release actual y sus avisos. La regla vigente y los límites para no convertir una aplicación modular en falsos microservicios están en [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md).
+**Orden de selección actualizado (20/11/2026):** adoptar/extender primero una aplicación existente; probar ERPNext 16 y MyCompany/lsFusion 6.2 como POS+ERP, evaluar Tryton 8.2 con compatibilidad de localización pendiente y filtrar Dolibarr 24.0.3; usar Posnic sólo como comparador POS. uniCenta no pasa a reutilización de fuente hasta disponer de la release actual y sus avisos. La regla vigente y los límites para no convertir una aplicación modular en falsos microservicios están en [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md).
 
 ## Resumen ejecutivo
 
 | Prioridad | Proyecto | Qué puede adelantarnos | Estado |
 |---|---|---|---|
-| Muy alta | [MyCompany/lsFusion](https://github.com/lsfusion-solutions/mycompany) | ERP/POS modular, CRM, compras, inventario, producción, RR. HH. y proyectos | Nuevo candidato integral; evaluar release 6.2 |
+| Muy alta | [ERPNext](https://github.com/frappe/erpnext) + [Frappe](https://github.com/frappe/frappe) | POS, ERP, contabilidad, inventario, compras, fabricación y reportes | Primera prueba POS+ERP; release 16.60.0 / Frappe 16; revisar licencia y adaptación argentina |\n| Muy alta | [MyCompany/lsFusion](https://github.com/lsfusion-solutions/mycompany) | ERP/POS modular, CRM, compras, inventario, producción, RR. HH. y proyectos | Primera prueba POS+ERP; release 6.2; todos los módulos comparten base |
 | Alta | [Posnic](https://github.com/Posnic/POS) | POS local/offline, retail y gastronomía, ventas y devoluciones | Candidato POS especializado; revisar separación respecto del stock y compras |
 | Muy alta | [Tryton](https://www.tryton.org/) 8.2 | ERP modular de tres capas, PostgreSQL y POS oficial `sale_point` | Primera ronda condicionada; verificar tags/versiones compatibles de tryton-ar y separación de dominios |
 | Alta | [Dolibarr](https://www.dolibarr.org/) | ERP/CRM modular con REST API, hooks y triggers | Reincorporado a la primera ronda |
 | Media-alta | [Apache OFBiz](https://ofbiz.apache.org/) | ERP y Service Engine orientado a SOA | Referencia de segunda etapa; complejidad y serie 24.09 feature-frozen |
 | Condicionada | [uniCenta oPOS](https://unicenta.com/) | POS multiplataforma, periféricos y caja | Fuente 5.5.2 requiere login; no aprobar reutilización hasta revisar código y licencia |
-| Muy alta | [ERPNext](https://github.com/frappe/erpnext) + [Frappe](https://github.com/frappe/frappe) | ERP, contabilidad, compras, stock, fabricación, pedidos y POS | Evaluar como base integral |
+
 | Alta | [Bigcapital](https://github.com/bigcapitalhq/bigcapital) | Contabilidad de doble partida, mayor, facturas, pagos, conciliación y API | Candidato financiero AGPL-3.0; release 0.25.46; comprobar límites y carga operativa |
 | Alta | [NexoPOS](https://github.com/Blair2004/NexoPOS) | POS, caja, ventas, compras, stock, clientes, permisos y módulos | Evaluar; licencia contradictoria |
 | Muy alta | [pos-toolkit](https://github.com/narisolutions/pos-toolkit) | ESC/POS, impresoras, cajón, scanners seriales, balanzas HID y tickets | Candidato modular |
