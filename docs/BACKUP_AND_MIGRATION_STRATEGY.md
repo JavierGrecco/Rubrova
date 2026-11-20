@@ -74,9 +74,9 @@ La decisión se apoya en el escenario operativo actual: copias en discos locales
 
 ### 4.1 Protección opcional del disco, no del formato Rubrova
 
-Cuando el disco salga del establecimiento o contenga datos de clientes especialmente delicados, el usuario podrá proteger **el volumen completo** mediante la función de cifrado del sistema operativo (por ejemplo, BitLocker To Go en Windows o un volumen externo cifrado compatible con macOS). Esa protección es opcional y queda fuera del formato .rubrova-backup: Rubrova no implementa una segunda capa de cifrado ni administra claves criptográficas propias en esta etapa.
+Cuando el disco salga del establecimiento o contenga datos de clientes especialmente delicados, el usuario podrá proteger **el volumen completo** mediante la función de cifrado del sistema operativo (por ejemplo, BitLocker To Go en ediciones de Windows que lo admitan o un volumen externo cifrado compatible con macOS). Esa protección es opcional y queda fuera del formato .rubrova-backup: Rubrova no implementa una segunda capa de cifrado ni administra claves criptográficas propias en esta etapa.
 
-Si se elige cifrar el disco, guardar la clave de recuperación en otro lugar y comprobar que se puede desbloquear en otra PC antes de depender de él. Un disco cifrado sin su clave también puede quedar inaccesible; el cifrado del volumen no elimina el requisito de probar recuperación.
+En Windows, la disponibilidad de BitLocker To Go depende de la edición instalada (Pro, Enterprise o Education; no está disponible en Windows Home mediante la función BitLocker estándar). En macOS, la Utilidad de Discos permite crear volúmenes externos cifrados, pero normalmente exige formatear primero el dispositivo. Si se elige cifrar el disco, guardar la clave de recuperación en otro lugar y comprobar que se puede desbloquear en otra PC compatible antes de depender de él. Un disco cifrado sin su clave también puede quedar inaccesible; el cifrado del volumen no elimina el requisito de probar recuperación.
 
 ### 4.2 Integridad del paquete
 
