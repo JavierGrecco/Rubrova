@@ -106,12 +106,18 @@ SDK oficial para consumir APIs de Mercado Pago desde Node.js/TypeScript. **Lími
 
 ## 7. Orden recomendado de pruebas
 
-1. **Importación/calidad:** OpenRefine para limpieza asistida; Frictionless, RapidFuzz y python-stdnum con el dataset de artículos, clientes, proveedores y CUIT/CBU; Pint sólo para unidades explícitas.
-2. **Fiscalidad:** comparar LaPyme/facturas y arca-sdks en homologación, con énfasis en estados inciertos, claves estables, recuperación y concurrencia.
-3. **Hardware:** comparar QZ Tray y pos-toolkit con la misma matriz de impresoras, cajones, lectores y balanzas; medir instalación, firma y reinicio del puente.
-4. **Documentos:** probar OCRmyPDF + Docling + invoice2data con facturas/remitos anonimizados. Paperless-ngx se evalúa aparte como archivo.
-5. **Envíos:** evaluar Karrio sólo después de confirmar APIs y obtener credenciales QA de Andreani, Correo Argentino y OCA. Presupuestar conectores faltantes.
-6. **Automatización:** Node-RED para procesos periféricos si ahorra trabajo; Temporal sólo con necesidad demostrada.
+El orden separa herramientas de bajo riesgo que aceleran cualquier plataforma de los servicios completos que podrían añadir una segunda autoridad o una operación innecesaria.
+
+1. **Importación y calidad de datos:** usar OpenRefine para limpieza asistida; probar Frictionless, RapidFuzz, python-stdnum y Pint con el dataset canónico de artículos, clientes, proveedores y CUIT/CBU. La prueba debe detectar duplicados y errores, no fusionar automáticamente.
+2. **Fiscalidad argentina:** comparar LaPyme/facturas y arca-sdks en homologación; ejecutar estados inciertos, reintentos con la misma clave, emisión concurrente, respuesta perdida, consulta/recuperación y notas de crédito. Elegir uno; no hacer emisiones dobles.
+3. **Hardware de caja:** comparar QZ Tray y pos-toolkit con la misma matriz real de impresoras, cajones, lectores y balanzas; validar firmas, permisos, reconexión y reinicio.
+4. **Backups de la plataforma elegida:** si usa PostgreSQL, probar pgBackRest y recuperación PITR a una instancia alternativa; para archivos, comparar restic con Kopia y restaurar muestras verificadas. No esperar al final de la implementación.
+5. **Offline:** prototipar PowerSync para catálogos/vistas y tareas no conflictivas; probar pérdida de red, reinicio, reintentos y cambios duplicados. Rechazarlo como solución de stock si no resuelve explícitamente la autoridad y concurrencia.
+6. **Canal ecommerce:** después de elegir quién posee catálogo, precio, inventario y ventas, comparar Spree con Saleor en un flujo B2B/online. Probar pedido, cancelación, devolución, webhook duplicado, reservas y conciliación. Llevar sólo uno a prueba profunda.
+7. **Documentos:** probar OCRmyPDF + Docling + invoice2data con facturas y remitos anonimizados de varios proveedores. Paperless-ngx es una evaluación separada para archivo documental, permisos y exportación.
+8. **Logística:** empezar por el wrapper MiCorreo de Correo Argentino; validar Andreani/OCA contra sus APIs oficiales; sólo entonces evaluar Karrio y el costo de construir conectores argentinos. Vía Cargo queda como tracking externo mientras no exista booking API verificable.
+9. **Analítica:** usar DuckDB con exportaciones canónicas Parquet/CSV y conciliar cada métrica contra datos operativos. Comparar Metabase y Superset como aplicaciones BI independientes; elegir como máximo una, con base de lectura y permisos por área.
+10. **Automatización e infraestructura común:** Node-RED sólo para integraciones periféricas. Keycloak y OpenTelemetry/Prometheus/Grafana se incorporan cuando haya varias aplicaciones/servicios o necesidad real de SSO/observabilidad. Temporal queda diferido hasta justificar workflows durables complejos.
 
 ## 8. Sincronización y experiencia offline
 
