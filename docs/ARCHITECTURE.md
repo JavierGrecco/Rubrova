@@ -8,24 +8,38 @@ La estrategia prioriza aprovechar proyectos completos y módulos maduros cuando 
 
 ## Dirección técnica
 
-La dirección es una **plataforma de servicios de dominio independientes**. Cada servicio tiene responsabilidad, almacenamiento, contrato, despliegue, pruebas, versión y rollback propios. Los servicios se comunican mediante APIs síncronas y eventos durables; no comparten tablas ni escriben en datos ajenos. Para la operación presencial se instala un nodo local de sucursal que aloja y coordina los servicios necesarios para las cajas, sin depender de Internet. La arquitectura objetivo y sus patrones obligatorios están en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
+La dirección es una **plataforma compuesta por servicios de dominio independientes**. Cada dominio que Rubrova mantenga como servicio propio tendrá responsabilidad, almacenamiento, contrato, pruebas, despliegue, versión y recuperación propios. Los servicios se comunican mediante APIs y eventos; no comparten tablas ni escriben en datos ajenos.
 
-La estructura del negocio y las invariantes son propias. Los frameworks y módulos externos se evalúan como herramientas reemplazables: no deben decidir qué significa una venta, un pago, un movimiento de caja o un movimiento de inventario.
+La estrategia de implementación es **reuse-first**: antes de construir un dominio propio, se buscan aplicaciones, módulos, plugins, SDK y bibliotecas existentes que resuelvan la necesidad de forma mantenible. La reutilización no modifica la arquitectura objetivo ni autoriza una aplicación integrada a absorber dominios que deben conservar independencia.
 
-## Plataformas bajo evaluación
+### Puerta arquitectónica para reutilizar una aplicación
 
-No hay framework ni base de datos aprobados todavía. La ronda de prueba compara tres candidatos integrales, sin ejecutarlos juntos ni crear varias fuentes de verdad:
+Una aplicación externa sólo puede adoptarse directamente en producción si puede asumir un límite de dominio válido y controlable: almacenamiento y credenciales aislables; API/eventos versionados; despliegue, migraciones, backup, restauración y rollback propios; invariantes comprobables; y ausencia de una segunda autoridad sobre datos ajenos.
 
-- **MyCompany/lsFusion 6.2:** aplicación ERP/POS modular con CRM, ventas, compras, inventario multi-depósito, producción, facturación, proyectos y RR. HH. La aplicación MyCompany declara Apache-2.0; la plataforma lsFusion tiene licencia LGPL-3.0 independiente. Su cliente web permite evaluar desde navegador en los tres sistemas de escritorio, aunque la release no ofrece cliente macOS nativo. La localización argentina, los adquirentes, ARCA y el offline aún no están demostrados.
-- **Posnic 1.9.2:** POS de escritorio Electron/Node con API local y MongoDB/Mongoose. Es el candidato más directo para validar caja, ventas, inventario y operación local. Su código es AGPL-3.0-only; el paquete revisado incorpora MongoDB SSPL-1.0 y amCharts 4 comercial. La edición self-hosted permite varios clientes sobre una base común, pero no sincroniza varias bases independientes entre cajas o sucursales. La evidencia offline publicada es limitada y no demuestra recuperación ante pérdida de energía o cierre forzado. La release 1.9.2 no incluye instalador macOS; para evaluar desde Mac se utilizará una VM Ubuntu Desktop con el AppImage Linux verificado.
-- **ERPNext 16.60.0 + Frappe Framework 16:** candidato de mayor cobertura administrativa: inventario, compras, producción, costos y contabilidad. ERPNext es GPL-3.0 y Frappe Framework es MIT. El POS y el modo offline de esta versión deben comprobarse en la instalación concreta; no se presume recuperación duradera por documentación de versiones anteriores.
+**Una API no convierte por sí sola un ERP integrado en microservicios.** Si ventas, inventario, pagos y contabilidad comparten base y ciclo de despliegue, son módulos de una aplicación integrada. Puede servir como referencia funcional o fuente de componentes, pero no se aprobará como composición de servicios independientes por tener módulos o endpoints.
 
-Las referencias exactas y el protocolo común están en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Los pasos de instalación y las restricciones de sistema operativo están en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md). MyCompany se fija al tag 6.2 y a los hashes de su instalador/JAR; no mezclarlo con la documentación online 7.0. Posnic se prueba desde el tag `v1.9.2`; la rama `main` se revisa aparte porque contiene commits posteriores y `develop` estaba divergida. ERPNext se prueba mediante la imagen `frappe/erpnext:v16.60.0` desde `frappe_docker/pwd.yml` fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce`; registrar la versión efectiva de Frappe con `bench version`.
+Un producto integrado sólo podrá adoptarse completo mediante una excepción arquitectónica explícita si representa un único límite de dominio aceptable. Esa excepción documentará qué responsabilidades quedan juntas, qué independencia se sacrifica y cómo se evita el acoplamiento con el resto de Rubrova. No es la opción predeterminada ni se presentará como microservicios.
 
-**Alternativa de salida:** si ninguna plataforma supera los controles, construir los servicios propios por dominio y reutilizar únicamente componentes que encajen detrás de contratos. TypeScript y PostgreSQL son candidatos, no decisiones irrevocables; la base de datos se elige y administra por servicio, no como una base compartida por toda la plataforma. Ninguna plataforma integral puede obligar a fusionar todos los dominios en un único despliegue o una única autoridad de datos.
-La dirección de servicios independientes tiene precedencia sobre cualquier candidato integral de la evaluación. Las plataformas ERP/POS se consideran candidatas para cubrir uno o varios dominios si respetan los límites, APIs, aislamiento de datos y despliegue/rollback definidos; no se adoptarán como núcleo único por mera amplitud funcional.
+### Candidatos actuales: oportunidades, no decisiones
 
-La comparación de plataformas debe evaluar también si cada candidata puede encapsularse como servicio independiente. La amplitud funcional no compensa una arquitectura inseparable o una base de datos compartida entre dominios.
+- **MyCompany/lsFusion 6.2:** módulos ERP/POS y extensiones propias; los módulos de una instalación comparten base de datos. Debe probarse si una capacidad acotada puede operar detrás de un contrato sin mezclar autoridades de ventas, stock y compras.
+- **Tryton, serie 7.8:** módulos de negocio, PostgreSQL y POS oficial `sale_point`. Éste registra ventas/devoluciones y pagos; al contabilizar genera movimientos de stock y asientos contables. Sus módulos viven en el mismo servidor/base; hay que demostrar la separación antes de adoptarlo.
+- **Dolibarr 24.0.3:** módulos, REST API, hooks y triggers. Aplicación integrada; evaluar si las partes requeridas pueden extraerse o encapsularse como servicio de dominio aislado.
+- **ERPNext 16.60.0/Frappe 16:** cobertura ERP y apps extensibles. Un site/bench integra runtime y persistencia; no llamar microservicios a sus apps.
+- **Posnic 1.9.2:** candidato POS especializado; comprobar si POS, stock y compras pueden delimitarse y revisar componentes del instalador.
+- **uniCenta 5.5.2:** pendiente de acceso verificable al código y revisión de licencia/terceros.
+
+Ninguno está aprobado. Una prueba funcional exitosa no basta: deben superarse propiedad del dato, aislamiento, actualización, exportación, recuperación y compatibilidad. Ver [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md), [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) y [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+
+### Orden de implementación
+
+1. Filtrar aplicaciones y módulos existentes por función, licencia, madurez, API y aislamiento real.
+2. Probar instalaciones acotadas con los mismos escenarios.
+3. Comprobar que el módulo candidato se opera, actualiza y restaura como unidad independiente.
+4. Reutilizarlo y crear adaptadores cuando supere las puertas.
+5. Construir como servicio propio sólo la brecha que no cubra una pieza existente.
+
+No se empieza automáticamente por un Gateway, Ventas e Inventario propios. Tampoco se cambia a un monolito propio si falla una suite integrada. Se mantiene el diseño distribuido y se reutiliza todo componente compatible que sostenga esos límites.
 
 ## Principios
 
@@ -77,8 +91,10 @@ La estructura debe permitir encontrar responsabilidades sin imponer carpetas inn
 
 La tecnología de persistencia depende de la plataforma que supere la prueba:
 
-- Si se adopta Posnic, evaluar su MongoDB/Mongoose únicamente dentro del servicio POS/operación que se demuestre aislable. No puede convertirse en una base compartida por toda Rubrova; si no se puede delimitar y desplegar como servicio, no cumple la arquitectura objetivo.
-- Si se adopta ERPNext, aceptar y probar su persistencia MariaDB como parte del framework; PostgreSQL no se considera equivalente ni se fuerza durante esta ronda.
+- Si se reutiliza Posnic, su MongoDB/Mongoose debe permanecer dentro del único servicio que se le asigne; si sus modelos mezclan ventas, compras y stock de manera inseparable, no cumple la puerta de adopción como servicio independiente.
+- Si se reutiliza Tryton, su PostgreSQL y los módulos oficiales deben quedar dentro del límite de servicio que se demuestre aislable. `sale_point` genera movimientos de stock y asientos contables, por lo que la prueba debe resolver quién posee inventario y contabilidad.
+- Si se reutiliza Dolibarr, su base y migraciones no pueden compartirse con otros servicios Rubrova; la REST API no sustituye la prueba de aislamiento de datos.
+- Si se reutiliza ERPNext, su persistencia MariaDB se acepta sólo dentro del límite de aplicación/servicio demostrado; PostgreSQL no se considera equivalente ni se fuerza durante esta ronda.
 - Cada servicio mantiene su almacenamiento privado, migraciones y credenciales. PostgreSQL es candidato para servicios transaccionales; SQLite puede ser útil para persistencia local de puestos/edge, según las pruebas. La decisión concreta se toma por servicio y no habilita consultas SQL cruzadas.
 - Historial de movimientos para caja, pagos, inventario y cuentas corrientes.
 - Fotografía de valores relevantes al momento de la venta.
