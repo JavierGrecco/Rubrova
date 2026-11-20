@@ -39,17 +39,17 @@ Las dimensiones que afectan costos y reportes (unidad de negocio, canal, sucursa
 4. **Dolibarr 24.0.3:** filtro corto si las opciones principales no superan las puertas.
 5. **Posnic 1.9.2:** referencia POS secundaria, nunca dueño paralelo de ventas o inventario.
 
-El lock de versión, la extensión inicial, los scripts de preparación y el detalle de módulos están en [Inicio de implementación](IMPLEMENTATION_START.md).
+El lock de versión, la extensión modular, los scripts de preparación y el detalle de módulos están en [Inicio de implementación](IMPLEMENTATION_START.md).
 
 ### Tareas de esta fase
 
 - [x] Fijar MyCompany 6.2 por tag y commit; registrar los hashes oficiales del instalador Windows y del JAR.
 - [x] Inspeccionar el código fuente de POS, sesiones, pagos mixtos, efectivo, devoluciones, inventario, costos y compras.
-- [x] Crear el módulo superior Rubrova separado del núcleo y el glosario es_AR.
+- [x] Crear el punto de entrada RubrovaCustom y el módulo separado RubrovaPOSLocalization, con el glosario es_AR.
 - [x] Agregar captions localizados para el primer flujo POS en RubrovaCustom; validar que los 36 identificadores propios tienen traducción.
-- [ ] Cargar el módulo en MyCompany 6.2 real, confirmar los captions y traducir filtros/mensajes de error heredados.
+- [ ] Cargar los dos módulos Rubrova en MyCompany 6.2 real, confirmar los captions y traducir filtros/mensajes de error heredados.
 - [x] Incorporar validación automática del lock, módulo y traducciones; workflow correcto en CI.
-- [x] Preparar scripts de despliegue de RubrovaCustom para Docker, Linux nativo y Windows nativo, con copia previa de settings.
+- [x] Preparar scripts de despliegue de RubrovaCustom + RubrovaPOSLocalization para Docker, Linux nativo y Windows nativo, con copia previa de settings y módulos existentes.
 - [x] Registrar limitación de arquitectura de imagen Docker MyCompany 6.2 en ARM64.
 - [ ] Ejecutar la instalación y carga en el equipo anfitrión; la CI no puede sustituir esta prueba.
 - [ ] Descargar los artefactos, verificar hashes en la máquina de ejecución e instalar en entorno local aislado.

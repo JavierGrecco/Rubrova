@@ -60,7 +60,7 @@ Una plataforma que reúne en un solo lugar:
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
 | [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md) | MyCompany 6.2 como primer piloto, módulos reutilizados, extensión propia y etapas POS + ERP |
-| [Instalación del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md) | Preparación de artefactos, instalación aislada, despliegue de RubrovaCustom y criterios de aceptación del Bloque 0 |
+| [Instalación del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md) | Preparación de artefactos, instalación aislada y despliegue de la extensión modular Rubrova |
 | [Conjunto Tryton 8.0 Argentina](docs/TRYTON_ARGENTINA_8_0_LOCK.md) | Ocho módulos locales fijados por commit, dependencias, licencias y plan de prueba |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
@@ -127,4 +127,4 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 ---
 
 **Estado del producto:** arranque del piloto de integración POS + ERP.  
-**Estado del software:** módulo RubrovaCustom con primera capa de captions es_AR y scripts de despliegue; instalación y aceptación funcional pendientes.
+**Estado del software:** punto de entrada RubrovaCustom + módulo RubrovaPOSLocalization, con captions es_AR iniciales y scripts de despliegue; instalación y aceptación funcional pendientes.

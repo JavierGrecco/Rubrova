@@ -16,14 +16,18 @@ fi
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
-MODULE_SOURCE="$REPO_ROOT/extensions/lsfusion/RubrovaCustom.lsf"
-BUNDLE_SOURCE="$REPO_ROOT/extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties"
-
-for file in "$MODULE_SOURCE" "$BUNDLE_SOURCE"; do
-  [[ -s "$file" ]] || { echo "Falta el archivo requerido: $file" >&2; exit 1; }
+MODULE_FILES=(
+  "RubrovaCustom.lsf"
+  "RubrovaPOSLocalization.lsf"
+  "MyCompanyResourceBundle_es_AR.properties"
+)
+for file in "${MODULE_FILES[@]}"; do
+  [[ -s "$REPO_ROOT/extensions/lsfusion/$file" ]] || {
+    echo "Falta el archivo requerido: $REPO_ROOT/extensions/lsfusion/$file" >&2
+    exit 1
+  }
 done
 
-BACKUP=""
 if [[ "$MODE" == "docker" ]]; then
   INSTALL_DIR="$(cd -- "$TARGET" && pwd)"
   [[ -s "$INSTALL_DIR/compose.yaml" ]] || {
@@ -48,10 +52,12 @@ else
   RESTART_NATIVE=1
 fi
 
+STAMP="$(date +%Y%m%d-%H%M%S)"
+BACKUP_SETTINGS=""
 if [[ -e "$SETTINGS_FILE" ]]; then
-  BACKUP="$SETTINGS_FILE.rubrova-backup.$(date +%Y%m%d-%H%M%S)"
-  cp -p -- "$SETTINGS_FILE" "$BACKUP"
-  chmod 600 "$BACKUP" 2>/dev/null || true
+  BACKUP_SETTINGS="$SETTINGS_FILE.rubrova-backup.$STAMP"
+  cp -p -- "$SETTINGS_FILE" "$BACKUP_SETTINGS"
+  chmod 600 "$BACKUP_SETTINGS" 2>/dev/null || true
 fi
 
 TMP_SETTINGS="$(mktemp)"
@@ -86,24 +92,29 @@ if [[ "$RESTART_NATIVE" -eq 1 ]]; then
   systemctl stop lsfusion6-server
 fi
 
-install -m 0644 "$MODULE_SOURCE" "$MODULE_DIR/RubrovaCustom.lsf"
-install -m 0644 "$BUNDLE_SOURCE" "$MODULE_DIR/MyCompanyResourceBundle_es_AR.properties"
+for file in "${MODULE_FILES[@]}"; do
+  destination="$MODULE_DIR/$file"
+  if [[ -e "$destination" ]]; then
+    cp -p -- "$destination" "$destination.rubrova-backup.$STAMP"
+  fi
+  install -m 0644 "$REPO_ROOT/extensions/lsfusion/$file" "$destination"
+done
 install -m 0640 "$TMP_SETTINGS" "$SETTINGS_FILE"
 
 if [[ "$RESTART_NATIVE" -eq 1 ]]; then
   systemctl start lsfusion6-server
   systemctl is-active --quiet lsfusion6-server || {
-    echo "El servicio no quedó activo. Revisá el log de inicio y restaurá el backup de settings si hace falta." >&2
+    echo "El servicio no quedó activo. Restaurá settings y los archivos .rubrova-backup.$STAMP antes de reintentar." >&2
     exit 1
   }
-  echo "Extensión copiada y servicio lsfusion6-server activo."
+  echo "Extensión Rubrova instalada y servicio lsfusion6-server activo."
 else
-  echo "Extensión y ResourceBundle preparados en $MODULE_DIR."
+  echo "Módulos y ResourceBundle preparados en $MODULE_DIR."
   echo "Se configuró logics.topModule=RubrovaCustom."
   echo "No se inició ni modificó ningún contenedor. Revisá el Compose y reiniciá el stack manualmente."
 fi
 
-echo "Módulo: $MODULE_DIR/RubrovaCustom.lsf"
-echo "Traducción: $MODULE_DIR/MyCompanyResourceBundle_es_AR.properties"
-if [[ -n "$BACKUP" ]]; then echo "Backup local de settings: $BACKUP"; fi
+echo "Módulos instalados:"
+for file in "${MODULE_FILES[@]}"; do echo "  $MODULE_DIR/$file"; done
+[[ -n "$BACKUP_SETTINGS" ]] && echo "Backup de settings: $BACKUP_SETTINGS"
 echo "La carga efectiva debe confirmarse en el log del servidor y en la interfaz."

@@ -37,7 +37,26 @@
     "entrypoint": "extensions/lsfusion/RubrovaCustom.lsf",
     "locale": "es_AR",
     "resourceBundle": "extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties",
-    "translationStatus": "partial-bootstrap-glossary-not-approved-for-daily-use"
+    "translationStatus": "partial-pos-captions-and-basic-erp-glossary-not-runtime-validated",
+    "modules": [
+      {
+        "name": "RubrovaCustom",
+        "path": "extensions/lsfusion/RubrovaCustom.lsf",
+        "role": "top-level entry point",
+        "requires": [
+          "MyCompany",
+          "RubrovaPOSLocalization"
+        ]
+      },
+      {
+        "name": "RubrovaPOSLocalization",
+        "path": "extensions/lsfusion/RubrovaPOSLocalization.lsf",
+        "role": "localized captions for POS flows",
+        "requires": [
+          "MyCompany"
+        ]
+      }
+    ]
   },
   "acceptance": [
     "Clean isolated installation",

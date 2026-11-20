@@ -26,26 +26,31 @@ if (-not (Test-Path -LiteralPath $ModuleDirectory -PathType Container)) {
 $service = Get-Service -Name $ServiceName -ErrorAction Stop
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $scriptDirectory "..\.."))
-$moduleSource = Join-Path $repositoryRoot "extensions\lsfusion\RubrovaCustom.lsf"
-$bundleSource = Join-Path $repositoryRoot "extensions\lsfusion\MyCompanyResourceBundle_es_AR.properties"
-
-foreach ($file in @($moduleSource, $bundleSource)) {
-    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
-        throw "Falta el archivo requerido: $file"
+$moduleNames = @(
+    "RubrovaCustom.lsf",
+    "RubrovaPOSLocalization.lsf",
+    "MyCompanyResourceBundle_es_AR.properties"
+)
+$sourceDirectory = Join-Path $repositoryRoot "extensions\lsfusion"
+foreach ($name in $moduleNames) {
+    $source = Join-Path $sourceDirectory $name
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "Falta el archivo requerido: $source"
     }
 }
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $settingsBackup = "$SettingsPath.rubrova-backup.$stamp"
 Copy-Item -LiteralPath $SettingsPath -Destination $settingsBackup
-$moduleBackup = Join-Path $ModuleDirectory "RubrovaCustom.lsf.rubrova-backup.$stamp"
-$bundleBackup = Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties.rubrova-backup.$stamp"
 
-if (Test-Path -LiteralPath (Join-Path $ModuleDirectory "RubrovaCustom.lsf")) {
-    Copy-Item -LiteralPath (Join-Path $ModuleDirectory "RubrovaCustom.lsf") -Destination $moduleBackup
-}
-if (Test-Path -LiteralPath (Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties")) {
-    Copy-Item -LiteralPath (Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties") -Destination $bundleBackup
+$backups = @{}
+foreach ($name in $moduleNames) {
+    $destination = Join-Path $ModuleDirectory $name
+    if (Test-Path -LiteralPath $destination) {
+        $backup = "$destination.rubrova-backup.$stamp"
+        Copy-Item -LiteralPath $destination -Destination $backup
+        $backups[$name] = $backup
+    }
 }
 
 $wasRunning = $service.Status -eq "Running"
@@ -68,8 +73,9 @@ try {
     }
 
     [IO.File]::WriteAllText($SettingsPath, $settings, $utf8NoBom)
-    Copy-Item -LiteralPath $moduleSource -Destination (Join-Path $ModuleDirectory "RubrovaCustom.lsf") -Force
-    Copy-Item -LiteralPath $bundleSource -Destination (Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties") -Force
+    foreach ($name in $moduleNames) {
+        Copy-Item -LiteralPath (Join-Path $sourceDirectory $name) -Destination (Join-Path $ModuleDirectory $name) -Force
+    }
 
     if ($wasRunning) {
         Start-Service -Name $ServiceName
@@ -81,15 +87,13 @@ try {
 }
 catch {
     Copy-Item -LiteralPath $settingsBackup -Destination $SettingsPath -Force
-    if (Test-Path -LiteralPath $moduleBackup) {
-        Copy-Item -LiteralPath $moduleBackup -Destination (Join-Path $ModuleDirectory "RubrovaCustom.lsf") -Force
-    } elseif (Test-Path -LiteralPath (Join-Path $ModuleDirectory "RubrovaCustom.lsf")) {
-        Remove-Item -LiteralPath (Join-Path $ModuleDirectory "RubrovaCustom.lsf") -Force
-    }
-    if (Test-Path -LiteralPath $bundleBackup) {
-        Copy-Item -LiteralPath $bundleBackup -Destination (Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties") -Force
-    } elseif (Test-Path -LiteralPath (Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties")) {
-        Remove-Item -LiteralPath (Join-Path $ModuleDirectory "MyCompanyResourceBundle_es_AR.properties") -Force
+    foreach ($name in $moduleNames) {
+        $destination = Join-Path $ModuleDirectory $name
+        if ($backups.ContainsKey($name)) {
+            Copy-Item -LiteralPath $backups[$name] -Destination $destination -Force
+        } elseif (Test-Path -LiteralPath $destination) {
+            Remove-Item -LiteralPath $destination -Force
+        }
     }
     if ($wasRunning -and (Get-Service -Name $ServiceName).Status -ne "Running") {
         Start-Service -Name $ServiceName
@@ -97,7 +101,7 @@ catch {
     throw
 }
 
-Write-Host "Extensión Rubrova instalada en: $ModuleDirectory"
-Write-Host "Configuración: logics.topModule = RubrovaCustom"
+Write-Host "Extensión modular de Rubrova instalada en: $ModuleDirectory"
+Write-Host "Punto de entrada: RubrovaCustom"
 Write-Host "Backup de settings: $settingsBackup"
 Write-Host "La confirmación final requiere revisar el log del servidor e ingresar en el navegador."

@@ -8,7 +8,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const read = (relative) => readFileSync(path.join(root, relative), "utf8");
 
 const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
-const moduleSource = read("extensions/lsfusion/RubrovaCustom.lsf");
+const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
+const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 
 function parseProperties(source) {
@@ -40,7 +41,9 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
 });
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
-  assert.match(moduleSource, /^MODULE RubrovaCustom;/m);
+  assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization;/m);
+  assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.equal(lock.extension.topModule, "RubrovaCustom");
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
@@ -74,8 +77,10 @@ test("los scripts de despliegue configuran el módulo y conservan backups", () =
   const powershell = read("scripts/platform/deploy-mycompany-6.2.ps1");
   assert.match(shell, /logics\.topModule = RubrovaCustom/);
   assert.match(shell, /docker-server/);
+  assert.match(shell, /RubrovaPOSLocalization\.lsf/);
   assert.match(shell, /systemctl restart lsfusion6-server|systemctl start lsfusion6-server/);
   assert.match(powershell, /logics\.topModule = RubrovaCustom/);
+  assert.match(powershell, /RubrovaPOSLocalization\.lsf/);
   assert.match(powershell, /rubrova-backup/);
   assert.match(powershell, /lsFusion 6 Server/);
 });

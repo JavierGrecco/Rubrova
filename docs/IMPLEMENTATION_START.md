@@ -35,8 +35,11 @@ La lectura del código del POS muestra que se pueden configurar varios medios de
 Durante el piloto MyCompany será una sola suite operativa y, si resulta aprobada, la autoridad única de ventas, pagos, caja, stock, compras y costos que habilitemos. No se instalará otro POS o WMS que mantenga saldos paralelos.
 
 Las personalizaciones de Rubrova quedarán fuera del código upstream:
-- Módulo superior propio RubrovaCustom, que requiere MyCompany.
-- Traducciones propias es_AR, inicialmente parciales.
+- Punto de entrada propio `RubrovaCustom`, que requiere MyCompany y módulos de personalización Rubrova.
+- Módulo `RubrovaPOSLocalization`, separado, que aplica captions es_AR al primer flujo POS sin editar el código upstream.
+- ResourceBundle propio `es_AR`, inicialmente parcial.
+
+Este será el patrón de composición de los próximos bloques: un punto de entrada pequeño y módulos Rubrova separados por responsabilidad. Si una brecha se demuestra, podrán sumarse `RubrovaArgentina`, `RubrovaReporting` o conectores especializados, cada uno con sus dependencias, pruebas y límites. No agregaremos módulos por anticipado.
 - Adaptadores e integraciones futuras mediante las APIs, mecanismos de extensión o exportaciones soportadas.
 - Sin acceso SQL externo a tablas privadas, sin parches manuales al núcleo y sin duplicación del ledger.
 
@@ -48,7 +51,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Confirmar hashes SHA-256 oficiales del instalador y JAR contra la release 6.2.
 - [x] Registrar las arquitecturas Docker: MyCompany 6.2 publica `linux/amd64`; las imágenes de servidor y cliente 6.2 publican `amd64` y `arm64`.
 - [x] Preparar scripts de descarga y verificación para Windows y macOS/Linux.
-- [x] Preparar scripts de despliegue de la extensión para Windows nativo, Linux nativo y Docker, con backup de settings antes de modificar `logics.topModule`.
+- [x] Preparar scripts de despliegue modular de RubrovaCustom + RubrovaPOSLocalization para Windows nativo, Linux nativo y Docker, con backup de settings y de los archivos existentes.
 - [x] Incorporar la primera capa de captions `es_AR` en RubrovaCustom para caja, cliente, carrito, turno, búsqueda, cobro, movimientos de efectivo y devoluciones.
 - [x] Validar por CI que cada identificador `rubrova.*` utilizado en el módulo tiene traducción.
 - [x] Definir comprobaciones de CI para lock, glosario, extensión y scripts.
@@ -138,7 +141,7 @@ Ecommerce, marketplaces, WhatsApp, delivery y, al final, integraciones de transp
 
 ## Estado honesto al iniciar
 
-La lectura de código, la selección de candidato y el diseño de bloques están realizados. El repositorio contiene el lock de versión, la extensión inicial y el glosario español de arranque. **Todavía no instalamos MyCompany, no compilamos/cargamos el módulo en un servidor, no tenemos un POS ejecutable de Rubrova y no probamos ARCA, hardware, modo offline ni restauración real.** Los tests de CI de este primer bloque sólo validan los archivos de integración, hashes declarados y glosario; no prueban la plataforma upstream.
+La lectura de código, la selección de candidato y el diseño de bloques están realizados. El repositorio contiene el lock de versión, el punto de entrada RubrovaCustom, el módulo RubrovaPOSLocalization y el ResourceBundle es_AR. **Todavía no instalamos MyCompany, no compilamos/cargamos el módulo en un servidor, no tenemos un POS ejecutable de Rubrova y no probamos ARCA, hardware, modo offline ni restauración real.** Los tests de CI de este primer bloque sólo validan los archivos de integración, hashes declarados y glosario; no prueban la plataforma upstream.
 
 ## Fuentes técnicas
 

@@ -64,7 +64,7 @@ Con el Compose oficial descargado en un directorio, ejecutar:
 
     bash scripts/platform/deploy-mycompany-6.2.sh docker /ruta/al/directorio
 
-El script crea o utiliza docker-server, copia ambos archivos y escribe logics.topModule = RubrovaCustom en docker-server/settings.properties. Hace una copia local del archivo de configuración anterior si existía. **No inicia ni reinicia contenedores.** Después revisar el cambio y reiniciar manualmente el stack con Docker Compose.
+El script crea o utiliza docker-server, copia los dos módulos y el ResourceBundle y escribe logics.topModule = RubrovaCustom en docker-server/settings.properties. Hace una copia local del archivo de configuración anterior si existía. **No inicia ni reinicia contenedores.** Después revisar el cambio y reiniciar manualmente el stack con Docker Compose.
 
 ### Linux nativo
 
@@ -72,7 +72,7 @@ Ejecutar desde el clon de Rubrova con permisos administrativos:
 
     sudo bash scripts/platform/deploy-mycompany-6.2.sh native
 
-El script utiliza el classpath /var/lib/lsfusion y la configuración /etc/lsfusion6-server/settings.properties, rutas documentadas para lsFusion 6. Hace una copia de seguridad de settings, instala los dos recursos y reinicia el servicio lsfusion6-server.
+El script utiliza el classpath /var/lib/lsfusion y la configuración /etc/lsfusion6-server/settings.properties, rutas documentadas para lsFusion 6. Hace una copia de seguridad de settings, instala los dos módulos y el ResourceBundle y reinicia el servicio lsfusion6-server.
 
 ### Windows nativo
 
@@ -84,7 +84,7 @@ Si aparece más de un archivo, elegir el que utiliza el servicio lsFusion 6 Serv
 
     powershell -ExecutionPolicy Bypass -File .\scripts\platform\deploy-mycompany-6.2.ps1 -SettingsPath "RUTA_COMPLETA\settings.properties"
 
-El script copia los dos recursos a C:\Program Files\lsFusion 6\Server\lib, respalda los archivos que pudiera reemplazar, configura logics.topModule y reinicia el servicio si estaba activo. Si la instalación utiliza otra carpeta de classpath, pasarla mediante -ModuleDirectory.
+El script copia los dos módulos y el ResourceBundle a C:\Program Files\lsFusion 6\Server\lib, respalda los archivos que pudiera reemplazar, configura logics.topModule y reinicia el servicio si estaba activo. Si la instalación utiliza otra carpeta de classpath, pasarla mediante -ModuleDirectory.
 
 ## 4. Qué comprobar después del reinicio
 
