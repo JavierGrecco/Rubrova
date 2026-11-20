@@ -301,3 +301,17 @@ test("el lock distingue la imagen MyCompany AMD64 de server/client multi-arquite
   assert.ok(lock.dockerImages.client.platforms.includes("linux/arm64"));
   assert.match(lock.artifacts.dockerCompose.url, /solutions\/mycompany-docker\/6\.2\/compose\.yaml$/);
 });
+
+test("la prueba de resiliencia inyecta timeout, verifica recuperación y persiste la incidencia", () => {
+  assert.match(runtimeSmokeSource, /mock-integration-provider[.]py/);
+  assert.match(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
+  assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_RECOVERY_SUCCEEDED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_INCIDENT_PERSISTED=true/);
+  assert.match(mockProviderSource, /ThreadingHTTPServer/);
+  assert.match(mockProviderSource, /request[.]path == ["']\\/slow["']/);
+  assert.match(mockProviderSource, /request[.]path == ["']\\/ok["']/);
+});

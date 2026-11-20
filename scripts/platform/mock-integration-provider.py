@@ -17,7 +17,8 @@ class MockProviderHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(payload)))
-        self.send_connection_close()
+        self.send_header("Connection", "close")
+        self.close_connection = True
         self.end_headers()
         try:
             self.wfile.write(payload)
