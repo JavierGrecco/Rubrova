@@ -72,7 +72,11 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
   assert.match(uiSmokeSource, /AppServerNotAvailableDispatchException/);
   assert.match(uiSmokeSource, /page[.]screenshot/);
-  assert.match(uiSmokeSource, /UI_INPUTS=/);
+  assert.match(uiSmokeSource, /_INPUTS=/);
+  assert.match(uiSmokeSource, /_BUTTONS=/);
+  assert.match(uiSmokeSource, /_LINKS=/);
+  assert.match(uiSmokeSource, /UI_INITIAL/);
+  assert.match(uiSmokeSource, /UI_AFTER_LOGIN/);
   assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);
   assert.match(runtimeWorkflowSource, /playwright install --with-deps chromium/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
