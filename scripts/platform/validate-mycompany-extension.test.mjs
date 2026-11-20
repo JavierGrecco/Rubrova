@@ -60,6 +60,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /compose up -d/);
   assert.match(runtimeSmokeSource, /RUBROVA_PLAYWRIGHT_PYTHON/);
   assert.match(runtimeSmokeSource, /rubrova-ci/);
+  assert.match(runtimeSmokeSource, /rubrova-ci-product/);
+  assert.match(runtimeSmokeSource, /Producto de prueba Rubrova/);
+  assert.match(runtimeSmokeSource, /7790000000013/);
+  assert.match(runtimeSmokeSource, /salesPrice\(productCI\) <- 1250/);
   assert.match(runtimeSmokeSource, /Cuenta central CI/);
   assert.match(runtimeSmokeSource, /Efectivo CI/);
   assert.match(runtimeSmokeSource, /Tarjeta CI/);
@@ -98,6 +102,13 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /wait_until_form_loaded\(page, "UI_POS_SCREEN", timeout_seconds=45\)/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=true/);
   assert.doesNotMatch(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=false/);
+  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str\)/);
+  assert.match(uiSmokeSource, /UI_ACTION_.*_CLICKED=true/);
+  assert.match(uiSmokeSource, /wait_for_session_open\(page, timeout_seconds=45\)/);
+  assert.match(uiSmokeSource, /UI_SESSION_OPEN=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_CLOSE_ACTION_FOUND=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_SCREENSHOT/);
+  assert.match(uiSmokeSource, /no se registra ninguna venta/);
   assert.match(uiSmokeSource, /\{label\}_RENDER_STATUS=ready/);
   assert.match(uiSmokeSource, /stable_reads >= 2/);
   assert.match(uiSmokeSource, /timeout_seconds: int = 45/);

@@ -147,6 +147,34 @@ loadDefaultData () + {
             }
         }
     }
+
+    // Producto unitario y código de barras sintéticos para la siguiente prueba del circuito de venta.
+    IF NOT uom('1') THEN
+        NEW unitCI = Uom {
+            id(unitCI) <- '1';
+            name(unitCI) <- 'Unidad';
+        }
+
+    IF NOT rootCategory() THEN
+        NEW rootCategoryCI = Category {
+            id(rootCategoryCI) <- 'rubrova-ci-root';
+            name(rootCategoryCI) <- 'Productos de prueba Rubrova';
+        }
+
+    IF NOT item('rubrova-ci-product') THEN
+        NEW productCI = Product {
+            id(productCI) <- 'rubrova-ci-product';
+            dataName(productCI) <- 'Producto de prueba Rubrova';
+            category(productCI) <- rootCategory();
+            uom(productCI) <- uom('1');
+            salesPrice(productCI) <- 1250;
+        }
+
+    IF NOT itemBarCode('7790000000013') THEN
+        NEW barcodeCI = BarCode {
+            id(barcodeCI) <- '7790000000013';
+            item(barcodeCI) <- item('rubrova-ci-product');
+        }
 }
 LSF
 grep -q "rubrova-ci" "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" || {

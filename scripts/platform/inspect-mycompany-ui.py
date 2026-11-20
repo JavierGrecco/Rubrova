@@ -273,6 +273,85 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
     )
 
 
+def click_exact_action(page: Any, label: str) -> bool:
+    selector = 'button, input[type="submit"], [role="button"]'
+    controls = page.locator(selector).evaluate_all(
+        """elements => elements.map((element, index) => {
+            const style = getComputedStyle(element);
+            return {
+                index,
+                tag: element.tagName.toLowerCase(),
+                text: (element.innerText || element.value || element.textContent || "").trim(),
+                visible: style.display !== "none" && style.visibility !== "hidden" &&
+                    !!(element.offsetWidth || element.offsetHeight),
+                outerHTML: element.outerHTML.slice(0, 700)
+            };
+        })"""
+    )
+    matches = [control for control in controls if control["visible"] and control["text"] == label]
+    if not matches:
+        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
+        print(
+            f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
+            + json.dumps(controls, ensure_ascii=False)
+        )
+        return False
+    index = int(matches[0]["index"])
+    print(
+        f"UI_ACTION_{label.upper().replace(' ', '_')}_TARGET="
+        + json.dumps(matches[0], ensure_ascii=False)
+    )
+    page.locator(selector).nth(index).click(no_wait_after=True)
+    print(f"UI_ACTION_{label.upper().replace(' ', '_')}_CLICKED=true")
+    return True
+
+
+def wait_for_session_open(page: Any, timeout_seconds: int = 45) -> str:
+    deadline = time.monotonic() + timeout_seconds
+    stable_reads = 0
+    last_state: dict[str, Any] = {"text": "", "actions": []}
+
+    while time.monotonic() < deadline:
+        last_state = page.evaluate(
+            """() => {
+                const visible = element => {
+                    const style = getComputedStyle(element);
+                    return style.display !== "none" && style.visibility !== "hidden" &&
+                        !!(element.offsetWidth || element.offsetHeight);
+                };
+                const actions = [...document.querySelectorAll(
+                    'button, input[type="submit"], [role="button"]'
+                )].filter(visible).map(element => ({
+                    text: (element.innerText || element.value || element.textContent || "").trim(),
+                    title: element.getAttribute("title") || "",
+                    ariaLabel: element.getAttribute("aria-label") || ""
+                }));
+                return { text: (document.body && document.body.innerText) || "", actions };
+            }"""
+        )
+        actions = last_state.get("actions", [])
+        has_close_action = any(action.get("text") == "Cerrar turno" for action in actions)
+        has_open_action = any(action.get("text") == "Abrir turno" for action in actions)
+
+        if has_close_action and not has_open_action:
+            stable_reads += 1
+            if stable_reads >= 2:
+                print("UI_SESSION_OPEN=true")
+                print("UI_SESSION_CLOSE_ACTION_FOUND=true")
+                return str(last_state.get("text", ""))
+        else:
+            stable_reads = 0
+        page.wait_for_timeout(1_000)
+
+    print("UI_SESSION_OPEN=false")
+    print("UI_SESSION_CLOSE_ACTION_FOUND=false")
+    print("UI_SESSION_LAST_ACTIONS=" + json.dumps(last_state.get("actions", []), ensure_ascii=False))
+    raise RuntimeError(
+        f"El turno no quedó abierto en {timeout_seconds}s; no apareció 'Cerrar turno'. "
+        f"Texto visible: {str(last_state.get('text', '')).strip()[:1600]}"
+    )
+
+
 def wait_for_exact_link(page: Any, label: str, timeout_seconds: int = 12) -> int | None:
     deadline = time.monotonic() + timeout_seconds
     last_links: list[dict[str, Any]] = []
@@ -385,7 +464,7 @@ def inspect_page(url: str) -> int:
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
-                # Explore navigation only. Do not open a cash session or create business data.
+                # El servidor corre sobre PostgreSQL descartable de CI; el turno y sus datos se destruyen al finalizar.
                 if not click_exact_link(page, "Comercio"):
                     raise RuntimeError("No se pudo seleccionar el módulo Comercio.")
 
@@ -411,6 +490,17 @@ def inspect_page(url: str) -> int:
                 print("UI_POS_SCREEN_AVAILABLE=true")
                 if not pos_text.strip():
                     raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
+
+                # Crear un turno únicamente en la base efímera de CI; no se registra ninguna venta.
+                if not click_exact_action(page, "Abrir turno"):
+                    raise RuntimeError("El botón 'Abrir turno' no estaba disponible para la prueba aislada.")
+                wait_for_session_open(page, timeout_seconds=45)
+                session_screenshot = screenshot_path.with_name(
+                    screenshot_path.stem + "-session" + screenshot_path.suffix
+                )
+                visible_snapshot(page, "UI_SESSION_OPEN")
+                page.screenshot(path=str(session_screenshot), full_page=True)
+                print(f"UI_SESSION_SCREENSHOT={session_screenshot}")
 
             elif not initial_text.strip():
                 raise RuntimeError(
