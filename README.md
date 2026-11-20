@@ -54,7 +54,9 @@ Una plataforma que reúne en un solo lugar:
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P44 |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
-| [Estrategia reuse-first](docs/REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) | Decisión vigente: reutilizar primero, selección de plataformas, puertas y plan de evaluación |\n| [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
+| [Estrategia reuse-first](docs/REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) | Decisión vigente: reutilizar primero, selección de plataformas, puertas y plan de evaluación |
+| [Shortlist de componentes reutilizables](docs/REUSE_COMPONENTS_SHORTLIST.md) | Bibliotecas, SDK y aplicaciones para datos, ARCA, hardware, documentos, logística y automatización |
+| [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
 | [Catálogo de código reutilizable](docs/CODE_REUSE_CATALOG.md) | Inventario de proyectos, módulos y componentes candidatos |
 | [Logística argentina](docs/ARGENTINA_LOGISTICS_INTEGRATION.md) | Andreani, PAQ.AR, OCA, Vía Cargo, agregadores y tracking unificado |
 | [Interoperabilidad contable](docs/ACCOUNTING_INTEROPERABILITY.md) | Tango, Catedral, Bejerman, Xubio, Colppy y reportes de gestión |
@@ -77,8 +79,8 @@ Una plataforma que reúne en un solo lugar:
 **Ahora — Fase 0: selección basada primero en reutilización**
 
 - Evaluar primero aplicaciones completas y módulos existentes; no comenzar creando servicios propios sin evidencia de que hagan falta.
-- Primera comparación ERP/gestión: MyCompany/lsFusion 6.2, Tryton 7.8.4 y Dolibarr 24.0.3; ERPNext 16.60.0 permanece en el filtro comparativo.
-- Comparar Posnic 1.9.2 como candidato POS especializado. uniCenta 5.5.2 queda a la espera de verificar acceso al código fuente y licencias del paquete.
+- Primera comparación ERP/gestión: MyCompany/lsFusion 6.2, Tryton serie 7.8 (incluye `sale_point`) y Dolibarr 24.0.3; ERPNext 16.60.0 permanece en el filtro comparativo.
+- Probar el módulo oficial `sale_point` de Tryton y comparar Posnic 1.9.2 como candidato POS especializado. uniCenta 5.5.2 queda a la espera de verificar acceso al código fuente y licencias del paquete.
 - Revalidar releases, dependencias, licencias, extensiones, APIs, instalación, exportación y restauración antes de elegir.
 - Aplicar el mismo conjunto sintético y las puertas P01–P44 sólo según la responsabilidad del producto; llevar los dos mejores candidatos a la prueba profunda.
 - Asignar una autoridad única por dominio. No mantener plataformas paralelas para ventas, pagos, caja, inventario o fiscalidad.
