@@ -122,7 +122,7 @@ Las plataformas se comparan por el circuito POS + gestión que realmente necesit
 |---|---|---|---|
 | **ERPNext 16 / Frappe 16** | Cobertura amplia de ERP, compras, inventario, manufactura, contabilidad, dimensiones y POS con perfiles, depósitos, impuestos y pagos | El POS debe medirse con una jornada real y hardware; stack y operación más pesados; localización argentina y adaptación fiscal deben probarse. Sus apps comparten el site/bench y persistencia: no equivale a microservicios. | Primera ronda |
 | **MyCompany 6.2 / lsFusion** | Cobertura integrada de Retail POS, ventas, CRM, compras, inventario, fabricación, facturación y RR. HH.; módulos extensibles | Todos los módulos de una instalación comparten base. Verificar API, usabilidad real de caja, Argentina/ARCA, instalación y recuperación. No considerarlo arquitectura distribuida por ser modular. | Primera ronda |
-| **Tryton 8.2** | Arquitectura cliente-servidor, PostgreSQL, módulos de ventas, compras, stock, producción y contabilidad; sale_point cubre venta, pago, vuelto, sesión, stock y asiento | Las ramas principales de tryton-ar inspeccionadas muestran manifiestos de módulos en series distintas (7.1 y 8.1); no se verificó todavía si los tags publicados ofrecen un conjunto alineado con Tryton 8.2. Hay que fijar y probar un conjunto compatible; sólo si no existe se estima el port. | Primera ronda condicionada |
+| **Tryton 8.0 + tryton-ar 8.0** | ERP/POS con PostgreSQL; la localización cubre plan contable, CUIT/padrón, facturación WSFE/WSFEX, bancos, vouchers, cheques y reportes | Hay ocho ramas argentinas coordinadas con manifiestos 8.0.0/8.0.1 y tests. `sale_point` 8.0 cubre la operación minorista. Los módulos comparten servidor/base; no son microservicios independientes. Tryton 8.2 queda como actualización posterior, condicionada al port. | Primera ronda condicionada a instalación y pruebas |
 | **Dolibarr 24.0.3** | CRM/ERP, API REST, hooks y triggers; TakePOS y módulos extensibles; posible camino de instalación más sencillo | Medir profundidad del POS, gestión de costos, producción y la localización argentina. Sus módulos también comparten una aplicación/base. | Filtro corto / alternativa |
 | **Posnic 1.9.2** | POS dedicado, ventas, compras, clientes, caja, catálogo e inventario | No cubre el ERP integral; revisar AGPL, MongoDB SSPL y componente comercial de gráficos; orientado a reglas fiscales de India, no Argentina; su prueba offline pública es limitada y el paquete macOS no está resuelto. | Referencia POS, no base principal |
 
@@ -132,8 +132,8 @@ No se declara un ganador antes de instalar y recorrer la misma prueba. El filtro
 
 - **ERPNext:** su POS Profile configura empresa, depósito, medios de pago, lista de precios, impuestos y cuentas. Su POS puede actualizar stock y alimentar contabilidad, admite varios medios de pago y ofrece reportes/dimensiones. Esto lo hace un candidato fuerte para demostrar rápido el circuito completo; no prueba por sí solo velocidad, experiencia de caja, terminales ni fiscalidad argentina.
 - **MyCompany:** su cobertura funcional es muy amplia y el POS retail forma parte de la distribución. La base compartida es una restricción de arquitectura, no un detalle menor.
-- **Tryton:** la serie actual de referencia es 8.2, no 7.8. El módulo oficial sale_point 8.2 documenta pagos, vuelto, stock y movimientos contables. Sin embargo, las ramas principales inspeccionadas de account_invoice_ar, bank_ar, account_voucher_ar, account_check_ar, account_report_ar y sale_pos_ar declaran 7.1, mientras account_ar y party_ar declaran 8.1. Esto no demuestra que no existan tags antiguos compatibles; antes de portar hay que verificar tags, dependencias y versiones efectivamente instalables. No se debe instalar la mezcla de ramas principales como si fuera un conjunto 8.2.
-- **ARCA para Tryton:** account_invoice_ar contiene integración WSFE/WSFEX y escenarios de factura, FCE y recuperación; party_ar depende de pyafipws. Es una base de reutilización importante. Primero verificar tags y dependencias compatibles con Tryton 8.2; si no existe un conjunto coherente, estimar y probar el port antes de homologar. pyafipws es un componente LGPL-3 y la licencia de cada addon argentino debe revisarse.
+- **Tryton:** probar primero la serie 8.0 junto con las ramas argentinas 8.0 coordinadas. El POS oficial `sale_point` cubre ventas minoristas, pagos, vuelto, sesiones y efectos de stock/contabilidad. La localización 8.0 aporta plan contable, CUIT/padrón, WSAA/WSFE, comprobantes, bancos, pagos/cheques y reportes. Tryton 8.2 es más reciente, pero requiere adaptar y revalidar ese conjunto; no actualizar antes de completar una prueba funcional y fiscal en 8.0.
+- **ARCA para Tryton:** el conjunto 8.0 de tryton-ar incluye `account_invoice_ar` 8.0.1, `account_ar`, `party_ar`, `bank_ar`, vouchers, cheques, reportes y `sale_pos_ar` 8.0.0/8.0.1. `account_invoice_ar` incluye escenarios WSFE, FCE, WSFEX y recuperación; `party_ar` depende de `pyafipws` (LGPL-3). Instalar las ocho ramas juntas, fijar commits, ejecutar sus tests y homologar antes de confiarle emisión. La documentación histórica de instalación contiene referencias antiguas, por lo que mandan los manifiestos, dependencias y pruebas del código 8.0.
 - **Odoo argentino:** el addon público l10n_ar cubre la localización contable base; no es el emisor WSFE por sí solo. La documentación menciona l10n_ar_edi, pero su código no apareció en el repositorio Community inspeccionado. El addon comunitario disponible para WSAA/WSFE se declara Beta. OCA l10n-argentina 19.0, al momento de la revisión, no contenía addons instalables.
 - **Bigcapital:** conservar como candidato contable especializado sólo si la contabilidad nativa de los finalistas no alcanza. No sumar un segundo libro mayor ni otro inventario.
 
@@ -186,10 +186,10 @@ Los escenarios P01–P44 existentes siguen vigentes; la prioridad de ejecución 
 
 ### Entrega 0 — Seleccionar el núcleo (ahora)
 
-- Actualizar referencias de versión: ERPNext 16, MyCompany 6.2, Tryton 8.2 y Dolibarr 24.0.3.
+- Fijar referencias: ERPNext 16, MyCompany 6.2, Tryton 8.0 + ocho módulos tryton-ar 8.0 y Dolibarr 24.0.3. Mantener Tryton 8.2 como objetivo de actualización posterior.
 - Preparar laboratorio reproducible para cada candidato, sin datos reales ni credenciales productivas.
 - Reutilizar el dataset sintético existente y ampliar los casos POS, inventario, caja y contabilidad.
-- Probar primero ERPNext y MyCompany como candidatos de cobertura; evaluar Tryton 8.2 en paralelo con un análisis de port de tryton-ar; usar Dolibarr como filtro de menor complejidad.
+- Probar ERPNext, MyCompany y Tryton 8.0 + localización argentina alineada con el mismo circuito POS+ERP; usar Dolibarr como filtro de menor complejidad. Sólo dos finalistas pasan a la evaluación profunda.
 - Registrar capturas, tiempos, pasos, errores, salida exportada, licencias, hashes y resultados.
 - Decidir qué capacidades del núcleo serán plataforma externa encapsulada, qué componentes se integran como servicios independientes y qué brechas requieren código propio.
 
@@ -337,7 +337,9 @@ La decisión no se tomará por cantidad de funciones ni por estrellas de GitHub.
 - [ERPNext — Point of Sale](https://docs.frappe.io/erpnext/point-of-sale)
 - [ERPNext — Accounting Introduction](https://docs.frappe.io/erpnext/accounting-introduction)
 - [ERPNext — Accounting Dimensions](https://docs.frappe.io/erpnext/accounting-dimensions)
-- [Tryton 8.2 — Sale Point](https://docs.tryton.org/8.2/modules-sale-point/design.html)
+- [Tryton 8.0 — Sale Point](https://docs.tryton.org/8.0/modules-sale-point/design.html)
+- [Tryton 8.2 — Sale Point, actualización posterior](https://docs.tryton.org/8.2/modules-sale-point/design.html)
+- [Localización argentina Tryton — ramas 8.0](https://github.com/tryton-ar)
 - [Tryton 8.2 — Accounting releases](https://docs.tryton.org/8.2/modules-account/releases.html)
 - [MyCompany 6.2](https://github.com/lsfusion-solutions/mycompany/releases/tag/6.2)
 - [Dolibarr — API, triggers and hooks](https://www.dolibarr.org/presentation-api.php)
