@@ -74,7 +74,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /RUBROVA_UI_TEST_LOGIN/);
   assert.match(uiSmokeSource, /input\[type="submit"\]/);
   assert.match(uiSmokeSource, /UI_LOGIN_SUBMIT_CLICKED=true/);
-  assert.match(uiSmokeSource, /page[.]wait_for_url[(]"[*][*][/][*]main"/);
+  assert.ok(uiSmokeSource.includes('page.wait_for_url("**/main", timeout=30_000)'), "Falta la espera explícita de la ruta autenticada /main.");
   assert.match(uiSmokeSource, /UI_LOGIN_NAVIGATION_STATUS=main/);
   assert.match(uiSmokeSource, /UI_LOGIN_BODY_STABLE=true/);
   assert.match(uiSmokeSource, /body can be temporarily unavailable/);
