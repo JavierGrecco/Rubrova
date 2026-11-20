@@ -6,11 +6,16 @@
 
 La prueba común, versiones fijadas, conjunto sintético y criterios de aprobación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
+La investigación de mercado y los nuevos proyectos candidatos están en [Investigación de mercado y oportunidades](MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md). Los escenarios de continuidad, recuperación y backup/restauración están en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+
 ## Fase 0 — decidir la base
 
 - Consolidar reglas comerciales, modelo de dominio, estados y contratos.
 - Comparar Posnic 1.9.2, ERPNext 16.60.0/Frappe 16 y MyCompany/lsFusion 6.2 como plataformas integrales con pruebas equivalentes.
 - Evaluar módulos dedicados de WMS/TMS, integraciones, promociones, servicios de campo, analítica, automatización y archivo documental detrás de contratos.
+- Evaluar Dolibarr 24.0.3 como cuarto candidato integral sólo si puede ejecutarse con los mismos escenarios y puertas críticas; comparar InvenTree 1.7.3 como componente de inventario/producción, no como ERP ni autoridad paralela.
+- Convertir los hallazgos de adopción digital y necesidades PyME en criterios medibles: conciliación entre canales, datos importables, margen real, cuentas corrientes y visibilidad de errores.
+- Ejecutar escenarios de continuidad P27–P36: corte de energía, pago incierto, webhooks repetidos, restauración, migración fallida, cajas offline y accesos indebidos.
 - Definir adaptadores para Andreani, PAQ.AR, OCA e-Pak, Vía Cargo y agregadores; Kangu queda pendiente de confirmar en Argentina.
 - Diseñar perfiles contables para Tango, Catedral, Bejerman, Xubio y Colppy, con lotes idempotentes y conciliación.
 - Incorporar mejoras derivadas de necesidades PyME: recuperación de sincronizaciones, importación asistida, costo de reposición, cobranza/flujo de caja y WMS por ubicación.
@@ -84,11 +89,16 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Laboratorio de instalación para MyCompany 6.2, Posnic 1.9.2 y ERPNext 16.60.0.
 - [x] Validador automático del dataset y workflow de GitHub Actions; última ejecución confirmada: 21/21 pruebas aprobadas y dataset válido.
 - [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
+- [x] Investigación nacional de adopción digital y testimonios de necesidades PyME con límites de representatividad documentados.
+- [x] Evaluación documental adicional de Dolibarr 24.0.3, InvenTree 1.7.3, OpenBoxes, OpenWMS y localización argentina Odoo/OCA.
+- [x] Especificación de continuidad operativa, recuperación, backups, estados inciertos y pruebas P27–P36.
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
 - [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
 - [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
 - [x] Alcance multiárea, mayorista/distribución, servicios B2B y rentabilidad por unidad documentados.
 - [x] Investigación de Dolibarr, OCA Field Service, OpenFieldPro y Open TMS para los nuevos dominios.
+- [ ] Instalar/evaluar Dolibarr 24.0.3 de forma comparable o documentar por qué no supera el costo de evaluación.
+- [ ] Instalar/evaluar InvenTree 1.7.3 para ubicaciones, código, trazabilidad, BOM y API.
 - [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
 - [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext/Frappe en entornos aislados.
 - [ ] Inspección dirigida de InvenTree, OpenBoxes y componentes públicos de OpenWMS; fijar módulos/commits y límites de licencia.
@@ -99,6 +109,7 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
 - [ ] Ejecutar escenarios P20–P26: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios, rentabilidad y transferencias internas.
 - [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
+- [ ] Ejecutar P27–P36 y validar backup/restauración, RPO/RTO y recuperación real.
 - [ ] Ejecución y evidencia de todos los escenarios.
 - [ ] Decisión de base y plan de adaptación.
 
