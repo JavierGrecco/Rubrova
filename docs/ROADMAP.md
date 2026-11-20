@@ -32,18 +32,34 @@ La investigación de mercado y los nuevos proyectos candidatos están en [Invest
 
 **Criterio de salida:** los servicios cumplen aislamiento de datos, contratos compatibles, idempotencia, recuperación y despliegue independiente. Se demuestran operaciones sin pérdida/duplicación, restauración verificable y ruta fiscal viable. Si una plataforma candidata no respeta estos límites, se descarta como base aunque tenga muchas funciones; sólo se reutilizan componentes que pasen sus pruebas.
 
+## Primera entrega ejecutable — dos servicios y un flujo completo
+
+Antes de ampliar el número de servicios, construir una prueba funcional pequeña pero real, con límites que ya sean los de producción:
+
+1. **Gateway local**: un único punto de entrada para el POS; autenticación, permisos, correlación y routing.
+2. **Servicio de Ventas**: crea pedidos/ventas y es dueño de sus registros, estados e idempotency keys.
+3. **Servicio de Inventario**: es dueño exclusivo del ledger, reservas, disponibilidad y versiones CAS.
+4. **Almacenamientos aislados**: una base/namespace y credenciales por servicio; prohibidas las escrituras SQL cruzadas.
+5. **Contrato de reserva**: comando versionado con clave idempotente estable, artículo, ubicación, cantidad y versión esperada; resultado reservado, conflicto o estado incierto.
+6. **Mensajería y Outbox/Inbox**: incorporar sólo el broker que demuestre persistencia local, operación simple y recuperación en Windows/macOS/Linux. Comparar NATS JetStream y RabbitMQ antes de fijarlo.
+7. **Pruebas automatizadas y de fallos**: comando repetido, mismo ID con contenido distinto, dos ventas concurrentes por la última unidad, evento repetido/fuera de orden, caída/reinicio del proceso, broker detenido y recuperación de Outbox.
+
+**Recorrido de aceptación inicial:** el POS envía una venta al Gateway; Ventas persiste el intento de forma idempotente; Inventario concede una reserva atómica por CAS; Ventas confirma o deja la operación en un estado explícito pendiente/conflicto. Todo paso tiene correlation ID y puede reconstruirse tras reiniciar el proceso afectado, sin apagar el equipo.
+
+No construir todavía quince servicios ni adoptar Kubernetes, Kafka o service mesh. Después de demostrar este recorrido se incorpora Pagos/Caja como tercer dominio, luego Fiscal e Integraciones, y recién entonces los demás servicios. Los servicios comparten estándares de seguridad, logging, contratos y despliegue, no una base de datos compartida.
+
 ## Fase 1 — núcleo transaccional
 
 Se implementa como servicios independientes. Un componente ERP/POS externo puede cubrir un dominio si respeta contratos, aislamiento, idempotencia, versionado y despliegue independiente; no se fusiona toda la plataforma en un único runtime.
 
-1. Organización, sucursales, usuarios y permisos.
-2. Catálogo, variantes, códigos, unidades y reglas de precio.
-3. Carrito y venta POS.
-4. Descuentos, promociones y autorizaciones trazables.
-5. Pagos, medios mixtos, movimientos de caja y arqueo.
-6. Libro de movimientos de inventario.
-7. Auditoría, turnos y devoluciones.
-8. Pruebas automatizadas de los flujos críticos.
+1. Identidad/organización y Gateway local.
+2. Catálogo/precios como API de consulta versionada.
+3. Servicio de Ventas independiente.
+4. Servicio de Inventario independiente con ledger, reservas y CAS.
+5. Contratos, Outbox/Inbox, idempotencia y observabilidad compartida.
+6. Pagos/Caja como siguiente servicio, después de aprobar el flujo Ventas–Inventario.
+7. Auditoría, devoluciones y reportes como servicios/dominios siguientes.
+8. Pruebas automatizadas de contratos, concurrencia, fallos y recuperación.
 
 **Criterio de salida:** una venta se registra, cobra, audita y reconcilia con caja e inventario en un entorno repetible.
 
