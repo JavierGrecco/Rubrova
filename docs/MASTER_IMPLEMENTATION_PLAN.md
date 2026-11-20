@@ -15,7 +15,7 @@ La secuencia aprobada para dirigir el trabajo es:
 1. **Operación comercial y POS:** vender, cobrar, devolver, abrir/cerrar caja y dejar el stock correcto.
 2. **ERP de gestión:** productos, clientes, proveedores, compras, recepción, inventario, costos, cuentas corrientes, depósitos y sucursales.
 3. **Contabilidad y fiscalidad argentina:** libro contable, impuestos, ARCA, comprobantes, conciliación, bancos, cuentas por cobrar/pagar y cierres.
-4. **Reportes y control de gestión:** ventas, costos, márgenes, rentabilidad por producto/marca/canal/área, compras, stock, caja y finanzas.
+4. **Reportes y control de gestión:** ventas, costos, márgenes y rentabilidad por producto/marca/canal/área/cliente; ficha 360, RFM, retención, compras, stock, caja y finanzas.
 5. **Capacidades sectoriales y crecimiento:** producción, recetas, lotes, vencimientos, mayorista, distribución, servicios B2B y contratos.
 6. **Canales externos:** ecommerce, Mercado Libre, WhatsApp, delivery y otras fuentes de pedidos.
 7. **Logística avanzada:** fulfillment, agregadores, transportistas, etiquetas y seguimiento unificado.
