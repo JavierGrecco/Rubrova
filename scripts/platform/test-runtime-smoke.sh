@@ -173,9 +173,9 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
   fi
 
   ALL_MODULES_READY=false
-  if [[ "$MODULE_PROGRESS" =~ #([0-9]+) of ([0-9]+) ]]; then
-    current_module="${BASH_REMATCH[1]}"
-    total_modules="${BASH_REMATCH[2]}"
+  PROGRESS_NUMBERS="$(printf '%s\n' "$MODULE_PROGRESS" | sed -nE 's/.*#([0-9]+) of ([0-9]+).*/\1 \2/p')"
+  if [[ -n "$PROGRESS_NUMBERS" ]]; then
+    read -r current_module total_modules <<< "$PROGRESS_NUMBERS"
     if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
       ALL_MODULES_READY=true
     elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
