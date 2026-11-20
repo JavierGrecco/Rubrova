@@ -79,6 +79,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /click_exact_link\(page, "Comercio"\)/);
   assert.match(uiSmokeSource, /click_exact_link\(page, "Punto de venta"\)/);
   assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
+  assert.match(uiSmokeSource, /wait_until_form_loaded\(page, "UI_POS_SCREEN"/);
+  assert.match(uiSmokeSource, /UI_POS_SCREEN_RENDER_STATUS=ready/);
+  assert.match(uiSmokeSource, /timeout_seconds: int = 30/);
+  assert.match(uiSmokeSource, /"loading" in normalized or "cargando" in normalized/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN/);
   assert.match(uiSmokeSource, /-retail/);
   assert.match(uiSmokeSource, /-pos/);

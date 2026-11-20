@@ -146,6 +146,30 @@ def login_to_ephemeral_instance(page: Any) -> str:
     )
 
 
+def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 30) -> str:
+    deadline = time.monotonic() + timeout_seconds
+    stable_reads = 0
+    last_text = ""
+
+    while time.monotonic() < deadline:
+        last_text = page.locator("body").inner_text(timeout=10_000)
+        normalized = last_text.casefold()
+        is_loading = "loading" in normalized or "cargando" in normalized
+        if last_text.strip() and not is_loading:
+            stable_reads += 1
+            if stable_reads >= 2:
+                print(f"{label}_RENDER_STATUS=ready")
+                return last_text
+        else:
+            stable_reads = 0
+        page.wait_for_timeout(1_000)
+
+    raise RuntimeError(
+        f"{label} no terminó de cargar en {timeout_seconds}s. "
+        f"Último texto visible: {last_text.strip()[:1600]}"
+    )
+
+
 def click_exact_link(page: Any, label: str) -> bool:
     links = page.locator("a").evaluate_all(
         """elements => elements.map((element, index) => ({
@@ -231,7 +255,9 @@ def inspect_page(url: str) -> int:
                     if not click_exact_link(page, "Punto de venta"):
                         print("UI_POS_SCREEN_AVAILABLE=false")
                     else:
-                        pos_text = visible_snapshot(page, "UI_POS_SCREEN")
+                        # The menu click can return before the GWT form finishes rendering.
+                        pos_text = wait_until_form_loaded(page, "UI_POS_SCREEN", timeout_seconds=30)
+                        visible_snapshot(page, "UI_POS_SCREEN")
                         page.screenshot(path=str(pos_screenshot), full_page=True)
                         print(f"UI_POS_SCREENSHOT={pos_screenshot}")
                         if not pos_text.strip():
