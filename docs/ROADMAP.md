@@ -6,7 +6,7 @@
 
 La prueba común, versiones fijadas, conjunto sintético y criterios de aprobación están en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
-La investigación de mercado y los nuevos proyectos candidatos están en [Investigación de mercado y oportunidades](MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md). Los escenarios de continuidad, recuperación y backup/restauración están en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+La investigación de mercado y los nuevos proyectos candidatos están en [Investigación de mercado y oportunidades](MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md). La arquitectura objetivo de servicios independientes está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md). Los escenarios de continuidad, recuperación y backup/restauración están en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
 
 ## Fase 0 — decidir la base
 
@@ -15,7 +15,7 @@ La investigación de mercado y los nuevos proyectos candidatos están en [Invest
 - Evaluar módulos dedicados de WMS/TMS, integraciones, promociones, servicios de campo, analítica, automatización y archivo documental detrás de contratos.
 - Evaluar Dolibarr 24.0.3 como cuarto candidato integral sólo si puede ejecutarse con los mismos escenarios y puertas críticas; comparar InvenTree 1.7.3 como componente de inventario/producción, no como ERP ni autoridad paralela.
 - Convertir los hallazgos de adopción digital y necesidades PyME en criterios medibles: conciliación entre canales, datos importables, margen real, cuentas corrientes y visibilidad de errores.
-- Ejecutar escenarios de continuidad P27–P36: corte de energía, pago incierto, webhooks repetidos, restauración, migración fallida, cajas offline y accesos indebidos.
+- Ejecutar escenarios de continuidad P27–P44: terminación abrupta de procesos (sin apagar el equipo), pagos inciertos, webhooks y comandos repetidos, conflictos CAS, cuotas offline, restauración, migraciones, Sagas y rollback por servicio.
 - Definir adaptadores para Andreani, PAQ.AR, OCA e-Pak, Vía Cargo y agregadores; Kangu queda pendiente de confirmar en Argentina.
 - Diseñar perfiles contables para Tango, Catedral, Bejerman, Xubio y Colppy, con lotes idempotentes y conciliación.
 - Incorporar mejoras derivadas de necesidades PyME: recuperación de sincronizaciones, importación asistida, costo de reposición, cobranza/flujo de caja y WMS por ubicación.
@@ -25,16 +25,16 @@ La investigación de mercado y los nuevos proyectos candidatos están en [Invest
 - Probar consumo interárea de stock/servicios y su eliminación en el resultado consolidado.
 - Completar la especificación del checkout: línea removible antes de pagar, efectivo recibido/vuelto y pago integrado con terminales locales.
 - Probar caja, ventas, pagos mixtos, descuentos, devoluciones, inventario, compras y producción.
-- Demostrar corte de internet, cierre forzado, reinicio, reintento, conciliación y backup/restauración.
+- Demostrar terminación abrupta/reinicio de un proceso, desconexión de red, reinicio de un servicio independiente, reintento idempotente, conflicto CAS, conciliación y restauración desde un punto registrado.
 - Medir esfuerzo real de extensión, actualizaciones, dependencias y licencias.
 - Verificar adaptación argentina, ARCA en homologación y hardware.
-- Elegir una única base transaccional o construir el monolito modular propio; los módulos secundarios solo se integran con autoridad de datos y contratos explícitos.
+- Validar una plataforma distribuida de servicios por dominio: almacenamiento propio, APIs/eventos versionados, Outbox/Inbox, observabilidad y despliegue/rollback por servicio. Las plataformas integrales candidatas sólo se adoptan si pueden cubrir dominios sin fusionar sus autoridades ni imponer una base compartida.
 
-**Criterio de salida:** se completa la prueba sin pérdida ni duplicación de ventas, pagos o movimientos; la recuperación y restauración son demostrables; las extensiones son mantenibles; existe una ruta fiscal viable; y se documenta el costo de conservar la base elegida. Si ninguna opción supera los controles excluyentes, se descartan como base y se reutilizan solo los componentes que hayan pasado su revisión.
+**Criterio de salida:** los servicios cumplen aislamiento de datos, contratos compatibles, idempotencia, recuperación y despliegue independiente. Se demuestran operaciones sin pérdida/duplicación, restauración verificable y ruta fiscal viable. Si una plataforma candidata no respeta estos límites, se descarta como base aunque tenga muchas funciones; sólo se reutilizan componentes que pasen sus pruebas.
 
 ## Fase 1 — núcleo transaccional
 
-Se ejecuta sobre la plataforma elegida. Si ninguna resulta adecuada, se implementa como monolito modular propio.
+Se implementa como servicios independientes. Un componente ERP/POS externo puede cubrir un dominio si respeta contratos, aislamiento, idempotencia, versionado y despliegue independiente; no se fusiona toda la plataforma en un único runtime.
 
 1. Organización, sucursales, usuarios y permisos.
 2. Catálogo, variantes, códigos, unidades y reglas de precio.
@@ -91,7 +91,8 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
 - [x] Investigación nacional de adopción digital y testimonios de necesidades PyME con límites de representatividad documentados.
 - [x] Evaluación documental adicional de Dolibarr 24.0.3, InvenTree 1.7.3, OpenBoxes, OpenWMS y localización argentina Odoo/OCA.
-- [x] Especificación de continuidad operativa, recuperación, backups, estados inciertos y pruebas P27–P36.
+- [x] Especificación de continuidad operativa, recuperación, backups, estados inciertos y pruebas P27–P44.
+- [x] Decisión de arquitectura distribuida: servicios de dominio independientes, contrato/API/eventos, propiedad de datos, gateway local y coordinación de stock por CAS/cuotas offline.
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
 - [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
 - [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
