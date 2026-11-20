@@ -367,3 +367,28 @@ El alcance funcional y las pruebas de demanda, rentabilidad y marcas están defi
 - El fixture comprende 48 meses sintéticos (2022–2025) y cuatro cortes walk-forward (24, 30, 36 y 42 meses), con horizonte de tres meses. Se registran MAE, WAPE y sesgo.
 - No se elige un modelo productivo por el ganador sintético. Debe superar baselines en datos reales comparables y demostrar comportamiento con quiebres de stock, promociones, cambios de precio, productos nuevos y demanda intermitente.
 - La comparación se ejecuta en CI con versión fijada; el reporte incluye versión de StatsForecast/Pandas, folds, predicciones y métricas.
+
+
+## 17. Pagos, identidad de pagador y terminales
+
+| Proveedor/proyecto | Licencia/evidencia | Uso posible | Decisión |
+|---|---|---|---|
+| [Mercado Pago Node.js SDK](https://github.com/mercadopago/sdk-nodejs) | Repositorio oficial, MIT, Node.js 18+ declarado | Orders, payments, QR, notificaciones y conciliación desde backend | Apto para evaluar como dependencia si la plataforma/runtime elegidos usan Node.js; fijar release y revisar alcance de APIs |
+| [Payway JS SDK](https://github.com/payway-ar/sdk-javascript-ventaonline) | Repositorio público del proveedor; metadata de GitHub consultada indica `license: null`, sin archivo LICENSE en el árbol | Tokenización de tarjetas para venta online; el backend se integra con la API/SDK de servidor del proveedor | No copiar/forkear el código sin permiso. Preferir SDK/API oficial autorizado; no hacer que componentes propios reciban PAN/CVV |
+| [Payway Developers](https://developers.payway.com.ar/catalog?category=Pagos) | Portal API del proveedor; habilitación por tipo de merchant/contrato | QR, pagos de terminal, devoluciones, anulaciones/reversiones y liquidaciones | Candidato de integración comercial, no código open-source |
+| [Getnet Get POS Integrado](https://www.getnet.net/ar/ayuda/terminales-getpos/get-pos-integrado) | Integración oficial por API C2C o SDK USB/Wi-Fi; solicita habilitación/partner | Enviar importe desde POS, recibir estado del dispositivo, conciliar; terminal puede operar separada del sistema durante cortes | Pedir sandbox/SDK y validar recuperación; no tratar la página como permiso para copiar código |
+| [MODO Conexiones](https://docs.modo.com.ar/docs/2ea0d7a7-956d-4995-936e-84808f289002) | API oficial PCT Online; consentimiento PSP y autenticación mutua TLS | Iniciar/consultar pagos con transferencia | Evaluar sólo si el caso de uso justifica integración y se obtienen credenciales |
+| [Fiserv QR](https://www.fiserv.com.ar/servicios/pagos-qr/) | Documentación de servicio de pagos | Aceptación QR con billeteras y tarjetas | Referencia de interoperabilidad; no entrega necesariamente identidad de quien paga |
+| [S-Tech](https://s-tech.com.ar/) | Soluciones y software propietario; no se encontró SDK/API abierta ni licencia de código público | Terminal transaccional, kiosco, efectivo con vuelto, CashFore y CashSchedule | Evaluar como hardware/partner, no como dependencia de software ni núcleo ERP |
+
+### Reglas para cualquier adaptador de pagos
+
+- La API/SDK del proveedor se encapsula detrás de un contrato canónico de Rubrova.
+- El SDK no pasa a ser dueño de ventas, pagos, caja ni conciliación; el ERP mantiene el ledger operativo.
+- Todo intento recibe idempotency key y external reference opaca, sin PII.
+- Se verifican callbacks/notificaciones, consultando estado final ante timeout y evitando reintentos a ciegas.
+- El contrato de campos y su finalidad se revisa por canal: no todo dato de pagador puede pasar a CRM. En particular, Mercado Pago limita determinados campos de nombre/documento a conciliación.
+- No guardar PAN, CVV, PIN, PIN block ni track. Utilizar tokenización o UI/SDK del proveedor en el canal donde corresponda.
+- Los IDs de customer/card/account de cada PSP son locales a ese PSP, nunca el ID maestro de Party/CustomerAccount.
+
+La especificación y las pruebas P61–P67 están en [Identidad del pagador, pagos y conciliación](PAYMENT_IDENTITY_AND_RECONCILIATION.md).
