@@ -602,6 +602,42 @@ def inspect_page(url: str) -> int:
                         f"El límite de 1 segundo no se respetó; la API tardó {timeout_elapsed:.3f}s."
                     )
                 print("UI_INTEGRATION_TIMEOUT_CAPTURED=true")
+                timeout_message = str(timeout_payload.get("userMessage") or "")
+                if "no respondió a tiempo" not in timeout_message:
+                    raise RuntimeError("El timeout no devolvió un mensaje claro en español.")
+                print("UI_INTEGRATION_TIMEOUT_MESSAGE=true")
+
+                rate_limit_response = context.request.get(
+                    api_base + "rubrovaTestHttpRateLimit", timeout=12_000
+                )
+                if rate_limit_response.status != 200:
+                    raise RuntimeError(
+                        "La prueba HTTP 429 respondió HTTP "
+                        f"{rate_limit_response.status}: {rate_limit_response.text()[:1200]}"
+                    )
+                rate_limit_payload = rate_limit_response.json()
+                if isinstance(rate_limit_payload, list):
+                    rate_limit_payload = rate_limit_payload[0] if rate_limit_payload else {}
+                print("UI_INTEGRATION_429_RESPONSE=" + json.dumps(rate_limit_payload, ensure_ascii=False))
+                if rate_limit_payload.get("category") != "RATE_LIMITED" or int(rate_limit_payload.get("httpStatus") or 0) != 429:
+                    raise RuntimeError("El HTTP 429 no se clasificó correctamente.")
+                print("UI_INTEGRATION_429_CLASSIFIED=true")
+
+                server_error_response = context.request.get(
+                    api_base + "rubrovaTestHttpServerError", timeout=12_000
+                )
+                if server_error_response.status != 200:
+                    raise RuntimeError(
+                        "La prueba HTTP 503 respondió HTTP "
+                        f"{server_error_response.status}: {server_error_response.text()[:1200]}"
+                    )
+                server_error_payload = server_error_response.json()
+                if isinstance(server_error_payload, list):
+                    server_error_payload = server_error_payload[0] if server_error_payload else {}
+                print("UI_INTEGRATION_503_RESPONSE=" + json.dumps(server_error_payload, ensure_ascii=False))
+                if server_error_payload.get("category") != "REMOTE_5XX" or int(server_error_payload.get("httpStatus") or 0) != 503:
+                    raise RuntimeError("El HTTP 503 no se clasificó correctamente.")
+                print("UI_INTEGRATION_503_CLASSIFIED=true")
 
                 recovery_response = context.request.get(
                     api_base + "rubrovaTestHttpRecovery", timeout=12_000
@@ -632,8 +668,8 @@ def inspect_page(url: str) -> int:
                     incident_payload = incident_payload[0] if incident_payload else {}
                 incident_count = int(incident_payload.get("incidentCount", 0))
                 print(f"UI_INTEGRATION_INCIDENT_COUNT={incident_count}")
-                if incident_count < 1:
-                    raise RuntimeError("El timeout no quedó persistido en IntegrationIncident.")
+                if incident_count < 3:
+                    raise RuntimeError("No quedaron persistidas las tres incidencias simuladas (timeout, 429, 503).")
                 print("UI_INTEGRATION_INCIDENT_PERSISTED=true")
                 item_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-item" + screenshot_path.suffix

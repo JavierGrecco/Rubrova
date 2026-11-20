@@ -221,6 +221,26 @@ rubrovaTestHttpTimeout () {
         httpStatus = statusHttp();
 } @@api;
 
+rubrovaTestHttpRateLimit () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de límite de solicitudes', 'ci-rate-limit-001',
+        '$MOCK_PROVIDER_URL/status/429', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttpServerError () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error 503', 'ci-server-error-001',
+        '$MOCK_PROVIDER_URL/status/503', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
 rubrovaTestHttpRecovery () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de recuperación', 'ci-recovery-001',
         '$MOCK_PROVIDER_URL/ok', 4000);

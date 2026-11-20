@@ -214,6 +214,10 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /rubrovaHttpGet/);
   assert.match(resilienceSource, /EXTERNAL HTTP GET url/);
   assert.match(resilienceSource, /TIMEOUT_OR_NETWORK/);
+  assert.match(resilienceSource, /rubrovaHandleHttpStatusFailure/);
+  assert.match(resilienceSource, /RATE_LIMITED/);
+  assert.match(resilienceSource, /REMOTE_5XX/);
+  assert.match(resilienceSource, /rubrovaShowIntegrationFailure/);
   assert.match(resilienceSource, /REMOTE_HTTP_ERROR/);
   assert.match(resilienceSource, /rubrovaHttpSucceeded\(\) <- TRUE/);
   assert.doesNotMatch(resilienceSource, /technicalDetail\(incident\) <- messageCaughtException/);
@@ -307,8 +311,13 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
   assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_MESSAGE=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_429_CLASSIFIED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_503_CLASSIFIED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_RECOVERY_SUCCEEDED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_INCIDENT_PERSISTED=true/);
   assert.match(mockProviderSource, /ThreadingHTTPServer/);

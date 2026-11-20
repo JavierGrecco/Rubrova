@@ -119,21 +119,53 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
             rubrovaSetIntegrationTimeout(timeoutMilliseconds);
             EXTERNAL HTTP GET url TO rubrovaHttpResponse;
 
-            IF failedHttp() THEN {
-                rubrovaHttpFailureCategory() <- 'REMOTE_HTTP_ERROR';
-                rubrovaHttpFailureMessage() <- 'El servicio externo respondió con un error HTTP.';
-                rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
-                    'REMOTE_HTTP_ERROR', statusHttp(), 1, TRUE, NULL, NULL,
-                    rubrovaHttpFailureMessage(), 'Respuesta HTTP no exitosa. Revisar código HTTP y contrato del proveedor.');
-            } ELSE
+            IF failedHttp() THEN
+                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp())
+            ELSE
                 rubrovaHttpSucceeded() <- TRUE;
         } CATCH {
-            rubrovaHttpFailureCategory() <- 'TIMEOUT_OR_NETWORK';
-            rubrovaHttpFailureMessage() <- 'El servicio externo no respondió a tiempo o no se pudo establecer la conexión.';
-            rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
-                'TIMEOUT_OR_NETWORK', statusHttp(), 1, TRUE, NULL, NULL,
-                rubrovaHttpFailureMessage(), 'La solicitud GET terminó con una excepción de conexión o timeout. Detalle sensible omitido.');
+            IF statusHttp() THEN
+                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp())
+            ELSE {
+                rubrovaHttpFailureCategory() <- 'TIMEOUT_OR_NETWORK';
+                rubrovaHttpFailureMessage() <- 'El servicio externo no respondió a tiempo o no se pudo establecer la conexión.';
+                rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
+                    'TIMEOUT_OR_NETWORK', NULL, 1, TRUE, NULL, NULL,
+                    rubrovaHttpFailureMessage(), 'La solicitud GET terminó sin respuesta HTTP por conexión o timeout. Detalle sensible omitido.');
+            }
         }
     }
+}
+
+rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'
+    (STRING providerName, STRING operationName, STRING correlation, INTEGER responseStatus) {
+    IF responseStatus = 429 THEN {
+        rubrovaHttpFailureCategory() <- 'RATE_LIMITED';
+        rubrovaHttpFailureMessage() <- 'El servicio externo está limitando las solicitudes. La operación quedó pendiente.';
+    } ELSE IF responseStatus >= 500 THEN {
+        rubrovaHttpFailureCategory() <- 'REMOTE_5XX';
+        rubrovaHttpFailureMessage() <- 'El servicio externo está temporalmente indisponible. La operación quedó pendiente.';
+    } ELSE IF responseStatus = 401 THEN {
+        rubrovaHttpFailureCategory() <- 'AUTHENTICATION';
+        rubrovaHttpFailureMessage() <- 'La conexión con el servicio externo necesita volver a autorizarse.';
+    } ELSE IF responseStatus = 403 THEN {
+        rubrovaHttpFailureCategory() <- 'AUTHORIZATION';
+        rubrovaHttpFailureMessage() <- 'El servicio externo no autorizó esta operación. Revisá los permisos de la cuenta.';
+    } ELSE IF responseStatus = 409 THEN {
+        rubrovaHttpFailureCategory() <- 'CONFLICT';
+        rubrovaHttpFailureMessage() <- 'El servicio externo informó un conflicto. La operación requiere conciliación.';
+    } ELSE {
+        rubrovaHttpFailureCategory() <- 'REMOTE_HTTP_ERROR';
+        rubrovaHttpFailureMessage() <- 'El servicio externo respondió con un error HTTP. La operación no se completó.';
+    }
+    rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
+        rubrovaHttpFailureCategory(), responseStatus, 1,
+        responseStatus = 429 OR responseStatus >= 500, NULL, NULL,
+        rubrovaHttpFailureMessage(), 'Respuesta HTTP no exitosa. No se guarda el cuerpo ni la URL completa.');
+}
+
+rubrovaShowIntegrationFailure 'Mostrar aviso de integración' () {
+    IF NOT rubrovaHttpSucceeded() AND rubrovaHttpFailureMessage() THEN
+        MESSAGE rubrovaHttpFailureMessage();
 }
 
