@@ -119,16 +119,25 @@ Métricas: costo por envío/pedido/kg/m³/parada; entrega a tiempo; primer inten
 
 ## 8. Proyectos reutilizables y decisiones
 
-| Proyecto | Licencia / estado | Uso posible | Decisión |
-|---|---|---|---|
-| nchsala/andreani | MIT, Node/TypeScript, wrapper antiguo | Ejemplos de autenticación, cotización, órdenes y trazas Andreani | Inspeccionar tests y actualizar contra API oficial; no copiar sin pruebas |
-| YamilEzequiel/correo-argentino | MIT, TypeScript, wrapper MiCorreo | Cotización, token, agencias y shipping/import | Candidato de adaptación; verificar que endpoints y modelos coincidan con API actual |
-| esnim/CorreoArgentino | Sin LICENSE raíz localizada | Ejemplo PHP de cotización PAQ.AR | Solo referencia; no copiar hasta aclarar licencia y actualidad |
-| ombulabs/oca-epak | MIT, Ruby/Savon, wrapper SOAP | Tarifas, operación, órdenes de retiro y funciones e-Pak | Útil como referencia; stack Ruby no obliga a adoptarlo |
-| teosibileau/py-oca-epak | MIT, Python | Centros, regiones, servicios y tracking OCA SOAP | Útil como referencia de contratos SOAP |
-| YipiApp/carriers-of-argentina-for-woocommerce | GPL-2.0 declarado, requiere WooCommerce y membresía Cujiware | Une cotización de Correo, Andreani, OCA y sucursales; etiquetas Andreani/OCA | Inspeccionar como referencia de flujos; dependencias comerciales y licencia limitan su uso como módulo autónomo |
+Se revisaron repositorios, licencias declaradas, package manifests y actividad pública al 20/11/2026. La madurez y el grado de actualización varían bastante:
 
-Repositorios:
+| Proyecto | Evidencia verificada | Valor posible | Decisión |
+|---|---|---|---|
+| [nchsala/andreani](https://github.com/nchsala/andreani) | MIT; paquete npm `@nchsala/andreani@1.0.2`; último push 24/10/2020. El README declara métodos de cotización, alta de órdenes domicilio/sucursal, búsqueda, trazas, sucursales y etiquetas. Depende de axios 0.21 y TypeScript 4.0.3. | Referencia valiosa de contratos y métodos para Andreani API v1/v2; reduce el trabajo de relevar nombres y modelos. | **No adoptar directamente.** Revisión de 2020: contrastar métodos y payloads contra la documentación oficial vigente, actualizar dependencias y ejecutar pruebas reales en sandbox. |
+| [YamilEzequiel/correo-argentino](https://github.com/YamilEzequiel/correo-argentino) | MIT; paquete `ylazzari-correoargentino@0.1.0`; último push observado 04/07/2026 y actualización de repo 13/11/2026. El README declara registro/autenticación, validación de usuario, cotización, sucursales y alta/importación de envíos; soporta ambiente TEST y PROD. Requiere credenciales MiCorreo. El package manifest no define un script de tests. | Es el wrapper argentino más prometedor de esta revisión para acelerar la integración MiCorreo/PAQ.AR. | **Candidato a prueba acotada.** Fijar commit/tag, verificar el paquete publicado contra el código actual, agregar tests automatizados y contrastar cada endpoint con el manual oficial; usar credenciales TEST. |
+| [esnim/CorreoArgentino](https://github.com/esnim/CorreoArgentino) | PHP; último push 10/08/2024; no se localizó LICENSE raíz. Su README declara únicamente cotización y advierte que el modo de pruebas puede no funcionar. | Ejemplo de payload y flujo de cotización. | **Sólo referencia.** No copiar código hasta aclarar licencia y validar la implementación contra PAQ.AR vigente. |
+| [ombulabs/oca-epak](https://github.com/ombulabs/oca-epak) | MIT; Ruby/Savon; último push 29/11/2019. Tiene pruebas RSpec/VCR para credenciales, tarifas, retiro, etiquetas y tracking. El README distingue e-Pak y un endpoint OEP antiguo. También explica que el código de operativa debe habilitarlo OCA. | Referencia de contratos SOAP, estructura de operaciones, retiro y respuestas. | **No adoptar directamente.** Antiguo; usar como ejemplo para contrastar WSDL/servicios vigentes y requisitos de cuenta. |
+| [teosibileau/py-oca-epak](https://github.com/teosibileau/py-oca-epak) | MIT; Python >=3.11; último push 01/03/2026. Tiene tests de geografía, tracking, etiquetas, QR, parsing y manejo de errores. Su `pyproject.toml` declara como homepage/repository `drkloc/py-oca-epak`, distinto del repositorio actual; esa procedencia debe aclararse. | Puede adelantar cliente SOAP Python y pruebas de tracking/etiquetas. | **Candidato condicionado.** Resolver la referencia de upstream/procedencia, fijar commit y validar WSDL y credenciales actuales de OCA. |
+| [YipiApp/carriers-of-argentina-for-woocommerce](https://github.com/YipiApp/carriers-of-argentina-for-woocommerce) | README del plugin: GPLv2, versión estable 1.5.8, última actividad 14/08/2026; requiere WooCommerce y una membresía Cujiware paga. Declara cotización Correo/Andreani/OCA, selección de sucursales y etiquetas Andreani/OCA; Correo exige pasos adicionales. | Referencia de flujos multi-carrier de una tienda WooCommerce y de sus requisitos comerciales. | **No es un módulo autónomo.** Útil para observar flujos; no incorporar dependencias de WooCommerce/Cujiware ni asumir licencia/funciones fuera de su paquete. |
+
+### Hallazgos de la búsqueda de repositorios
+
+- La búsqueda dirigida no devolvió repositorios específicos y mantenidos de Vía Cargo ni de Kangu Argentina. Para Vía Cargo seguimos con la integración de tracking de AfterShip/17TRACK como opción a probar, no con una API propia confirmada. Para Kangu no se asume servicio argentino.
+- Karrio aporta un marco multi-carrier y conectores internacionales, pero el árbol comunitario inspeccionado no contiene conectores para Andreani, PAQ.AR, OCA ni Vía Cargo.
+- Para Andreani, Correo Argentino y OCA sí hay wrappers comunitarios, pero ninguno sustituye la documentación oficial ni la habilitación de cuenta. El wrapper MiCorreo más reciente es la primera prueba a priorizar; el wrapper Andreani más antiguo debe modernizarse; los wrappers OCA necesitan verificar WSDL, operativas y pruebas actuales.
+- No surgieron repositorios públicos específicos y mantenidos para integrar directamente Tango, Catedral, Bejerman, Xubio o Colppy en esta búsqueda. Mantener exportación/importación por formatos oficiales como ruta inicial, y desarrollar adaptadores sólo cuando se reciban layouts/versiones y credenciales de prueba.
+
+**Repositorios revisados:**
 - https://github.com/nchsala/andreani
 - https://github.com/YamilEzequiel/correo-argentino
 - https://github.com/esnim/CorreoArgentino
@@ -136,7 +145,7 @@ Repositorios:
 - https://github.com/teosibileau/py-oca-epak
 - https://github.com/YipiApp/carriers-of-argentina-for-woocommerce
 
-La presencia de un wrapper no prueba que sea compatible con la versión actual de la API del transportista. Fijar commit, revisar dependencias, autenticación, tests, tratamiento de errores y documentación vigente antes de reutilizar.
+La presencia de un wrapper no demuestra compatibilidad con la versión actual de la API. Fijar commit, revisar dependencias, autenticación, tests, tratamiento de errores y documentación oficial antes de reutilizar.
 
 ## 9. Prioridad de implementación
 
