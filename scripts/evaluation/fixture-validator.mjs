@@ -717,7 +717,7 @@ export function validateFixture(data) {
         if (typeof product.brandCode !== "string" || !product.brandCode) errors.push(path + ".brandCode es obligatorio.");
         if (typeof product.brandName !== "string" || !product.brandName) errors.push(path + ".brandName es obligatorio.");
         if (!allowedSegments.has(product.segment)) errors.push(path + ".segment no es un segmento comercial permitido.");
-        if (typeof product.segmentEffectiveFrom !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(product.segmentEffectiveFrom) || !Number.isFinite(Date.parse(product.segmentEffectiveFrom + "T00:00:00Z"))) {
+        if (typeof product.segmentEffectiveFrom !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(product.segmentEffectiveFrom) || !Number.isFinite(Date.parse(product.segmentEffectiveFrom + "T00:00:00Z"))) {
           errors.push(path + ".segmentEffectiveFrom debe ser una fecha ISO válida.");
         }
         if (product.baseUnit !== "g") errors.push(path + ".baseUnit debe ser g en este fixture comparable por kilogramo.");
@@ -813,7 +813,7 @@ export function validateFixture(data) {
         for (const [index, receipt] of receipts.entries()) {
           const path = "commercialIntelligence.costing.receipts[" + index + "]";
           if (!isRecord(receipt)) { errors.push(path + " debe ser un objeto."); continue; }
-          if (typeof receipt.receiptDate !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(receipt.receiptDate) || (previousDate && receipt.receiptDate <= previousDate)) {
+          if (typeof receipt.receiptDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(receipt.receiptDate) || (previousDate && receipt.receiptDate <= previousDate)) {
             errors.push(path + ".receiptDate debe ser ISO y estar ordenada cronológicamente.");
           }
           previousDate = receipt.receiptDate || previousDate;
