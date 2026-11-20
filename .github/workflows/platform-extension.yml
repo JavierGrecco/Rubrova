@@ -81,8 +81,7 @@ jobs:
           bash -n scripts/platform/prepare-mycompany-6.2.sh
           bash -n scripts/platform/deploy-mycompany-6.2.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
-            - name: Descargar artefactos; verificar JAR y calcular SHA-256 del Compose
-
+      - name: Descargar artefactos; verificar JAR y calcular SHA-256 del Compose
         run: bash scripts/platform/prepare-mycompany-6.2.sh
       - name: Confirmar que la caché existente se vuelve a verificar
         run: bash scripts/platform/prepare-mycompany-6.2.sh
