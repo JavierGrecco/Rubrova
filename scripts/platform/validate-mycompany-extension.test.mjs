@@ -312,6 +312,6 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(uiSmokeSource, /UI_INTEGRATION_RECOVERY_SUCCEEDED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_INCIDENT_PERSISTED=true/);
   assert.match(mockProviderSource, /ThreadingHTTPServer/);
-  assert.match(mockProviderSource, /request[.]path == ["']\\/slow["']/);
-  assert.match(mockProviderSource, /request[.]path == ["']\\/ok["']/);
+  assert.ok(mockProviderSource.includes('if request.path == "/slow":'));
+  assert.ok(mockProviderSource.includes('if request.path == "/ok":'));
 });
