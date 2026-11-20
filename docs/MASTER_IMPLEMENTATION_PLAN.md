@@ -48,6 +48,8 @@ Aunque se implementen progresivamente, estas dimensiones deben existir desde el 
 
 - Organización y entidad legal; sucursal, caja, depósito, ubicación, usuario, rol y dispositivo.
 - Producto/servicio, variante, código, unidad de medida, conversión, precio, costo, impuesto y proveedor.
+- Marca y segmento comercial configurable por categoría (primera/líder, segunda, económica, propia o alternativa), unidad comparable, historial de precios/costos y vigencias.
+- Historial de disponibilidad y quiebres de stock, cambios de surtido, promociones y períodos sin operación para distinguir demanda observada de demanda censurada.
 - Cliente y proveedor; persona/empresa, CUIT cuando corresponda, condiciones comerciales, crédito y cuenta corriente.
 - Unidad de negocio, canal, sucursal, centro de costo y proyecto como dimensiones distintas.
 - Pedido, venta, pago, movimiento de stock, sesión de caja, comprobante fiscal y despacho como hechos distintos.
