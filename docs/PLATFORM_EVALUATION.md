@@ -294,7 +294,8 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Ejecución P01–P26 (POS/ERP) | Pendiente |
 | Ejecución P27–P48 (resiliencia/arquitectura) | Pendiente |
 | Ejecución P49–P57 (historial, trazabilidad y exportación) | Pendiente |
-| Ejecución P58–P60 (perfil 360, RFM y privacidad) | Pendiente |\n| Ejecución P61–P67 (identidad de pagos, proveedores y PCI) | Pendiente |
+| Ejecución P58–P60 (perfil 360, RFM y privacidad) | Pendiente |
+| Ejecución P61–P67 (identidad de pagos, proveedores y PCI) | Pendiente |
 | Pruebas físicas de terminales y hardware | Pendiente |
 | Revisión completa de dependencias y seguridad | Pendiente |
 | Decisión de plataforma | Pendiente |
