@@ -122,27 +122,30 @@ loadDefaultData () + {
             name(centralAccountCI) <- 'Cuenta central CI';
             holder(centralAccountCI) <- defaultCompany();
             currency(centralAccountCI) <- defaultCurrency();
+
+            NEW cashAccountCI = CashAccount {
+                name(cashAccountCI) <- 'Efectivo CI';
+                holder(cashAccountCI) <- defaultCompany();
+                currency(cashAccountCI) <- defaultCurrency();
+
+                NEW cardAccountCI = CashAccount {
+                    name(cardAccountCI) <- 'Tarjeta CI';
+                    holder(cardAccountCI) <- defaultCompany();
+                    currency(cardAccountCI) <- defaultCurrency();
+
+                    NEW cashRegisterCI = Pos {
+                        id(cashRegisterCI) <- 'rubrova-ci';
+                        name(cashRegisterCI) <- 'Caja de prueba Rubrova';
+                        company(cashRegisterCI) <- defaultCompany();
+                        // MyCompany exige un tipo de comprobante para habilitar el puesto POS.
+                        invoiceType(cashRegisterCI) <- invoiceType('retail');
+                        account(cashRegisterCI) <- centralAccountCI;
+                        account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
+                        account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
+                    }
+                }
+            }
         }
-        NEW cashAccountCI = CashAccount {
-            name(cashAccountCI) <- 'Efectivo CI';
-            holder(cashAccountCI) <- defaultCompany();
-            currency(cashAccountCI) <- defaultCurrency();
-        }
-        NEW cardAccountCI = CashAccount {
-            name(cardAccountCI) <- 'Tarjeta CI';
-            holder(cardAccountCI) <- defaultCompany();
-            currency(cardAccountCI) <- defaultCurrency();
-        }
-        NEW cashRegisterCI = Pos {
-            id(cashRegisterCI) <- 'rubrova-ci';
-            name(cashRegisterCI) <- 'Caja de prueba Rubrova';
-            company(cashRegisterCI) <- defaultCompany();
-            // MyCompany exige un tipo de comprobante para habilitar el puesto POS.
-            invoiceType(cashRegisterCI) <- invoiceType('retail');
-            account(cashRegisterCI) <- centralAccountCI;
-        }
-        account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
-        account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
     }
 }
 LSF
