@@ -103,6 +103,20 @@ Aprovechar módulos nativos. Configurar y completar, sin duplicar reglas:
 10. Arqueo y cierre por medio, diferencia, depósitos/retiros y reporte diario.
 11. Prueba con dos cajas, fallos, reintentos, reinicio de proceso y restauración.
 
+**Preparación de datos para aceptar el POS**
+
+La instancia de prueba no debe depender de supuestos ni de registros SQL creados a mano. El modelo de MyCompany 6.2 establece estas precondiciones:
+
+1. **Empresa y puesto.** MyCompany puede inicializar una empresa predeterminada cuando la base no tiene entidades legales. Cada puesto POS pertenece a una empresa. El turno se abre desde la pantalla POS y se vincula a un solo puesto; no se puede abrir un segundo turno mientras ese puesto ya tenga uno abierto.
+2. **Cuentas y medios de pago.** Retail carga inicialmente los métodos Efectivo y Tarjeta, pero no deja configuradas las cuentas del puesto. Cada cuenta asociada a un medio debe pertenecer a la empresa del puesto. La cuenta central de caja también debe pertenecer a esa empresa y ser distinta de la cuenta del método Efectivo; de otro modo los depósitos y retiros se compensan entre sí y el saldo de caja no cambia. Para probar depósitos/retiros también hay que configurar sus tipos de ingreso y egreso.
+3. **Artículos y precios.** El buscador del POS sólo ofrece artículos activos, habilitados para venta y con un precio aplicable. MyCompany usa la lista de precios vigente cuando corresponde y, como alternativa, el precio de venta directo del artículo. Para la prueba de aceptación se utilizará una lista de precios minorista explícita y fechada, no un valor improvisado en el formulario.
+4. **Existencias.** El artículo de prueba debe tener saldo en un depósito real. La semilla incorporará stock mediante un documento de recepción confirmado y verificará el ledger; no se insertarán saldos directamente en tablas.
+5. **Conciliación.** La venta se considerará válida sólo cuando coincidan el comprobante comercial, las líneas y el total, los pagos por medio, la sesión, el saldo de caja y la variación de stock. Las devoluciones deben quedar vinculadas al comprobante de origen y respetar los medios de pago originales.
+
+La primera semilla automatizada será exclusiva de CI y no formará parte del despliegue normal de Rubrova. La secuencia de aceptación será: configurar puesto y cuentas → abrir turno → buscar artículo → añadir al carrito → revisar total → registrar pago → comprobar factura/pago/caja/stock → devolver una parte → comprobar reintegro/stock → cerrar el turno y conciliar. No se pasa a la siguiente operación si falla la conciliación anterior.
+
+Referencias de la versión 6.2: [configuración de Retail](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/resources/docs/en/retail/settings.md), [pantalla POS](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/resources/docs/en/retail/pos.md) y [turnos](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/resources/docs/en/retail/sessions.md).
+
 **Salida:** una jornada de mostrador repetible, en español, sin diferencias inexplicadas entre venta, pagos, caja y stock, con recuperación demostrada.
 
 ### Bloque 2 — ERP administrativo y abastecimiento
