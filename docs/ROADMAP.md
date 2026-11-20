@@ -7,7 +7,7 @@
 
 Rubrova se encuentra en **Fase 0: selección del núcleo operativo**. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
 
-El validador del dataset tiene 27 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026). El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova.
+El validador del dataset tiene 34 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026), incluidas las reglas sintéticas de identidad de pagos y minimización de datos. El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova.
 
 La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
@@ -201,7 +201,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Requisitos POS, checkout, efectivo, vuelto, pagos mixtos y terminales.
 - [x] Modelo de dominio que separa venta, pago, stock, comprobante y envío.
 - [x] Arquitectura de servicios de dominio, APIs/eventos, ownership, idempotencia, CAS, Outbox/Inbox y recuperación.
-- [x] Dataset de evaluación y validador automático: 27/27 pruebas de fixture aprobadas en CI (20/11/2026).
+- [x] Dataset de evaluación y validador automático: 34/34 pruebas de fixture aprobadas en CI (20/11/2026).
 - [x] Benchmark mensual de demanda regular e intermitente con StatsForecast 2.1.1 y baselines; CI aprobado sobre 48 meses sintéticos por serie (20/11/2026).
 - [x] Investigación de ERPNext, MyCompany/lsFusion, Tryton, Dolibarr y Posnic.
 - [x] Revisión de la localización argentina Odoo y de tryton-ar; se encontraron ocho ramas coordinadas 8.0 con manifiestos y tests; instalación y homologación pendientes.
