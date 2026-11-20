@@ -45,21 +45,18 @@ La captura establece una barrera consistente: el corte del ledger, los archivos,
 
 ## 3. Frecuencia, destinos y retención
 
-La configuración será visible y editable. La política inicial a probar es:
+La política inicial se centra en discos locales y externos; no exige NAS, nube ni cuentas de terceros.
 
-- proteger cada operación confirmada en el registro durable del motor transaccional;
-- mantener puntos locales incrementales según la capacidad del motor y del disco;
-- cuando el usuario configure un NAS o destino remoto cifrado siempre disponible, enviar puntos incrementales con una meta inicial de hasta 15 minutos entre puntos recuperables fuera del equipo;
-- sin NAS ni destino remoto, generar copia diaria en un disco externo y mostrar que el RPO real queda limitado a la última copia completada; recomendar rotar dos discos externos y desconectarlos tras cada respaldo;
-- generar una copia completa diaria cuando haya destino disponible;
-- conservar puntos horarios recientes y copias diarias durante 30 días;
-- conservar 12 cierres mensuales, sujeto al espacio disponible;
-- generar una copia antes de actualizar Rubrova o migrar el esquema;
-- ofrecer una segunda ubicación externa/cifrada opcional (NAS o almacenamiento remoto) sin exigir una cuenta cloud para usar Rubrova.
+- Proteger cada operación confirmada mediante la persistencia durable del motor transaccional.
+- Mantener puntos locales incrementales cuando el motor seleccionado lo soporte de forma consistente.
+- Crear una copia completa automática al menos una vez al día.
+- Cuando un disco externo esté conectado, copiar el respaldo a ese medio y verificar checksums y consistencia antes de declarar la copia correcta.
+- Rotar dos discos externos identificados; desconectar y guardar el disco alternativo después de cada copia. No dejar ambos discos conectados permanentemente.
+- Conservar 30 copias diarias y 12 cierres mensuales como política inicial, sujeta a capacidad y prueba de restauración.
+- Crear un punto de recuperación previo a cada actualización o migración de esquema.
+- Mostrar fecha/hora de última copia local y externa válida. Si el disco externo no está conectado o el último backup está atrasado, mostrarlo como riesgo, no como "protegido".
 
-Aplicar el principio 3-2-1 cuando la operación lo permita: tres copias, dos medios distintos y una copia fuera del equipo. Una copia en otra carpeta del mismo disco no protege contra la rotura de ese disco.
-
-Los objetivos de RPO y RTO se muestran como metas a medir en equipos reales. No se promete recuperar operaciones posteriores a la última copia segura fuera del equipo. Rubrova debe mostrar claramente fecha/hora del último respaldo externo válido y advertir cuando su antigüedad supere la política configurada.
+El RPO de pérdida de datos frente a un daño del equipo principal queda limitado a la fecha del último respaldo externo verificado. Una copia interna en otro directorio o partición del mismo disco no protege contra la falla de ese disco. Los backups conectados pueden recibir corrupción o malware junto con los datos activos; por eso la copia externa se desconecta después de cada ejecución.
 
 ## 4. Política inicial: backup sin cifrado a nivel de aplicación
 
