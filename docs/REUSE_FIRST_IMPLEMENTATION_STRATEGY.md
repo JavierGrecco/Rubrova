@@ -57,12 +57,13 @@ La selección se divide por tipo de responsabilidad. Las versiones siguientes so
 
 | Candidato | Qué reutiliza | Encaje y límite arquitectónico | Prioridad |
 |---|---|---|---|
-| [ERPNext + Frappe](https://github.com/frappe/erpnext) 16 / Frappe 16 | POS, ventas, compras, inventario, fabricación, costos, contabilidad, administración y reportes | POS Profile integra empresa, depósito, precios, impuestos, medios y cuentas. Sus apps comparten site/bench y persistencia; es aplicación integrada, no microservicios. ERPNext GPL-3.0; Frappe MIT. | Primera prueba |
-| [Tryton](https://www.tryton.org/) 7.8.4 | Ventas, compras, inventario, contabilidad, facturación, fabricación y módulos de terceros | Arquitectura de tres capas: cliente, servidor y PostgreSQL; tiene clientes Windows y macOS. Sus módulos de negocio se ejecutan sobre el mismo servidor, por lo que se evalúa como aplicación de dominio integrada. Confirmar licencia de cada módulo. | Primera prueba |
-| [Tryton](https://www.tryton.org/) 8.2 | Ventas, compras, inventario, contabilidad, fabricación y POS oficial `sale_point` | Arquitectura cliente-servidor y PostgreSQL. `sale_point` 8.2 genera movimientos de stock y asientos. Los módulos comparten servidor/base. Los módulos tryton-ar disponibles mezclan series 7.1/8.1, así que el port fiscal debe medirse antes de aprobarlo. | Primera ronda condicionada |
-| [Dolibarr](https://www.dolibarr.org/) 24.0.3 | CRM, pedidos, compras, inventario, envíos, fabricación, facturación, pagos, POS y contabilidad | API REST, hooks y triggers facilitan extensión e integración. Es una aplicación integrada. Se usa como filtro corto antes de la evaluación profunda. | Filtro corto |
+| [ERPNext + Frappe](https://github.com/frappe/erpnext) 16 / Frappe 16 | POS, ventas, compras, inventario, fabricación, costos, contabilidad, administración y reportes | POS Profile integra empresa, depósito, precios, impuestos, medios y cuentas. Sus apps comparten site/bench y persistencia: aplicación integrada, no microservicios independientes. ERPNext GPL-3.0; Frappe MIT. | Primera prueba |
+| [MyCompany / lsFusion](https://github.com/lsfusion-solutions/mycompany) 6.2 | CRM, ventas, compras, multi-depósito, facturación, fabricación, POS y RR. HH. | Módulos propios y API HTTP. Todos los módulos de la instalación comparten base de datos; evaluarlo como aplicación acotada, no como microservicios independientes. MyCompany Apache-2.0 y lsFusion LGPL-3.0. | Primera prueba |
+| [Tryton](https://www.tryton.org/) 8.2 | Ventas, compras, inventario, contabilidad, fabricación y POS oficial sale_point | Arquitectura cliente-servidor con PostgreSQL. sale_point 8.2 documenta ventas, devoluciones, pagos, vuelto, sesiones, movimientos de stock y asientos. Los módulos comparten servidor/base. Las ramas principales de tryton-ar inspeccionadas declaran versiones 7.1 y 8.1 en módulos distintos; verificar un conjunto compatible de tags para 8.2 antes de portarlo. | Primera ronda condicionada |
+| [Dolibarr](https://www.dolibarr.org/) 24.0.3 | CRM, pedidos, compras, inventario, envíos, fabricación, facturación, pagos, POS y contabilidad | API REST, hooks y triggers; módulos dentro de una aplicación integrada. Se evalúa como filtro corto de menor complejidad y se mide TakePOS. | Filtro corto |
+| [Posnic](https://github.com/Posnic/POS) 1.9.2 | POS retail/gastronómico, ventas, devoluciones, pagos, compras, catálogo e inventario | Aplicación POS dedicada, pero el paquete revisado combina AGPL-3.0-only con MongoDB SSPL-1.0 y componente comercial; reglas fiscales orientadas a India y soporte macOS limitado. | Referencia POS secundaria |
 
-ERPNext y MyCompany son las primeras pruebas de cobertura porque permiten medir un POS integrado con catálogo, pagos, stock y administración. Ninguno se aprueba por tener muchos módulos: ambos deben demostrar que el límite de datos y despliegue es compatible con Rubrova. Tryton 8.2 se evalúa en paralelo por su POS oficial y su base PostgreSQL, pero la localización argentina requiere un port: los módulos inspeccionados combinan series 7.1 y 8.1. Dolibarr pasa por un filtro corto para comprobar si su menor complejidad compensa sus límites funcionales. El ganador no está predeterminado.
+ERPNext y MyCompany son las primeras pruebas de cobertura porque permiten medir un POS integrado con catálogo, pagos, stock y administración. Ninguno se aprueba por tener muchos módulos: ambos deben demostrar que su límite de datos y despliegue es compatible con Rubrova. Tryton 8.2 se evalúa en paralelo por su POS oficial y su base PostgreSQL. La localización argentina merece atención especial: las ramas principales inspeccionadas declaran series diferentes; hay que verificar tags/versiones alineados y, sólo si no existen, estimar el port a 8.2. Dolibarr pasa por un filtro corto para comprobar si su menor complejidad compensa sus límites funcionales. El ganador no está predeterminado.
 
 ### POS y operación de caja
 
@@ -126,7 +127,7 @@ Para cada candidato: fijar tag/commit, identificar runtime y base de datos, leer
 
 ### Etapa B — laboratorio corto y comparable
 
-Usar el mismo conjunto de datos sintéticos y el mismo guion para las aplicaciones candidatas. Se empieza por MyCompany, Tryton, Dolibarr y ERPNext como ERP/gestión; Posnic se prueba en paralelo como opción POS. No se obliga a todos a ejecutar escenarios fuera de su responsabilidad.
+Usar el mismo conjunto de datos sintéticos y el mismo guion para las aplicaciones candidatas. Se empieza por ERPNext y MyCompany como candidatos de cobertura; Tryton 8.2 se evalúa en paralelo con la compatibilidad de la localización argentina; Dolibarr recibe un filtro corto. Posnic se prueba sólo como referencia POS secundaria. No se obliga a todos a ejecutar escenarios fuera de su responsabilidad.
 
 La prueba mínima cubre:
 
@@ -166,7 +167,7 @@ No se empieza por escribir un motor de stock, contabilidad, CRM o compras si un 
 
 ## Primer paso y criterio de salida
 
-**Primera prueba:** MyCompany/lsFusion 6.2, Tryton serie 7.8 (incluido `sale_point`) y Dolibarr 24.0.3; ERPNext 16.60.0/Frappe 16 permanece en el filtro comparativo. Posnic se compara como POS dedicado. Posnic 1.9.2 se evalúa como candidato POS, no como ERP paralelo. No hay un ganador documental.
+**Primera prueba:** ERPNext 16/Frappe 16 y MyCompany/lsFusion 6.2; Tryton 8.2 entra condicionado por el conjunto de módulos argentinos; Dolibarr 24.0.3 recibe un filtro corto. Posnic 1.9.2 se compara como referencia POS, no como ERP paralelo. No hay un ganador documental.
 
 La primera entrega de software se elegirá después de esa comparación: será un flujo vertical que use las capacidades reutilizadas y agregue sólo los adaptadores o reglas faltantes. No se aprueba aún una implementación propia de Gateway, Ventas e Inventario.
 
