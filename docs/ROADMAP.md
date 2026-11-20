@@ -46,7 +46,7 @@ No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circu
 - [ ] Fijar tags/commits y dependencias actuales de ERPNext 16, MyCompany 6.2, Tryton 8.0 + ocho módulos tryton-ar 8.0 y Dolibarr 24.0.3.
 - [ ] Ejecutar filtro documental, de licencia, instalación, API, exportación, backup y restauración.
 - [ ] Probar ERPNext y MyCompany con el flujo POS completo y jornada simulada.
-- [ ] Instalar Tryton 8.0 con las ocho ramas tryton-ar 8.0, ejecutar sus tests y homologar WSFE/WSFEX; dejar Tryton 8.2 como upgrade posterior sujeto a port y revalidación.
+- [ ] Instalar Tryton 8.0 con las ocho ramas tryton-ar fijadas en el [lock reproducible](TRYTON_ARGENTINA_8_0_LOCK.md), ejecutar tests y homologar WSFE/WSFEX; dejar Tryton 8.2 como upgrade posterior sujeto a port y revalidación.
 - [ ] Ejecutar filtro corto de Dolibarr y decidir si entra en la comparación profunda.
 - [ ] Mantener Posnic como comparador POS sólo si aporta una ventaja medible frente al POS incluido en los ERP.
 - [ ] Llevar como máximo dos candidatos a la prueba profunda P01–P44.
