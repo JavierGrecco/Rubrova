@@ -190,7 +190,7 @@ El puntaje es evidencia de una prueba, no una preferencia subjetiva. Una platafo
 - Robustez: proceso terminado abruptamente, red caída, reintento, webhook duplicado y restauración.
 - Gestión: ventas por día/caja/operador/producto/área, stock, costo, margen y conciliación.
 
-Los escenarios P01–P60 existentes siguen vigentes; la prioridad de ejecución se organiza por este circuito, no por el orden numérico ni por la facilidad de una integración.
+Los escenarios P01–P67 existentes siguen vigentes; la prioridad de ejecución se organiza por este circuito, no por el orden numérico ni por la facilidad de una integración.
 
 ## 7. Construcción e integración por entregas
 
@@ -373,6 +373,8 @@ La decisión no se tomará por cantidad de funciones ni por estrellas de GitHub.
 - [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md)
 - [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md)
 - [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md)
+- [Identidad del pagador, pagos y conciliación](PAYMENT_IDENTITY_AND_RECONCILIATION.md)
+- [Evaluación de S-Tech](S_TECH_EVALUATION.md)
 - [Revisión competitiva del mercado](COMPETITIVE_MARKET_REVIEW.md)
 - [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md)
 - [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md)
