@@ -335,3 +335,27 @@ Puede ser más cómoda para operación asistida con GUI; comparar con restic, no
 - Los proyectos de sincronización, ecommerce, BI, identidad, observabilidad y backup añadidos en esta revisión están documentados como candidatos; no se instalaron ni se eligieron.
 
 Esta lista se complementa con el [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md), la [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+
+
+## 15. Forecasting y análisis comercial
+
+El alcance funcional y las pruebas de demanda, rentabilidad y marcas están definidos en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
+
+| Proyecto | Versión/licencia observada | Qué aporta | Uso propuesto y puerta de entrada |
+|---|---|---|---|
+| [StatsForecast](https://github.com/Nixtla/statsforecast) | Repositorio Nixtla; Apache-2.0; pyproject.toml observado con versión 2.1.1 | Modelos estadísticos y econométricos de series temporales; baselines, ETS, AutoARIMA, Theta y otros modelos. | Primera biblioteca de pronóstico a probar en un fixture de Rubrova. Fijar release/commit y dependencias; comparar contra naïve, naïve estacional y promedio móvil. |
+| [MLForecast](https://github.com/Nixtla/mlforecast) | Apache-2.0; pyproject.toml observado con requires-python >=3.10 y versión 1.1.0 | Feature engineering temporal y modelos de machine learning con variables exógenas/estáticas, validación y predicción probabilística. | Segunda etapa, si hay variables exógenas confiables, historial y mejora medible; comprobar compatibilidad exacta con runtime y modelos elegidos. |
+| [HierarchicalForecast](https://github.com/Nixtla/hierarchicalforecast) | Apache-2.0 | Reconciliación de pronósticos de múltiples niveles de agregación. | Posterior a la base de forecast; usar para coherencia SKU/familia/marca/categoría/sucursal/canal/total. |
+| [DemandSense](https://github.com/mercer14k/DemandSense) | MIT; 4 commits y 2 estrellas en consulta del 20/11/2026 | Croston-SBA/TSB, demanda intermitente, escenarios, evaluación rolling, intervalos empíricos y API local. | Referencia de funcionalidades y posible inspección puntual. Proyecto todavía pequeño; no usar como núcleo de producción sin pruebas extensas de seguridad, calidad, dependencias y mantenimiento. |
+| [DemandOS](https://github.com/RaulMermans/demand-OS) | Sin licencia declarada | Flujo de señales de quiebre, forecasts, backtesting y propuestas de reposición revisadas por personas. | Sólo referencia funcional/arquitectónica. No copiar código ni integrar paquetes mientras no exista licencia explícita. |
+
+### Rentabilidad y segmentación de marcas
+
+- **Rentabilidad:** no se selecciona una biblioteca financiera genérica como autoridad. Se aprovechan los reportes y el ledger de costos del ERP elegido. ERPNext Stock Ledger/FIFO/Moving Average y Gross Profit son material de referencia funcional; comprobar su comportamiento junto con P&L y el método de valuación. No extraer la fórmula del informe separada del ledger.
+- **Primeras y segundas marcas:** implementar el modelo de segmentos configurables con vigencia en Rubrova, comparable por categoría y unidad base. Capturar historial de precios, presentaciones, disponibilidad, promociones, costos y ventas. No se encontró una aplicación open source especializada que reemplace este dominio.
+- **ABC/XYZ:** clasifican relevancia y variabilidad de SKU; son análisis complementarios, no etiquetas de primera/segunda marca.
+- [Retail Sales & Margin Analysis](https://github.com/EkaterinaA83/Retail-sales-ABC-margin-analysis) aporta un ejemplo de análisis exploratorio de margen/promociones/ABC, pero no muestra un archivo LICENSE visible. Referencia metodológica, no código aprobado.
+
+**Arquitectura de uso:** las bibliotecas de forecasting trabajan en un servicio/pipeline analítico separado sobre snapshots conciliados. DuckDB (MIT) puede soportar consultas locales; Superset (Apache-2.0) es una opción de BI posterior. Ninguna puede escribir en POS, pagos, stock o contabilidad. Metabase y Superset no se instalan juntos por defecto.
+
+**Estado:** investigación documental. No instalar ni fijar dependencias de producción hasta que la plataforma POS/ERP y el runtime estén seleccionados y las pruebas comparativas estén listas.
