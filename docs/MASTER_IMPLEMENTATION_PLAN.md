@@ -39,7 +39,7 @@ La primera entrega no es una demo de caja ni un CRUD de artículos. Es un **circ
 10. Cerrar o reiniciar el POS/servicio y demostrar que la operación confirmada no se pierde ni se duplica.
 11. Devolver parcial o totalmente una venta, vinculando la operación original y dejando los movimientos compensatorios.
 12. Consultar un cierre básico: ventas netas, devoluciones, medios de pago, efectivo esperado, diferencia de caja y unidades vendidas.
-13. Crear una copia portable cifrada y restaurarla en una instalación Windows limpia o en una PC de reemplazo, verificando ventas, pagos, caja, stock, costos, documentos y auditoría antes de habilitar el uso.
+13. Crear una copia portable verificable, sin cifrado propio de Rubrova, y restaurarla en una instalación Windows limpia o en una PC de reemplazo, verificando ventas, pagos, caja, stock, costos, documentos y auditoría antes de habilitar el uso.
 
 **Para dar por terminada esta entrega:** cada total debe poder reproducirse; ventas, pagos, caja, inventario y fiscalidad deben conciliar; los errores y estados pendientes deben ser visibles; y la caja debe poder usarse con teclado, lector y pantalla táctil. No se declara una venta cobrada porque el POS haya mostrado una pantalla de éxito o porque el cliente presente una captura.
 
@@ -57,7 +57,7 @@ Aunque se implementen progresivamente, estas dimensiones deben existir desde el 
 - Identificador externo, correlation ID, clave de idempotencia, auditoría y estado de sincronización.
 - Tiempos de ocurrencia, registro y vigencia; historial de precio, marca/segmento, presentación, disponibilidad y costo; snapshots por línea; detalle de cajero/turno/caja, intentos y liquidaciones de pago, promociones, reclamos y devoluciones.
 - Una clasificación separada de área, canal, formato sectorial, sucursal, depósito y método de cumplimiento. La matriz detallada de captura está en [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md).
-- Política de respaldo desde el primer uso: copia completa portable, puntos incrementales, documentos/adjuntos, configuraciones y auditoría; secretos en almacén cifrado independiente y restauración a equipo limpio.
+- Política de respaldo desde el primer uso: copia completa portable, puntos incrementales, documentos/adjuntos, configuraciones y auditoría; secretos excluidos del paquete y re-vinculados por separado; restauración a equipo limpio.
 - Fecha/hora, moneda, tipo de cambio, política de redondeo y fotografía de las condiciones aplicadas a la operación.
 
 Una venta puede incluir líneas de áreas diferentes. La dimensión económica debe guardarse a nivel de línea cuando corresponda; el consolidado no debe duplicar ingresos, stock ni costos internos.
@@ -190,7 +190,7 @@ El puntaje es evidencia de una prueba, no una preferencia subjetiva. Una platafo
 - Robustez: proceso terminado abruptamente, red caída, reintento, webhook duplicado y restauración.
 - Gestión: ventas por día/caja/operador/producto/área, stock, costo, margen y conciliación.
 
-Los escenarios P01–P57 existentes siguen vigentes; la prioridad de ejecución se organiza por este circuito, no por el orden numérico ni por la facilidad de una integración.
+Los escenarios P01–P60 existentes siguen vigentes; la prioridad de ejecución se organiza por este circuito, no por el orden numérico ni por la facilidad de una integración.
 
 ## 7. Construcción e integración por entregas
 
@@ -372,6 +372,8 @@ La decisión no se tomará por cantidad de funciones ni por estrellas de GitHub.
 - [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md)
 - [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md)
 - [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md)
+- [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md)
+- [Revisión competitiva del mercado](COMPETITIVE_MARKET_REVIEW.md)
 - [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md)
 - [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md)
 - [Continuidad y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md)
