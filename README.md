@@ -44,13 +44,14 @@ Una plataforma que reúne en un solo lugar:
 | [Alcance funcional](docs/FUNCTIONAL_SCOPE.md) | Capacidades del producto y límites del alcance |
 | [Requisitos del POS](docs/POS_REQUIREMENTS.md) | Venta, caja, descuentos, pagos, hardware y operación diaria |
 | [Arquitectura](docs/ARCHITECTURE.md) | Estructura técnica, módulos, datos y decisiones de plataforma |
+| [Arquitectura modular distribuida](docs/DISTRIBUTED_MODULAR_ARCHITECTURE.md) | Servicios independientes, APIs/eventos, idempotencia, CAS y operación local |
 | [Modelo de dominio](docs/DOMAIN_MODEL.md) | Entidades, movimientos, estados y relaciones |
 | [Inteligencia del negocio](docs/BUSINESS_INTELLIGENCE.md) | Métricas, rentabilidad, estacionalidad, tendencias y pronósticos |
 | [Canales e integraciones](docs/CHANNELS_AND_INTEGRATIONS.md) | Omnicanalidad, ARCA, Mercado Libre y pagos |
 | [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Roles, permisos, turnos, autorizaciones y trazabilidad |
 | [Perfiles sectoriales](docs/SECTOR_PROFILES.md) | Supermercados, panaderías, rotiserías y gastronomía |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
-| [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos, offline, sincronización, backup/restauración y pruebas P27–P36 |
+| [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P44 |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
@@ -80,7 +81,8 @@ Una plataforma que reúne en un solo lugar:
 - Evaluar módulos especializados como Simple WMS, InvenTree, OpenBoxes, OpenWMS, DuckDB/Superset y automatización detrás de contratos.
 - Ampliar la investigación con Dolibarr 24.0.3 e InvenTree 1.7.3; mantenerlos como candidatos sin aprobar hasta ejecutar pruebas comparables.
 - Convertir los hallazgos de mercado argentino en criterios de producto para continuidad, conciliación, tesorería, migración e inventario multiárea.
-- Ejecutar y documentar las pruebas de continuidad P27–P36, además del protocolo funcional P01–P26.
+- Ejecutar y documentar las pruebas de continuidad P27–P44, además del protocolo funcional P01–P26.
+- Evaluar la coordinación de stock con reservas/CAS y cuotas offline; no usar idempotencia como sustituto de control de concurrencia.
 - Definir adaptadores de logística argentina y perfiles de exportación contable para sistemas existentes.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
 - Comparar MyCompany, Posnic y ERPNext con el protocolo completo P01–P26; sumar Dolibarr sólo si puede ejecutarse con la misma profundidad y puertas de aceptación.
@@ -90,7 +92,7 @@ Una plataforma que reúne en un solo lugar:
 - Medir cuánto código podemos reutilizar sin modificar núcleos de forma invasiva.
 - Verificar la adaptación argentina y la viabilidad de ARCA en homologación.
 - Revisar las licencias de cada componente y dependencia del paquete concreto.
-- Elegir una sola fuente de verdad o confirmar el monolito modular propio.
+- Validar servicios independientes por dominio, almacenamiento propio, contratos versionados y rollback individual; una autoridad por cada dato transaccional.
 
 El proyecto y sus dominios están en [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md). La estructura multiárea está en [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md). Los procesos mayoristas están en [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md), los servicios en [Servicios B2B y contratos](docs/B2B_SERVICES_AND_CONTRACTS.md) y la medición económica en [Rentabilidad por área](docs/BUSINESS_UNIT_PROFITABILITY.md). Ninguna plataforma o módulo está aprobado por aparecer en el catálogo.
 **Siguiente — Fase 1: núcleo transaccional**
