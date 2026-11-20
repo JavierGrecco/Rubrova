@@ -1,0 +1,6 @@
+services:
+  server:
+    environment:
+      JAVA_OPTS: "-Dlogics.topModule=RubrovaCustom"
+      USER_SETLANGUAGE: "es"
+      USER_SETCOUNTRY: "AR"

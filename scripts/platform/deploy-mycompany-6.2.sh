@@ -15,7 +15,7 @@ if [[ "$MODE" != "docker" && "$MODE" != "native" ]]; then
 fi
 
 if [[ "$MODE" == "native" && "$(uname -s)" != "Linux" ]]; then
-  echo "El modo native sólo está disponible en Linux. En macOS usá docker; en Windows, el script PowerShell." >&2
+  echo "El modo native sólo está disponible en Linux. En macOS usá Docker; en Windows, el script PowerShell." >&2
   exit 2
 fi
 
@@ -39,6 +39,12 @@ if [[ "$MODE" == "docker" ]]; then
     echo "No se encontró compose.yaml. Prepará y revisá el Compose oficial MyCompany 6.2 primero." >&2
     exit 1
   }
+  OVERRIDE_SOURCE="$REPO_ROOT/platform/compose.rubrova.override.yaml"
+  [[ -s "$OVERRIDE_SOURCE" ]] || {
+    echo "Falta el override Docker de Rubrova: $OVERRIDE_SOURCE" >&2
+    exit 1
+  }
+  OVERRIDE_TARGET="$INSTALL_DIR/compose.rubrova.override.yaml"
   MODULE_DIR="$INSTALL_DIR/docker-server"
   SETTINGS_FILE="$MODULE_DIR/settings.properties"
   mkdir -p "$MODULE_DIR"
@@ -59,10 +65,15 @@ fi
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_SETTINGS=""
+BACKUP_OVERRIDE=""
 if [[ -e "$SETTINGS_FILE" ]]; then
   BACKUP_SETTINGS="$SETTINGS_FILE.rubrova-backup.$STAMP"
   cp -p "$SETTINGS_FILE" "$BACKUP_SETTINGS"
   chmod 600 "$BACKUP_SETTINGS" 2>/dev/null || true
+fi
+if [[ "$MODE" == "docker" && -e "$OVERRIDE_TARGET" ]]; then
+  BACKUP_OVERRIDE="$OVERRIDE_TARGET.rubrova-backup.$STAMP"
+  cp -p "$OVERRIDE_TARGET" "$BACKUP_OVERRIDE"
 fi
 
 TMP_SETTINGS="$(mktemp)"
@@ -82,23 +93,23 @@ import sys
 
 path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8-sig") if path.exists() else ""
+lines = text.splitlines()
 settings = {
     "logics.topModule": "RubrovaCustom",
     "user.setLanguage": "es",
     "user.setCountry": "AR",
 }
 for key, value in settings.items():
-    pattern = re.compile(r"^[ \t]*" + re.escape(key) + r"[ \t]*=.*$", re.MULTILINE)
+    pattern = re.compile(r"^[ \t]*" + re.escape(key) + r"[ \t]*=")
+    matches = [index for index, line in enumerate(lines) if pattern.match(line)]
     replacement = f"{key} = {value}"
-    updated, count = pattern.subn(replacement, text)
-    if count == 0:
-        text = text.rstrip("\r\n")
-        if text:
-            text += "\n"
-        text += replacement + "\n"
+    if matches:
+        lines[matches[0]] = replacement
+        for duplicate_index in reversed(matches[1:]):
+            lines.pop(duplicate_index)
     else:
-        text = updated
-path.write_text(text, encoding="utf-8", newline="\n")
+        lines.append(replacement)
+path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 PY
 
 if [[ "$RESTART_NATIVE" -eq 1 ]]; then
@@ -114,6 +125,10 @@ for file in "${MODULE_FILES[@]}"; do
 done
 install -m 0640 "$TMP_SETTINGS" "$SETTINGS_FILE"
 
+if [[ "$MODE" == "docker" ]]; then
+  install -m 0644 "$OVERRIDE_SOURCE" "$OVERRIDE_TARGET"
+fi
+
 if [[ "$RESTART_NATIVE" -eq 1 ]]; then
   systemctl start lsfusion6-server
   systemctl is-active --quiet lsfusion6-server || {
@@ -122,12 +137,15 @@ if [[ "$RESTART_NATIVE" -eq 1 ]]; then
   }
   echo "Extensión Rubrova instalada y servicio lsfusion6-server activo."
 else
-  echo "Módulos y ResourceBundle preparados en $MODULE_DIR."
-  echo "Se configuró logics.topModule=RubrovaCustom."
-  echo "No se inició ni modificó ningún contenedor. Revisá el Compose y reiniciá el stack manualmente."
+  echo "Módulos, ResourceBundle y override Docker preparados en $INSTALL_DIR."
+  echo "Se configuraron logics.topModule=RubrovaCustom, user.setLanguage=es y user.setCountry=AR."
+  echo "Para aplicar la configuración, ejecutá:"
+  echo "  docker compose -f compose.yaml -f compose.rubrova.override.yaml up -d"
+  echo "Este script no inicia ni modifica contenedores."
 fi
 
 echo "Módulos instalados:"
 for file in "${MODULE_FILES[@]}"; do echo "  $MODULE_DIR/$file"; done
 [[ -n "$BACKUP_SETTINGS" ]] && echo "Backup de settings: $BACKUP_SETTINGS"
+[[ -n "$BACKUP_OVERRIDE" ]] && echo "Backup del override: $BACKUP_OVERRIDE"
 echo "La carga efectiva debe confirmarse en el log del servidor y en la interfaz."

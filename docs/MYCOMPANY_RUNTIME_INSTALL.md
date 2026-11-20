@@ -67,7 +67,11 @@ Con el Compose oficial descargado en un directorio, ejecutar:
 
     bash scripts/platform/deploy-mycompany-6.2.sh docker /ruta/al/directorio
 
-El script crea o utiliza docker-server, copia los dos módulos y el ResourceBundle y escribe logics.topModule = RubrovaCustom en docker-server/settings.properties. Hace una copia local del archivo de configuración anterior si existía. **No inicia ni reinicia contenedores.** Después revisar el cambio y reiniciar manualmente el stack con Docker Compose.
+El script crea o utiliza `docker-server`, copia los módulos y el ResourceBundle, actualiza `settings.properties` con el punto de entrada y el idioma español de Argentina, y copia `compose.rubrova.override.yaml` junto al Compose oficial. Si ya existía un archivo reemplazado, crea una copia `.rubrova-backup.*`. El override configura `JAVA_OPTS=-Dlogics.topModule=RubrovaCustom`, `USER_SETLANGUAGE=es` y `USER_SETCOUNTRY=AR`; así el servidor aplica la extensión y el ResourceBundle en el arranque. **El script no inicia ni reinicia contenedores.** Para aplicar la configuración, ejecutar desde la carpeta de instalación:
+
+    docker compose -f compose.yaml -f compose.rubrova.override.yaml up -d
+
+No ejecutar sólo `docker compose up -d`: ese comando no aplica el override de Rubrova.
 
 ### Linux nativo
 
@@ -75,7 +79,7 @@ Ejecutar desde el clon de Rubrova con permisos administrativos:
 
     sudo bash scripts/platform/deploy-mycompany-6.2.sh native
 
-El script utiliza el classpath /var/lib/lsfusion y la configuración /etc/lsfusion6-server/settings.properties, rutas documentadas para lsFusion 6. Hace una copia de seguridad de settings, instala los dos módulos y el ResourceBundle y reinicia el servicio lsfusion6-server.
+El script utiliza el classpath `/var/lib/lsfusion` y la configuración `/etc/lsfusion6-server/settings.properties`, rutas documentadas para lsFusion 6. Hace una copia de seguridad de settings, instala los módulos y el ResourceBundle, actualiza `logics.topModule`, `user.setLanguage=es` y `user.setCountry=AR`, y reinicia el servicio `lsfusion6-server`.
 
 ### Windows nativo
 
@@ -87,7 +91,7 @@ Si aparece más de un archivo, elegir el que utiliza el servicio lsFusion 6 Serv
 
     powershell -ExecutionPolicy Bypass -File .\scripts\platform\deploy-mycompany-6.2.ps1 -SettingsPath "RUTA_COMPLETA\settings.properties"
 
-El script copia los dos módulos y el ResourceBundle a C:\Program Files\lsFusion 6\Server\lib, respalda los archivos que pudiera reemplazar, configura logics.topModule y reinicia el servicio si estaba activo. Si la instalación utiliza otra carpeta de classpath, pasarla mediante -ModuleDirectory.
+El script copia los módulos y el ResourceBundle a `C:\Program Files\lsFusion 6\Server\lib`, respalda los archivos que pudiera reemplazar, configura `logics.topModule`, `user.setLanguage=es` y `user.setCountry=AR`, y reinicia el servicio si estaba activo. Si la instalación utiliza otra carpeta de classpath, pasarla mediante `-ModuleDirectory`.
 
 ## 4. Qué comprobar después del reinicio
 
@@ -108,9 +112,9 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 1. Descarga el JAR y el Compose oficiales y compara ambos SHA-256 con el lock.
 2. Copia `RubrovaCustom`, `RubrovaPOSLocalization` y el ResourceBundle a `docker-server` sin editar el código upstream.
 3. Valida la configuración con `docker compose config` y confirma al menos cuatro servicios.
-4. Inicia el stack con un nombre de proyecto efímero. El override añade `JAVA_OPTS=-Dlogics.topModule=RubrovaCustom`, `USER_SETLANGUAGE=es` y `USER_SETCOUNTRY=AR` al servicio `server`. La configuración nativa escribe los mismos tres valores en `settings.properties` y conserva el resto de los parámetros.
-5. Fija por digest las cuatro imágenes del runtime Linux x86_64 mediante un override temporal y compara la imagen realmente descargada contra el lock.
-6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada, el idioma y el país, y que `JAVA_OPTS` llegó al proceso Java.
+4. Inicia el stack con un nombre de proyecto efímero y utiliza el mismo `compose.rubrova.override.yaml` que se entrega en la instalación Docker normal.
+5. Añade un segundo override temporal que fija por digest las cuatro imágenes del runtime Linux x86_64, y compara cada imagen descargada contra el lock.
+6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada, el idioma y el país, y que `JAVA_OPTS` del overlay compartido llegó al proceso Java.
 7. Espera la respuesta web y el final de la inicialización de la lógica. La imagen MyCompany 6.2 inicializa 712 módulos base; la prueba exige al menos 714 al incorporar los dos módulos propios.
 8. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 

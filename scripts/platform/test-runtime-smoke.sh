@@ -26,7 +26,8 @@ CACHE_DIR="${RUBROVA_CACHE_DIR:-$WORK_DIR/cache}"
 COMPOSE_DIR="$WORK_DIR/mycompany-6.2"
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-rubrova-smoke-${GITHUB_RUN_ID:-local}}"
 COMPOSE_FILE="$COMPOSE_DIR/compose.yaml"
-OVERRIDE_FILE="$COMPOSE_DIR/compose.rubrova.override.yaml"
+EXTENSION_OVERRIDE_FILE="$COMPOSE_DIR/compose.rubrova.override.yaml"
+IMAGE_OVERRIDE_FILE="$COMPOSE_DIR/compose.images.override.yaml"
 WEB_URL="${RUBROVA_WEB_URL:-http://127.0.0.1:8080/}"
 STARTUP_TIMEOUT_SECONDS="${RUBROVA_STARTUP_TIMEOUT_SECONDS:-900}"
 KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
@@ -34,14 +35,14 @@ KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
 mkdir -p "$CACHE_DIR" "$COMPOSE_DIR"
 
 compose() {
-  COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose -f "$COMPOSE_FILE" -f "$OVERRIDE_FILE" --project-directory "$COMPOSE_DIR" "$@"
+  COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose -f "$COMPOSE_FILE" -f "$EXTENSION_OVERRIDE_FILE" -f "$IMAGE_OVERRIDE_FILE" --project-directory "$COMPOSE_DIR" "$@"
 }
 
 cleanup() {
   local exit_code=$?
   trap - EXIT
   set +e
-  if [[ -s "$COMPOSE_FILE" ]]; then
+  if [[ -s "$COMPOSE_FILE" && -s "$EXTENSION_OVERRIDE_FILE" && -s "$IMAGE_OVERRIDE_FILE" ]]; then
     if [[ "$exit_code" -ne 0 ]]; then
       echo "=== Estado final de los contenedores ===" >&2
       compose ps --all >&2
@@ -73,25 +74,25 @@ trap cleanup EXIT
 echo "1/6 Preparando el JAR y Compose oficiales MyCompany 6.2"
 RUBROVA_CACHE_DIR="$CACHE_DIR" bash "$PREPARE_SCRIPT"
 cp "$CACHE_DIR/compose.yaml" "$COMPOSE_FILE"
-cat > "$OVERRIDE_FILE" <<'YAML'
+
+echo "2/7 Preparando la extensión Rubrova y su override Docker compartido"
+bash "$DEPLOY_SCRIPT" docker "$COMPOSE_DIR"
+SETTINGS_FILE="$COMPOSE_DIR/docker-server/settings.properties"
+[[ -s "$EXTENSION_OVERRIDE_FILE" ]] || {
+  echo "No se preparó compose.rubrova.override.yaml." >&2
+  exit 1
+}
+cat > "$IMAGE_OVERRIDE_FILE" <<'YAML'
 services:
   logics:
     image: lsfusion/mycompany:6.2@sha256:9dacff96577de49a56633a53801c7bcd78b5e7df501cd4ebd61098124276bd11
   server:
     image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
-    environment:
-      JAVA_OPTS: "-Dlogics.topModule=RubrovaCustom"
-      USER_SETLANGUAGE: "es"
-      USER_SETCOUNTRY: "AR"
   client:
     image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
   db:
     image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
 YAML
-
-echo "2/6 Preparando la extensión Rubrova fuera del código upstream"
-bash "$DEPLOY_SCRIPT" docker "$COMPOSE_DIR"
-SETTINGS_FILE="$COMPOSE_DIR/docker-server/settings.properties"
 grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
   echo "No se configuró el punto de entrada RubrovaCustom." >&2
   exit 1

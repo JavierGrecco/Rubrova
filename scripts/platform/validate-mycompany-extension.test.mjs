@@ -13,6 +13,8 @@ const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
+const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
+const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
 
 function parseProperties(source) {
   const entries = new Map();
@@ -54,9 +56,12 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
-  assert.match(runtimeSmokeSource, /JAVA_OPTS: "-Dlogics\.topModule=RubrovaCustom"/);
-  assert.match(runtimeSmokeSource, /USER_SETLANGUAGE: "es"/);
-  assert.match(runtimeSmokeSource, /USER_SETCOUNTRY: "AR"/);
+  assert.match(runtimeSmokeSource, /EXTENSION_OVERRIDE_FILE/);
+  assert.match(runtimeSmokeSource, /IMAGE_OVERRIDE_FILE/);
+  assert.match(dockerOverrideSource, /JAVA_OPTS:/);
+  assert.match(dockerOverrideSource, /RubrovaCustom/);
+  assert.match(dockerOverrideSource, /USER_SETLANGUAGE: "es"/);
+  assert.match(dockerOverrideSource, /USER_SETCOUNTRY: "AR"/);
   assert.match(runtimeSmokeSource, /JAVA_OPTS=-Dlogics\.topModule=RubrovaCustom/);
   assert.match(runtimeSmokeSource, /Argumento Java activo/);
   assert.match(runtimeSmokeSource, /RUBROVA_CUSTOM_LOG_EVIDENCE/);
@@ -138,13 +143,21 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
 test("los scripts de despliegue configuran el módulo y conservan backups", () => {
   const shell = read("scripts/platform/deploy-mycompany-6.2.sh");
   const powershell = read("scripts/platform/deploy-mycompany-6.2.ps1");
-  assert.match(shell, /logics\.topModule = RubrovaCustom/);
+  assert.match(shell, /"logics\.topModule": "RubrovaCustom"/);
+  assert.match(shell, /"user\.setLanguage": "es"/);
+  assert.match(shell, /"user\.setCountry": "AR"/);
+  assert.match(shell, /compose\.rubrova\.override\.yaml/);
+  assert.match(shell, /OVERRIDE_SOURCE/);
+  assert.match(deploySmokeSource, /cmp -s/);
+  assert.match(deploySmokeSource, /override_backup_count/);
   assert.match(shell, /user\.setLanguage = es/);
   assert.match(shell, /user\.setCountry = AR/);
   assert.match(shell, /docker-server/);
   assert.match(shell, /RubrovaPOSLocalization\.lsf/);
   assert.match(shell, /systemctl restart lsfusion6-server|systemctl start lsfusion6-server/);
-  assert.match(powershell, /logics\.topModule = RubrovaCustom/);
+  assert.match(powershell, /"logics\.topModule" = "RubrovaCustom"/);
+  assert.match(powershell, /"user\.setLanguage" = "es"/);
+  assert.match(powershell, /"user\.setCountry" = "AR"/);
   assert.match(powershell, /user\.setLanguage = es/);
   assert.match(powershell, /user\.setCountry = AR/);
   assert.match(powershell, /RubrovaPOSLocalization\.lsf/);

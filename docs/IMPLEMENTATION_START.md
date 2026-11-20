@@ -60,7 +60,8 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Definir comprobaciones de CI para lock, glosario, extensión y scripts.
 - [ ] Descargar y ejecutar el instalador en Windows x64 o levantar el Compose en un equipo anfitrión compatible.
 - [x] Ejecutar en CI el smoke test de runtime MyCompany 6.2 en Linux x86_64: cuatro servicios, cuatro digests fijados, HTTP 200 y carga de RubrovaPOSLocalization + RubrovaCustom (714/714 módulos) en unos 30 segundos.
-- [ ] Confirmar que RubrovaCustom carga en el proceso real, que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
+- [x] Configurar los tres parámetros de instalación: `logics.topModule=RubrovaCustom`, `user.setLanguage=es` y `user.setCountry=AR`; el override Docker entrega los valores al proceso Java.
+- [ ] Confirmar visualmente en el navegador que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
 - [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.

@@ -70,50 +70,37 @@ try {
         "user.setLanguage" = "es"
         "user.setCountry" = "AR"
     }
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in ($settings -split "\r?\n")) {
+        $lines.Add($line)
+    }
+    while ($lines.Count -gt 0 -and $lines[$lines.Count - 1] -eq "") {
+        $lines.RemoveAt($lines.Count - 1)
+    }
+
     foreach ($entry in $settingValues.GetEnumerator()) {
-        $pattern = '(?m)^[ \t]*' + [regex]::Escape($entry.Key) + '[ \t]*=.*
-    foreach ($name in $moduleNames) {
-        Copy-Item -LiteralPath (Join-Path $sourceDirectory $name) -Destination (Join-Path $ModuleDirectory $name) -Force
-    }
-
-    if ($wasRunning) {
-        Start-Service -Name $ServiceName
-        (Get-Service -Name $ServiceName).WaitForStatus(
-            [System.ServiceProcess.ServiceControllerStatus]::Running,
-            [TimeSpan]::FromSeconds(60)
-        )
-    }
-}
-catch {
-    Copy-Item -LiteralPath $settingsBackup -Destination $SettingsPath -Force
-    foreach ($name in $moduleNames) {
-        $destination = Join-Path $ModuleDirectory $name
-        if ($backups.ContainsKey($name)) {
-            Copy-Item -LiteralPath $backups[$name] -Destination $destination -Force
-        } elseif (Test-Path -LiteralPath $destination) {
-            Remove-Item -LiteralPath $destination -Force
+        $linePattern = '^\s*' + [regex]::Escape($entry.Key) + '\s*='
+        $matchingIndexes = @()
+        for ($lineIndex = 0; $lineIndex -lt $lines.Count; $lineIndex++) {
+            if ($lines[$lineIndex] -match $linePattern) {
+                $matchingIndexes += $lineIndex
+            }
         }
-    }
-    if ($wasRunning -and (Get-Service -Name $ServiceName).Status -ne "Running") {
-        Start-Service -Name $ServiceName
-    }
-    throw
-}
-
-Write-Host "Extensión modular de Rubrova instalada en: $ModuleDirectory"
-Write-Host "Punto de entrada: RubrovaCustom"
-Write-Host "Backup de settings: $settingsBackup"
-Write-Host "La confirmación final requiere revisar el log del servidor e ingresar en el navegador."
-
         $replacement = $entry.Key + " = " + $entry.Value
-        if ([regex]::IsMatch($settings, $pattern)) {
-            $settings = [regex]::Replace($settings, $pattern, $replacement)
+        if ($matchingIndexes.Count -gt 0) {
+            $lines[$matchingIndexes[0]] = $replacement
+            for ($duplicateIndex = $matchingIndexes.Count - 1; $duplicateIndex -gt 0; $duplicateIndex--) {
+                $lines.RemoveAt($matchingIndexes[$duplicateIndex])
+            }
         } else {
-            $settings = $settings.TrimEnd() + [Environment]::NewLine + $replacement + [Environment]::NewLine
+            $lines.Add($replacement)
         }
     }
 
+    $settings = ($lines -join [Environment]::NewLine) + [Environment]::NewLine
     [IO.File]::WriteAllText($SettingsPath, $settings, $utf8NoBom)
+
     foreach ($name in $moduleNames) {
         Copy-Item -LiteralPath (Join-Path $sourceDirectory $name) -Destination (Join-Path $ModuleDirectory $name) -Force
     }
@@ -144,5 +131,6 @@ catch {
 
 Write-Host "Extensión modular de Rubrova instalada en: $ModuleDirectory"
 Write-Host "Punto de entrada: RubrovaCustom"
+Write-Host "Idioma y país predeterminados: español (Argentina)"
 Write-Host "Backup de settings: $settingsBackup"
 Write-Host "La confirmación final requiere revisar el log del servidor e ingresar en el navegador."
