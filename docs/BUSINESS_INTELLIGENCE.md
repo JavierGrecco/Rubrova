@@ -171,3 +171,12 @@ Toda sugerencia de reposición debe explicar stock disponible/reservado/en trán
 La comparación de marcas no se delega a un paquete genérico: Rubrova conserva la clasificación comercial efectiva por categoría, la unidad comparable y los datos históricos de disponibilidad/precio/promoción. ABC y XYZ complementan el análisis, pero no representan primera/segunda marca. La rentabilidad usa el ledger de costo del ERP y no una fórmula calculada sobre el último precio de compra.
 
 El benchmark mensual inicial de demanda usa 48 observaciones sintéticas por serie (regular estacional creciente e intermitente), cuatro cortes de entrenamiento expansivos y horizonte de tres meses. Compara naive, naive estacional, medias móviles y modelos StatsForecast adecuados al tipo de serie. La primera versión no incluye períodos sin stock en el entrenamiento: los trataremos en un conjunto separado para evaluar demanda censurada sin contaminar el ajuste.
+
+
+## Perfil 360, preferencias y rentabilidad por cliente
+
+La inteligencia comercial incluye una vista 360 por cliente/empresa, no sólo rankings de facturación. Debe combinar historial de pedidos/ventas, líneas, marcas, segmentos, categorías, unidades comparables, promociones, precios, devoluciones, pagos, canales, sucursales, entregas y reclamos.
+
+Para cada cliente calcular recencia, frecuencia, importe neto y contribución económica; cohortes, repetición, retención, inactividad, intervalo típico de recompra y CLV estimado. Mostrar las marcas y categorías preferidas por unidades, gasto y contribución, sin confundir disponibilidad con preferencia. El informe debe declarar periodo, muestra, criterios, dato observado o estimado y nivel de confianza.
+
+La ficha 360, el perfil B2B (empresa, sedes, contactos y roles), RFM, recomendaciones, permisos y protección de datos se detallan en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md). No identificar ventas anónimas ni forzar al comprador de mostrador a registrarse.
