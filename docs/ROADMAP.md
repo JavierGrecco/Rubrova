@@ -123,7 +123,9 @@ Bigcapital sólo se prueba si la contabilidad de la plataforma elegida no alcanz
 - Pronóstico por SKU/familia, marca, categoría, sucursal, canal y área, con horizonte explícito.
 - Comparación interanual equivalente y ajuste por días sin stock, promociones, cambios de precio y surtido.
 - Alertas y recomendaciones de compra/reposición antes de cada trimestre y estación, considerando lead time, stock de seguridad y presupuesto.
-- Rentabilidad absoluta y porcentual por producto/marca/categoría; distinguir facturación de contribución real.
+- Rentabilidad absoluta y porcentual por producto/marca/categoría/cliente; distinguir facturación de contribución real.
+- Perfil 360 por cliente/empresa: productos, categorías, marcas/segmentos, preferencias de canal, recurrencia, RFM, retención, CLV y contribución, con ventas anónimas preservadas.
+- Recomendaciones por cliente (recompra, sustitución, complementos y recuperación) sólo con evidencia suficiente, permiso de contacto cuando corresponda y aprobación humana.
 - Segmentación configurable de primeras marcas, segundas, económicas, propias y alternativas; medir participación por unidades, tickets, facturación y ganancia.
 - Detección de sustitución y cambios de preferencia entre marcas, controlando faltantes y diferencias de presentación/precio por unidad.
 - Simulación de precio, promoción, surtido y compra; toda ejecución requiere aprobación.
@@ -141,10 +143,11 @@ Orden de construcción:
 5. Compras y proveedores: cumplimiento, plazos, costos, diferencias y propuesta de reposición.
 6. Finanzas: cuentas por cobrar/pagar, mora, caja, bancos, flujo y estados contables.
 7. Rentabilidad por área y consolidado: minorista, ecommerce, mayorista/distribución y servicios.
+8. Perfil 360 por cliente: RFM, retención, marcas/productos preferidos, contribución y acciones sugeridas; exportar datos fuente y explicar cada segmento.
 
 Primero usar los reportes nativos del ERP y validar su costo/ledger contra movimientos. Para proyecciones, probar StatsForecast como primera biblioteca de modelos estadísticos; MLForecast queda condicionado a datos exógenos e historial suficientes, y HierarchicalForecast para una etapa posterior cuando haya que reconciliar SKU/familia/marca/categoría/sucursal/canal. DemandSense se inspecciona como referencia MIT de demanda intermitente, backtesting y escenarios, pero su madurez es baja; DemandOS queda como referencia para inspección: la ausencia de licencia no concede permiso para copiar o modificar su código; reproducir ideas de forma independiente o pedir autorización. Para el análisis local, probar DuckDB sobre snapshots/Parquet canónicos y elegir como máximo una herramienta BI posterior (Metabase o Superset) si existe una necesidad multiusuario. La comparación de primera/segunda marca se implementa con reglas y métricas propias de Rubrova: no se sustituye por ABC ni por notebooks exploratorios. Ninguna herramienta analítica escribe en ventas, pagos, inventario o contabilidad. El detalle de licencias, decisiones y pruebas está en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
-**Criterio de salida:** las métricas cuadran con los movimientos originales, muestran fórmula/fuente/filtros/actualización y declaran costos o datos faltantes. Los reportes no bloquean la caja. La inteligencia comercial demuestra backtesting, análisis ajustado por disponibilidad, tableros de rentabilidad y participación de marcas; las recomendaciones declaran confianza y no ejecutan compras/precios automáticamente.
+**Criterio de salida:** las métricas cuadran con los movimientos originales, muestran fórmula/fuente/filtros/actualización y declaran costos o datos faltantes. Los reportes no bloquean la caja. La inteligencia comercial demuestra backtesting, análisis ajustado por disponibilidad, tableros de rentabilidad y participación de marcas, y perfil 360 reproducible por cliente; las recomendaciones declaran confianza y no ejecutan compras/precios automáticamente.
 
 ## Fase 5 — perfiles sectoriales y capacidades de expansión
 
