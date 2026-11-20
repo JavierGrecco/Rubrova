@@ -79,6 +79,7 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
 - [x] Investigación nacional de adopción digital y testimonios de necesidades PyME con límites de representatividad documentados.
 - [x] Evaluación documental adicional de Dolibarr 24.0.3, InvenTree 1.7.3, OpenBoxes, OpenWMS y localización argentina Odoo/OCA.
+- [x] Verificación de localización argentina Odoo 19/20: addon `l10n_ar` público LGPL-3, `l10n_ar_edi` documentado pero no localizado en Community, addon comunitario WSAA/WSFE Beta y rama OCA 19 sin módulos instalables.
 - [x] Especificación de continuidad operativa, recuperación, backups, estados inciertos y pruebas P27–P44.
 - [x] Decisión de arquitectura distribuida: servicios de dominio independientes, contrato/API/eventos, propiedad de datos, gateway local y coordinación de stock por CAS/cuotas offline.
 - [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
@@ -97,6 +98,7 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [ ] Solicitar layouts de importación/exportación de Catedral y licencias/versiones de Tango, Bejerman, Xubio y Colppy.
 - [ ] Probar importación/migración, exportación contable balanceada, conciliación y recuperación de lotes.
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
+- [ ] Si Odoo supera la evaluación de plataforma, probar el addon oficial `l10n_ar` y obtener/verificar el código/licencia de `l10n_ar_edi`; comparar con `leonobitech/l10n_ar_arca_edi` Beta en homologación. No asumir que OCA/l10n-argentina 19.0 contiene módulos instalables.
 - [ ] Ejecutar escenarios P20–P26: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios, rentabilidad y transferencias internas.
 - [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
 - [ ] Ejecutar P27–P44 y validar backup/restauración, idempotencia concurrente, CAS, cuotas offline y rollback individual de servicios.
