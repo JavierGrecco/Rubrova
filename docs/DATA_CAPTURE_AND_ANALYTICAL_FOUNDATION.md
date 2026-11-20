@@ -163,3 +163,19 @@ Agregar a la batería común:
 ## Estado
 
 La especificación amplía el modelo y el protocolo de selección. Los candidatos de plataforma aún deben demostrar estos criterios en un laboratorio. Las herramientas de BI citadas son opciones a probar, no componentes ya instalados ni aprobados.
+
+## Fuentes oficiales consultadas
+
+- [Libsodium: password hashing](https://doc.libsodium.org/password_hashing) y [derivación con Argon2id](https://doc.libsodium.org/password_hashing/default_phf): la API usa Argon2id, admite almacenar algoritmo/parámetros y permite ajustar costo de memoria/CPU. La versión de libsodium y sus parámetros deberán fijarse en el formato del backup.
+- [DuckDB: FAQ y licencia MIT](https://duckdb.org/faq), [lectura/escritura Parquet](https://duckdb.org/docs/data/parquet) y [exportación Parquet](https://duckdb.org/docs/current/guides/file_formats/parquet_export).
+- [Apache Arrow: formato columnar](https://arrow.apache.org/docs/format/Columnar.html), con esquema tipado y representación portable en memoria.
+- [Polars: repositorio y licencia MIT](https://github.com/pola-rs/polars).
+- [dbt Core: pyproject y Apache-2.0](https://github.com/dbt-labs/dbt-core/blob/main/pyproject.toml).
+- [Evidence: repositorio y licencia MIT](https://github.com/evidence-dev/evidence) y [archivo LICENSE](https://github.com/evidence-dev/evidence/blob/main/LICENSE).
+- [Apache Superset: repositorio y Apache-2.0](https://github.com/apache/superset).
+- [Metabase: términos de licencia y embedding](https://www.metabase.com/license); su edición Open Source usa AGPL y el embedding tiene condiciones específicas.
+- [Frappe REST API](https://docs.frappe.io/framework/user/en/api/rest) y [ERPNext Data Export](https://docs.frappe.io/erpnext/data-export): ejemplos de API y exportación CSV/Excel a evaluar en la prueba de plataforma.
+- [Superset SQL Lab API](https://superset.apache.org/developer-docs/api/sql-lab/) y [exportación de dashboard a Excel](https://superset.apache.org/user-docs/using-superset/exporting-dashboard-data/).
+- [Microsoft Excel / Power Query: importación desde fuentes de datos](https://support.microsoft.com/en-us/excel/import-data-from-data-sources-power-query).
+
+Las licencias y capacidades deben volver a verificarse para cada versión/archivo que se fije en el laboratorio. Esta lista respalda una selección de candidatos; no es una autorización para ignorar licencias de dependencias ni una decisión de adopción.
