@@ -12,12 +12,12 @@ La prueba pasa a un esquema de selección por etapas para respetar la estrategia
 
 **Ronda ERP/gestión (filtro corto):**
 1. MyCompany/lsFusion 6.2.
-2. Tryton 7.8.4.
+2. Tryton serie 7.8.
 3. Dolibarr 24.0.3.
 4. ERPNext 16.60.0 + Frappe 16.
 
 **Ronda POS (responsabilidad específica):**
-1. POS incluido en las plataformas ERP anteriores.
+1. POS incluido en las plataformas ERP anteriores; Tryton incluye el módulo oficial `sale_point`.
 2. Posnic 1.9.2 como POS dedicado.
 3. uniCenta 5.5.2 sólo cuando podamos verificar el código fuente actual y su licencia; la descarga oficial consultada requiere iniciar sesión.
 
@@ -25,7 +25,7 @@ La prueba pasa a un esquema de selección por etapas para respetar la estrategia
 
 **MyCompany no es ganador por ser modular:** su documentación confirma que todos los módulos de una instalación comparten una base de datos. Su mecanismo de módulos externos y su API son fortalezas, pero la prueba debe determinar si ese conjunto puede ser una aplicación de dominio aislada sin imponer acceso cruzado ni impedir un ciclo de vida controlado.
 
-**Tryton entra en la primera ronda:** aporta una arquitectura de tres capas con aplicación servidor, PostgreSQL y clientes web/de escritorio, incluyendo Windows y macOS. Sus módulos de negocio se ejecutan sobre el servidor común; se evalúa como aplicación integrada, no como una colección de servicios independientes.
+**Tryton entra en la primera ronda:** aporta una arquitectura de tres capas con aplicación servidor, PostgreSQL y clientes web/de escritorio, incluyendo Windows y macOS. Su módulo oficial `sale_point` gestiona ventas, devoluciones, métodos y sesiones de caja; al contabilizar genera movimientos de stock y asientos contables. Es un candidato POS concreto. Sus módulos se ejecutan sobre el servidor/base común; no se los considera servicios independientes sin demostrar extracción y aislamiento.
 
 **Dolibarr se reincorpora:** su API REST, triggers y hooks ofrecen un camino de integración y extensión. La existencia de módulos no significa que cada uno pueda desplegarse o recuperar datos independientemente.
 
@@ -35,14 +35,14 @@ La prueba pasa a un esquema de selección por etapas para respetar la estrategia
 
 No se adopta más de una autoridad para el mismo dominio. Una plataforma puede ser descartada como base, pero sus bibliotecas o módulos sí pueden aprobarse por separado después de comprobar dependencias, licencia y mantenimiento.
 
-**Resultado actual: ninguna plataforma está aprobada.** El repositorio no contiene una aplicación de Rubrova ni código externo incorporado; leer documentación o validar el dataset sintético no equivale a haber instalado y probado un candidato.
+**Resultado actual: ninguna plataforma está aprobada.** Los ERP integrados se evalúan para encontrar módulos reutilizables y comprobar si alguna capacidad puede operar como servicio de dominio aislado. No se aprobará un ERP completo que mezcle ventas, stock, pagos y contabilidad en una sola base/ciclo de despliegue como sustituto de la arquitectura distribuida. El repositorio no contiene una aplicación de Rubrova ni código externo incorporado; leer documentación o validar el dataset sintético no equivale a haber instalado y probado un candidato.
 
 ## Versiones y procedencia que se deben fijar
 
 | Proyecto | Referencia para laboratorio | Licencia declarada / dato relevante | Precaución |
 |---|---|---|---|
 | MyCompany | Tag 6.2, commit `d21ca6978717b98b6300d90267f9767db7414008` | Aplicación Apache-2.0; lsFusion LGPL-3.0 | La documentación online puede referirse a otra versión. Los módulos comparten una base de datos. |
-| Tryton | Serie 7.8; módulo de producto 7.8.4 publicado el 16/09/2026 | Proyecto GPL; confirmar la licencia de cada módulo externo | Cliente/servidor y PostgreSQL; respaldar antes de actualizar porque la migración modifica la base. |
+| Tryton | Serie 7.8; fijar servidor, cliente y módulos por paquete | Verificar licencia y dependencias del módulo exacto | Cliente/servidor y PostgreSQL; backup antes de migrar. `sale_point` 7.8.4 es versión de módulo, no de toda la suite. |
 | Dolibarr | 24.0.3, release estable consultada | Proyecto GPL-3.0; verificar módulos externos individualmente | API REST y hooks/triggers; probar autenticación y límites de API. |
 | ERPNext | Release 16.60.0, tag/commit fijados en el laboratorio existente | ERPNext GPL-3.0; Frappe Framework MIT | Registrar la versión efectiva del framework y no mezclar tags. |
 | Posnic | Tag `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680` | Código AGPL-3.0-only | Verificar MongoDB SSPL-1.0, amCharts comercial y todas las dependencias del instalador. |
@@ -112,6 +112,16 @@ ERPNext aporta procesos ERP profundos: inventario, abastecimiento, compras, fabr
 - El stack habitual de Frappe/ERPNext gira alrededor de Python y MariaDB; PostgreSQL no se debe asumir como una opción equivalente o estable para esta evaluación.
 - La prueba local usa la configuración oficial desechable `frappe_docker/pwd.yml`, fijada al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. No admite instalar aplicaciones propias en esta modalidad. Registrar la versión exacta de Frappe con `bench version`.
 - La adaptación del POS, localización argentina, hardware y experiencia de uso puede exigir extensiones considerables.
+
+### Tryton, serie 7.8, y `sale_point`
+
+La documentación oficial describe una arquitectura cliente-servidor de tres capas con PostgreSQL. La distribución ofrece cliente web y clientes de escritorio para Windows y macOS. El módulo oficial `sale_point` contempla ventas y devoluciones, métodos de pago y sesiones de caja; al contabilizar una venta genera movimientos de inventario y asientos contables. El módulo 7.8.4 se publicó el 16/04/2026; servidor, cliente y módulos tienen versiones independientes y deben fijarse por separado. Fuentes: [diseño de Sale Point](https://docs.tryton.org/7.8/modules-sale-point/design.html), [release notes](https://docs.tryton.org/7.8/modules-sale-point/releases.html) y [paquetes Tryton 7.8](https://downloads.tryton.org/7.8/).
+
+**Ventaja de reutilización:** existe código oficial real de POS, con reglas de caja, pagos y efectos transaccionales, no sólo una pantalla o demo.
+
+**Riesgo de arquitectura:** `sale_point` utiliza ventas, stock y contabilidad dentro del mismo servidor/base. Si no puede delimitarse como servicio con autoridad clara, no se adoptará como conjunto de microservicios. Se evaluará extracción, extensión y operación aislada. La documentación funcional no demuestra que la experiencia de caja sea suficientemente rápida para Rubrova.
+
+**Prueba específica:** venta al contado y pago mixto, vuelto, devolución, sesión de caja, asiento, movimientos de stock, lector simulado, API, exportación y restauración. Añadir cierre abrupto del servidor y recuperación después de reiniciarlo.
 
 ## Reglas de prueba comunes
 
@@ -244,7 +254,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** instalar los tres candidatos en entornos aislados y ejecutar P01–P26 con datos sintéticos equivalentes. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
+**Próximo paso técnico:** aplicar primero el filtro corto a MyCompany, Tryton, Dolibarr y ERPNext; probar `sale_point` como POS real y Posnic por separado como POS dedicado. Sólo dos candidatos pasan a P01–P44. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
 
 
 ## Extensión del protocolo: varias áreas y operación B2B (P20–P25)
