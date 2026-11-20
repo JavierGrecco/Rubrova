@@ -82,6 +82,9 @@ Los servicios se comunican por API/eventos versionados, tienen datos y credencia
 
 Un ERP existente puede evaluarse como aplicación externa acotada, pero sus módulos internos no se describen como microservicios si comparten servidor, base o migraciones. Sólo se adopta si el límite que administra es deliberado, tiene API, datos propios, backup/restore, actualizaciones controlables y no absorbe autoridades que deban ser independientes. Si no pasa esa puerta, se reutilizan piezas realmente separables o se descarta.
 
+**Regla excluyente para no introducir un monolito:** ERPNext, MyCompany, Tryton o Dolibarr pueden probarse como referencias funcionales y para identificar módulos reutilizables. No se adopta una suite completa como núcleo único de Rubrova si hace que POS/Ventas, Inventario, Pagos/Caja y Contabilidad compartan una base o un ciclo de despliegue. Un componente sólo se adopta si puede actuar como una unidad de dominio con contrato soportado, datos/credenciales propios, backup/restore, actualización y rollback independientes y sin convertirse en autoridad duplicada. Si el producto no permite ese límite, se descarta como plataforma base aunque su cobertura funcional sea excelente; se reutiliza sólo el código separable o se construyen los servicios propios detrás de contratos versionados.
+
+
 ### Primera composición desplegable
 
 El primer conjunto de procesos de Rubrova debe ser pequeño, pero mantener límites reales:
@@ -139,7 +142,7 @@ No se declara un ganador antes de instalar y recorrer la misma prueba. El filtro
 
 ## 6. Cómo decidir: pruebas comparables y puertas obligatorias
 
-Antes de ejecutar el protocolo completo, hacer un filtro rápido. Como máximo dos candidatos pasan a la evaluación profunda; Tryton pasa a la prueba fiscal sólo cuando se resuelva su compatibilidad de módulos argentinos.
+Antes de ejecutar el protocolo completo, hacer un filtro rápido. ERPNext, MyCompany y Tryton 8.0 + tryton-ar 8.0 pasan por el mismo circuito corto; como máximo dos finalistas pasan a la evaluación profunda. Tryton 8.0 debe superar instalación conjunta, tests de los ocho módulos y homologación fiscal.
 
 **Puertas obligatorias** (no compensables con puntaje):
 1. Fuente, versión y licencia verificables de todos los componentes necesarios.
