@@ -18,6 +18,7 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Media-alta | [Apache OFBiz](https://ofbiz.apache.org/) | ERP y Service Engine orientado a SOA | Referencia de segunda etapa; complejidad y serie 24.09 feature-frozen |
 | Condicionada | [uniCenta oPOS](https://unicenta.com/) | POS multiplataforma, periféricos y caja | Fuente 5.5.2 requiere login; no aprobar reutilización hasta revisar código y licencia |
 | Muy alta | [ERPNext](https://github.com/frappe/erpnext) + [Frappe](https://github.com/frappe/frappe) | ERP, contabilidad, compras, stock, fabricación, pedidos y POS | Evaluar como base integral |
+| Alta | [Bigcapital](https://github.com/bigcapitalhq/bigcapital) | Contabilidad de doble partida, mayor, facturas, pagos, conciliación y API | Candidato financiero AGPL-3.0; release 0.25.46; comprobar límites y carga operativa |
 | Alta | [NexoPOS](https://github.com/Blair2004/NexoPOS) | POS, caja, ventas, compras, stock, clientes, permisos y módulos | Evaluar; licencia contradictoria |
 | Muy alta | [pos-toolkit](https://github.com/narisolutions/pos-toolkit) | ESC/POS, impresoras, cajón, scanners seriales, balanzas HID y tickets | Candidato modular |
 | Muy alta | [arca-sdks](https://github.com/ramiidv/arca-sdks) | WSAA, WSFEv1, WSFEX, CAEA, padrón, QR y otros servicios ARCA | Candidato fiscal principal |
@@ -399,7 +400,7 @@ La arquitectura y las pruebas de estos destinos están en [Interoperabilidad con
 - **OCRmyPDF (MPL-2.0):** OCR local, PDF/A y búsqueda sobre escaneos; el README declara soporte Windows/Linux/macOS. Ver dependencias Tesseract y binarios de cada paquete.
 - **skforecast (BSD-3-Clause):** forecasting estadístico/ML/foundation, backtesting, intervalos y explainability; usar como laboratorio/servicio analítico para demanda, no como módulo que compra automáticamente.
 - **Polars (MIT):** motor DataFrame/SQL en Rust con bindings Python y Node; candidato para importaciones y pipelines analíticos, nunca para reemplazar OLTP.
-- **Bigcapital (AGPL-3.0):** aplicación completa de contabilidad/inventario y API headless de doble partida. Útil para estudiar ledger y estados financieros; no está probada su adaptación argentina y no debe convertirse en otro libro contable paralelo.
+- **Bigcapital (AGPL-3.0, `v0.25.46`):** aplicación autohospedada de contabilidad/inventario con API para registrar transacciones de doble partida; incluye mayor, bills, facturas, pagos, conciliación y reportes. Es un candidato de dominio financiero, pero sus módulos comparten base/servidor y el despliegue requiere varios servicios (MariaDB, Redis, ClickHouse, almacenamiento de objetos y PDF). `packages/server` declara `UNLICENSED` en su manifiesto; no extraer paquetes sin aclarar su licencia. No está probada su adaptación argentina y nunca debe coexistir como libro mayor paralelo.
 
 Investigación de detalle y límites: [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md). Requisitos de integración contable: [Interoperabilidad contable](ACCOUNTING_INTEROPERABILITY.md).
 
