@@ -96,6 +96,7 @@ EXTEND FORM integrationData
 rubrovaHttpResponse = DATA LOCAL FILE();
 rubrovaHttpSucceeded = DATA LOCAL BOOLEAN();
 rubrovaHttpFailureCategory = DATA LOCAL STRING[40]();
+rubrovaHttpCanRetry = DATA LOCAL BOOLEAN();
 rubrovaHttpFailureMessage = DATA LOCAL ISTRING[300]();
 
 // GET se considera lectura idempotente. Este helper no reintenta por sí mismo:
@@ -105,6 +106,7 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
     rubrovaHttpResponse() <- NULL;
     rubrovaHttpSucceeded() <- FALSE;
     rubrovaHttpFailureCategory() <- NULL;
+    rubrovaHttpCanRetry() <- FALSE;
     rubrovaHttpFailureMessage() <- NULL;
     statusHttp() <- NULL;
 
@@ -128,6 +130,7 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
                 rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp())
             ELSE {
                 rubrovaHttpFailureCategory() <- 'TIMEOUT_OR_NETWORK';
+                rubrovaHttpCanRetry() <- TRUE;
                 rubrovaHttpFailureMessage() <- 'El servicio externo no respondió a tiempo o no se pudo establecer la conexión.';
                 rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
                     'TIMEOUT_OR_NETWORK', NULL, 1, TRUE, NULL, NULL,
@@ -161,9 +164,10 @@ rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'
         rubrovaHttpFailureCategory() <- 'REMOTE_HTTP_ERROR';
         rubrovaHttpFailureMessage() <- 'El servicio externo respondió con un error HTTP. La operación no se completó.';
     }
+    rubrovaHttpCanRetry() <- responseStatus = 408 OR responseStatus = 425 OR responseStatus = 429 OR responseStatus >= 500;
     rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
         rubrovaHttpFailureCategory(), responseStatus, 1,
-        responseStatus = 408 OR responseStatus = 425 OR responseStatus = 429 OR responseStatus >= 500, NULL, NULL,
+        rubrovaHttpCanRetry(), NULL, NULL,
         rubrovaHttpFailureMessage(), 'Respuesta HTTP no exitosa. No se guarda el cuerpo ni la URL completa.');
 }
 

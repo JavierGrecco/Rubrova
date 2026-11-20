@@ -218,6 +218,7 @@ rubrovaTestHttpTimeout () {
     EXPORT JSON FROM
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'failure-captured',
         category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
         httpStatus = statusHttp();
 } @@api;
 
@@ -237,6 +238,7 @@ rubrovaTestHttpRateLimit () {
     EXPORT JSON FROM
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
         category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
         httpStatus = statusHttp(),
         userMessage = rubrovaHttpFailureMessage();
 } @@api;

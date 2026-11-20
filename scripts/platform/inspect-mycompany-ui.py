@@ -619,7 +619,7 @@ def inspect_page(url: str) -> int:
                 if isinstance(transient_payload, list):
                     transient_payload = transient_payload[0] if transient_payload else {}
                 print("UI_INTEGRATION_408_RESPONSE=" + json.dumps(transient_payload, ensure_ascii=False))
-                if transient_payload.get("category") != "REMOTE_TRANSIENT" or int(transient_payload.get("httpStatus") or 0) != 408:
+                if transient_payload.get("category") != "REMOTE_TRANSIENT" or int(transient_payload.get("httpStatus") or 0) != 408 or not transient_payload.get("retryable"):
                     raise RuntimeError("El HTTP 408 no se clasificó como transitorio reintentable.")
                 print("UI_INTEGRATION_408_CLASSIFIED=true")
 
@@ -635,7 +635,7 @@ def inspect_page(url: str) -> int:
                 if isinstance(rate_limit_payload, list):
                     rate_limit_payload = rate_limit_payload[0] if rate_limit_payload else {}
                 print("UI_INTEGRATION_429_RESPONSE=" + json.dumps(rate_limit_payload, ensure_ascii=False))
-                if rate_limit_payload.get("category") != "RATE_LIMITED" or int(rate_limit_payload.get("httpStatus") or 0) != 429:
+                if rate_limit_payload.get("category") != "RATE_LIMITED" or int(rate_limit_payload.get("httpStatus") or 0) != 429 or not rate_limit_payload.get("retryable"):
                     raise RuntimeError("El HTTP 429 no se clasificó correctamente.")
                 print("UI_INTEGRATION_429_CLASSIFIED=true")
 
@@ -651,7 +651,7 @@ def inspect_page(url: str) -> int:
                 if isinstance(server_error_payload, list):
                     server_error_payload = server_error_payload[0] if server_error_payload else {}
                 print("UI_INTEGRATION_503_RESPONSE=" + json.dumps(server_error_payload, ensure_ascii=False))
-                if server_error_payload.get("category") != "REMOTE_5XX" or int(server_error_payload.get("httpStatus") or 0) != 503:
+                if server_error_payload.get("category") != "REMOTE_5XX" or int(server_error_payload.get("httpStatus") or 0) != 503 or not server_error_payload.get("retryable"):
                     raise RuntimeError("El HTTP 503 no se clasificó correctamente.")
                 print("UI_INTEGRATION_503_CLASSIFIED=true")
 

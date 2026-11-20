@@ -218,6 +218,8 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /RATE_LIMITED/);
   assert.match(resilienceSource, /REMOTE_5XX/);
   assert.match(resilienceSource, /REMOTE_TRANSIENT/);
+  assert.match(resilienceSource, /rubrovaHttpCanRetry = DATA LOCAL BOOLEAN/);
+  assert.match(resilienceSource, /rubrovaHttpCanRetry\(\) <- responseStatus = 408/);
   assert.match(resilienceSource, /responseStatus = 408 OR responseStatus = 425/);
   assert.match(resilienceSource, /rubrovaShowIntegrationFailure/);
   assert.match(resilienceSource, /REMOTE_HTTP_ERROR/);
