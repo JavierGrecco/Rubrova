@@ -110,8 +110,8 @@ Integridad antes que cantidad de funciones; POS y caja antes que tableros sofist
 - [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
 - [ ] Ejecutar escenarios P20–P26: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios, rentabilidad y transferencias internas.
 - [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
-- [ ] Ejecutar P27–P36 y validar backup/restauración, RPO/RTO y recuperación real.
+- [ ] Ejecutar P27–P44 y validar backup/restauración, idempotencia concurrente, CAS, cuotas offline y rollback individual de servicios.
 - [ ] Ejecución y evidencia de todos los escenarios.
-- [ ] Decisión de base y plan de adaptación.
+- [ ] Decisión de tecnología y almacenamiento por servicio, despliegue local y plan de adaptación de plataformas reutilizadas.
 
 No se marca una prueba como aprobada por haber leído documentación, ejecutar una demo o completar un formulario. Se necesita evidencia reproducible.
