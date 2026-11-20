@@ -296,7 +296,7 @@ LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 START_LOG="$LOG_DIR/start.log"
 STDOUT_LOG="$LOG_DIR/stdout.log"
 EXPECTED_UPSTREAM_MODULES=712
-EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 2))
+EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 3))
 MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
@@ -316,7 +316,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
     if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
       ALL_MODULES_READY=true
     elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
-      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + RubrovaCustom + RubrovaPOSLocalization)." >&2
+      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + tres módulos Rubrova)." >&2
       exit 1
     fi
   fi
@@ -343,7 +343,7 @@ fi
 }
 if [[ "$MODULES_READY" != "true" ]]; then
   echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
-  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 2 de Rubrova)." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 3 de Rubrova)." >&2
   echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
   exit 1
 fi
@@ -445,6 +445,7 @@ done <<< "$IMAGES"
 LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 RUBROVA_CUSTOM_LOG_EVIDENCE=false
 RUBROVA_LOCALIZATION_LOG_EVIDENCE=false
+RUBROVA_RESILIENCE_LOG_EVIDENCE=false
 echo "Archivos creados en docker-server (primeros 80):"
 find "$COMPOSE_DIR/docker-server" -maxdepth 3 -type f -print | sort | head -n 80 || true
 if [[ -d "$LOG_DIR" ]]; then
@@ -458,7 +459,7 @@ if [[ -d "$LOG_DIR" ]]; then
         tail -n 80 "$log_file"
         ;;
     esac
-    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
     if [[ -n "$matches" ]]; then
       printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
       if grep -Fq 'RubrovaCustom' <<< "$matches"; then
@@ -466,6 +467,9 @@ if [[ -d "$LOG_DIR" ]]; then
       fi
       if grep -Fq 'RubrovaPOSLocalization' <<< "$matches"; then
         RUBROVA_LOCALIZATION_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaIntegrationResilience' <<< "$matches"; then
+        RUBROVA_RESILIENCE_LOG_EVIDENCE=true
       fi
     fi
   done
@@ -484,15 +488,18 @@ if [[ -n "$SERVER_MATCHES" ]]; then
   if grep -Fq 'RubrovaPOSLocalization' <<< "$SERVER_MATCHES"; then
     RUBROVA_LOCALIZATION_LOG_EVIDENCE=true
   fi
+  if grep -Fq 'RubrovaIntegrationResilience' <<< "$SERVER_MATCHES"; then
+    RUBROVA_RESILIENCE_LOG_EVIDENCE=true
+  fi
 else
   echo "Últimas líneas del servicio server:"
   printf '%s\n' "$SERVER_LOGS" | tail -n 60
 fi
 
-if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" ]]; then
-  echo "No se encontró evidencia de carga de ambos módulos propios: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE." >&2
+if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" ]]; then
+  echo "No se encontró evidencia de carga de los tres módulos propios: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE." >&2
   exit 1
 fi
-echo "Los registros confirman RubrovaPOSLocalization y RubrovaCustom."
+echo "Los registros confirman los tres módulos Rubrova: RubrovaCustom, RubrovaPOSLocalization y RubrovaIntegrationResilience."
 
 echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los dos módulos Rubrova. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."

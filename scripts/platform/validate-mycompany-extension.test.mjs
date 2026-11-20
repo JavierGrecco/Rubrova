@@ -166,6 +166,9 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
   assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES=712/);
   assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
+  assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES \+ 3/);
+  assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
   assert.match(runtimeSmokeSource, /módulos Rubrova/);
   assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
