@@ -40,86 +40,8 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(lock.artifacts.dockerCompose.sha256, /^[0-9a-f]{64}$/);
   assert.match(lock.artifacts.dockerCompose.url, /\/6\.2\/compose\.yaml$/);
   assert.match(lock.artifacts.dockerCompose.sha256Source, /macOS 26 ARM64 run 44785005509/);
-  assert.match(preparerSource, new RegExp(`^JAR_SHA256="${lock.artifacts.applicationJar.sha256}"import test from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const read = (relative) => readFileSync(path.join(root, relative), "utf8");
-
-const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
-const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
-const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
-const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
-const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
-
-function parseProperties(source) {
-  const entries = new Map();
-  source.split(/\r?\n/).forEach((raw, index) => {
-    const line = raw.trim();
-    if (!line || line.startsWith("#") || line.startsWith("!")) return;
-    const separator = line.indexOf("=");
-    assert.ok(separator > 0, "Línea " + (index + 1) + ": falta separador =");
-    const key = line.slice(0, separator).trim();
-    const value = line.slice(separator + 1).trim();
-    assert.ok(!entries.has(key), "Clave duplicada: " + key);
-    assert.ok(value.length > 0, "Valor vacío: " + key);
-    entries.set(key, value);
-  });
-  return entries;
-}
-
-test("versión, procedencia, licencias y artefactos están fijados", () => {
-  assert.equal(lock.application.version, "6.2");
-  assert.equal(lock.application.tag, "6.2");
-  assert.match(lock.application.sourceCommit, /^[0-9a-f]{40}$/);
-  assert.equal(lock.application.license, "Apache-2.0");
-  assert.equal(lock.application.platformLicense, "LGPL-3.0");
-  assert.match(lock.artifacts.windowsInstaller.sha256, /^[0-9a-f]{64}$/);
-  assert.match(lock.artifacts.applicationJar.sha256, /^[0-9a-f]{64}$/);
-, "m"));
-  assert.match(preparerSource, new RegExp(`^COMPOSE_SHA256="${lock.artifacts.dockerCompose.sha256}"import test from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const read = (relative) => readFileSync(path.join(root, relative), "utf8");
-
-const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
-const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
-const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
-const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
-const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
-
-function parseProperties(source) {
-  const entries = new Map();
-  source.split(/\r?\n/).forEach((raw, index) => {
-    const line = raw.trim();
-    if (!line || line.startsWith("#") || line.startsWith("!")) return;
-    const separator = line.indexOf("=");
-    assert.ok(separator > 0, "Línea " + (index + 1) + ": falta separador =");
-    const key = line.slice(0, separator).trim();
-    const value = line.slice(separator + 1).trim();
-    assert.ok(!entries.has(key), "Clave duplicada: " + key);
-    assert.ok(value.length > 0, "Valor vacío: " + key);
-    entries.set(key, value);
-  });
-  return entries;
-}
-
-test("versión, procedencia, licencias y artefactos están fijados", () => {
-  assert.equal(lock.application.version, "6.2");
-  assert.equal(lock.application.tag, "6.2");
-  assert.match(lock.application.sourceCommit, /^[0-9a-f]{40}$/);
-  assert.equal(lock.application.license, "Apache-2.0");
-  assert.equal(lock.application.platformLicense, "LGPL-3.0");
-  assert.match(lock.artifacts.windowsInstaller.sha256, /^[0-9a-f]{64}$/);
-  assert.match(lock.artifacts.applicationJar.sha256, /^[0-9a-f]{64}$/);
-, "m"));
+  assert.match(preparerSource, new RegExp("^JAR_SHA256=\"" + lock.artifacts.applicationJar.sha256 + "\"$", "m"));
+  assert.match(preparerSource, new RegExp("^COMPOSE_SHA256=\"" + lock.artifacts.dockerCompose.sha256 + "\"$", "m"));
   assert.match(preparerSource, /El Compose existente no coincide con el SHA-256 fijado/);
   assert.match(preparerSource, /Hash SHA-256 incorrecto para el Compose/);
 });
@@ -154,7 +76,6 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.equal(lock.extension.locale, "es_AR");
   assert.match(lock.extension.translationStatus, /partial/);
 });
-
 
 test("los scripts de despliegue configuran el módulo y conservan backups", () => {
   const shell = read("scripts/platform/deploy-mycompany-6.2.sh");
