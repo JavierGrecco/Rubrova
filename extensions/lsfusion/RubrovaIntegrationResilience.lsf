@@ -92,3 +92,47 @@ EXTEND FORM integrationData
         userMessage, resolved, resolveIntegrationIncident
     FILTERS NOT resolved(rubrovaIncidents)
 ;
+
+rubrovaHttpResponse = DATA LOCAL FILE();
+rubrovaHttpSucceeded = DATA LOCAL BOOLEAN();
+rubrovaHttpFailureCategory = DATA LOCAL STRING[40]();
+rubrovaHttpFailureMessage = DATA LOCAL ISTRING[300]();
+
+// GET se considera lectura idempotente. Este helper no reintenta por sí mismo:
+// deja el fallo y su causa clasificados para que el worker o la pantalla decidan.
+rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING operationName,
+    STRING correlation, STRING url, LONG timeoutMilliseconds) {
+    rubrovaHttpResponse() <- NULL;
+    rubrovaHttpSucceeded() <- FALSE;
+    rubrovaHttpFailureCategory() <- NULL;
+    rubrovaHttpFailureMessage() <- NULL;
+
+    IF timeoutMilliseconds < 1 OR timeoutMilliseconds > 30000 THEN {
+        rubrovaHttpFailureCategory() <- 'CONFIGURATION_ERROR';
+        rubrovaHttpFailureMessage() <- 'El tiempo de espera configurado no es válido.';
+        rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
+            'CONFIGURATION_ERROR', NULL, 0, FALSE, NULL, NULL,
+            rubrovaHttpFailureMessage(), 'Timeout fuera del rango permitido: 1 a 30000 ms.');
+    } ELSE {
+        TRY {
+            rubrovaSetIntegrationTimeout(timeoutMilliseconds);
+            EXTERNAL HTTP GET url TO rubrovaHttpResponse;
+
+            IF failedHttp() THEN {
+                rubrovaHttpFailureCategory() <- 'REMOTE_HTTP_ERROR';
+                rubrovaHttpFailureMessage() <- 'El servicio externo respondió con un error HTTP.';
+                rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
+                    'REMOTE_HTTP_ERROR', statusHttp(), 1, TRUE, NULL, NULL,
+                    rubrovaHttpFailureMessage(), 'Respuesta HTTP no exitosa. Revisar código HTTP y contrato del proveedor.');
+            } ELSE
+                rubrovaHttpSucceeded() <- TRUE;
+        } CATCH {
+            rubrovaHttpFailureCategory() <- 'TIMEOUT_OR_NETWORK';
+            rubrovaHttpFailureMessage() <- 'El servicio externo no respondió a tiempo o no se pudo establecer la conexión.';
+            rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
+                'TIMEOUT_OR_NETWORK', statusHttp(), 1, TRUE, NULL, NULL,
+                rubrovaHttpFailureMessage(), 'La solicitud GET terminó con una excepción de conexión o timeout. Detalle sensible omitido.');
+        }
+    }
+}
+

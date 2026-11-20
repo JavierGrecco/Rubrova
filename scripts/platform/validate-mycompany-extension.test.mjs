@@ -210,6 +210,12 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /rubrovaRecordIntegrationIncident/);
   assert.match(resilienceSource, /logToFile\('rubrova-integration-emergency'/);
   assert.match(resilienceSource, /resolveIntegrationIncident/);
+  assert.match(resilienceSource, /rubrovaHttpGet/);
+  assert.match(resilienceSource, /EXTERNAL HTTP GET url/);
+  assert.match(resilienceSource, /TIMEOUT_OR_NETWORK/);
+  assert.match(resilienceSource, /REMOTE_HTTP_ERROR/);
+  assert.match(resilienceSource, /rubrovaHttpSucceeded\(\) <- TRUE/);
+  assert.doesNotMatch(resilienceSource, /technicalDetail\(incident\) <- messageCaughtException/);
   assert.match(resilienceSource, /safeToRetry/);
   assert.match(resilienceSource, /technicalDetail/);
   assert.match(resilienceSource, /DO NOT STORE|No almacenar tokens/i);
