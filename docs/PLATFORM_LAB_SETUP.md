@@ -1,18 +1,20 @@
 # Preparación del laboratorio de evaluación
 
-**Revisión:** 19 de noviembre de 2026  
-**Objetivo:** instalar MyCompany/lsFusion, Posnic y ERPNext en entornos aislados, usando datos sintéticos y versiones fijadas.  
+**Revisión:** 20 de noviembre de 2026  
+**Objetivo:** comparar POS + gestión comercial/ERP en entornos aislados, usando datos sintéticos y versiones fijadas.  
 **Regla principal:** no usar datos reales, instalaciones comerciales existentes, certificados fiscales de producción ni credenciales reales.
 
-Este laboratorio no instala Rubrova ni incorpora código de terceros. Sirve para comparar tres plataformas integrales antes de decidir si adoptamos una como base o construimos nuestro núcleo.
+Este laboratorio no instala Rubrova ni incorpora código de terceros. Sirve para comparar el circuito POS + ERP, medir cobertura real y decidir qué capacidades pueden reutilizarse sin vulnerar los límites de dominio.
 
 ## 1. Qué vamos a instalar
 
-| Candidato | Forma recomendada de evaluación | Versión |
+| Candidato | Forma recomendada de evaluación | Versión / prioridad |
 |---|---|---|
-| MyCompany/lsFusion | Instalador Windows x64 o servidor Linux con cliente web; desde Mac se accede por navegador a una VM local aislada | MyCompany 6.2 / lsFusion 6.x |
-| Posnic | Aplicación de escritorio en una VM limpia con Windows x64 o Ubuntu Desktop x86_64 | 1.9.2 |
-| ERPNext | Demo desechable oficial con Docker Compose, publicada solo en localhost | 16.60.0 |
+| ERPNext / Frappe | Demo desechable oficial con Docker Compose, publicada sólo en localhost. Después de confirmar límites de la demo, preparar una instancia de laboratorio que permita extensiones propias. | ERPNext 16.60.0 / Frappe 16 — primera prueba |
+| MyCompany / lsFusion | Instalador Windows x64 o servidor Linux con cliente web; desde Mac se accede por navegador a una VM local aislada. | MyCompany 6.2 / lsFusion 6.x — primera prueba |
+| Tryton | Instancia aislada con PostgreSQL; fijar servidor, cliente y módulos por paquete. Separar prueba POS 8.2 del laboratorio de port fiscal argentino. | Tryton 8.2 — prueba condicionada |
+| Dolibarr | Instancia oficial local/aislada; revisar TakePOS, API, stock, caja, compras y exportación. | 24.0.3 — filtro corto |
+| Posnic | Aplicación de escritorio en una VM limpia con Windows x64 o Ubuntu Desktop x86_64. | 1.9.2 — referencia POS secundaria |
 
 ### Restricción de Posnic en macOS
 
@@ -304,14 +306,15 @@ No marcar una prueba como aprobada por ver una pantalla o completar una demo. Pa
 
 ## 7. Orden de ejecución
 
-1. Validar el dataset.
-2. Levantar ERPNext 16.60.0 y comprobar versión.
-3. Cargar datos sintéticos y ejecutar P01–P10.
-4. Ejecutar cortes, reinicio, idempotencia y restauración (P11–P15).
-5. Preparar MyCompany/lsFusion 6.2; probar composición de módulos, POS, inventario, compras y producción; repetir el mismo conjunto P01–P26.
-6. Registrar qué casos no puede demostrar la demo desechable por sus límites.
-7. Preparar Posnic 1.9.2 en la VM compatible y repetir el mismo guion.
-8. Ejecutar hardware y terminales simuladas/físicas y fiscalidad en homologación (P16–P19) solo cuando existan adaptadores y dispositivos de prueba adecuados.
-9. Comparar esfuerzo, limitaciones, licencias y costo de mantenimiento antes de elegir una base.
+1. Validar el dataset y confirmar que todos los importes, cantidades y resultados esperados sean coherentes.
+2. Levantar ERPNext 16.60.0 y recorrer el circuito de catálogo, POS, caja, inventario, devolución y reportes básicos.
+3. Preparar MyCompany/lsFusion 6.2 y repetir exactamente el mismo circuito.
+4. Preparar Tryton 8.2 para la prueba de POS/ERP; fijar servidor, cliente y módulos 8.2, sin instalar addons argentinos de series 7.1/8.1.
+5. Ejecutar un filtro corto de Dolibarr 24.0.3; ampliar sólo si pasa los mínimos de caja y gestión.
+6. Preparar Posnic 1.9.2 como referencia de POS secundario, no como sustituto del ERP.
+7. En los dos mejores candidatos, ejecutar escenarios P01–P26, y los P27–P44 que correspondan a sus límites de dominio y arquitectura.
+8. Ejecutar hardware simulado, terminales y fiscalidad en homologación sólo cuando existan adaptadores y dispositivos de prueba adecuados.
+9. Comparar experiencia, esfuerzo de adaptación, licencias, APIs, exportación, backup/restore, reinicio y costo de actualización antes de elegir.
+
 
 **Estado:** este documento prepara instalaciones reproducibles; no afirma que ya se hayan desplegado o probado en el equipo.
