@@ -138,7 +138,11 @@ Cada KPI tiene definición única (nombre, fórmula, granularidad, tratamiento d
 | Evidence | Informes reproducibles escritos en SQL/Markdown y publicación self-hosted | MIT | Candidato para informes curados y reproducibles |
 | Apache Superset | BI multiusuario, dashboards, SQL Lab y exportaciones | Apache-2.0 | Alternativa potente, pero despliegue más pesado |
 | Metabase Open Source | Exploración visual y dashboards para usuarios de negocio | AGPL; embedding tiene condiciones propias | No incrustar automáticamente; revisar obligaciones antes de adoptar |
-| StatsForecast | Pronósticos estadísticos | Biblioteca ya fijada en benchmark inicial | Primera evaluación de series temporales, no verdad productiva |
+| StatsForecast | Pronósticos estadísticos | Apache-2.0; ya fijado en benchmark inicial | Primera evaluación de series temporales, no verdad productiva |
+| Ollama | Ejecución local de modelos de lenguaje con API local | Runtime MIT; cada modelo/ponderación tiene licencia propia | Candidato de facilidad de instalación y administración local |
+| llama.cpp | Inferencia local CPU/GPU y servidor HTTP compatible con APIs de modelos | MIT; cada modelo/ponderación tiene licencia propia | Alternativa de mayor control y optimización por hardware |
+| SQLGlot | Parseo, AST, transformación y dialectos SQL | MIT | Ayuda a inspeccionar SQL generado; no es una barrera de seguridad ni un validador de consultas |
+| JupyterLab | Análisis exploratorio reproducible y notebooks locales | BSD-3-Clause | Herramienta de analista, no interfaz operativa para cajeros/usuarios ocasionales |
 
 No incorporar toda esta lista como dependencias. Primera prueba: DuckDB + Parquet + consultas SQL versionadas; Polars sólo si mejora una transformación medida. Probar Evidence para informes propios; comparar Superset si aparece una necesidad real de BI multiusuario. Metabase queda condicionado a revisar el modelo de uso y sus términos de embedding. El motor transaccional y el ERP conservan la autoridad sobre ventas, inventario, pagos y contabilidad.
 
@@ -147,6 +151,12 @@ No incorporar toda esta lista como dependencias. Primera prueba: DuckDB + Parque
 El usuario debe poder descargar los resultados, abrirlos en Excel o LibreOffice y analizarlos con herramientas externas. Más adelante, un asistente de IA local puede consultar la capa analítica aprobada, generar filtros, explicar fórmulas, comparar períodos y preparar pronósticos alternativos.
 
 La IA debe ser de sólo lectura por defecto, usar métricas/datasets autorizados, declarar filtros y período, enlazar cada hallazgo a los datos fuente y diferenciar hechos, estimaciones e hipótesis. Las consultas generadas se validan contra un catálogo semántico y límites de tiempo/filas/costo; no se permite SQL arbitrario sobre la base transaccional ni escribir precios, pagos, stock o asientos. El informe generado se exporta junto con consulta, parámetros, modelo/versión y supuestos para que otra persona pueda reproducirlo. Los datos sensibles se excluyen, enmascaran o requieren autorización explícita; no enviar información comercial privada a un servicio externo por defecto.
+
+Para un modo estrictamente local se probarán Ollama y llama.cpp como runtimes alternativos, ambos con código MIT, pero la licencia de cada modelo descargado se revisará por separado. Ollama prioriza una experiencia de instalación/gestión sencilla; llama.cpp ofrece más control de ejecución y backends para CPU, GPU y Apple Metal. La primera instalación puede necesitar descargar el modelo; después se debe poder operar sin conexión, verificando que no dependa de APIs externas. No se fijará modelo sin probar calidad en español, razonamiento tabular, velocidad, memoria, compatibilidad de hardware y licencia.
+
+SQLGlot puede convertir una petición a un AST SQL para inspección y normalización, pero su documentación advierte que el parser es deliberadamente tolerante y no valida por sí solo que una consulta sea válida o segura. La defensa debe combinar un catálogo de vistas permitido, AST allowlist, ejecución con conexión/rol de sólo lectura, parámetros, límites de tiempo/filas/memoria, sin acceso al filesystem ni extensiones arbitrarias y pruebas de consultas adversariales. JupyterLab queda como herramienta de análisis avanzado/exportación reproducible para uso técnico, no como requisito del POS.
+
+Los pronósticos numéricos no se delegan al LLM: StatsForecast y, si las pruebas lo justifican, MLForecast/HierarchicalForecast calculan los modelos, intervalos y backtests. El LLM ayuda a elegir preguntas, sugerir variables, crear una hipótesis o explicar resultados; la predicción reportada siempre debe provenir de un modelo probado y declarar su error.
 
 ## 10. Nuevas pruebas de plataforma
 
@@ -177,5 +187,9 @@ La especificación amplía el modelo y el protocolo de selección. Los candidato
 - [Frappe REST API](https://docs.frappe.io/framework/user/en/api/rest) y [ERPNext Data Export](https://docs.frappe.io/erpnext/data-export): ejemplos de API y exportación CSV/Excel a evaluar en la prueba de plataforma.
 - [Superset SQL Lab API](https://superset.apache.org/developer-docs/api/sql-lab/) y [exportación de dashboard a Excel](https://superset.apache.org/user-docs/using-superset/exporting-dashboard-data/).
 - [Microsoft Excel / Power Query: importación desde fuentes de datos](https://support.microsoft.com/en-us/excel/import-data-from-data-sources-power-query).
+- [Ollama: repositorio y licencia MIT](https://github.com/ollama/ollama) y [API local](https://github.com/ollama/ollama/blob/main/docs/api.md).
+- [llama.cpp: repositorio/licencia MIT](https://github.com/ggml-org/llama.cpp), [servidor local](https://github.com/ggml-org/llama.cpp/tree/master/tools/server) y [backends de compilación](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md).
+- [SQLGlot: repositorio MIT](https://github.com/tobymao/sqlglot) y [documentación del AST](https://sqlglot.com/sqlglot.html); su FAQ aclara que el parser no es un validador de ejecución.
+- [JupyterLab: repositorio y licencia BSD-3-Clause](https://github.com/jupyterlab/jupyterlab).
 
 Las licencias y capacidades deben volver a verificarse para cada versión/archivo que se fije en el laboratorio. Esta lista respalda una selección de candidatos; no es una autorización para ignorar licencias de dependencias ni una decisión de adopción.
