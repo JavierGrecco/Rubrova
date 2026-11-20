@@ -100,6 +100,15 @@ Son documentos diferentes:
 
 Pueden imprimirse en dispositivos distintos. La impresión desde una terminal sólo se habilita para modelos y firmware cuya documentación la soporte. Cada documento conserva su identificador y relación con la venta.
 
+### Política de impresión por medio de pago
+
+- **Efectivo:** ticket comercial en impresora térmica conectada a la caja.
+- **Transferencia bancaria:** ticket comercial en impresora de caja cuando el ingreso esté verificado; si queda pendiente, mostrar claramente ese estado.
+- **QR y tarjeta:** preferimos que la terminal inteligente vinculada a Rubrova imprima el ticket comercial completo generado por el sistema y el voucher que corresponda. Exige soporte documentado y probado del modelo/firmware. Si solo imprime el voucher bancario, la impresora de caja imprime el ticket detallado.
+- La impresora de caja es el mecanismo universal y respaldo para QR/tarjeta.
+- Evitar duplicar el ticket comercial cuando se imprime desde la terminal; permitir reimpresión auditada sin duplicar operaciones.
+- Factura/comprobante fiscal conserva su propio flujo y no se reemplaza por ticket ni voucher.
+
 ## 10. Devoluciones, anulaciones y cambios
 
 - Devolución total o parcial con referencia a venta y líneas originales.
