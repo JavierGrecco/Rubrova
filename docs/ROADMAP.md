@@ -211,7 +211,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 1. Ejecutar el filtro comparativo POS + ERPNext 16 y MyCompany 6.2 con el mismo dataset y circuito.
 2. Ejecutar Tryton 8.0 en paralelo con las ramas argentinas 8.0; instalar el conjunto, ejecutar tests y homologar. Tryton 8.2 se evalúa como actualización posterior.
 3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P60.
-4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio. P49 añade la comprobación de historial comercial y exportación de datos para inteligencia desde el inicio.
+4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio. P49 añade la comprobación de historial comercial; P50–P57 validan temporalidad, pagos, caja, promociones, reclamos y exportaciones; P58–P60 validan el perfil 360 de clientes, RFM, rentabilidad y privacidad.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
 6. Ampliar el benchmark con quiebres de stock censurados, promociones, cambios de precio, productos nuevos y más horizontes; preparar una entrada de datos reales una vez elegida la plataforma POS/ERP. Evaluar MLForecast y HierarchicalForecast sólo después de medir la mejora frente a baselines.
 
