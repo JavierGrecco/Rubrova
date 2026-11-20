@@ -25,6 +25,8 @@ Las referencias exactas y el protocolo común están en [Evaluación de platafor
 **Alternativa de salida:** si ninguna plataforma supera los controles, construir los servicios propios por dominio y reutilizar únicamente componentes que encajen detrás de contratos. TypeScript y PostgreSQL son candidatos, no decisiones irrevocables; la base de datos se elige y administra por servicio, no como una base compartida por toda la plataforma. Ninguna plataforma integral puede obligar a fusionar todos los dominios en un único despliegue o una única autoridad de datos.
 La dirección de servicios independientes tiene precedencia sobre cualquier candidato integral de la evaluación. Las plataformas ERP/POS se consideran candidatas para cubrir uno o varios dominios si respetan los límites, APIs, aislamiento de datos y despliegue/rollback definidos; no se adoptarán como núcleo único por mera amplitud funcional.
 
+La comparación de plataformas debe evaluar también si cada candidata puede encapsularse como servicio independiente. La amplitud funcional no compensa una arquitectura inseparable o una base de datos compartida entre dominios.
+
 ## Principios
 
 - Los módulos representan responsabilidades del negocio.
@@ -75,7 +77,7 @@ La estructura debe permitir encontrar responsabilidades sin imponer carpetas inn
 
 La tecnología de persistencia depende de la plataforma que supere la prueba:
 
-- Si se adopta Posnic, evaluar su MongoDB/Mongoose como base transaccional única y medir el costo de conservar o migrar sus modelos.
+- Si se adopta Posnic, evaluar su MongoDB/Mongoose únicamente dentro del servicio POS/operación que se demuestre aislable. No puede convertirse en una base compartida por toda Rubrova; si no se puede delimitar y desplegar como servicio, no cumple la arquitectura objetivo.
 - Si se adopta ERPNext, aceptar y probar su persistencia MariaDB como parte del framework; PostgreSQL no se considera equivalente ni se fuerza durante esta ronda.
 - Cada servicio mantiene su almacenamiento privado, migraciones y credenciales. PostgreSQL es candidato para servicios transaccionales; SQLite puede ser útil para persistencia local de puestos/edge, según las pruebas. La decisión concreta se toma por servicio y no habilita consultas SQL cruzadas.
 - Historial de movimientos para caja, pagos, inventario y cuentas corrientes.
@@ -84,7 +86,7 @@ La tecnología de persistencia depende de la plataforma que supere la prueba:
 - Migraciones y esquemas versionados.
 - Consultas analíticas separadas lógicamente del flujo de caja.
 
-No se elige una base de datos por preferencia aislada: debe acompañar a una única plataforma transaccional y permitir backup, restauración y auditoría demostrables.
+No se elige una base de datos global para toda la plataforma. Cada servicio posee su almacenamiento, credenciales, migraciones y estrategia de backup/restore. La consistencia entre servicios se obtiene mediante contratos, eventos, Sagas y conciliación, no mediante escrituras cruzadas.
 ## Aislamiento de negocios
 
 Toda entidad operativa pertenece a un negocio y, cuando corresponde, a sucursal o ubicación. El servidor valida el contexto del negocio; nunca confía en identificadores del cliente sin comprobar permisos. Se evaluará Row-Level Security como defensa adicional. Las pruebas deben intentar acceder a datos de otro negocio desde cada ruta.
