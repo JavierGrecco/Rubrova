@@ -78,7 +78,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_INITIAL/);
   assert.match(uiSmokeSource, /UI_AFTER_LOGIN/);
   assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);
-  assert.match(runtimeWorkflowSource, /playwright install --with-deps chromium/);
+  assert.match(runtimeWorkflowSource, /playwright install chromium/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
   assert.match(runtimeSmokeSource, /EXTENSION_OVERRIDE_FILE/);

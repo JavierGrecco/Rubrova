@@ -57,7 +57,7 @@ jobs:
         run: |
           python3 -m venv "$PLAYWRIGHT_VENV"
           "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
-          "$PLAYWRIGHT_VENV/bin/python" -m playwright install --with-deps chromium
+          "$PLAYWRIGHT_VENV/bin/python" -m playwright install chromium
       - name: Validar sintaxis del smoke test
         run: bash -n scripts/platform/test-runtime-smoke.sh
       - name: Levantar MyCompany, inspeccionar interfaz y limpiar datos efímeros
