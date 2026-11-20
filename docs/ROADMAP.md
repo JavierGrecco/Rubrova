@@ -44,7 +44,7 @@ No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circu
 ### Tareas pendientes
 
 - [ ] Fijar tags/commits y dependencias actuales de ERPNext 16, MyCompany 6.2, Tryton 8.0 + ocho módulos tryton-ar 8.0 y Dolibarr 24.0.3.
-- [ ] Ejecutar filtro documental, de licencia, instalación, API, exportación, backup y restauración.
+- [ ] Ejecutar filtro documental, de licencia, instalación, API, exportación, backup y restauración en una instancia limpia y en un equipo distinto.
 - [ ] Probar ERPNext y MyCompany con el flujo POS completo y jornada simulada.
 - [ ] Instalar Tryton 8.0 con las ocho ramas tryton-ar fijadas en el [lock reproducible](TRYTON_ARGENTINA_8_0_LOCK.md), ejecutar tests y homologar WSFE/WSFEX; dejar Tryton 8.2 como upgrade posterior sujeto a port y revalidación.
 - [ ] Ejecutar filtro corto de Dolibarr y decidir si entra en la comparación profunda.
@@ -74,7 +74,7 @@ Alcance:
 - Documento fiscal separado del ticket, con estados visibles.
 - Lector e impresora mediante adaptadores; terminal de pago real sólo tras pruebas de sandbox/homologación.
 - Panel operativo con ventas netas, devoluciones, medios de pago, diferencia de caja y productos vendidos.
-- Persistencia local, idempotencia, audit trail, backup/restore y reinicio del proceso.
+- Persistencia local, idempotencia, audit trail, backup automático, portable y verificable, restauración guiada en Windows limpio y reinicio del proceso. La copia externa debe poder continuar en otro equipo.
 
 **Criterio de salida:** una jornada repetible sin pérdida ni duplicación; ventas, pagos, caja, stock y documento fiscal conciliados; recuperación demostrada.
 
@@ -187,7 +187,7 @@ Todas las fases deben pasar las pruebas que correspondan:
 - Resiliencia: corte de red, terminación abrupta del proceso, reintentos, broker caído, restore y rollback.
 - Seguridad: permisos en servidor, aislamiento por negocio/sucursal, gestión de secretos y auditoría.
 - Datos: importación validada, fórmulas trazables, moneda/redondeos y costo explícito.
-- Operación: instalación local, actualización, documentación en español y recuperación por una persona autorizada.
+- Operación: instalación local, actualización, documentación en español y recuperación guiada por una persona autorizada después de reinstalar Windows o cambiar la PC.
 - Reutilización: versión/commit, licencia por archivo/dependencia, avisos, pruebas y costo de mantenimiento.
 
 Ninguna capacidad se marca terminada porque exista una pantalla, documentación o demo. Se requiere evidencia reproducible.
@@ -213,5 +213,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
 6. Ampliar el dataset sintético con quiebres de stock, promociones, cambios de costo, presentaciones comparables y sustitución entre segmentos de marca; preparar la prueba de baselines/StatsForecast y de fórmulas de rentabilidad sin bloquear la selección POS/ERP.
+
+El requisito de copia portable y recuperación en PC nueva está en [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md).
 
 La [investigación logística argentina](ARGENTINA_LOGISTICS_INTEGRATION.md) se conserva, pero no desplaza estos pasos ni condiciona el inicio del producto.

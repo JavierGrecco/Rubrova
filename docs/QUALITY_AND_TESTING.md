@@ -96,12 +96,14 @@ Reglas de aceptación:
 
 La guía completa y las licencias de los candidatos están en [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md).
 
+Para el protocolo de respaldo portable, migración de equipo, cifrado y restauración en Windows limpio, ver [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md).
+
 La aprobación legal de una licencia no reemplaza la revisión técnica; una biblioteca permisiva también puede ser insegura, estar abandonada o no cumplir nuestras invariantes.
 
 
 ## Continuidad y recuperación
 
-Además de las pruebas funcionales P01–P26, la aceptación de confiabilidad debe ejecutar P27–P44. Simulan terminación abrupta del proceso (sin apagar físicamente el equipo), comandos y webhooks duplicados, conflicto de clave, concurrencia CAS, cuotas offline, restauración, migraciones, despliegue independiente, Outbox y Sagas. El guion completo está en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+Además de las pruebas funcionales P01–P26, la aceptación de confiabilidad debe ejecutar P27–P48. Simulan terminación abrupta del proceso (sin apagar físicamente el equipo), comandos y webhooks duplicados, conflicto de clave, concurrencia CAS, cuotas offline, restauración, migraciones, despliegue independiente, Outbox y Sagas. El guion completo está en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
 
 ## Arquitectura distribuida y aislamiento de servicios
 

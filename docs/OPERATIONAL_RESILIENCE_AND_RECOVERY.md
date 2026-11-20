@@ -72,6 +72,8 @@ Cada sucursal conserva su ledger local. El stock centralizado es una proyección
 
 Los backups deben ser automáticos, verificables, cifrados y estar registrados como recursos administrables. Deben cubrir las bases de cada servicio, archivos/documentos, configuración necesaria, el estado durable de mensajería y los datos que permiten correlacionar operaciones.
 
+La exigencia de producto no se limita a recuperar un servicio en la misma computadora: el paquete completo debe poder restaurarse después de reinstalar Windows o reemplazar el equipo. Se separan snapshot nativo, exportación lógica portable y secretos cifrados; el paso a paso de instalación limpia, validación, cutover y re-vinculación de periféricos está en el documento específico. Una copia local en el mismo disco no cuenta como protección frente a su falla.
+
 Cada backup tendrá un registro de catálogo con:
 - ID único del backup y fecha/hora UTC;
 - servicio, instancia, organización/ámbito y almacenamiento cubierto;
@@ -102,6 +104,8 @@ No se sobrescribe directamente la única base activa. La recuperación recomenda
 Las plataformas administradas suelen restaurar a una nueva instancia para evitar sobreescribir la original; Rubrova seguirá el mismo principio, adaptado a la tecnología local que finalmente se elija.
 
 Un restore a un punto anterior puede borrar del estado reconstruido ventas legítimas posteriores. Por eso no se ofrece como un botón de “deshacer todo” sin conciliación. El sistema debe mostrar qué operaciones entran en la ventana de recuperación.
+
+Ver el flujo completo de recuperación para el dueño en [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md).
 
 ## 6. Rollback de código, releases y migraciones
 
@@ -201,6 +205,10 @@ Estas pruebas amplían P01–P26; no reemplazan el protocolo existente.
 | P42 | Desplegar versión nueva de un servicio y provocar un error de salud | Retorno a la versión estable de ese servicio sin reescribir main ni actualizar innecesariamente los demás |
 | P43 | Caída del broker después del commit del servicio emisor pero antes de publicar | Outbox conserva el evento y lo publica una vez recuperado; consumidores idempotentes |
 | P44 | Fallar un paso intermedio de una Saga de checkout | Reintentos/compensaciones idempotentes y estado final conciliable |
+| P45 | Reinstalar Windows o reemplazar la PC y restaurar desde una copia externa | Recuperar ventas, pagos, caja, stock, compras, costos, documentos, auditoría y configuraciones en un equipo limpio; conciliar estados externos sin duplicados |
+| P46 | Corromper un paquete, perder una parte de la cadena incremental o presentar una clave incorrecta | Rechazo seguro, explicación clara y conservación intacta de las copias válidas |
+| P47 | Restaurar perfiles de periféricos y terminales en otro equipo | Recuperar configuración sin duplicar identidades; volver a probar y autorizar cada dispositivo físico |
+| P48 | Restaurar un backup con secretos/certificados separados | Recuperar mediante almacén cifrado independiente o re-vincular credenciales; nunca exponer secretos en el paquete legible |
 
 ## 11. Indicadores de confiabilidad
 
@@ -222,6 +230,8 @@ Estas pruebas amplían P01–P26; no reemplazan el protocolo existente.
 - Google Cloud SQL: [restauración y point-in-time recovery](https://cloud.google.com/sql/docs/postgres/backup-recovery/restore).
 - Microsoft: [Idempotent Consumer](https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer), [Saga](https://learn.microsoft.com/en-us/azure/architecture/patterns/saga), [Outbox](https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/transactional-outbox-pattern) y [safe deployments](https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/safe-deployments).
 - Shopify: [inventoryAdjustQuantities](https://shopify.dev/docs/api/admin-graphql/latest/mutations/inventoryAdjustQuantities) e [inventorySetQuantities con compare-and-swap](https://shopify.dev/docs/api/admin-graphql/latest/mutations/inventorySetQuantities).
+
+La aceptación de P45–P48 se vincula con el paquete portable, la clave externa y el flujo de reemplazo de equipo descritos en [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md).
 
 ## 13. Criterio de salida
 

@@ -39,6 +39,7 @@ La primera entrega no es una demo de caja ni un CRUD de artículos. Es un **circ
 10. Cerrar o reiniciar el POS/servicio y demostrar que la operación confirmada no se pierde ni se duplica.
 11. Devolver parcial o totalmente una venta, vinculando la operación original y dejando los movimientos compensatorios.
 12. Consultar un cierre básico: ventas netas, devoluciones, medios de pago, efectivo esperado, diferencia de caja y unidades vendidas.
+13. Crear una copia portable cifrada y restaurarla en una instalación Windows limpia o en una PC de reemplazo, verificando ventas, pagos, caja, stock, costos, documentos y auditoría antes de habilitar el uso.
 
 **Para dar por terminada esta entrega:** cada total debe poder reproducirse; ventas, pagos, caja, inventario y fiscalidad deben conciliar; los errores y estados pendientes deben ser visibles; y la caja debe poder usarse con teclado, lector y pantalla táctil. No se declara una venta cobrada porque el POS haya mostrado una pantalla de éxito o porque el cliente presente una captura.
 
@@ -54,6 +55,7 @@ Aunque se implementen progresivamente, estas dimensiones deben existir desde el 
 - Unidad de negocio, canal, sucursal, centro de costo y proyecto como dimensiones distintas.
 - Pedido, venta, pago, movimiento de stock, sesión de caja, comprobante fiscal y despacho como hechos distintos.
 - Identificador externo, correlation ID, clave de idempotencia, auditoría y estado de sincronización.
+- Política de respaldo desde el primer uso: copia completa portable, puntos incrementales, documentos/adjuntos, configuraciones y auditoría; secretos en almacén cifrado independiente y restauración a equipo limpio.
 - Fecha/hora, moneda, tipo de cambio, política de redondeo y fotografía de las condiciones aplicadas a la operación.
 
 Una venta puede incluir líneas de áreas diferentes. La dimensión económica debe guardarse a nivel de línea cuando corresponda; el consolidado no debe duplicar ingresos, stock ni costos internos.
@@ -368,4 +370,5 @@ La decisión no se tomará por cantidad de funciones ni por estrellas de GitHub.
 - [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md)
 - [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md)
 - [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md)
+- [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md)
 - [Continuidad y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md)

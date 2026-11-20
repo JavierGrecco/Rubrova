@@ -156,7 +156,7 @@ La inferencia causal se evita: correlación entre una suba de precio y una baja 
 | [ERPNext](https://github.com/frappe/erpnext) | GPL-3.0 en el repositorio principal revisado | Referencia de Stock Ledger, valuación y reportes de utilidad bruta | Evaluar como plataforma; no extraerlo como biblioteca aislada |
 | [Retail Sales & Margin Analysis](https://github.com/EkaterinaA83/Retail-sales-ABC-margin-analysis) | No se observó LICENSE | Ejemplo de notebook para ABC, promociones y margen | Referencia metodológica solamente |
 
-Las licencias se vuelven a comprobar en el commit/tag exacto que se evalúe, junto con licencias de dependencias, datos, modelos y artefactos. Conservar avisos, atribución, SBOM/manifiesto y cambios según corresponda. Una licencia MIT o Apache no elimina la revisión de las dependencias; una aplicación GPL/AGPL exige analizar el modo de uso y cualquier distribución.
+Las licencias se vuelven a comprobar en el commit/tag exacto que se evalúe, junto con licencias de dependencias, datos, modelos y artefactos. Conservar avisos, atribución, SBOM/manifiesto y cambios según corresponda. MIT y Apache-2.0 permiten uso privado y modificación bajo sus condiciones de avisos; la ausencia de licencia no concede esos permisos. Una aplicación GPL/AGPL exige analizar el modo de uso y cualquier distribución.
 
 ## 7. Arquitectura de implementación
 
