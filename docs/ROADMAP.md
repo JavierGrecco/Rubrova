@@ -47,6 +47,9 @@ El lock de versión, la extensión inicial, los scripts de preparación y el det
 - [x] Inspeccionar el código fuente de POS, sesiones, pagos mixtos, efectivo, devoluciones, inventario, costos y compras.
 - [x] Crear el módulo superior Rubrova separado del núcleo y un glosario español inicial.
 - [x] Incorporar validación automática del lock, módulo y traducciones; workflow correcto en CI.
+- [x] Preparar scripts de despliegue de RubrovaCustom para Docker, Linux nativo y Windows nativo, con copia previa de settings.
+- [x] Registrar limitación de arquitectura de imagen Docker MyCompany 6.2 en ARM64.
+- [ ] Ejecutar la instalación y carga en el equipo anfitrión; la CI no puede sustituir esta prueba.
 - [ ] Descargar los artefactos, verificar hashes en la máquina de ejecución e instalar en entorno local aislado.
 - [ ] Cargar la extensión en el servidor, completar ResourceBundle es_AR y verificar pantallas críticas.
 - [ ] Ejecutar apertura → escaneo → carrito → pagos mixtos/vuelto → venta → stock → devolución → cierre.

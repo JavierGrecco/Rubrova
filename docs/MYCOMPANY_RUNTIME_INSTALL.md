@@ -1,0 +1,122 @@
+# Instalación y carga de la extensión Rubrova — MyCompany 6.2
+
+**Versión objetivo:** MyCompany 6.2 / lsFusion 6.x  
+**Estado:** scripts y guía preparados; la instalación real queda pendiente de ejecutarse en un equipo anfitrión.
+
+## Ruta recomendada para el primer piloto
+
+Para comenzar, recomendamos el instalador oficial en un equipo Windows x64. Es la ruta más directa para levantar el sistema sin depender de Docker. El cliente web permite después operar desde otro equipo de la misma LAN, siempre que la contraseña administrativa y el firewall estén correctamente configurados.
+
+Docker es una alternativa oficial, pero se debe inspeccionar el Compose y las arquitecturas de sus imágenes antes de iniciar contenedores.
+
+## 1. Preparar los artefactos
+
+En Windows, abrir PowerShell en el clon de Rubrova y ejecutar:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\platform\prepare-mycompany-6.2.ps1
+
+El script descarga el instalador y el JAR oficial a %LOCALAPPDATA%\Rubrova\platforms\mycompany-6.2, valida ambos SHA-256 y no ejecuta archivos.
+
+En macOS/Linux se puede preparar el JAR y el Compose oficial:
+
+    bash scripts/platform/prepare-mycompany-6.2.sh
+
+El Compose correcto para MyCompany es:
+
+    https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml
+
+No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2/compose.yaml: ese archivo no incorpora por sí solo el contenedor con la lógica de MyCompany. El directorio oficial de MyCompany 6.2 publica su archivo versionado, pero la descarga es de tipo binario; el preparador calcula el SHA-256 local y no inicia el stack.
+
+## 2. Instalar de forma aislada
+
+### Windows x64
+
+1. Verificar que los archivos se descargaron con SHA-256 coincidente.
+2. Ejecutar manualmente mycompany-6.2-x64.exe, revisar el instalador y completar la instalación.
+3. Mantener el firewall activo y limitar los puertos 8080 y 7652 a localhost durante la primera validación.
+4. Abrir http://localhost:8080.
+5. Iniciar sesión con el usuario inicial indicado por la documentación del producto.
+6. Cambiar inmediatamente la contraseña de admin. La instalación documentada puede venir sin contraseña inicial; no habilitar acceso LAN hasta asegurarla.
+
+### Docker en macOS/Linux/Windows
+
+1. Instalar Docker Engine o Docker Desktop con Docker Compose.
+2. Preparar el directorio de trabajo con el Compose oficial MyCompany 6.2.
+3. Leer el archivo y verificar los tags de sus imágenes. No usar latest, SNAPSHOT ni tags de otras series.
+4. La documentación específica de MyCompany describe cuatro contenedores: PostgreSQL, servidor de aplicación, lógica MyCompany y cliente web.
+5. Ejecutar docker compose config y revisar los puertos publicados antes de iniciar.
+6. Iniciar sólo en la máquina local para la primera prueba. Cambiar la contraseña inicial de admin antes de abrir acceso a otros equipos.
+
+**Arquitectura Apple Silicon:** Docker Hub publica lsfusion/mycompany:6.2 sólo para linux/amd64; las imágenes lsfusion/server:6.2 y lsfusion/client:6.2 publican amd64 y arm64. Por lo tanto, no está demostrada una instalación completa nativa ARM64. En equipos Apple Silicon habrá que validar la emulación x86-64 o utilizar el piloto inicial en Windows x64. No modificar el Compose a ciegas para forzar plataformas.
+
+## 3. Copiar el módulo Rubrova sin modificar el ERP
+
+lsFusion permite cargar un módulo propio desde el classpath y establecer logics.topModule en settings.properties. Rubrova incorpora:
+
+- RubrovaCustom.lsf, que declara REQUIRE MyCompany.
+- MyCompanyResourceBundle_es_AR.properties, con el glosario español inicial.
+
+### Docker
+
+Con el Compose oficial descargado en un directorio, ejecutar:
+
+    bash scripts/platform/deploy-mycompany-6.2.sh docker /ruta/al/directorio
+
+El script crea o utiliza docker-server, copia ambos archivos y escribe logics.topModule = RubrovaCustom en docker-server/settings.properties. Hace una copia local del archivo de configuración anterior si existía. **No inicia ni reinicia contenedores.** Después revisar el cambio y reiniciar manualmente el stack con Docker Compose.
+
+### Linux nativo
+
+Ejecutar desde el clon de Rubrova con permisos administrativos:
+
+    sudo bash scripts/platform/deploy-mycompany-6.2.sh native
+
+El script utiliza el classpath /var/lib/lsfusion y la configuración /etc/lsfusion6-server/settings.properties, rutas documentadas para lsFusion 6. Hace una copia de seguridad de settings, instala los dos recursos y reinicia el servicio lsfusion6-server.
+
+### Windows nativo
+
+Abrir PowerShell como administrador. Localizar la configuración del servidor:
+
+    Get-ChildItem "$env:ProgramFiles\lsFusion 6" -Filter settings.properties -Recurse -File
+
+Si aparece más de un archivo, elegir el que utiliza el servicio lsFusion 6 Server. Ejecutar:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\platform\deploy-mycompany-6.2.ps1 -SettingsPath "RUTA_COMPLETA\settings.properties"
+
+El script copia los dos recursos a C:\Program Files\lsFusion 6\Server\lib, respalda los archivos que pudiera reemplazar, configura logics.topModule y reinicia el servicio si estaba activo. Si la instalación utiliza otra carpeta de classpath, pasarla mediante -ModuleDirectory.
+
+## 4. Qué comprobar después del reinicio
+
+No basta con que el servicio figure como activo. Confirmar:
+
+- El servidor cargó RubrovaCustom sin errores de sintaxis, dependencias ni recursos duplicados.
+- MyCompanyResourceBundle_es_AR.properties se detecta y la preferencia de idioma del usuario está configurada en español (Argentina).
+- El cliente web abre y muestra las pantallas POS críticas.
+- El acceso inicial de administración está protegido y sólo se exponen los puertos necesarios.
+- Se obtiene una copia de seguridad y se restaura en una instancia limpia antes de introducir datos reales.
+
+La traducción actual es parcial. No habilitar el uso diario mientras falten textos críticos o los errores estén en inglés.
+
+## 5. Criterio de finalización del Bloque 0
+
+El bloque sólo se declara completado después de guardar evidencia de:
+
+1. Instalación MyCompany 6.2 iniciada desde el artefacto verificado.
+2. Versión de plataforma, PostgreSQL, imágenes y arquitectura registradas.
+3. Contraseña inicial modificada y firewall configurado.
+4. Módulo superior RubrovaCustom cargado con éxito sin parchear upstream.
+5. ResourceBundle es_AR detectado y circuito crítico traducido y revisado.
+6. Backup y restauración en una instancia limpia comprobados.
+7. Reinicio de proceso y retorno a servicio documentados.
+
+La CI que valida el lock y el esqueleto de extensión no reemplaza estas pruebas de ejecución.
+
+## Fuentes oficiales
+
+- [Release MyCompany 6.2 y hashes de los artefactos](https://github.com/lsfusion-solutions/mycompany/releases/tag/6.2)
+- [Instalación Windows/Linux y acceso inicial](https://mycompany-docs.lsfusion.org/administration/installation/)
+- [Compose oficial MyCompany 6.2](https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml)
+- [Instalación Docker de MyCompany](https://mycompany-docs.lsfusion.org/administration/installation-docker/)
+- [Agregar módulos propios en MyCompany 6](https://mycompany-docs.lsfusion.org/v6/administration/development/)
+- [Docker Hub — MyCompany](https://hub.docker.com/r/lsfusion/mycompany/tags)
+- [Docker Hub — lsFusion Server](https://hub.docker.com/r/lsfusion/server/tags)
+- [Docker Hub — lsFusion Client](https://hub.docker.com/r/lsfusion/client/tags)

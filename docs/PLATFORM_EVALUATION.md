@@ -19,7 +19,7 @@ Este documento convierte la investigación en una prueba repetible. No elige una
 
 No se amplía la lista sin una razón funcional. uniCenta queda fuera de la primera ronda hasta tener el código fuente exacto y licencias verificables.
 
-**MyCompany:** será el primer piloto por la amplitud de su POS y módulos ERP. Los módulos comparten base y runtime, por lo que se evalúa como una suite integrada. La traducción española no viene completa y deberá cubrirse con un ResourceBundle es_AR antes del uso diario.
+**MyCompany:** será el primer piloto por la amplitud de su POS y módulos ERP. Los módulos comparten base y runtime, por lo que se evalúa como una suite integrada. La traducción española no viene completa y deberá cubrirse con un ResourceBundle es_AR antes del uso diario. El Compose oficial específico 6.2 existe en `solutions/mycompany-docker/6.2/`; la imagen `lsfusion/mycompany:6.2` figura sólo como `linux/amd64`, mientras las imágenes server/client 6.2 publican `amd64` y `arm64`. El stack entero no debe considerarse ARM64 nativo.
 
 **ERPNext:** su POS Profile configura empresa, almacén, métodos de pago, listas, impuestos y cuentas; la operación afecta inventario y contabilidad, con reportes y dimensiones. Hay que comprobar velocidad real de caja, experiencia táctil, hardware, offline y localización argentina. Un site/bench es una unidad de operación y persistencia, no módulos desplegables como microservicios independientes.
 
@@ -71,7 +71,7 @@ La aplicación MyCompany tiene licencia Apache-2.0 y utiliza la plataforma lsFus
 
 **Riesgos:** no se demostró adaptación argentina, ARCA ni terminales locales; el POS y módulos fiscales pueden depender de configuraciones regionales. El release etiquetado es 6.2 (commit d21ca6978717b98b6300d90267f9767db7414008), mientras la documentación online consultada se identifica como 7.0 y master declara 7.0-SNAPSHOT. No tomar instrucciones de 7.0 como prueba de funciones en 6.2.
 
-**Prueba requerida:** cargar RubrovaCustom sin parchear el núcleo; completar traducción; ejecutar POS, sesiones, pagos mixtos/vuelto, devoluciones, inventario y compras; verificar dos cajas, API, actualización, exportación, backup y restauración.
+**Prueba requerida:** instalar desde el artefacto verificado o el Compose específico; cargar RubrovaCustom sin parchear el núcleo; completar traducción; ejecutar POS, sesiones, pagos mixtos/vuelto, devoluciones, inventario y compras; verificar dos cajas, API, actualización, exportación, backup y restauración. Ver [guía de instalación del primer piloto](MYCOMPANY_RUNTIME_INSTALL.md).
 
 ### Posnic
 

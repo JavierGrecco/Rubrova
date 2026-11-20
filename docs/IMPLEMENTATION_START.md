@@ -42,6 +42,25 @@ Las personalizaciones de Rubrova quedarán fuera del código upstream:
 
 No agregamos un gateway, broker, una segunda base, microservicios ni un framework web propio de forma preventiva. Primero se prueba lo que resuelve la suite y se añade únicamente la pieza mínima que cubra una brecha demostrada.
 
+## Progreso real del Bloque 0 (20/11/2026)
+
+- [x] Confirmar que el Compose específico de MyCompany 6.2 está publicado en el directorio oficial `solutions/mycompany-docker/6.2/`; no usar el Compose genérico de lsFusion.
+- [x] Confirmar hashes SHA-256 oficiales del instalador y JAR contra la release 6.2.
+- [x] Registrar las arquitecturas Docker: MyCompany 6.2 publica `linux/amd64`; las imágenes de servidor y cliente 6.2 publican `amd64` y `arm64`.
+- [x] Preparar scripts de descarga y verificación para Windows y macOS/Linux.
+- [x] Preparar scripts de despliegue de la extensión para Windows nativo, Linux nativo y Docker, con backup de settings antes de modificar `logics.topModule`.
+- [x] Definir comprobaciones de CI para lock, glosario, extensión y scripts.
+- [ ] Descargar y ejecutar el instalador en Windows x64 o levantar el Compose en un equipo anfitrión compatible.
+- [ ] Confirmar que RubrovaCustom carga en el proceso real y que el idioma es_AR se reconoce.
+- [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
+- [ ] Crear backup y restaurarlo en una instalación limpia.
+
+La instalación no se pudo ejecutar desde el entorno de automatización de esta sesión: no dispone de Docker y no puede resolver el dominio oficial de descargas. Esto no impide preparar los artefactos del repositorio, pero la validación de runtime requiere el equipo que alojará MyCompany. El estado no debe cambiar a completado hasta guardar esas evidencias.
+
+## Guía operativa del primer arranque
+
+La guía específica está en [Instalación y carga de la extensión MyCompany 6.2](MYCOMPANY_RUNTIME_INSTALL.md). La ruta recomendada para el primer piloto es el instalador Windows x64. Para Docker, usar sólo el Compose de MyCompany 6.2 y revisar la limitación ARM64 documentada.
+
 ## Bloques de implementación
 
 ### Bloque 0 — instalación reproducible y segura

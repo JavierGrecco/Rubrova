@@ -27,7 +27,9 @@
       "file": "compose.yaml",
       "url": "https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml",
       "sha256": null,
-      "note": "Official version-specific directory. Download and inspect; compute and record the local digest and pin all image digests before running it."
+      "listedSizeBytes": 785,
+      "listedModifiedDate": "2026-07-20",
+      "note": "Official MyCompany-specific Compose bundle. Do not use the generic lsFusion /docker/6.2/compose.yaml file. Compute a local digest and inspect service tags before launch."
     }
   },
   "extension": {
@@ -47,5 +49,29 @@
     "Export and restore to a separate clean machine",
     "Homologate Argentina tax and ARCA behavior before production"
   ],
-  "status": "pinned-pilot-not-installed-or-accepted"
+  "status": "pinned-pilot-not-installed-or-accepted",
+  "dockerImages": {
+    "mycompany": {
+      "image": "lsfusion/mycompany:6.2",
+      "platforms": [
+        "linux/amd64"
+      ],
+      "arm64Available": false
+    },
+    "server": {
+      "image": "lsfusion/server:6.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ]
+    },
+    "client": {
+      "image": "lsfusion/client:6.2",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ]
+    },
+    "note": "Docker Hub metadata shows the MyCompany 6.2 logic image only for amd64, while lsFusion server/client 6.2 publish amd64 and arm64. A fully ARM64-native Compose stack is not established."
+  }
 }

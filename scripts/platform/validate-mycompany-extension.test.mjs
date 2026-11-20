@@ -59,3 +59,23 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.equal(lock.extension.locale, "es_AR");
   assert.match(lock.extension.translationStatus, /partial/);
 });
+
+
+test("los scripts de despliegue configuran el módulo y conservan backups", () => {
+  const shell = read("scripts/platform/deploy-mycompany-6.2.sh");
+  const powershell = read("scripts/platform/deploy-mycompany-6.2.ps1");
+  assert.match(shell, /logics\.topModule = RubrovaCustom/);
+  assert.match(shell, /docker-server/);
+  assert.match(shell, /systemctl restart lsfusion6-server|systemctl start lsfusion6-server/);
+  assert.match(powershell, /logics\.topModule = RubrovaCustom/);
+  assert.match(powershell, /rubrova-backup/);
+  assert.match(powershell, /lsFusion 6 Server/);
+});
+
+test("el lock distingue la imagen MyCompany AMD64 de server/client multi-arquitectura", () => {
+  assert.deepEqual(lock.dockerImages.mycompany.platforms, ["linux/amd64"]);
+  assert.equal(lock.dockerImages.mycompany.arm64Available, false);
+  assert.ok(lock.dockerImages.server.platforms.includes("linux/arm64"));
+  assert.ok(lock.dockerImages.client.platforms.includes("linux/arm64"));
+  assert.match(lock.artifacts.dockerCompose.url, /solutions\/mycompany-docker\/6\.2\/compose\.yaml$/);
+});

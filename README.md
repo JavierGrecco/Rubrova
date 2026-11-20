@@ -60,6 +60,7 @@ Una plataforma que reúne en un solo lugar:
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
 | [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md) | MyCompany 6.2 como primer piloto, módulos reutilizados, extensión propia y etapas POS + ERP |
+| [Instalación del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md) | Preparación de artefactos, instalación aislada, despliegue de RubrovaCustom y criterios de aceptación del Bloque 0 |
 | [Conjunto Tryton 8.0 Argentina](docs/TRYTON_ARGENTINA_8_0_LOCK.md) | Ocho módulos locales fijados por commit, dependencias, licencias y plan de prueba |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
@@ -93,11 +94,12 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
+- Preparar los scripts para desplegar esa extensión en Windows, Linux o Docker; la carga efectiva sigue pendiente de la primera instalación.
 - Completar la localización española de las pantallas críticas; el glosario inicial es parcial.
 - Probar catálogo → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre.
 - Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.
 
-El detalle de módulos, instalación, riesgos y bloques está en el [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) conserva las puertas de aceptación.
+El detalle de módulos y bloques está en el [Inicio de implementación](docs/IMPLEMENTATION_START.md). La instalación paso a paso está en la [guía del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) conserva las puertas de aceptación.
 
 **Siguiente resultado:** una jornada de mostrador completa y repetible, conectada a los datos de gestión, con pagos y stock conciliados, devolución auditada, cierre de caja y recuperación probada.
 

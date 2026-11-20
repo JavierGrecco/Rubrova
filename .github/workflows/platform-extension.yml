@@ -32,5 +32,28 @@ jobs:
           package-manager-cache: false
       - name: Validar lock, extensión y glosario
         run: node --test scripts/platform/validate-mycompany-extension.test.mjs
-      - name: Validar script de preparación
-        run: bash -n scripts/platform/prepare-mycompany-6.2.sh
+      - name: Validar scripts de shell
+        run: |
+          bash -n scripts/platform/prepare-mycompany-6.2.sh
+          bash -n scripts/platform/deploy-mycompany-6.2.sh
+  validate-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v7
+      - name: Validar sintaxis de PowerShell
+        shell: pwsh
+        run: |
+          $files = @(
+            'scripts/platform/prepare-mycompany-6.2.ps1',
+            'scripts/platform/deploy-mycompany-6.2.ps1'
+          )
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
+          }
