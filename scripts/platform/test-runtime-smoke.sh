@@ -81,6 +81,8 @@ services:
     image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
     environment:
       JAVA_OPTS: "-Dlogics.topModule=RubrovaCustom"
+      USER_SETLANGUAGE: "es"
+      USER_SETCOUNTRY: "AR"
   client:
     image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
   db:
@@ -121,12 +123,14 @@ SERVER_CONTAINER_ID="$(compose ps -q server)"
   echo "No se encontró el contenedor del servicio server." >&2
   exit 1
 }
-SERVER_ENV="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$SERVER_CONTAINER_ID" | grep '^JAVA_OPTS=' || true)"
-if [[ "$SERVER_ENV" != "JAVA_OPTS=-Dlogics.topModule=RubrovaCustom" ]]; then
-  echo "El contenedor server no recibió JAVA_OPTS para RubrovaCustom: ${SERVER_ENV:-no definido}" >&2
-  exit 1
-fi
-echo "JAVA_OPTS del servidor: $SERVER_ENV"
+SERVER_ENV="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$SERVER_CONTAINER_ID")"
+for expected_env in "JAVA_OPTS=-Dlogics.topModule=RubrovaCustom" "USER_SETLANGUAGE=es" "USER_SETCOUNTRY=AR"; do
+  if ! grep -Fxq "$expected_env" <<< "$SERVER_ENV"; then
+    echo "El contenedor server no recibió el parámetro esperado: $expected_env" >&2
+    exit 1
+  fi
+done
+echo "Configuración de inicio verificada: RubrovaCustom + español (Argentina)."
 SERVER_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$SERVER_CONTAINER_ID")"
 printf 'Montajes del servidor:\n%s\n' "$SERVER_MOUNTS"
 SERVER_MOUNT_DESTINATION="$(docker inspect "$SERVER_CONTAINER_ID" | python3 -c '
@@ -156,8 +160,16 @@ docker exec "$SERVER_CONTAINER_ID" sh -ec '
     echo "El contenedor server no ve logics.topModule=RubrovaCustom en settings.properties" >&2
     exit 1
   }
+  grep -qx "user.setLanguage = es" "$mount_dir/settings.properties" || {
+    echo "El contenedor server no ve user.setLanguage=es en settings.properties" >&2
+    exit 1
+  }
+  grep -qx "user.setCountry = AR" "$mount_dir/settings.properties" || {
+    echo "El contenedor server no ve user.setCountry=AR en settings.properties" >&2
+    exit 1
+  }
   echo "Configuración activa visible en el contenedor:"
-  grep -E "^[[:space:]]*logics\\.(topModule|includePaths|excludePaths)[[:space:]]*=" "$mount_dir/settings.properties" || true
+  grep -E "^[[:space:]]*(logics\\.(topModule|includePaths|excludePaths)|user\\.set(Language|Country))[[:space:]]*=" "$mount_dir/settings.properties" || true
 ' sh "$SERVER_MOUNT_DESTINATION"
 
 echo "Verificando que JAVA_OPTS llegue al proceso Java del servidor:"

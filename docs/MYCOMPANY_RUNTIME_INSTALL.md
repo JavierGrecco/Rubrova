@@ -108,9 +108,9 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 1. Descarga el JAR y el Compose oficiales y compara ambos SHA-256 con el lock.
 2. Copia `RubrovaCustom`, `RubrovaPOSLocalization` y el ResourceBundle a `docker-server` sin editar el código upstream.
 3. Valida la configuración con `docker compose config` y confirma al menos cuatro servicios.
-4. Inicia el stack con un nombre de proyecto efímero. El override añade `JAVA_OPTS=-Dlogics.topModule=RubrovaCustom` al servicio `server`, que tiene prioridad sobre `settings.properties` y el ResourceBundle de la aplicación.
+4. Inicia el stack con un nombre de proyecto efímero. El override añade `JAVA_OPTS=-Dlogics.topModule=RubrovaCustom`, `USER_SETLANGUAGE=es` y `USER_SETCOUNTRY=AR` al servicio `server`. La configuración nativa escribe los mismos tres valores en `settings.properties` y conserva el resto de los parámetros.
 5. Fija por digest las cuatro imágenes del runtime Linux x86_64 mediante un override temporal y compara la imagen realmente descargada contra el lock.
-6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada y que `JAVA_OPTS` llegó al proceso Java como `-Dlogics.topModule=RubrovaCustom`.
+6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada, el idioma y el país, y que `JAVA_OPTS` llegó al proceso Java.
 7. Espera la respuesta web y el final de la inicialización de la lógica. La imagen MyCompany 6.2 inicializa 712 módulos base; la prueba exige al menos 714 al incorporar los dos módulos propios.
 8. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 

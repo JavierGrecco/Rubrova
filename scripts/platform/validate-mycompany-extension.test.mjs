@@ -55,6 +55,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
   assert.match(runtimeSmokeSource, /JAVA_OPTS: "-Dlogics\.topModule=RubrovaCustom"/);
+  assert.match(runtimeSmokeSource, /USER_SETLANGUAGE: "es"/);
+  assert.match(runtimeSmokeSource, /USER_SETCOUNTRY: "AR"/);
   assert.match(runtimeSmokeSource, /JAVA_OPTS=-Dlogics\.topModule=RubrovaCustom/);
   assert.match(runtimeSmokeSource, /Argumento Java activo/);
   assert.match(runtimeSmokeSource, /RUBROVA_CUSTOM_LOG_EVIDENCE/);
@@ -137,10 +139,14 @@ test("los scripts de despliegue configuran el módulo y conservan backups", () =
   const shell = read("scripts/platform/deploy-mycompany-6.2.sh");
   const powershell = read("scripts/platform/deploy-mycompany-6.2.ps1");
   assert.match(shell, /logics\.topModule = RubrovaCustom/);
+  assert.match(shell, /user\.setLanguage = es/);
+  assert.match(shell, /user\.setCountry = AR/);
   assert.match(shell, /docker-server/);
   assert.match(shell, /RubrovaPOSLocalization\.lsf/);
   assert.match(shell, /systemctl restart lsfusion6-server|systemctl start lsfusion6-server/);
   assert.match(powershell, /logics\.topModule = RubrovaCustom/);
+  assert.match(powershell, /user\.setLanguage = es/);
+  assert.match(powershell, /user\.setCountry = AR/);
   assert.match(powershell, /RubrovaPOSLocalization\.lsf/);
   assert.match(powershell, /rubrova-backup/);
   assert.match(powershell, /lsFusion 6 Server/);

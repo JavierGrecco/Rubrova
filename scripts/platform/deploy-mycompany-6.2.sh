@@ -82,15 +82,23 @@ import sys
 
 path = Path(sys.argv[1])
 text = path.read_text(encoding="utf-8-sig") if path.exists() else ""
-pattern = re.compile(r"^\s*logics\.topModule\s*=.*$", re.MULTILINE)
-replacement = "logics.topModule = RubrovaCustom"
-updated, count = pattern.subn(replacement, text)
-if count == 0:
-    updated = text.rstrip("\r\n")
-    if updated:
-        updated += "\n"
-    updated += replacement + "\n"
-path.write_text(updated, encoding="utf-8", newline="\n")
+settings = {
+    "logics.topModule": "RubrovaCustom",
+    "user.setLanguage": "es",
+    "user.setCountry": "AR",
+}
+for key, value in settings.items():
+    pattern = re.compile(r"^[ \t]*" + re.escape(key) + r"[ \t]*=.*$", re.MULTILINE)
+    replacement = f"{key} = {value}"
+    updated, count = pattern.subn(replacement, text)
+    if count == 0:
+        text = text.rstrip("\r\n")
+        if text:
+            text += "\n"
+        text += replacement + "\n"
+    else:
+        text = updated
+path.write_text(text, encoding="utf-8", newline="\n")
 PY
 
 if [[ "$RESTART_NATIVE" -eq 1 ]]; then

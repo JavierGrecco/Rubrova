@@ -65,11 +65,52 @@ if ($wasRunning) {
 try {
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     $settings = [IO.File]::ReadAllText($SettingsPath)
-    $pattern = '(?m)^\s*logics\.topModule\s*=.*$'
-    if ([regex]::IsMatch($settings, $pattern)) {
-        $settings = [regex]::Replace($settings, $pattern, "logics.topModule = RubrovaCustom")
-    } else {
-        $settings = $settings.TrimEnd() + [Environment]::NewLine + "logics.topModule = RubrovaCustom" + [Environment]::NewLine
+    $settingValues = [ordered]@{
+        "logics.topModule" = "RubrovaCustom"
+        "user.setLanguage" = "es"
+        "user.setCountry" = "AR"
+    }
+    foreach ($entry in $settingValues.GetEnumerator()) {
+        $pattern = '(?m)^[ \t]*' + [regex]::Escape($entry.Key) + '[ \t]*=.*
+    foreach ($name in $moduleNames) {
+        Copy-Item -LiteralPath (Join-Path $sourceDirectory $name) -Destination (Join-Path $ModuleDirectory $name) -Force
+    }
+
+    if ($wasRunning) {
+        Start-Service -Name $ServiceName
+        (Get-Service -Name $ServiceName).WaitForStatus(
+            [System.ServiceProcess.ServiceControllerStatus]::Running,
+            [TimeSpan]::FromSeconds(60)
+        )
+    }
+}
+catch {
+    Copy-Item -LiteralPath $settingsBackup -Destination $SettingsPath -Force
+    foreach ($name in $moduleNames) {
+        $destination = Join-Path $ModuleDirectory $name
+        if ($backups.ContainsKey($name)) {
+            Copy-Item -LiteralPath $backups[$name] -Destination $destination -Force
+        } elseif (Test-Path -LiteralPath $destination) {
+            Remove-Item -LiteralPath $destination -Force
+        }
+    }
+    if ($wasRunning -and (Get-Service -Name $ServiceName).Status -ne "Running") {
+        Start-Service -Name $ServiceName
+    }
+    throw
+}
+
+Write-Host "Extensión modular de Rubrova instalada en: $ModuleDirectory"
+Write-Host "Punto de entrada: RubrovaCustom"
+Write-Host "Backup de settings: $settingsBackup"
+Write-Host "La confirmación final requiere revisar el log del servidor e ingresar en el navegador."
+
+        $replacement = $entry.Key + " = " + $entry.Value
+        if ([regex]::IsMatch($settings, $pattern)) {
+            $settings = [regex]::Replace($settings, $pattern, $replacement)
+        } else {
+            $settings = $settings.TrimEnd() + [Environment]::NewLine + $replacement + [Environment]::NewLine
+        }
     }
 
     [IO.File]::WriteAllText($SettingsPath, $settings, $utf8NoBom)

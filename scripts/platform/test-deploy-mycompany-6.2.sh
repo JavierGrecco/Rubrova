@@ -40,14 +40,134 @@ do
   }
 done
 
-grep -q '^custom.setting = preserve-me$' "$MODULE_DIR/settings.properties"
-grep -q '^logics.topModule = RubrovaCustom$' "$MODULE_DIR/settings.properties"
+grep -q '^custom.setting = preserve-me
 
-top_module_count="$(grep -c '^logics.topModule =' "$MODULE_DIR/settings.properties")"
-[[ "$top_module_count" -eq 1 ]] || {
-  echo "Se esperaba un único logics.topModule; se encontró $top_module_count." >&2
+backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSLocalization.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup del módulo existente." >&2
   exit 1
 }
+
+settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$settings_backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup de settings.properties." >&2
+  exit 1
+}
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  native_log="$TEMP_DIR/native-mode.log"
+  native_exit=0
+  bash "$DEPLOY_SCRIPT" native "$INSTALL_DIR" > "$native_log" 2>&1 || native_exit=$?
+  [[ "$native_exit" -eq 2 ]] || {
+    echo "El modo native debía rechazarse en macOS con código 2." >&2
+    exit 1
+  }
+  grep -q "El modo native sólo está disponible en Linux" "$native_log" || {
+    echo "No se explicó cómo desplegar desde macOS." >&2
+    exit 1
+  }
+fi
+
+echo "OK: staging Docker simulado; 3 archivos copiados, settings preservado y backups generados. Docker no fue invocado."
+ "$MODULE_DIR/settings.properties"
+grep -q '^logics.topModule = RubrovaCustom
+
+backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSLocalization.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup del módulo existente." >&2
+  exit 1
+}
+
+settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$settings_backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup de settings.properties." >&2
+  exit 1
+}
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  native_log="$TEMP_DIR/native-mode.log"
+  native_exit=0
+  bash "$DEPLOY_SCRIPT" native "$INSTALL_DIR" > "$native_log" 2>&1 || native_exit=$?
+  [[ "$native_exit" -eq 2 ]] || {
+    echo "El modo native debía rechazarse en macOS con código 2." >&2
+    exit 1
+  }
+  grep -q "El modo native sólo está disponible en Linux" "$native_log" || {
+    echo "No se explicó cómo desplegar desde macOS." >&2
+    exit 1
+  }
+fi
+
+echo "OK: staging Docker simulado; 3 archivos copiados, settings preservado y backups generados. Docker no fue invocado."
+ "$MODULE_DIR/settings.properties"
+grep -q '^user.setLanguage = es
+
+backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSLocalization.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup del módulo existente." >&2
+  exit 1
+}
+
+settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$settings_backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup de settings.properties." >&2
+  exit 1
+}
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  native_log="$TEMP_DIR/native-mode.log"
+  native_exit=0
+  bash "$DEPLOY_SCRIPT" native "$INSTALL_DIR" > "$native_log" 2>&1 || native_exit=$?
+  [[ "$native_exit" -eq 2 ]] || {
+    echo "El modo native debía rechazarse en macOS con código 2." >&2
+    exit 1
+  }
+  grep -q "El modo native sólo está disponible en Linux" "$native_log" || {
+    echo "No se explicó cómo desplegar desde macOS." >&2
+    exit 1
+  }
+fi
+
+echo "OK: staging Docker simulado; 3 archivos copiados, settings preservado y backups generados. Docker no fue invocado."
+ "$MODULE_DIR/settings.properties"
+grep -q '^user.setCountry = AR
+
+backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSLocalization.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup del módulo existente." >&2
+  exit 1
+}
+
+settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$settings_backup_count" -eq 1 ]] || {
+  echo "No se generó exactamente un backup de settings.properties." >&2
+  exit 1
+}
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  native_log="$TEMP_DIR/native-mode.log"
+  native_exit=0
+  bash "$DEPLOY_SCRIPT" native "$INSTALL_DIR" > "$native_log" 2>&1 || native_exit=$?
+  [[ "$native_exit" -eq 2 ]] || {
+    echo "El modo native debía rechazarse en macOS con código 2." >&2
+    exit 1
+  }
+  grep -q "El modo native sólo está disponible en Linux" "$native_log" || {
+    echo "No se explicó cómo desplegar desde macOS." >&2
+    exit 1
+  }
+fi
+
+echo "OK: staging Docker simulado; 3 archivos copiados, settings preservado y backups generados. Docker no fue invocado."
+ "$MODULE_DIR/settings.properties"
+
+for setting_key in logics.topModule user.setLanguage user.setCountry; do
+  setting_count="$(grep -c "^$setting_key =" "$MODULE_DIR/settings.properties")"
+  [[ "$setting_count" -eq 1 ]] || {
+    echo "Se esperaba un único $setting_key; se encontró $setting_count." >&2
+    exit 1
+  }
+done
 
 backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSLocalization.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$backup_count" -eq 1 ]] || {
