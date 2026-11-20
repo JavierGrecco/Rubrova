@@ -111,11 +111,31 @@ El cambio de sistema es una barrera real. Debemos ofrecer un asistente:
 
 Los reportes deben poder filtrarse por unidad, sucursal, canal, almacén, cliente, producto, vendedor, contrato y período. Permitir guardar filtros, exportar y programar. Cada cifra muestra definición, fuente, fecha de actualización y nivel de cobertura.
 
+### G. Integridad y recuperación como servicio operativo
+
+Los fallos de Internet, de procesos locales y de proveedores deben tener estados visibles, no mensajes genéricos. Rubrova necesita una pantalla de salud que indique qué se guardó, qué está pendiente, qué quedó incierto y qué acción es segura.
+
+Requisitos adicionales:
+- historial de sincronización por origen y operación;
+- último backup correcto y última restauración ensayada;
+- alerta de espacio de disco, backup fallido y credencial próxima a vencer;
+- restauración con comprobación de integridad y conciliación de saldos;
+- actualización con backup previo, versión fijada y procedimiento probado;
+- identificador de correlación para seguir una operación de la caja al pago, al comprobante, a la liquidación y al ERP;
+- documentación de recuperación entendible por el operador, sin exigir acceso a SQL o terminal para el uso normal.
+
+### H. Datos operativos para varias actividades
+
+Una organización puede combinar comercio minorista, mayorista, fabricación, servicio de campo, alquileres y canales digitales. Se deben compartir personas, productos, pagos y auditoría, pero separar las reglas, los costos y los resultados por unidad de negocio. Los paquetes sectoriales no deben crear bases de datos paralelas ni duplicar clientes.
+
+Para actividades de servicios, taller y alquiler se agregan activos, agenda, órdenes de trabajo, horas, materiales, viáticos, contratos, SLA, disponibilidad, entrega/devolución y costos asociados.
+
 ## 4. Backlog priorizado
 
 | Prioridad | Capacidad | Justificación | Criterio de aceptación |
 |---|---|---|---|
 | P0 | Centro de conciliación y recuperación de integraciones | Evita ventas omitidas/duplicadas y comprobantes pendientes invisibles | Se puede identificar, reintentar y conciliar todo evento externo |
+| P0 | Continuidad local, backups y restauración probada | Una caída o actualización no puede dejar al negocio sin sus datos | Corte/reinicio/restauración sin pérdida ni duplicación; RPO/RTO medidos |
 | P0 | Interoperabilidad contable y exportación verificable | No obliga a abandonar Tango, Catedral, Bejerman, Xubio o Colppy | Lote balanceado, mapeado, idempotente, con acuse y conciliación |
 | P0 | Importación/migración asistida | Reduce barrera de entrada y dependencia de hojas/manual | Dry-run, errores, upsert y reversión demostrables |
 | P1 | Flujo de caja y cuentas corrientes | Presión sobre plazos de cobro y capital de trabajo | Aging, alertas, flujo 13 semanas y conciliación real vs previsto |
@@ -144,3 +164,5 @@ Los reportes deben poder filtrarse por unidad, sucursal, canal, almacén, client
 ## 6. Criterio de diseño
 
 Los datos de encuestas orientan prioridades de gestión; los foros revelan fricción concreta, pero no prueban prevalencia. Rubrova debe permitir configurar estos procesos por área, y activar solo los que esa organización usa. No se implementa una pantalla o módulo genérico sin un flujo completo, dueño del dato, estados, auditoría y criterio de aceptación.
+
+La evidencia más amplia de adopción digital, casos de mercado, proyectos adicionales y decisiones de producto está en [Investigación de mercado y oportunidades](MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md). Las pruebas de continuidad están detalladas en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md). La muestra de la encuesta nadIA se concentra en industria y software, por lo que no se utiliza para afirmar porcentajes de adopción de todos los comercios argentinos.
