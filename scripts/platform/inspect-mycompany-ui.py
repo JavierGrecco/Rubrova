@@ -143,6 +143,24 @@ def login_to_ephemeral_instance(page: Any) -> str:
     )
 
 
+def click_exact_link(page: Any, label: str) -> bool:
+    links = page.locator("a").evaluate_all(
+        """elements => elements.map((element, index) => ({
+            index,
+            text: (element.innerText || element.textContent || "").trim(),
+            visible: !!(element.offsetWidth || element.offsetHeight)
+        }))"""
+    )
+    matches = [link for link in links if link["visible"] and link["text"] == label]
+    if not matches:
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
+        return False
+    page.locator("a").nth(matches[0]["index"]).click()
+    page.wait_for_timeout(1_000)
+    print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
+    return True
+
+
 def inspect_page(url: str) -> int:
     screenshot_path = Path(
         os.environ.get("RUBROVA_UI_SCREENSHOT", "/tmp/rubrova-mycompany-ui.png")
@@ -150,6 +168,12 @@ def inspect_page(url: str) -> int:
     screenshot_path.parent.mkdir(parents=True, exist_ok=True)
     after_login_screenshot = screenshot_path.with_name(
         screenshot_path.stem + "-after-login" + screenshot_path.suffix
+    )
+    retail_screenshot = screenshot_path.with_name(
+        screenshot_path.stem + "-retail" + screenshot_path.suffix
+    )
+    pos_screenshot = screenshot_path.with_name(
+        screenshot_path.stem + "-pos" + screenshot_path.suffix
     )
 
     with sync_playwright() as playwright:
@@ -195,6 +219,23 @@ def inspect_page(url: str) -> int:
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
+
+                # Explore navigation only. Do not open a cash session or create business data.
+                if click_exact_link(page, "Retail"):
+                    retail_text = visible_snapshot(page, "UI_RETAIL_NAVIGATION")
+                    page.screenshot(path=str(retail_screenshot), full_page=True)
+                    print(f"UI_RETAIL_SCREENSHOT={retail_screenshot}")
+                    if not click_exact_link(page, "POS"):
+                        print("UI_POS_SCREEN_AVAILABLE=false")
+                    else:
+                        pos_text = visible_snapshot(page, "UI_POS_SCREEN")
+                        page.screenshot(path=str(pos_screenshot), full_page=True)
+                        print(f"UI_POS_SCREENSHOT={pos_screenshot}")
+                        if not pos_text.strip():
+                            raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
+                else:
+                    print("UI_POS_SCREEN_AVAILABLE=false")
+
             elif not initial_text.strip():
                 raise RuntimeError(
                     "Chromium abrió la URL, pero la interfaz no mostró texto visible."

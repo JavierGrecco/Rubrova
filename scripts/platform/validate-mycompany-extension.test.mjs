@@ -74,6 +74,12 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /RUBROVA_UI_TEST_LOGIN/);
   assert.match(uiSmokeSource, /input\[type="submit"\]/);
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
+  assert.match(uiSmokeSource, /click_exact_link\(page, "Retail"\)/);
+  assert.match(uiSmokeSource, /click_exact_link\(page, "POS"\)/);
+  assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
+  assert.match(uiSmokeSource, /UI_POS_SCREEN/);
+  assert.match(uiSmokeSource, /-retail/);
+  assert.match(uiSmokeSource, /-pos/);
   assert.match(uiSmokeSource, /AppServerNotAvailableDispatchException/);
   assert.match(uiSmokeSource, /NotBoundException/);
   assert.match(uiSmokeSource, /wait_for_application_server/);
@@ -90,6 +96,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_READY_TIMEOUT_SECONDS: 180/);
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
+  assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-retail[.]png/);
+  assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-pos[.]png/);
   assert.match(runtimeSmokeSource, /EXTENSION_OVERRIDE_FILE/);
   assert.match(runtimeSmokeSource, /IMAGE_OVERRIDE_FILE/);
   assert.match(dockerOverrideSource, /JAVA_OPTS:/);
