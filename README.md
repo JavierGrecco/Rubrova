@@ -59,6 +59,7 @@ Una plataforma que reúne en un solo lugar:
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P48 |
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
+| [Estado real del proyecto](docs/PROJECT_STATUS.md) | Qué funciona, qué está heredado de MyCompany, qué falta y el siguiente bloque de trabajo |
 | [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md) | MyCompany 6.2 como primer piloto, módulos reutilizados, extensión propia y etapas POS + ERP |
 | [Instalación del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md) | Preparación de artefactos, instalación aislada y despliegue de la extensión modular Rubrova |
 | [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Desarrollo desde MacBook, validación Apple Silicon y límites reales del runtime MyCompany |
@@ -99,17 +100,17 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
-- Preparar y validar los artefactos desde Windows, Linux y macOS; desplegar la extensión en Windows/Linux nativo o Docker. La carga de ambos módulos ya está verificada en CI Linux x86_64; la instalación nativa y aceptación funcional del POS siguen pendientes.
-- Ejecutar un smoke test de arranque de la suite en Linux x86_64 y verificar que el cliente web responda antes de avanzar con las pruebas del POS.
-- Completar la localización española de las pantallas críticas; ya existe una primera capa de captions propios y el resto debe verificarse en ejecución.
-- Probar catálogo → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre.
+- Preparar y validar los artefactos desde Windows, Linux y macOS; desplegar la extensión en Windows/Linux nativo o Docker. CI ya arranca MyCompany 6.2 en Linux x86_64 y ejecuta la extensión Rubrova.
+- Verificar con Chromium el login, la navegación Comercio → Punto de venta, el selector de caja y la apertura de un turno sintético. Esta aceptación visual y de sesión ya pasó en CI; no equivale a una jornada de venta aceptada.
+- Completar la localización española: los captions críticos del POS se ven en español, pero siguen apareciendo textos heredados en inglés en navegación, filtros y grillas.
+- Completar catálogo → búsqueda → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre y conciliación.
 - Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.
 
 El detalle de módulos y bloques está en el [Inicio de implementación](docs/IMPLEMENTATION_START.md). La instalación paso a paso está en la [guía del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) conserva las puertas de aceptación.
 
 **Siguiente resultado:** una jornada de mostrador completa y repetible, conectada a los datos de gestión, con pagos y stock conciliados, devolución auditada, cierre de caja y recuperación probada.
 
-Todavía no hay una instalación ejecutada ni un POS/ERP funcional aceptado. La extensión Rubrova ya incluye captions propios para el primer flujo POS y un ResourceBundle es_AR parcial; su carga y renderizado todavía no se comprobaron en una instalación real. El código fuente upstream se consume como dependencia externa, no se ha copiado al repositorio.
+MyCompany 6.2 ya se ejecuta en un entorno efímero de CI Linux x86_64: la extensión carga, Chromium inicia sesión, abre Comercio → Punto de venta, muestra una caja sintética y permite abrir un turno. Esto no es todavía una instalación en tu equipo ni un POS aprobado para uso diario: no se probó añadir un artículo, cobrar, conciliar stock, devolver ni cerrar caja. La localización sigue incompleta. MyCompany se consume como dependencia externa; su código fuente no está copiado al repositorio. El estado detallado, con límites y pruebas, está en [Estado real del proyecto](docs/PROJECT_STATUS.md).
 
 ## Forma de trabajo
 
@@ -132,5 +133,5 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 
 ---
 
-**Estado del producto:** arranque del piloto de integración POS + ERP.  
-**Estado del software:** punto de entrada RubrovaCustom + módulo RubrovaPOSLocalization, con captions es_AR iniciales y scripts de despliegue; instalación y aceptación funcional pendientes.
+**Estado del producto:** Fase 0 avanzada; primer runtime POS probado en CI, circuito comercial todavía incompleto.  
+**Estado del software:** MyCompany 6.2 + extensión RubrovaCustom/RubrovaPOSLocalization; login, navegación POS y apertura de turno sintético verificados en CI Linux x86_64. Venta, pago, stock, devolución, cierre, localización completa e instalación local siguen pendientes.

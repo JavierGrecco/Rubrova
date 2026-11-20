@@ -5,9 +5,9 @@
 
 ## Estado real
 
-Rubrova se encuentra en **Fase 0: arranque del piloto POS + ERP**. MyCompany 6.2 está fijado como primer candidato integrado y Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
+Rubrova sigue en **Fase 0: piloto integrado POS + ERP**, pero ya superó el primer hito de runtime: MyCompany 6.2 arranca en CI Linux x86_64, carga la extensión Rubrova, permite login, navegación hasta Punto de venta y apertura de un turno sintético. Aún no hay una instalación en el equipo de uso ni una jornada comercial aceptada. Tryton 8.0 + tryton-ar 8.0 permanece como contraste fiscal argentino. El repositorio conserva diseño, investigación, validadores sintéticos y una extensión pequeña sobre MyCompany; no contiene una implementación propia completa de POS/ERP ni código fuente upstream copiado.
 
-El validador del dataset tiene 34 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026), incluidas las reglas sintéticas de identidad de pagos y minimización de datos. El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova.
+El validador del dataset tiene 34 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026), incluidas reglas sintéticas de identidad de pagos y minimización de datos. El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente. Además, el run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) pasó sus cuatro jobs, incluido el runtime real Linux x86_64: MyCompany arrancó, Chromium abrió el POS y se abrió un turno sintético. Esa prueba valida arranque, navegación y estado de sesión, no el circuito de venta completo, pagos, stock, devoluciones o instalación local.
 
 La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
@@ -59,6 +59,19 @@ El lock de versión, la extensión modular, los scripts de preparación y el det
 - [ ] Contrastar con Tryton 8.0 fiscalidad y comprobantes; homologar ARCA antes de producción.
 
 **Criterio de salida:** instalación reproducible, extensión cargada, POS completo en español, permisos, integridad de ventas/pagos/caja/stock, recuperación, exportación y restauración demostradas. Hasta entonces el piloto no se habilita para uso diario.
+
+### Cierre actual de Fase 0 y próximo bloque
+
+- [x] MyCompany 6.2 fijado y ejecutado en CI Linux x86_64.
+- [x] Extensión RubrovaCustom + RubrovaPOSLocalization cargada sin modificar módulos upstream.
+- [x] Login, navegación Comercio → Punto de venta y renderizado del formulario validados con Chromium.
+- [x] Caja sintética seleccionada y turno `SM/000001` abierto en la base descartable de CI.
+- [ ] Buscar el producto sintético, añadirlo al recibo y verificar línea, cantidad y precio.
+- [ ] Confirmar una venta sintética en efectivo y conciliar recibo, pago, caja e inventario.
+- [ ] Probar vuelto/pago mixto, devolución, cierre y conciliación.
+- [ ] Completar traducción crítica, permisos, exportación y backup/restauración.
+
+**Dirección inmediata:** no sumar otra suite ERP ni módulos periféricos. Primero completar una venta reproducible de punta a punta sobre MyCompany; sólo incorporar código especializado cuando una brecha concreta esté observada y medida.
 
 ## Fase 1 — primera entrega: POS con gestión mínima real
 

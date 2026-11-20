@@ -1,7 +1,7 @@
 # Evaluación comparativa de plataformas
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado:** laboratorio preparado; dataset de evaluación 34/34 y benchmark mensual de demanda aprobados en CI; ejecución local de plataformas pendiente.  
+**Estado:** MyCompany 6.2 tuvo una primera prueba de runtime real en CI Linux x86_64 (login, navegación POS y apertura de turno sintético); dataset de evaluación 34/34 y benchmark mensual de demanda también aprobaron. Instalación local y aceptación del circuito comercial siguen pendientes.  
 **Alcance:** uso interno, personal y privado. No se prevé distribuir, revender ni ofrecer el sistema como servicio a terceros.
 
 Este documento convierte la investigación en una prueba repetible. No elige una plataforma por su README, una demo o la cantidad de módulos anunciados. La elección depende de ejecutar los mismos flujos, con datos sintéticos, y comprobar integridad, recuperación, esfuerzo de adaptación y mantenimiento.
@@ -33,7 +33,7 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 
 **Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P67. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup portable verificable y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
 
-**Estado actual:** MyCompany 6.2 está fijado como piloto, pero no está instalado ni aprobado para producción. Rubrova contiene ahora una extensión de entrada y un glosario español parcial; no contiene la plataforma upstream ni un POS funcional. La validación de fixtures y del esqueleto de extensión no prueba un POS ni un ERP.
+**Estado actual:** MyCompany 6.2 está fijado como piloto y ya se ejecutó en CI Linux x86_64. La extensión carga, Chromium autentica, abre Comercio → Punto de venta, identifica la caja sintética y abre un turno. Esto prueba el runtime y el inicio de la operación de caja, pero no venta, pagos, devoluciones ni ERP de punta a punta. No está instalado en el equipo de uso ni aprobado para producción. El código upstream no está copiado al repositorio.
 
 ## Versiones y procedencia que se deben fijar
 
@@ -280,15 +280,16 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 
 | Actividad | Estado |
 |---|---|
-| Inspección documental y licencias iniciales de MyCompany/lsFusion 6.2 | Hecha; prueba funcional pendiente |
-| Fijación de release, instalador y JAR MyCompany 6.2 | Preparada mediante hashes; runtime debe registrarse |
+| Inspección documental y licencias iniciales de MyCompany/lsFusion 6.2 | Hecha |
+| Fijación de release, instalador y JAR MyCompany 6.2 | Hecha mediante hashes; runtime Linux x86_64 probado en CI |
 | Inspección documental y manifiestos de Posnic | Hecha |
 | Fijación de release/commit para Posnic | Hecha |
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y dataset sintético | Preparados |
 | Laboratorio de instalación para los tres candidatos | Preparado |
 | Validador y CI del dataset | Aprobados: 34/34 tests y dataset válido (20/11/2026) |
-| Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
+| Runtime MyCompany 6.2 + módulo custom en CI Linux x86_64 | Aprobado: login, POS y apertura de turno sintético |
+| Instalación/evaluación local de MyCompany 6.2 | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
 | Ejecución P01–P26 (POS/ERP) | Pendiente |
@@ -301,7 +302,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P67. En la comparación documental Odoo 19 queda como referencia CRM/marketing y posible filtro breve; no desplaza automáticamente a los finalistas existentes. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
+**Próximo paso técnico:** completar primero el circuito POS de MyCompany con búsqueda de artículos, carrito, cobro, stock, devolución y cierre; reabrir la comparación de alternativas sólo si aparece una brecha concreta que MyCompany no pueda resolver. Después comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P67. En la comparación documental Odoo 19 queda como referencia CRM/marketing y posible filtro breve; no desplaza automáticamente a los finalistas existentes. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
 
 
 ## Extensión del protocolo: varias áreas y operación B2B (P20–P25)

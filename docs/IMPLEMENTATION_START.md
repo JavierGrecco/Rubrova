@@ -1,7 +1,7 @@
 # Inicio de implementación: POS + ERP
 
 **Revisión:** 20 de noviembre de 2026.  
-**Estado:** MyCompany 6.2 fijado como primer piloto integrado. No está instalado ni aprobado para uso diario. Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino.
+**Estado:** MyCompany 6.2 fijado como primer piloto integrado. El runtime efímero Linux x86_64, la carga de RubrovaCustom, el login, la navegación POS y la apertura de un turno sintético ya pasaron CI. No está instalado en el equipo de uso ni aprobado para operar ventas reales. Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino.
 
 ## Decisión de partida
 
@@ -64,13 +64,15 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Identificar con Chromium el formulario inicial de acceso: campos `username`, `password` y botón `submit`; la primera captura mostró un error RMI `server:7652` antes de que el servidor estuviera listo.
 - [x] Comprobar el registro RMI, autenticar en la instancia efímera y llegar a `/main`; Chromium confirma el menú principal.
 - [x] Confirmar en Chromium el acceso a `Comercio` y `Punto de venta`.
-- [ ] Verificar que el formulario POS termine de cargar sin el indicador `Loading` y revisar sus controles reales.
-- [ ] Confirmar visualmente en el navegador que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
+- [x] Verificar que el formulario POS termine de cargar sin el indicador `Loading`; Chromium encontró la caja sintética y el botón `Abrir turno`.
+- [x] Confirmar visualmente que los captions críticos propios del POS se resuelven: `Punto de venta`, `Caja`, `Turno`, `Abrir turno` y `Cerrar turno`.
+- [x] Abrir un turno sintético en CI y verificar que la pantalla muestre `SM/000001` y cambie a `Cerrar turno`.
+- [ ] Completar la localización del resto de la interfaz: aún se ven `Master data`, `Settings`, `Date`, `Delete` y otras cadenas heredadas.
 - [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación estática pasó en Linux, Windows y macOS Apple Silicon. En el run [44791693036](https://github.com/JavierGrecco/Rubrova/actions/runs/44791693036), los cuatro jobs aprobaron. El runtime Linux x86_64 levantó PostgreSQL, MyCompany, lsFusion Server y el cliente web; verificó los cuatro digests fijados, confirmó que `-Dlogics.topModule=RubrovaCustom` llegó al proceso Java y registró `RubrovaPOSLocalization` como módulo 713 y `RubrovaCustom` como 714. El cliente respondió HTTP 200 y la inicialización terminó en unos 30 segundos. El job eliminó los contenedores, la red, los volúmenes y los archivos temporales. Este resultado demuestra carga de módulos y disponibilidad web; todavía no equivale a una aceptación funcional de ventas, pagos, devoluciones, localización visual, seguridad o backup/restore.
+La validación estática pasó en Linux, Windows y macOS Apple Silicon. El run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) terminó con sus cuatro jobs aprobados: validación Windows, validación macOS Apple Silicon, pruebas estáticas y runtime real MyCompany 6.2 en Linux x86_64. El runtime verificó imágenes/digests fijados, PostgreSQL, servidor, cliente, carga de `RubrovaPOSLocalization` y `RubrovaCustom`, login con Chromium y navegación Comercio → Punto de venta. La prueba encontró `Caja de prueba Rubrova`, pulsó `Abrir turno` sólo en la base descartable de CI y comprobó el número `SM/000001` junto con la acción `Cerrar turno`. Las capturas se conservaron como artefacto del run. El job limpió contenedores, red, volúmenes y archivos temporales. Esto demuestra que el POS puede arrancar y abrir un turno sintético; todavía no demuestra búsqueda de artículos, carrito, ventas, pagos, devoluciones, conciliación de stock, cierre de caja, seguridad productiva ni backup/restore. La prueba generó algunos avisos transitorios de SQLTimeout/SQLConflict en los logs; aunque no bloquearon la aceptación automatizada, deben revisarse antes del uso real.
 
 ## Guía operativa del primer arranque
 
@@ -164,7 +166,7 @@ Ecommerce, marketplaces, WhatsApp, delivery y, al final, integraciones de transp
 
 ## Estado honesto al iniciar
 
-La lectura de código y selección del candidato están realizadas. `RubrovaPOSLocalization` y `RubrovaCustom` cargan en el runtime MyCompany 6.2 de CI; Chromium confirma el login inicial, llega a `/main` y muestra la navegación general. Se amplió el ResourceBundle `es_AR` con traducciones verificables para Retail, Producción, Recursos humanos, Proyectos y las principales secciones de configuración. La prueba de navegación Comercio/Punto de venta está en curso; aún falta verificar sus captions visualmente y ejecutar ventas, pagos, devoluciones, cierres y conciliación de stock. **Todavía no instalamos el sistema en tu equipo, no tenemos un POS aceptado para uso diario y no probamos ARCA, hardware, modo offline ni restauración real.**
+El piloto MyCompany 6.2 ya arranca en CI Linux x86_64 con los dos módulos Rubrova cargados. Chromium inicia sesión, abre Comercio → Punto de venta, identifica la caja sintética y abre un turno descartable; la pantalla muestra el número de turno y la acción Cerrar turno. El test no añade artículos ni confirma ventas. El ResourceBundle es_AR y los captions propios cubren el primer flujo, pero la interfaz conserva textos en inglés en navegación, filtros y grillas. **Todavía no instalamos el sistema en tu equipo, no hay un POS aceptado para uso diario y no probamos venta, cobro, vuelto, devolución, conciliación de stock, ARCA, hardware, modo offline ni restauración real.**
 
 ## Fuentes técnicas
 
