@@ -81,7 +81,7 @@ Una plataforma que reúne en un solo lugar:
 Rubrova debe comenzar por la operación del negocio. El seguimiento de envíos se mantiene en el diseño para no limitar futuras capacidades, pero sus integraciones se dejan para una etapa posterior.
 
 - Evaluar el circuito completo POS + gestión: catálogo, carrito editable, ventas, pagos, vuelto, caja, stock, devoluciones, compras y reportes básicos.
-- Probar primero ERPNext 16 y MyCompany 6.2 por cobertura de POS y ERP; evaluar Tryton 8.2 en paralelo, condicionado a portar/verificar sus módulos argentinos; filtrar Dolibarr 24.0.3 como alternativa de menor complejidad.
+- Probar ERPNext 16, MyCompany 6.2 y Tryton 8.0 con el conjunto argentino tryton-ar 8.0; filtrar Dolibarr 24.0.3 como alternativa de menor complejidad. Tryton 8.2 queda como actualización posterior.
 - Mantener Posnic 1.9.2 como referencia POS secundaria, no como plataforma de gestión principal.
 - Aplicar el mismo dataset sintético y las puertas de instalación, licencia, API, exportación, backup, restauración, arquitectura y localización argentina.
 - Llevar como máximo dos finalistas a la prueba profunda. No elegir por cantidad de módulos ni por una demostración.
