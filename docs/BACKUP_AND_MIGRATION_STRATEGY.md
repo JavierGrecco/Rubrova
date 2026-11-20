@@ -51,7 +51,7 @@ La política inicial se centra en discos locales y externos; no exige NAS, nube 
 - Mantener puntos locales incrementales cuando el motor seleccionado lo soporte de forma consistente.
 - Crear una copia completa automática al menos una vez al día.
 - Cuando un disco externo esté conectado, copiar el respaldo a ese medio y verificar checksums y consistencia antes de declarar la copia correcta.
-- Rotar dos discos externos identificados; desconectar y guardar el disco alternativo después de cada copia. No dejar ambos discos conectados permanentemente.
+- Rotar dos discos externos identificados: conectar uno para generar y verificar la copia; luego desconectarlo y guardar el otro en una ubicación física distinta, preferentemente fuera del establecimiento. Alternarlos regularmente. No dejar ambos discos conectados permanentemente.
 - Conservar 30 copias diarias y 12 cierres mensuales como política inicial, sujeta a capacidad y prueba de restauración.
 - Crear un punto de recuperación previo a cada actualización o migración de esquema.
 - Mostrar fecha/hora de última copia local y externa válida. Si el disco externo no está conectado o el último backup está atrasado, mostrarlo como riesgo, no como "protegido".
@@ -66,7 +66,7 @@ La decisión se apoya en el escenario operativo actual: copias en discos locales
 
 - Mantener el equipo y los discos en lugares con acceso físico restringido; guardar los discos externos bajo llave.
 - Rotar al menos dos discos externos, identificados y registrados; desconectar el disco después de cada copia.
-- Conservar una copia fuera del equipo principal y, cuando sea posible, fuera del mismo establecimiento.
+- Conservar al menos una copia fuera del equipo principal y, para acercarse a la regla 3-2-1, fuera del mismo establecimiento. Un incendio, robo o daño físico en el local puede afectar a todos los discos guardados allí.
 - No dejar todos los respaldos conectados durante la operación: ransomware, malware o un error administrativo pueden alcanzar las unidades conectadas.
 - Mantener puntos históricos y no sobrescribir siempre la misma copia; probar restauraciones y guardar una versión anterior limpia.
 - Registrar quién crea, restaura, exporta y elimina respaldos, y proteger esas acciones con roles.
@@ -176,4 +176,6 @@ La prueba sólo pasa si la operación puede continuar y los ledgers concilian. U
 - [ ] Implementar asistente de restauración y re-vinculación de periféricos.
 - [ ] Probar restauración Windows limpia, PC de reemplazo y recuperación de secretos.
 
-**Decisión vigente:** el backup de Rubrova no tendrá cifrado a nivel de aplicación en la primera versión. La protección opcional del disco se delega al sistema operativo.\n\n**Estado real:** la creación automática, los checksums, la exportación portable y la restauración guiada todavía no están implementados.
+**Decisión vigente:** el backup de Rubrova no tendrá cifrado a nivel de aplicación en la primera versión. La protección opcional del disco se delega al sistema operativo.
+
+**Estado real:** la creación automática, los checksums, la exportación portable y la restauración guiada todavía no están implementados.
