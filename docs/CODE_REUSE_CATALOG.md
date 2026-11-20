@@ -370,16 +370,16 @@ La investigación de alcance, stack, licencias, madurez y recomendaciones está 
 
 ## 11. Logística argentina y seguimiento
 
-- **Andreani:** API oficial y wrapper TypeScript MIT de la comunidad; revisar compatibilidad con la API actual.
-- **Correo Argentino PAQ.AR:** API oficial y wrapper TypeScript MIT; endpoints publicados incluyen cotización, agencias y alta de envíos.
-- **OCA e-Pak:** Web Services oficiales y wrappers MIT en Ruby/Python.
-- **Vía Cargo:** AfterShip publica integración de tracking; 17TRACK también lista soporte. No encontramos API pública oficial de creación de envíos/cotización.
-- **Envíopack:** agregador comercial con tracking normalizado y webhooks; confirmar operadores incluidos.
-- **Kangu:** la información pública revisada sobre la adquisición por Mercado Libre menciona Brasil, Colombia y México; no demuestra disponibilidad API/servicio para Argentina.
+- **Correo Argentino PAQ.AR / MiCorreo:** [YamilEzequiel/correo-argentino](https://github.com/YamilEzequiel/correo-argentino) es el wrapper más prometedor de esta revisión: MIT, TypeScript, versión observada 0.1.0, actividad en 2026; declara autenticación, cotización, sucursales y alta de envíos. Falta prueba automatizada y verificación contra el API actual.
+- **Andreani:** [nchsala/andreani](https://github.com/nchsala/andreani) (MIT) declara cotización, órdenes, trazas y etiquetas, pero el último push observado es del 24/10/2020. Usar sólo como referencia para contrastar con la API oficial y modernizar.
+- **OCA e-Pak:** [ombulabs/oca-epak](https://github.com/ombulabs/oca-epak) (MIT/Ruby) no recibe cambios desde 2019; [teosibileau/py-oca-epak](https://github.com/teosibileau/py-oca-epak) (MIT/Python) trae pruebas y tuvo actividad en marzo de 2026, pero debe aclarar su referencia upstream antes de adoptarse. Ambos requieren validar servicios SOAP, credenciales y código de operativa vigente.
+- **Vía Cargo:** AfterShip publica integración de tracking y 17TRACK lista soporte. La búsqueda dirigida no encontró un repositorio público mantenido ni API oficial pública de booking/cotización; tratarlo sólo como tracking externo hasta confirmar lo contrario.
+- **Envíopack:** agregador comercial con tracking normalizado y webhooks; confirmar operadores, cobertura, tarifas y funciones habilitadas para la cuenta.
+- **Kangu:** no surgieron repositorios específicos para Argentina en la búsqueda dirigida; la información de adquisición por Mercado Libre no confirma la disponibilidad de API/servicio argentino.
 
 **Karrio como motor multi-carrier:** https://github.com/karrioapi/karrio ofrece una API autohospedada para tarifas, etiquetas y tracking. El archivo raíz declara LGPL-3.0 fuera de `ee/`, con Enterprise bajo licencia separada. En el árbol de conectores de la rama principal consultado el 20/11/2026 no aparecen Andreani, PAQ.AR, OCA ni Vía Cargo. Puede acelerar el modelo multioperador, pero requiere conectores argentinos propios y credenciales de QA.
 
-Ver [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md).
+Ver [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md) para versiones, fechas de actividad, límites y evidencia de cada wrapper.
 
 ## 12. Interoperabilidad administrativa/contable
 
