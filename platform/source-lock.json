@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "strategy": "controlled-in-repository-source-fork",
+  "snapshotDate": "2026-11-20",
+  "sources": [
+    {
+      "name": "lsFusion platform",
+      "repository": "https://github.com/lsfusion/platform",
+      "tag": "6.2",
+      "commit": "dd4dbe5bf9b136e73e18fe25d741253929324350",
+      "tagObject": "665901cf20c96c690e9069f588f68ebcf15ae0ae",
+      "license": "LGPL-3.0",
+      "destination": "vendor/platform",
+      "observedFiles": 4887,
+      "observedBytes": 62696269,
+      "observedJavaFiles": 3330,
+      "observedJavaSourceBytes": 30732456,
+      "purpose": "Engine, server, API, desktop client, web client and build definitions"
+    },
+    {
+      "name": "MyCompany",
+      "repository": "https://github.com/lsfusion-solutions/mycompany",
+      "tag": "6.2",
+      "commit": "d21ca6978717b98b6300d90267f9767db7414008",
+      "license": "Apache-2.0",
+      "destination": "vendor/mycompany",
+      "observedFiles": 1335,
+      "observedBytes": 18067796,
+      "observedLsfModules": 800,
+      "purpose": "Complete integrated POS and ERP source"
+    }
+  ],
+  "build": {
+    "aggregatorPom": "build/rubrova/pom.xml",
+    "java": "21",
+    "command": "mvn -B -ntp -Passemble -DskipTests package",
+    "onlineFirstBuild": "Maven dependencies/plugins may need to be downloaded once",
+    "offlineRebuild": "Must pass with a prepared, integrity-checked Maven repository and Maven -o; not yet accepted"
+  },
+  "runtime": {
+    "target": "One local PC; core POS/ERP functions must run without Internet",
+    "policy": "Build Rubrova-owned server, logic, web-client and database images; bundle images; use pull_policy never and an internal-only container network",
+    "status": "Design and source import automation added; offline package and network-isolated runtime pending"
+  }
+}

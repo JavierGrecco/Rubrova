@@ -1,101 +1,65 @@
 # Estado real del proyecto Rubrova
 
 **Corte:** 20 de noviembre de 2026  
-**Rama:** `main`  
-**Commit:** `4d0a44c366ee7c10cea29b53f6f74da029f126f2`  
-**Ejecución principal:** [CI 44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808)
+**Rama de trabajo:** main  
+**Última prueba funcional:** [CI 44811714783](https://github.com/JavierGrecco/Rubrova/actions/runs/44811714783)
 
 ## Resumen ejecutivo
 
-Rubrova ya superó el punto de “sólo investigación y documentos”: MyCompany 6.2 arranca en un entorno efímero de CI, carga los dos módulos propios, permite iniciar sesión, navegar a Comercio → Punto de venta, seleccionar una caja sintética y abrir un turno. La sesión de prueba recibió el número `SM/000001` y la pantalla mostró `Cerrar turno`.
+Rubrova ya ejecuta MyCompany 6.2 en un entorno CI Linux x86_64 descartable. Se verificaron el inicio, la extensión propia, el login, la navegación al POS, la apertura de turno y, en la ejecución 44811714783, la búsqueda de un producto sintético y su incorporación al recibo con cantidad 1 y precio 1.250. La prueba se detuvo antes de cobrar. No hubo venta ni pago.
 
-Eso es un avance técnico y funcional real, pero todavía no constituye un POS listo para el negocio. No se probó añadir un artículo, confirmar una venta, cobrar, calcular vuelto, afectar stock, devolver, cerrar/conciliar caja ni restaurar una copia. Tampoco está instalado en el equipo de uso.
+La decisión arquitectónica cambió para priorizar la independencia del código y la operación local. Rubrova incorporará como código propio versionado los árboles completos de MyCompany 6.2 y del motor lsFusion 6.2. La fuente queda dentro del repositorio como snapshots identificados por commit, no como submódulos Git ni dependencias descargadas en el arranque. La automatización de importación y validación ya está preparada; la compilación desde fuente, la imagen de ejecución propia y el paquete offline son validaciones separadas que todavía deben aprobarse.
 
-**Conclusión de dirección:** el camino de reutilizar MyCompany está dando resultado para evitar construir desde cero el ERP/POS base. Pero el trabajo reciente se concentró demasiado en la infraestructura de aceptación. Desde ahora la prioridad debe pasar a demostrar operaciones comerciales reales en el entorno descartable, no seguir acumulando investigación ni otra plataforma ERP.
+## Qué hay probado
 
-## Qué contiene hoy el repositorio
-
-| Grupo | Archivos | Qué significa |
-|---|---:|---|
-| Documentación | 47 | Visión, requisitos, modelo, arquitectura, investigación y planes. No equivale a código implementado. |
-| Extensión Rubrova | 3 | Entrada `RubrovaCustom`, diseño/localización POS y ResourceBundle `es_AR`. |
-| Plataforma | 2 | Lock de MyCompany 6.2 y override Docker. |
-| Scripts | 12 | Preparación/despliegue, runtime smoke test, inspección Chromium, fixture y benchmark. |
-| Workflows CI | 3 | Validación de plataforma, dataset de evaluación y benchmark de demanda. |
-| Otros | 2 | README y requisitos del benchmark. |
-| **Total** | **69** | Repositorio pequeño en código propio y amplio en diseño/documentación. |
-
-Los módulos fuente de MyCompany no están copiados al repositorio. Se consumen desde artefactos/imágenes fijados por versión y digest. Por eso no contamos las capacidades upstream como código escrito por Rubrova, aunque sí como funciones disponibles de la base candidata.
-
-## Qué está probado hoy
-
-| Capacidad | Estado | Evidencia / límite |
+| Capacidad | Estado | Alcance |
 |---|---|---|
-| MyCompany 6.2 en Linux x86_64 | **Aprobado en CI** | PostgreSQL, servidor y cliente levantan con artefactos fijados. |
-| Extensión Rubrova | **Aprobado en CI** | `RubrovaPOSLocalization` y `RubrovaCustom` cargan sin editar upstream. |
-| Inicio de sesión | **Aprobado en CI** | Chromium autentica en la instancia efímera. |
-| Navegación | **Aprobado en CI** | Comercio → Punto de venta; el test exige encontrar el submenú y abrir la pantalla. |
-| Pantalla POS | **Aprobado en CI** | Renderizado estable; caja sintética seleccionada. |
-| Apertura de turno | **Aprobado en CI** | Se pulsa Abrir turno sólo en PostgreSQL temporal; aparece `SM/000001` y `Cerrar turno`. |
-| Cierre de turno | Pendiente | La sesión se descarta al destruir el entorno; el botón no se pulsa. |
-| Buscar/añadir artículo | Pendiente | Se prepara un producto sintético, precio, unidad y código de barras; aún no se verifica en el buscador. |
-| Venta, pago y vuelto | Pendiente | No se confirmó ningún recibo ni cobro. |
-| Stock y devoluciones | Pendiente | Sin conciliación funcional. |
-| Traducción completa | Parcial | Los captions POS críticos se ven en español; siguen textos como `Master data`, `Settings`, `Date` y `Delete`. |
-| Instalación en equipo de uso | Pendiente | Sólo se probó el runtime efímero de CI Linux x86_64. |
-| Windows/macOS | Parcial | CI valida código, scripts y preparación; no demuestra runtime servidor nativo en esos sistemas. |
-| ARCA, medios de pago y hardware | Investigación | Sin homologación, terminal física ni adaptadores productivos probados. |
-| Offline, exportación y backup/restore | Pendiente | No hay una restauración comprobada. |
+| Runtime MyCompany 6.2 | Aprobado en CI Linux x86_64 | Contenedores temporales y artefactos fijados; no es instalación productiva |
+| Módulos Rubrova | Aprobado en CI | Punto de entrada y captions propios cargan |
+| Login y navegación | Aprobado en CI | Chromium llega a Comercio → Punto de venta |
+| Abrir turno | Aprobado en CI | Turno sintético en base descartable |
+| Buscar producto | Aprobado en CI | El fixture aparece en Buscar artículos |
+| Añadir al recibo | Aprobado en CI | Cantidad 1, código de barras y precio 1.250 visibles; sin cobro |
+| Venta/cobro/vuelto | Pendiente | No se ha confirmado ninguna venta o pago |
+| Stock, devolución y cierre | Pendiente | Falta reconciliar cada movimiento con la venta y caja |
+| Localización completa | Parcial | En la interfaz siguen apareciendo títulos y campos en inglés |
+| Fuente MyCompany + motor lsFusion en main | Importación automatizada en curso | Fijar snapshot y validar árbol/licencia |
+| Compilación Rubrova desde fuente propia | Pendiente | El build inicial se ejecuta en CI como diagnóstico |
+| Build completamente offline | Pendiente | Debe pasar con Maven -o y repositorio local preparado |
+| Runtime local sin Internet | Pendiente | Faltan imágenes propias, paquete offline y prueba con red aislada |
+| Instalación y recuperación en la PC de uso | Pendiente | No se ha hecho instalación final ni restauración |
+| ARCA, pagos externos y logística | Pendiente | Son conectores externos; el núcleo local no dependerá de ellos para vender en efectivo |
 
-## Qué aporta MyCompany y qué es propio
+## Código que Rubrova mantiene
 
-MyCompany 6.2 ya ofrece módulos upstream de Retail POS, turnos, pagos, devoluciones, inventario, compras, ventas, facturación, costos y otras áreas ERP. Esa cobertura es la razón para usarlo como núcleo integrado, no para replicar todo desde cero.
+- vendor/platform/: snapshot del motor lsFusion 6.2 (servidor, API, cliente web/desktop y build).
+- vendor/mycompany/: snapshot completo de MyCompany 6.2 (POS y ERP).
+- extensions/lsfusion/: módulos y localización propios.
+- patches/lsfusion/: mecanismo documentado para modificaciones directas del motor cuando una extensión no alcanza.
+- build/rubrova/pom.xml: reactor Maven que compone las fuentes del motor y de MyCompany.
 
-Rubrova aporta por ahora:
-- Un módulo de entrada que selecciona la composición `RubrovaCustom`.
-- Un módulo de diseño/localización del POS.
-- Un ResourceBundle español argentino parcial.
-- Lock de artefactos, preparación y despliegue, pruebas de runtime y datos sintéticos.
+Los commits y las licencias de origen están en platform/source-lock.json y los marcadores dentro de cada árbol vendorizado. MyCompany usa Apache 2.0; el código lsFusion usa LGPL 3.0. Se conservan los avisos y archivos originales. Las dependencias Maven de terceros se auditarán, fijarán y empaquetarán; no se afirmará que desaparecen por incorporar los repositorios.
 
-Aún no hay un backend de negocio propio independiente, APIs de dominio propias, un libro mayor propio ni una capa de sincronización offline implementada. Eso no es un defecto por sí mismo: primero debemos comprobar si MyCompany cubre correctamente esos dominios y desarrollar sólo las brechas demostradas.
+## Arquitectura objetivo para una PC local
 
-## ¿Está siendo productivo reutilizar proyectos avanzados?
+El runtime productivo será una instalación local con servidor propio, aplicación MyCompany adaptada, cliente web servido desde el mismo equipo y base PostgreSQL local/persistente. Las imágenes necesarias se construirán desde nuestras fuentes y se entregarán en un paquete que se puede cargar sin descargar imágenes. Compose usará pull_policy: never y una red interna sin salida externa en la prueba offline.
 
-**Sí, con una condición:** reutilizar una plataforma integrada como base está siendo más productivo que construir un POS/ERP completo desde cero. Ya podemos iniciar la aplicación, autenticar, entrar en el POS y abrir una sesión sin haber escrito esos módulos transaccionales.
+El núcleo POS/ERP debe poder operar sin Internet. ARCA, adquirentes/QR, marketplaces, mensajería y transportistas son integraciones naturalmente remotas: si no hay red, quedan pendientes o informan indisponibilidad sin bloquear catálogo, caja local, ventas permitidas, compras, stock e informes.
 
-**No sería productivo** seguir incorporando proyectos enteros, SDK o servicios antes de probar el circuito comercial. Cada nueva plataforma aumenta el costo de integración, actualización, licencias, seguridad y pruebas. MyCompany, Tryton y ERPNext no deben convertirse en tres implementaciones paralelas.
+## Cómo protegeremos producción
 
-Decisión vigente:
-1. MyCompany es el único piloto activo para cerrar POS + ERP.
-2. Tryton queda como referencia fiscal argentina si aparece una brecha real.
-3. ERPNext y Posnic quedan en reserva; no se integran ahora.
-4. Los componentes especializados (ARCA, pagos, hardware, WMS, BI y logística) se evalúan sólo cuando el flujo principal identifique una necesidad concreta.
+No se actualizará automáticamente ningún componente. Cada versión candidata debe superar comparación con su origen, reaplicación de cambios Rubrova, compilación, regresión funcional, migración probada sobre copia de base, backup/restore y prueba offline. Se mantiene el último paquete estable y una ruta de recuperación. Nunca probaremos primero una migración sobre la única base productiva.
 
-## Próximos bloques en orden
+## Próximo orden de implementación
 
-1. **Artículo → búsqueda → recibo:** verificar que el producto sintético aparezca en la pestaña Buscar artículos, añadirlo y comprobar cantidad/precio/total.
-2. **Venta en efectivo:** confirmar un cobro sintético y conciliar exactamente un recibo, un pago, el movimiento de caja y el impacto esperado en stock.
-3. **Pagos y vuelto:** cubrir importe exacto, vuelto, rechazo y estado incierto antes de probar pagos mixtos.
-4. **Devolución y cierre:** devolución parcial, reintegro, conciliación de caja y cierre del turno.
-5. **Calidad de uso:** completar español, revisar disposición y controles, probar permisos y exportación.
-6. **Instalación y recuperación:** desplegar en el equipo elegido, asegurar administrador/firewall y probar backup/restore.
-7. **Brechas argentinas:** recién entonces homologar ARCA, proveedores de pago y hardware físico.
+1. Incorporar y validar los dos árboles completos de fuentes en main.
+2. Conseguir un build Maven real de lsFusion + MyCompany desde vendor/; corregir cualquier incompatibilidad del reactor.
+3. Sustituir los Dockerfiles/Compose upstream que descargan artefactos por imágenes Rubrova construidas localmente y fijadas.
+4. Conseguir un runtime de Rubrova que arranque sin descargar imágenes ni artefactos.
+5. Terminar carrito y validar importes; luego cobrar efectivo en base descartable y conciliar venta, pago, caja y stock.
+6. Probar pagos, vuelto, devolución, cierre, conciliación, permisos y auditoría.
+7. Completar traducción y experiencia visual sobre las fuentes que ahora controlamos.
+8. Preparar paquete offline y probar en una PC limpia con Internet desactivado; luego backup, restauración y recuperación.
+9. Adaptar fiscalidad argentina y conectores externos sin bloquear el funcionamiento local.
 
-La definición de terminado no es que aparezca un botón ni que CI quede verde: es que cada operación esté persistida una sola vez, sus efectos en dinero y stock concilien y la recuperación no pierda ni duplique operaciones.
-
-## Riesgos y honestidad de la prueba
-
-- La ejecución CI usa un administrador/instancia y datos sintéticos; no debe reutilizarse como configuración productiva.
-- La base temporal y los volúmenes se eliminan al terminar el job.
-- El test de apertura no cierra el turno; valida el estado abierto y luego descarta todo el entorno.
-- Los logs de runtime incluyeron algunos `SQLTimeoutException` y `SQLConflictException` transitorios aunque el job completó con éxito. Se deben analizar y medir antes de declarar estabilidad.
-- La imagen MyCompany 6.2 se ejecutó como `linux/amd64`; la validación de macOS Apple Silicon no equivale a ejecutar el servidor nativo ARM.
-- Una captura o un test de interfaz no reemplazan pruebas de permisos, concurrencia, auditoría, fiscalidad, periféricos ni recuperación.
-
-## Evidencia
-
-- [CI multiplataforma + runtime + sesión abierta](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808)
-- [Commit actual de main](https://github.com/JavierGrecco/Rubrova/commit/4d0a44c366ee7c10cea29b53f6f74da029f126f2)
-- [Plan de implementación](IMPLEMENTATION_START.md)
-- [Plan de trabajo](ROADMAP.md)
-- [Calidad y pruebas](QUALITY_AND_TESTING.md)
+El proyecto no se declara listo por importar fuentes ni por tener CI verde. Se acepta cuando una instalación local conserva las operaciones y los datos después de reiniciar, concilia dinero y stock, y puede recuperarse desde un backup probado.
