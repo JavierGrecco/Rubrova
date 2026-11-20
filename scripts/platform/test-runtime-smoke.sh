@@ -26,6 +26,7 @@ CACHE_DIR="${RUBROVA_CACHE_DIR:-$WORK_DIR/cache}"
 COMPOSE_DIR="$WORK_DIR/mycompany-6.2"
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-rubrova-smoke-${GITHUB_RUN_ID:-local}}"
 COMPOSE_FILE="$COMPOSE_DIR/compose.yaml"
+OVERRIDE_FILE="$COMPOSE_DIR/compose.rubrova.override.yaml"
 WEB_URL="${RUBROVA_WEB_URL:-http://127.0.0.1:8080/}"
 STARTUP_TIMEOUT_SECONDS="${RUBROVA_STARTUP_TIMEOUT_SECONDS:-900}"
 KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
@@ -33,7 +34,7 @@ KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
 mkdir -p "$CACHE_DIR" "$COMPOSE_DIR"
 
 compose() {
-  COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose -f "$COMPOSE_FILE" --project-directory "$COMPOSE_DIR" "$@"
+  COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose -f "$COMPOSE_FILE" -f "$OVERRIDE_FILE" --project-directory "$COMPOSE_DIR" "$@"
 }
 
 cleanup() {
@@ -72,6 +73,17 @@ trap cleanup EXIT
 echo "1/6 Preparando el JAR y Compose oficiales MyCompany 6.2"
 RUBROVA_CACHE_DIR="$CACHE_DIR" bash "$PREPARE_SCRIPT"
 cp "$CACHE_DIR/compose.yaml" "$COMPOSE_FILE"
+cat > "$OVERRIDE_FILE" <<'YAML'
+services:
+  logics:
+    image: lsfusion/mycompany:6.2@sha256:9dacff96577de49a56633a53801c7bcd78b5e7df501cd4ebd61098124276bd11
+  server:
+    image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
+  client:
+    image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
+  db:
+    image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
+YAML
 
 echo "2/6 Preparando la extensión Rubrova fuera del código upstream"
 bash "$DEPLOY_SCRIPT" docker "$COMPOSE_DIR"
@@ -135,11 +147,17 @@ printf '%s\n' "$IMAGES"
 while IFS= read -r image_name; do
   [[ -n "$image_name" ]] || continue
   image_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$image_name" 2>/dev/null || true)"
-  if [[ -n "$image_digest" && "$image_digest" != "<no value>" ]]; then
-    printf 'DIGEST %s -> %s\n' "$image_name" "$image_digest"
-  else
-    printf 'AVISO: no se obtuvo RepoDigest para %s\n' "$image_name"
+  expected_digest="${image_name##*@}"
+  actual_digest="${image_digest##*@}"
+  if [[ -z "$expected_digest" || "$expected_digest" == "$image_name" ]]; then
+    echo "La imagen no tiene un digest fijado en el override: $image_name" >&2
+    exit 1
   fi
+  if [[ -z "$image_digest" || "$image_digest" == "<no value>" || "$actual_digest" != "$expected_digest" ]]; then
+    echo "Digest de imagen distinto al fijado para $image_name: esperado $expected_digest, recibido ${actual_digest:-ninguno}" >&2
+    exit 1
+  fi
+  printf 'DIGEST VERIFICADO %s -> %s\n' "$image_name" "$image_digest"
 done <<< "$IMAGES"
 
 LOG_DIR="$COMPOSE_DIR/docker-server/logs"

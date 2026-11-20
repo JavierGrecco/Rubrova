@@ -60,6 +60,17 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /mktemp -d.*rubrova-runtime/);
   assert.match(runtimeSmokeSource, /sudo -n rm -rf/);
   assert.match(runtimeSmokeSource, /docker image inspect/);
+  for (const [service, image] of Object.entries({
+    mycompany: "lsfusion/mycompany:6.2",
+    server: "lsfusion/server:6.2",
+    client: "lsfusion/client:6.2",
+    postgres: "postgres:18"
+  })) {
+    const digest = lock.dockerImages[service].digest;
+    assert.match(digest, /^sha256:[0-9a-f]{64}$/);
+    assert.ok(runtimeSmokeSource.includes(`image: ${image}@${digest}`), `Falta digest fijado en el smoke test: ${service}`);
+  }
+  assert.equal(lock.dockerImages.digestPlatform, "linux/amd64");
   assert.match(runtimeSmokeSource, /docker-server\/logs/);
   assert.match(runtimeSmokeSource, /RubrovaPOSLocalization/);
 });
