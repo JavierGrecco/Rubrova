@@ -35,7 +35,7 @@ Las dimensiones que afectan costos y reportes (unidad de negocio, canal, sucursa
 
 1. **ERPNext 16 / Frappe 16:** prueba inicial por la cobertura de POS, inventario, compras, contabilidad, dimensiones y reportes.
 2. **MyCompany 6.2 / lsFusion:** prueba inicial por su Retail POS integrado y amplitud de CRM, ventas, compras, inventario, fabricación y facturación.
-3. **Tryton 8.2:** evaluación prioritaria condicionada. Su POS oficial y sus módulos de ERP son interesantes; antes de considerarlo finalista fiscal hay que comprobar tags y versiones compatibles de los módulos argentinos; las ramas principales consultadas muestran manifiestos 7.1 y 8.1.
+3. **Tryton 8.0 + tryton-ar 8.0:** candidato prioritario porque existe un conjunto de ocho ramas argentinas alineadas. Se debe probar instalación, tests y homologación antes de elegirlo. Tryton 8.0 + módulos tryton-ar 8.0 queda como actualización posterior con port/revalidación.
 4. **Dolibarr 24.0.3:** filtro de menor complejidad para POS/ERP y API.
 5. **Posnic 1.9.2:** referencia POS secundaria, no candidato a ERP principal. Revisar licencias y dependencias, localización india, límites offline y compatibilidad de escritorio.
 
@@ -182,14 +182,14 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Arquitectura de servicios de dominio, APIs/eventos, ownership, idempotencia, CAS, Outbox/Inbox y recuperación.
 - [x] Dataset sintético y validador automático; última ejecución registrada: 21/21 pruebas de fixture aprobadas.
 - [x] Investigación de ERPNext, MyCompany/lsFusion, Tryton, Dolibarr y Posnic.
-- [x] Revisión de la localización argentina Odoo y de tryton-ar; las ramas principales muestran manifiestos 7.1/8.1 y queda pendiente verificar un conjunto de tags compatible.
+- [x] Revisión de la localización argentina Odoo y de tryton-ar; se encontraron ocho ramas coordinadas 8.0 con manifiestos y tests; instalación y homologación pendientes.
 - [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
 - [x] Requisitos de reportes, métricas y rentabilidad por área.
 
 ## Próximos pasos concretos
 
 1. Ejecutar el filtro comparativo POS + ERPNext 16 y MyCompany 6.2 con el mismo dataset y circuito.
-2. Ejecutar Tryton 8.2 en paralelo para valorar POS/ERP base; verificar primero tags y dependencias de tryton-ar, y estimar un port sólo si no existe un set compatible.
+2. Ejecutar Tryton 8.0 en paralelo con las ramas argentinas 8.0; instalar el conjunto, ejecutar tests y homologar. Tryton 8.2 se evalúa como actualización posterior.
 3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P44.
 4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
