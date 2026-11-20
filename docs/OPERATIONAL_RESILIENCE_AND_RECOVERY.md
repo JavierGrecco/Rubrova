@@ -215,7 +215,15 @@ Estas pruebas amplían P01–P26; no reemplazan el protocolo existente.
 - Rollbacks de servicio y migraciones fallidas.
 - Tiempo medido de restauración (RTO) y punto de datos recuperable (RPO).
 
-## 12. Criterio de salida
+## 12. Fuentes técnicas de referencia
+
+- Git: [git revert](https://git-scm.com/docs/git-revert) y [git reset](https://git-scm.com/docs/git-reset), para distinguir reversión con historial de reescritura de estado local.
+- AWS RDS: [recuperación a un punto en el tiempo](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIT.html).
+- Google Cloud SQL: [restauración y point-in-time recovery](https://cloud.google.com/sql/docs/postgres/backup-recovery/restore).
+- Microsoft: [Idempotent Consumer](https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer), [Saga](https://learn.microsoft.com/en-us/azure/architecture/patterns/saga), [Outbox](https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/transactional-outbox-pattern) y [safe deployments](https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/safe-deployments).
+- Shopify: [inventoryAdjustQuantities](https://shopify.dev/docs/api/admin-graphql/latest/mutations/inventoryAdjustQuantities) e [inventorySetQuantities con compare-and-swap](https://shopify.dev/docs/api/admin-graphql/latest/mutations/inventorySetQuantities).
+
+## 13. Criterio de salida
 
 La continuidad está aprobada sólo cuando se demuestra con pruebas repetibles que:
 1. las operaciones confirmadas sobreviven a la terminación y reinicio del proceso;
