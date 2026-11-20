@@ -40,6 +40,12 @@ class MockProviderHandler(BaseHTTPRequestHandler):
             time.sleep(delay)
             self._send(200, b'{"status":"slow-response"}')
             return
+        if request.path == "/status/408":
+            self._send(408, b'{"error":"request timeout"}')
+            return
+        if request.path == "/status/425":
+            self._send(425, b'{"error":"too early"}')
+            return
         if request.path == "/status/429":
             self.send_response(429)
             self.send_header("Retry-After", "2")

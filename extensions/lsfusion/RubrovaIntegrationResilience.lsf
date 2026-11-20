@@ -142,6 +142,9 @@ rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'
     IF responseStatus = 429 THEN {
         rubrovaHttpFailureCategory() <- 'RATE_LIMITED';
         rubrovaHttpFailureMessage() <- 'El servicio externo está limitando las solicitudes. La operación quedó pendiente.';
+    } ELSE IF responseStatus = 408 OR responseStatus = 425 THEN {
+        rubrovaHttpFailureCategory() <- 'REMOTE_TRANSIENT';
+        rubrovaHttpFailureMessage() <- 'El servicio externo pidió reintentar más adelante. La operación quedó pendiente.';
     } ELSE IF responseStatus >= 500 THEN {
         rubrovaHttpFailureCategory() <- 'REMOTE_5XX';
         rubrovaHttpFailureMessage() <- 'El servicio externo está temporalmente indisponible. La operación quedó pendiente.';
@@ -160,7 +163,7 @@ rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'
     }
     rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
         rubrovaHttpFailureCategory(), responseStatus, 1,
-        responseStatus = 429 OR responseStatus >= 500, NULL, NULL,
+        responseStatus = 408 OR responseStatus = 425 OR responseStatus = 429 OR responseStatus >= 500, NULL, NULL,
         rubrovaHttpFailureMessage(), 'Respuesta HTTP no exitosa. No se guarda el cuerpo ni la URL completa.');
 }
 

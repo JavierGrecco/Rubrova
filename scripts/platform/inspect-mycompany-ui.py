@@ -607,6 +607,22 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("El timeout no devolvió un mensaje claro en español.")
                 print("UI_INTEGRATION_TIMEOUT_MESSAGE=true")
 
+                transient_response = context.request.get(
+                    api_base + "rubrovaTestHttpTransientStatus", timeout=12_000
+                )
+                if transient_response.status != 200:
+                    raise RuntimeError(
+                        "La prueba HTTP 408 respondió HTTP "
+                        f"{transient_response.status}: {transient_response.text()[:1200]}"
+                    )
+                transient_payload = transient_response.json()
+                if isinstance(transient_payload, list):
+                    transient_payload = transient_payload[0] if transient_payload else {}
+                print("UI_INTEGRATION_408_RESPONSE=" + json.dumps(transient_payload, ensure_ascii=False))
+                if transient_payload.get("category") != "REMOTE_TRANSIENT" or int(transient_payload.get("httpStatus") or 0) != 408:
+                    raise RuntimeError("El HTTP 408 no se clasificó como transitorio reintentable.")
+                print("UI_INTEGRATION_408_CLASSIFIED=true")
+
                 rate_limit_response = context.request.get(
                     api_base + "rubrovaTestHttpRateLimit", timeout=12_000
                 )
@@ -668,8 +684,8 @@ def inspect_page(url: str) -> int:
                     incident_payload = incident_payload[0] if incident_payload else {}
                 incident_count = int(incident_payload.get("incidentCount", 0))
                 print(f"UI_INTEGRATION_INCIDENT_COUNT={incident_count}")
-                if incident_count < 3:
-                    raise RuntimeError("No quedaron persistidas las tres incidencias simuladas (timeout, 429, 503).")
+                if incident_count < 4:
+                    raise RuntimeError("No quedaron persistidas las cuatro incidencias simuladas (timeout, 408, 429, 503).")
                 print("UI_INTEGRATION_INCIDENT_PERSISTED=true")
                 item_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-item" + screenshot_path.suffix

@@ -217,6 +217,8 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /rubrovaHandleHttpStatusFailure/);
   assert.match(resilienceSource, /RATE_LIMITED/);
   assert.match(resilienceSource, /REMOTE_5XX/);
+  assert.match(resilienceSource, /REMOTE_TRANSIENT/);
+  assert.match(resilienceSource, /responseStatus = 408 OR responseStatus = 425/);
   assert.match(resilienceSource, /rubrovaShowIntegrationFailure/);
   assert.match(resilienceSource, /REMOTE_HTTP_ERROR/);
   assert.match(resilienceSource, /rubrovaHttpSucceeded\(\) <- TRUE/);
@@ -312,10 +314,12 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
   assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_MESSAGE=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_408_CLASSIFIED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_429_CLASSIFIED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_503_CLASSIFIED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_RECOVERY_SUCCEEDED=true/);
@@ -323,4 +327,5 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(mockProviderSource, /ThreadingHTTPServer/);
   assert.ok(mockProviderSource.includes('if request.path == "/slow":'));
   assert.ok(mockProviderSource.includes('if request.path == "/ok":'));
+  assert.ok(mockProviderSource.includes('if request.path == "/status/408":'));
 });

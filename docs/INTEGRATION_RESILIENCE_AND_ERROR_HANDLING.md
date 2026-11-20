@@ -42,7 +42,8 @@ Los reintentos son limitados, medidos y dependen de la semántica de la operaci�
 | Resultado | Acción |
 |---|---|
 | Timeout, DNS, conexión rechazada o conexión interrumpida | Reintentar sólo lectura segura o escritura protegida por idempotencia |
-| HTTP 408, 425, 429 | Reintento diferido; respetar Retry-After si existe y no superar el plazo configurado |
+| HTTP 408, 425 | Error remoto transitorio; reintento diferido y acotado. Respetar Retry-After cuando corresponda |
+| HTTP 429 | Límite del proveedor; respetar Retry-After y reducir concurrencia |
 | HTTP 500, 502, 503, 504 | Considerar transitorio; reintentar sólo si repetir no duplica efectos |
 | HTTP 400 / 422 | Error de validación o contrato; no reintentar sin corregir datos |
 | HTTP 401 / 403 | Detener; renovar credenciales una vez si el flujo lo permite o pedir reconexión |

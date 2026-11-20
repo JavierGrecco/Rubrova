@@ -221,6 +221,16 @@ rubrovaTestHttpTimeout () {
         httpStatus = statusHttp();
 } @@api;
 
+rubrovaTestHttpTransientStatus () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de respuesta transitoria 408', 'ci-http-408-001',
+        '$MOCK_PROVIDER_URL/status/408', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        httpStatus = statusHttp(),
+        safeToRetry = safeToRetry(IntegrationIncident i) IF correlationId(i) = 'ci-http-408-001';
+} @@api;
+
 rubrovaTestHttpRateLimit () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de límite de solicitudes', 'ci-rate-limit-001',
         '$MOCK_PROVIDER_URL/status/429', 4000);
