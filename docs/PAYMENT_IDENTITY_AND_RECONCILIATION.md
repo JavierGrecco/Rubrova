@@ -192,3 +192,22 @@ Efectivo registra importe recibido y vuelto en caja. Pago mixto crea un intento/
 ## Estado
 
 La arquitectura, investigación y pruebas están especificadas. Aún no se conectó una terminal real ni se recibieron credenciales/sandbox de ningún proveedor. Ningún dato de pagador debe tratarse como identificador universal hasta que exista evidencia contractual y técnica por canal.
+
+
+## 9. Fuentes públicas y restricciones que deben verificarse por integración
+
+- [Mercado Pago — campos de reportes](https://www.mercadopago.com.ar/developers/es/docs/reports/released-money/report-fields): los campos PAYER_NAME/PAYER_ID_TYPE/PAYER_ID_NUMBER aparecen para ciertas operaciones QR/transferencia y la documentación limita su uso a conciliación.
+- [Mercado Pago — QR Orders](https://www.mercadopago.com.ar/developers/es/docs/qr-code/orders/overview): órdenes y QR; distinguir modalidad estática/dinámica/híbrida, consulta de estado y referencia externa.
+- [Mercado Pago — SDK Node.js](https://github.com/mercadopago/sdk-nodejs): SDK oficial con licencia MIT; verificar la release/runtime concretos.
+- [Mercado Pago — API de clientes](https://www.mercadopago.com.ar/developers/es/reference/customers/_customers/post): los datos de Customer se crean dentro de un flujo de cliente, no se infieren de cualquier operación Point.
+- [Fiserv Argentina — QR](https://www.fiserv.com.ar/servicios/pagos-qr/): referencia del flujo QR interoperable; documenta que el QR pagado con tarjeta no exige pasar datos del comprador al comercio.
+- [BCRA — CVU](https://www.bcra.gob.ar/medios-de-pago/cvu/): definición de CVU como identificador de una cuenta en PSP.
+- [BCRA — interoperabilidad QR](https://www.bcra.gob.ar/medios-de-pago/pagos-con-transferencia/): marco de transferencias inmediatas/PCT y QR interoperable.
+- [Getnet — Get POS Integrado](https://www.getnet.net/ar/ayuda/terminales-getpos/get-pos-integrado): integración del sistema de gestión con el POS mediante API o SDK local.
+- [Payway — catálogo API](https://developers.payway.com.ar/catalog?category=Pagos) y [SDK JS público](https://github.com/payway-ar/sdk-javascript-ventaonline): inspeccionar licencia de artefactos; el repositorio SDK JS no declaraba una licencia en el árbol revisado.
+- [MODO — Merchant PCT Online](https://docs.modo.com.ar/docs/2ea0d7a7-956d-4995-936e-84808f289002): consentimiento previo del proveedor de cuentas y mTLS.
+- [PCI Security Standards Council — datos de autenticación sensibles](https://www.pcisecuritystandards.org/faq/articles/Frequently_Asked_Question/are-merchants-allowed-to-store-card-verification-codes-for-card-on-file-or-recurring-transactions/): no almacenar CVV/CVC tras la autorización; consultar FAQ PCI vigente y adquirente.
+- [Ley 25.326](https://www.argentina.gob.ar/normativa/nacional/ley-25326-64790/actualizacion) y [AAIP — derechos del titular](https://www.argentina.gob.ar/aaip/datospersonales/derechos): finalidad, exactitud, derechos y seguridad.
+- [S-Tech — transformación de comercios](https://s-tech.com.ar/transformacion-de-comercios/), [CashFore y CashSchedule](https://s-tech.com.ar/sistema-inteligente-de-operacion-y-transporte/).
+
+Los contratos, manuales de comercio, matrices de campos y políticas de tratamiento prevalecen sobre esta síntesis. Antes de activar un conector, Rubrova debe registrar por versión los campos disponibles, su finalidad y retención, además del estado de homologación.
