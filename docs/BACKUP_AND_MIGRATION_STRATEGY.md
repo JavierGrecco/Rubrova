@@ -5,7 +5,7 @@
 
 ## 1. Objetivo para el negocio
 
-El dueño debe poder recuperar Rubrova sin depender de la computadora original. Si Windows se reinstala, el disco falla o se reemplaza el equipo, debe ser posible instalar Rubrova en otra PC, seleccionar una copia, ingresar la clave de recuperación y continuar con el negocio conservando sus operaciones e historial.
+El dueño debe poder recuperar Rubrova sin depender de la computadora original. Si Windows se reinstala, el disco falla o se reemplaza el equipo, debe ser posible instalar Rubrova en otra PC, seleccionar una copia y continuar con el negocio conservando sus operaciones e historial.
 
 No alcanza con copiar una carpeta de instalación ni con guardar solamente la base de datos. El respaldo debe permitir recuperar la información de negocio, los documentos y la configuración necesaria para volver a operar.
 
@@ -15,7 +15,7 @@ La recuperación debe poder realizarla una persona autorizada desde una interfaz
 
 ### 2.1 Copia de recuperación completa
 
-Paquete portable de Rubrova, con formato identificable (propuesta: .rubrova-backup), cifrado y verificable. Incluye los datos necesarios para reconstruir el estado en una instalación compatible, sin depender de la ruta original ni del disco anterior.
+Paquete portable de Rubrova, con formato identificable (propuesta: .rubrova-backup), verificable y sin cifrado propio de Rubrova. Incluye los datos necesarios para reconstruir el estado en una instalación compatible, sin depender de la ruta original ni del disco anterior.
 
 Debe contener:
 - manifiesto con organización, sucursales, áreas, fecha de corte, zona horaria, moneda, versión de Rubrova, versiones de módulos, versiones de esquema y requisitos mínimos;
@@ -38,7 +38,7 @@ Cada copia registra:
 - ID, fecha y hora UTC, punto de corte y rango de transacciones/logs;
 - versión de aplicación, esquema y formato;
 - componentes y servicios incluidos;
-- checksum, tamaño, cifrado y clave de recuperación referenciada;
+- checksums, tamaño, destino y estado de integridad; no hay clave de backup de aplicación;
 - ubicación, retención, estado de verificación y última restauración probada.
 
 La captura establece una barrera consistente: el corte del ledger, los archivos, los eventos y los offsets deben corresponder al mismo estado. Si un componente no pudo incluirse, el respaldo se marca incompleto y no se ofrece como una copia válida de recuperación total.
@@ -61,49 +61,45 @@ Aplicar el principio 3-2-1 cuando la operación lo permita: tres copias, dos med
 
 Los objetivos de RPO y RTO se muestran como metas a medir en equipos reales. No se promete recuperar operaciones posteriores a la última copia segura fuera del equipo. Rubrova debe mostrar claramente fecha/hora del último respaldo externo válido y advertir cuando su antigüedad supere la política configurada.
 
-## 4. Cifrado y recuperación de claves
+## 4. Política inicial: backup sin cifrado a nivel de aplicación
 
-- Cifrar los paquetes y copias fuera del equipo con una clave que no dependa exclusivamente del Windows instalado.
-- Ofrecer una clave/frase de recuperación o archivo de recuperación exportable, con advertencia para guardarlo en un lugar distinto del backup.
-- No guardar la clave dentro del mismo archivo cifrado ni confiar únicamente en Windows Credential Manager/DPAPI, porque puede perderse al reinstalar Windows o cambiar el equipo.
-- Permitir proteger copias con contraseña robusta y derivación de clave adecuada; la implementación debe usar bibliotecas criptográficas mantenidas y parámetros versionados.
-- Guardar tokens, claves de terminal, certificados privados ARCA y credenciales de proveedores en un almacén secreto separado, cifrado y de acceso restringido.
-- Los secretos se pueden respaldar en un archivo/paquete de recuperación independiente, también cifrado, o volver a vincular manualmente tras la recuperación.
-- Nunca guardar secretos en Git, logs, fixtures, manifiestos legibles ni backups sin cifrar.
-- Explicar que perder tanto la clave de recuperación como su copia protegida puede hacer imposible descifrar los respaldos.
+Para la primera versión, **Rubrova no cifrará el paquete de respaldo**. El paquete portable será legible por una instalación compatible y no requerirá contraseña, frase secreta, keychain, TPM ni clave generada por el sistema anterior. Esto reduce el código, el riesgo de perder claves y la complejidad de recuperar después de una reinstalación.
 
-### 4.1 Esquema criptográfico portable obligatorio
+La decisión se apoya en el escenario operativo actual: copias en discos locales y externos bajo control físico del negocio. No significa que un disco externo sea invulnerable. Si se pierde o roba, un respaldo sin cifrado puede ser leído por quien tenga el dispositivo; esa exposición se acepta explícitamente en la política inicial y se reduce con estas medidas:
 
-El diseño de implementación debe usar una jerarquía de claves, no cifrar directamente todo el paquete con una contraseña:
+- Mantener el equipo y los discos en lugares con acceso físico restringido; guardar los discos externos bajo llave.
+- Rotar al menos dos discos externos, identificados y registrados; desconectar el disco después de cada copia.
+- Conservar una copia fuera del equipo principal y, cuando sea posible, fuera del mismo establecimiento.
+- No dejar todos los respaldos conectados durante la operación: ransomware, malware o un error administrativo pueden alcanzar las unidades conectadas.
+- Mantener puntos históricos y no sobrescribir siempre la misma copia; probar restauraciones y guardar una versión anterior limpia.
+- Registrar quién crea, restaura, exporta y elimina respaldos, y proteger esas acciones con roles.
+- No incluir contraseñas, tokens, claves privadas, certificados ARCA ni secretos de terminal/proveedores en el paquete legible. Esas credenciales se vuelven a vincular o se gestionan aparte mediante el almacén del sistema operativo y un procedimiento separado.
 
-1. Generar una clave de datos aleatoria y nueva para cada copia (DEK).
-2. Cifrar el contenido con un AEAD mantenido. Para archivos grandes, usar cifrado autenticado por bloques/stream con detección de truncamiento y marca final; no inventar un formato criptográfico propio.
-3. Proteger la DEK por separado con una clave derivada de la contraseña de respaldo y con una clave de recuperación independiente. El paquete contiene ambos envoltorios de DEK, no las claves en claro.
-4. Derivar la clave de contraseña con Argon2id y una sal aleatoria. El paquete guarda algoritmo/versión, sal y parámetros de costo usados; nunca depender de valores por defecto que puedan cambiar entre versiones.
-5. Generar la clave de recuperación con alta entropía mediante un generador criptográfico, no pedir al usuario que invente una segunda contraseña débil. Mostrarla como frase/código imprimible y permitir guardarla como archivo protegido, siempre fuera del mismo destino del backup.
-6. Guardar identificador de clave, versión de formato, algoritmo AEAD, KDF, parámetros, nonces/estado de stream y checksums en un encabezado versionado. El manifiesto legible no contiene secretos ni información personal innecesaria.
+### 4.1 Protección opcional del disco, no del formato Rubrova
 
-**Candidato técnico para laboratorio:** libsodium, que ofrece Argon2id para derivación de claves y primitivas AEAD; validar bindings y empaquetado para Windows/macOS antes de fijarlo. Para streams grandes se probará una primitiva autenticada por bloques como crypto_secretstream_xchacha20poly1305. La selección final debe basarse en biblioteca mantenida, interoperabilidad y pruebas de restauración, no en implementar criptografía propia.
+Cuando el disco salga del establecimiento o contenga datos de clientes especialmente delicados, el usuario podrá proteger **el volumen completo** mediante la función de cifrado del sistema operativo (por ejemplo, BitLocker To Go en Windows o un volumen externo cifrado compatible con macOS). Esa protección es opcional y queda fuera del formato .rubrova-backup: Rubrova no implementa una segunda capa de cifrado ni administra claves criptográficas propias en esta etapa.
 
-**Separar cuatro cosas:**
-- cifrado del paquete de backup, que debe ser portable;
-- cifrado del disco/volumen del sistema (BitLocker/FileVault), que protege un equipo apagado pero no reemplaza el backup;
-- almacén local de credenciales, que puede usar DPAPI/Keychain para comodidad en esa instalación, pero nunca como única clave de recuperación;
-- secretos externos (certificados privados, credenciales ARCA, terminales, tokens), que requieren su propio ciclo de respaldo/revinculación.
+Si se elige cifrar el disco, guardar la clave de recuperación en otro lugar y comprobar que se puede desbloquear en otra PC antes de depender de él. Un disco cifrado sin su clave también puede quedar inaccesible; el cifrado del volumen no elimina el requisito de probar recuperación.
 
-Cambiar la contraseña de backup no debe destruir la posibilidad de recuperar paquetes antiguos: éstos mantienen su envoltorio original y siempre el envoltorio de la clave de recuperación. Rotar la clave de recuperación requiere un proceso explícito de migración/reenvoltura de todas las copias retenidas o conservar la clave anterior hasta que expiren; nunca borrar la única clave que abre backups existentes.
+### 4.2 Integridad del paquete
 
-El asistente debe hacer una prueba de recuperación antes de habilitar el backup programado: crear un paquete de prueba, bloquear la instalación original, recuperar en un entorno limpio usando primero contraseña y después clave de recuperación, verificar autenticidad y datos. Repetir tras actualizar el motor criptográfico o el formato. Una prueba de hash aislada no demuestra que la clave sirva para descifrar.
+La ausencia de cifrado no elimina la validación. Cada copia tendrá:
+- manifiesto con versión del formato, aplicación/esquema, fecha de corte, componentes y tamaño;
+- SHA-256 por archivo/fragmento y checksum del manifiesto para detectar corrupción accidental;
+- verificación de relaciones, conteos, saldos, ledgers y documentos incluidos;
+- resultado de consistencia y estado de última restauración probada.
 
-Una contraseña incorrecta, una clave ausente, una autenticación fallida o un stream truncado deben detener la restauración sin modificar el destino. Ningún fabricante ni soporte debe poder saltarse el cifrado con una puerta trasera. Si el usuario pierde todas las claves válidas, no existe recuperación criptográfica garantizada.
+Los checksums detectan daños y cambios accidentales; por sí solos no autentican quién creó el archivo ni resisten a un atacante que pueda reemplazar el paquete y recalcularlos. En la política inicial esa limitación se compensa con acceso físico y permisos; una firma autenticada se podrá estudiar después si aparece un requisito concreto.
 
-### 4.2 Compatibilidad de formato y recuperación sin la PC anterior
+### 4.3 Separar el backup de los secretos
 
-El paquete debe declarar versiones separadas de formato de backup, esquema de negocio, versión de Rubrova, biblioteca/algoritmo criptográfico y compresión. El encabezado permite reconocer el paquete antes de desbloquearlo, pero no revela claves ni datos sensibles.
+El backup de negocio conserva configuración y referencias, pero omite secretos reutilizables. Después de restaurar, Rubrova presenta una lista de servicios que necesitan reautenticación o reemisión de credenciales. Los certificados privados y tokens no se copian en texto claro junto con ventas/clientes.
 
-La herramienta de recuperación de una versión soportada debe poder leer los formatos retenidos aunque la aplicación original ya no esté instalada. No se debe depender de la red, del usuario anterior de Windows, DPAPI, Keychain, un TPM, el nombre del equipo ni un servicio cloud. Una vez autenticado y descifrado, el asistente valida compatibilidad y aplica sólo migraciones de esquema explícitas.
+No usar DPAPI, Keychain, TPM ni el usuario de Windows como requisito para leer el backup de negocio. Pueden proteger secretos locales o volúmenes, pero no deben condicionar la apertura del paquete portable.
 
-Antes de retirar soporte para una versión antigua del formato, Rubrova debe migrar y verificar los respaldos retenidos o conservar una herramienta de recuperación compatible. Nunca actualizar ni sobrescribir la única copia antigua durante una migración. La prueba de compatibilidad debe abrir paquetes creados por versiones anteriores del software en una instalación limpia posterior, tanto en Windows como en macOS cuando ambos estén soportados.
+### 4.4 Cuándo reconsiderar el cifrado del paquete
+
+Reevaluar cifrado a nivel de aplicación si los respaldos empiezan a viajar fuera de ubicaciones controladas, si se alojan en almacenamiento de terceros, si hay acceso de varias organizaciones/personas no confiables o si el análisis de riesgo exige confidencialidad criptográfica del archivo. En ese caso debe ser una opción explícita y probada de extremo a extremo, no una obligación que impida restaurar los backups existentes sin claves.
 
 ## 5. Recuperar en una PC nueva o después de reinstalar Windows
 
@@ -112,7 +108,7 @@ El flujo debe ser guiado:
 1. Instalar Windows y descargar/instalar una versión compatible de Rubrova.
 2. Conectar el disco externo, NAS o ubicación donde se encuentre el respaldo.
 3. Abrir “Recuperar Rubrova” y seleccionar el paquete/punto deseado.
-4. Ingresar la clave de recuperación o desbloquear el almacén cifrado.
+4. Si el sistema operativo solicita desbloquear el disco externo, hacerlo con su método habitual; el paquete Rubrova no pide una clave adicional.
 5. Verificar manifiesto, checksums, integridad, versión, espacio y compatibilidad antes de tocar datos existentes.
 6. Restaurar primero en una instancia/directorio aislado, nunca sobre la única copia disponible.
 7. Aplicar sólo las migraciones de esquema soportadas y ejecutar verificaciones de saldos, conteos, relaciones y ledgers.
@@ -126,7 +122,7 @@ La restauración debe funcionar aunque la nueva computadora tenga otro nombre, u
 
 La copia incluye perfiles de impresoras, lectores, balanzas, cajas y terminales, pero no debe fingir que la vinculación física se transfiere sola. Al iniciar en otro equipo, un asistente vuelve a detectar y probar los periféricos y solicita autorización para asociarlos.
 
-Los secretos y certificados se recuperan mediante el almacén cifrado independiente o se vuelven a registrar. La restauración no debe activar dos cajas con la misma identidad de dispositivo ni duplicar una terminal.
+Los secretos y certificados se vuelven a vincular o se recuperan mediante el mecanismo separado del sistema operativo; nunca desde el paquete legible. La restauración no debe activar dos cajas con la misma identidad de dispositivo ni duplicar una terminal.
 
 ## 7. Exportación portable y salida del sistema
 
@@ -143,7 +139,7 @@ La exportación portable sirve para migrar de motor o plataforma. No reemplaza e
 
 Registrar quién solicitó, creó, verificó, descargó, restauró o eliminó una copia; cuándo, desde qué instalación y con qué resultado. Proteger el catálogo para que una persona sin permiso no pueda descargar o borrar respaldos.
 
-Las copias deben estar cifradas en reposo y durante la transferencia. La eliminación respeta la retención configurada y deja auditoría. Probar restauraciones en un equipo/instancia aislada, sin contactar terminales, ARCA ni otros servicios externos hasta completar la conciliación.
+El acceso a las copias se protege físicamente y con permisos; el cifrado del disco completo queda opcional a cargo del sistema operativo. La eliminación respeta la retención configurada y deja auditoría. Probar restauraciones en un equipo/instancia aislada, sin contactar terminales, ARCA ni otros servicios externos hasta completar la conciliación.
 
 ## 9. Pruebas obligatorias
 
@@ -152,7 +148,7 @@ Las copias deben estar cifradas en reposo y durante la transferencia. La elimina
 - Restauración en una PC de reemplazo a partir únicamente de un disco externo.
 - Recuperación con el paquete lógico cuando el snapshot nativo del motor no es compatible.
 - Verificación de ventas, pagos, caja, stock, costos, cuentas, comprobantes, adjuntos, auditoría y analítica después del restore.
-- Restauración de copia cifrada usando la clave externa; fallo claro ante clave incorrecta o perdida.
+- Restauración del paquete sin claves de aplicación, en PC nueva y desde disco externo.
 - Corrupción/truncamiento de archivo, checksum incorrecto, archivo faltante y cadena incremental incompleta: rechazo seguro y conservación de originales.
 - Equipo desconectado antes de la siguiente copia externa: advertir el RPO real y no declarar backup protegido.
 - Migración desde una versión soportada a otra: comprobar esquema, saldos, eventos y adjuntos.
@@ -179,8 +175,8 @@ La prueba sólo pasa si la operación puede continuar y los ledgers concilian. U
 - [x] Flujo previsto para reinstalar Windows o reemplazar la computadora.
 - [ ] Elegir motor POS/ERP y comprobar su soporte real de snapshot/WAL/exportación.
 - [ ] Definir formato y esquema versionado del paquete portable.
-- [ ] Implementar programación, catálogo, cifrado, verificación y retención.
+- [ ] Implementar programación, catálogo, checksums, verificación y retención.
 - [ ] Implementar asistente de restauración y re-vinculación de periféricos.
 - [ ] Probar restauración Windows limpia, PC de reemplazo y recuperación de secretos.
 
-**Estado real:** el diseño ya es un requisito de Rubrova; la creación automática y la restauración guiada todavía no están implementadas.
+**Decisión vigente:** el backup de Rubrova no tendrá cifrado a nivel de aplicación en la primera versión. La protección opcional del disco se delega al sistema operativo.\n\n**Estado real:** la creación automática, los checksums, la exportación portable y la restauración guiada todavía no están implementados.
