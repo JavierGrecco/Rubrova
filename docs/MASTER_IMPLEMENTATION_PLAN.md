@@ -35,7 +35,7 @@ La primera entrega no es una demo de caja ni un CRUD de artículos. Es un **circ
 7. Cobrar en efectivo, calcular vuelto exacto y admitir más de un medio de pago.
 8. Confirmar el turno de caja, el movimiento de efectivo y el resultado de cada pago.
 9. Registrar la venta y conservar ticket, voucher y documento fiscal como documentos diferentes.
-10. Aplicar política de impresión por medio: efectivo y transferencia verificada en impresora térmica de caja; QR/tarjeta preferentemente en terminal inteligente con ticket detallado generado por Rubrova y voucher; impresora de caja como respaldo si el modelo no admite impresión personalizada. Evitar duplicados y permitir reimpresión auditada.
+   - Política de impresión: efectivo y transferencia verificada en impresora térmica de caja; QR/tarjeta preferentemente en terminal inteligente con ticket detallado generado por Rubrova y voucher; impresora de caja como respaldo si el modelo no admite impresión personalizada. Evitar duplicados y permitir reimpresión auditada.
 10. Cerrar o reiniciar el POS/servicio y demostrar que la operación confirmada no se pierde ni se duplica.
 11. Devolver parcial o totalmente una venta, vinculando la operación original y dejando los movimientos compensatorios.
 12. Consultar un cierre básico: ventas netas, devoluciones, medios de pago, efectivo esperado, diferencia de caja y unidades vendidas.
@@ -239,6 +239,19 @@ El primer despliegue implementa el flujo sobre las unidades del apartado anterio
 ### Entrega 4 — Reportes de gestión y analítica
 
 Primero reportes nativos y métricas definidas con fórmulas conocidas. Después, si la plataforma elegida no alcanza, construir un modelo analítico de sólo lectura; DuckDB es candidato para análisis/exports y Metabase o Superset se comparan sólo si hay necesidad de BI multiusuario.
+
+Requisitos obligatorios de inteligencia comercial:
+
+- Seguimiento diario, semanal, mensual, trimestral y por estación del hemisferio sur.
+- Alertas tempranas de crecimiento, aceleración, desaceleración, estancamiento y caída por SKU, familia, marca, sucursal y canal.
+- Pronóstico previo a cada trimestre/estación, con rangos, confianza, historial disponible, calendario y factores relevantes.
+- Ajuste por quiebres de stock, disponibilidad, promociones, precios y surtido.
+- Rentabilidad por producto/marca: ganancia absoluta, margen porcentual, contribución neta de costos variables, costo de reposición, GMROI y capital inmovilizado.
+- Matriz de alta/baja venta versus alta/baja rentabilidad.
+- Clasificación configurable de primeras marcas, segundas, económicas, propias y alternativas; medir participación por unidades, tickets, ventas y ganancia.
+- Detección de sustitución y cambios de preferencia entre segmentos.
+- Simulación de compras, precios y promociones; toda ejecución requiere aprobación.
+- Backtesting y medición de error/sesgo de pronósticos.
 
 Orden de informes:
 
