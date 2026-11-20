@@ -12,7 +12,7 @@ Este laboratorio no instala Rubrova ni incorpora código de terceros. Sirve para
 |---|---|---|
 | ERPNext / Frappe | Demo desechable oficial con Docker Compose, publicada sólo en localhost. Después de confirmar límites de la demo, preparar una instancia de laboratorio que permita extensiones propias. | ERPNext 16.60.0 / Frappe 16 — primera prueba |
 | MyCompany / lsFusion | Instalador Windows x64 o servidor Linux con cliente web; desde Mac se accede por navegador a una VM local aislada. | MyCompany 6.2 / lsFusion 6.x — primera prueba |
-| Tryton | Instancia aislada con PostgreSQL; fijar servidor, cliente y módulos por paquete. Separar prueba POS 8.2 del laboratorio de port fiscal argentino. | Tryton 8.2 — prueba condicionada |
+| Tryton | Instancia aislada PostgreSQL con Tryton 8.0 y las ocho ramas tryton-ar 8.0; fijar commits individuales, instalar en conjunto y ejecutar tests. | Tryton 8.0 + módulos argentinos 8.0 — prueba prioritaria; Tryton 8.2 queda para upgrade posterior |
 | Dolibarr | Instancia oficial local/aislada; revisar TakePOS, API, stock, caja, compras y exportación. | 24.0.3 — filtro corto |
 | Posnic | Aplicación de escritorio en una VM limpia con Windows x64 o Ubuntu Desktop x86_64. | 1.9.2 — referencia POS secundaria |
 
@@ -309,7 +309,7 @@ No marcar una prueba como aprobada por ver una pantalla o completar una demo. Pa
 1. Validar el dataset y confirmar que todos los importes, cantidades y resultados esperados sean coherentes.
 2. Levantar ERPNext 16.60.0 y recorrer el circuito de catálogo, POS, caja, inventario, devolución y reportes básicos.
 3. Preparar MyCompany/lsFusion 6.2 y repetir exactamente el mismo circuito.
-4. Preparar Tryton 8.2 para la prueba de POS/ERP; fijar servidor, cliente y módulos 8.2, sin instalar addons argentinos de series 7.1/8.1.
+4. Preparar Tryton 8.0 y las ocho ramas tryton-ar 8.0 en un entorno limpio; fijar commits y dependencias, instalar el conjunto completo, ejecutar suites de pruebas y probar WSFE/WSFEX en homologación. Mantener Tryton 8.2 como comparación de actualización posterior.
 5. Ejecutar un filtro corto de Dolibarr 24.0.3; ampliar sólo si pasa los mínimos de caja y gestión.
 6. Preparar Posnic 1.9.2 como referencia de POS secundario, no como sustituto del ERP.
 7. En los dos mejores candidatos, ejecutar escenarios P01–P26, y los P27–P44 que correspondan a sus límites de dominio y arquitectura.
