@@ -35,7 +35,7 @@ La lista y el estado de cada proyecto están en [Catálogo de código reutilizab
 
 ## Componentes transversales investigados
 
-La shortlist actual también cubre sincronización offline (PowerSync), ecommerce headless/B2B (Spree y Saleor), inventario técnico/fabricación (InvenTree y addons OCA), analítica (DuckDB, Superset y Metabase), identidad (Keycloak), observabilidad (OpenTelemetry, Prometheus y Grafana) y backups (pgBackRest, restic y Kopia), además de importación, documentos, hardware, pagos, ARCA, logística y automatización.
+La shortlist actual también cubre sincronización offline (PowerSync), ecommerce headless/B2B (Spree y Saleor), inventario técnico/fabricación (InvenTree y addons OCA), contabilidad (Bigcapital, en evaluación frente a los libros mayores nativos de los ERP), analítica (DuckDB, Superset y Metabase), identidad (Keycloak), observabilidad (OpenTelemetry, Prometheus y Grafana) y backups (pgBackRest, restic y Kopia), además de importación, documentos, hardware, pagos, ARCA, logística y automatización.
 
 Cada elemento tiene un uso acotado y sus propios límites. PowerSync no resuelve concurrencia de stock; Spree/Saleor no deben crear una segunda autoridad de inventario; Karrio no incluye conectores argentinos en el árbol revisado; QZ Tray exige una cadena de confianza para impresión silenciosa; los SDK de ARCA necesitan homologación y recuperación de estados inciertos; los backups de archivos no sustituyen backups consistentes de bases de datos; y OCR no contabiliza ni aprueba por sí solo.
 
