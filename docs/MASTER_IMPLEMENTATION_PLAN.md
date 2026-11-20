@@ -35,6 +35,7 @@ La primera entrega no es una demo de caja ni un CRUD de artículos. Es un **circ
 7. Cobrar en efectivo, calcular vuelto exacto y admitir más de un medio de pago.
 8. Confirmar el turno de caja, el movimiento de efectivo y el resultado de cada pago.
 9. Registrar la venta y conservar ticket, voucher y documento fiscal como documentos diferentes.
+10. Aplicar política de impresión por medio: efectivo y transferencia verificada en impresora térmica de caja; QR/tarjeta preferentemente en terminal inteligente con ticket detallado generado por Rubrova y voucher; impresora de caja como respaldo si el modelo no admite impresión personalizada. Evitar duplicados y permitir reimpresión auditada.
 10. Cerrar o reiniciar el POS/servicio y demostrar que la operación confirmada no se pierde ni se duplica.
 11. Devolver parcial o totalmente una venta, vinculando la operación original y dejando los movimientos compensatorios.
 12. Consultar un cierre básico: ventas netas, devoluciones, medios de pago, efectivo esperado, diferencia de caja y unidades vendidas.
