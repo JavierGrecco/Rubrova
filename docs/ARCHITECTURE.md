@@ -223,6 +223,8 @@ La integración contable usa un paquete canónico y perfiles por destino. Rubrov
 Referencias:
 - [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md)
 - [Interoperabilidad contable y administrativa](ACCOUNTING_INTEROPERABILITY.md)
+- [Investigación de mercado y oportunidades](MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md)
+- [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md)
 
 ## Ingestión documental y automatización
 
