@@ -110,6 +110,8 @@ Bigcapital sólo se prueba si la contabilidad de la plataforma elegida no alcanz
 
 **Criterio de salida:** débitos/créditos, saldos, impuestos, ventas y documentos conciliados; ARCA homologado antes de cualquier habilitación productiva.
 
+## Fase 4 — reportes y control de gestión
+
 ### Capacidades obligatorias de inteligencia comercial
 
 - Seguimiento diario, semanal, mensual, trimestral y por estación del hemisferio sur.
@@ -123,7 +125,6 @@ Bigcapital sólo se prueba si la contabilidad de la plataforma elegida no alcanz
 - Simulación de precio, promoción, surtido y compra; toda ejecución requiere aprobación.
 - Medición posterior del pronóstico frente al resultado real, con error y sesgo por horizonte/segmento.
 
-## Fase 4 — reportes y control de gestión
 
 **Objetivo:** transformar datos correctos en decisiones sin inventar costos o conclusiones.
 
