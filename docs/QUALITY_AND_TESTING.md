@@ -101,7 +101,18 @@ La aprobación legal de una licencia no reemplaza la revisión técnica; una bib
 
 ## Continuidad y recuperación
 
-Además de las pruebas funcionales P01–P26, la aceptación de confiabilidad debe ejecutar P27–P36, que cubren corte de energía, pagos inciertos, webhooks repetidos, restauración, migraciones fallidas, cajas offline, caídas de integraciones, disco/secretos y aislamiento de datos. El guion completo está en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+Además de las pruebas funcionales P01–P26, la aceptación de confiabilidad debe ejecutar P27–P44. Simulan terminación abrupta del proceso (sin apagar físicamente el equipo), comandos y webhooks duplicados, conflicto de clave, concurrencia CAS, cuotas offline, restauración, migraciones, despliegue independiente, Outbox y Sagas. El guion completo está en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+
+## Arquitectura distribuida y aislamiento de servicios
+
+- Cada servicio tiene almacenamiento/credenciales privados; se prueba que otros servicios no puedan leer ni escribir tablas ajenas.
+- APIs y eventos con esquema/versionado, autenticación y pruebas de compatibilidad entre versiones coexistentes.
+- Outbox/Inbox durables, idempotencia atómica y claves estables; reintentos concurrentes producen un solo efecto.
+- Correlation ID de extremo a extremo, métricas y trazas que permiten reconstruir el recorrido de una operación.
+- Reiniciar o actualizar un servicio no debe obligar a reiniciar o desplegar todos los demás.
+- Un servicio nuevo o caído debe degradar sólo capacidades dependientes; los estados quedan visibles.
+- Las transacciones distribuidas se prueban mediante Sagas y compensaciones idempotentes.
+- Las copias de varios servicios se restauran con un manifiesto coherente de versiones y offsets de eventos.
 
 ## Contratos entre módulos externos
 
