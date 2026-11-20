@@ -85,3 +85,20 @@ Antes de integrar código externo:
 Se prefieren dependencias y extensiones antes que modificar el núcleo de un proyecto externo. No se incorpora código GPL/AGPL al núcleo ni material Enterprise/comercial sin una decisión expresa y revisión legal. Tampoco se eliminan atribuciones exigidas por la licencia.
 
 Ver [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md) y [Calidad y pruebas](QUALITY_AND_TESTING.md).
+
+
+## Mantenimiento de fuentes upstream incorporadas
+
+MyCompany y lsFusion se mantienen como snapshots bajo control de Rubrova. No se actualizan por seguimiento automático de sus ramas principales.
+
+Para proponer una versión upstream:
+1. Descargar el nuevo tag/commit en un directorio temporal sin tocar vendor/.
+2. Comparar árboles y dependencias con platform/source-lock.json.
+3. Identificar archivos upstream modificados que Rubrova también modificó y todos los cambios de API, reglas y base.
+4. Reaplicar los parches Rubrova de forma explícita; no aceptar resoluciones automáticas silenciosas.
+5. Ejecutar compilación desde fuente, pruebas unitarias, POS/ERP E2E, contratos, seguridad, migración y recuperación.
+6. Probar el despliegue en una copia de la base y verificar restauración.
+7. Probar el paquete local sin Internet y mantener el último paquete estable.
+8. Sólo entonces actualizar los hashes/commits del lock y registrar el nuevo snapshot en main.
+
+En producción no hay auto-update. Cada versión se instala explícitamente con un backup confirmado y una ruta probada para volver al paquete estable anterior. Los cambios upstream pueden mejorar el sistema, pero no entran al negocio por el solo hecho de publicarse.

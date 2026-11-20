@@ -7,13 +7,13 @@
 
 Vamos a comenzar reutilizando una suite POS+ERP madura, no construyendo una caja aislada ni una arquitectura propia enorme. La primera candidata para el laboratorio es MyCompany 6.2 sobre lsFusion. Su código ya reúne Retail POS, ventas, sesiones, pagos, devoluciones, inventario, costos, compras, facturación y fabricación.
 
-La referencia queda fijada por el tag 6.2 y el commit de origen d21ca6978717b98b6300d90267f9767db7414008. MyCompany declara Apache-2.0 y lsFusion declara LGPL-3.0: son licencias distintas y ambas forman parte del inventario de dependencias. La suite comparte base y runtime entre módulos. La adoptaremos como una aplicación integrada si supera las pruebas; no vamos a describirla como microservicios.
+La referencia queda fijada por MyCompany 6.2 (commit d21ca6978717b98b6300d90267f9767db7414008) y lsFusion 6.2 (commit dd4dbe5bf9b136e73e18fe25d741253929324350). La decisión es incorporar los dos árboles de fuentes completos a Rubrova: el motor en vendor/platform y la aplicación en vendor/mycompany. MyCompany declara Apache-2.0 y el código lsFusion LGPL-3.0. La suite comparte base y runtime entre módulos; es un núcleo operativo integrado, no un conjunto de microservicios.
 
 **Tryton 8.0 + tryton-ar 8.0** se conserva para contrastar localización y circuito fiscal argentino. No vamos a mezclar sus módulos GPL con los módulos lsFusion: tienen frameworks, modelos y ciclos diferentes. **ERPNext 16** pasa a reserva y sólo se vuelve a instalar si aparece una brecha concreta que justifique compararlo. Dolibarr queda como filtro corto; Posnic, como referencia de interfaz POS, no como segundo dueño de inventario.
 
 ## Módulos fuente concretos que vamos a reutilizar
 
-Los siguientes archivos existen en el tag MyCompany 6.2. La decisión es consumirlos como módulos upstream de la suite, no copiarlos a Rubrova ni mantener una bifurcación de todo el ERP.
+Los siguientes archivos existen en el tag MyCompany 6.2. La decisión es mantener el árbol completo de MyCompany dentro de Rubrova, no consumir sólo un JAR remoto. Los módulos se irán activando, adaptando y probando por bloques, pero el código y sus dependencias internas quedan disponibles en nuestro repositorio.
 
 | Bloque | Módulos upstream inspeccionados | Responsabilidad aprovechada |
 |---|---|---|
@@ -34,16 +34,17 @@ La lectura del código del POS muestra que se pueden configurar varios medios de
 
 Durante el piloto MyCompany será una sola suite operativa y, si resulta aprobada, la autoridad única de ventas, pagos, caja, stock, compras y costos que habilitemos. No se instalará otro POS o WMS que mantenga saldos paralelos.
 
-Las personalizaciones de Rubrova quedarán fuera del código upstream:
+Las personalizaciones de Rubrova se mantendrán en módulos propios siempre que sea posible; el código upstream completo también queda incorporado. Si una necesidad no puede resolverse por extensión, podremos modificar un archivo fuente o mantener un parche controlado:
 - Punto de entrada propio `RubrovaCustom`, que requiere MyCompany y módulos de personalización Rubrova.
 - Módulo `RubrovaPOSLocalization`, separado, que aplica captions es_AR al primer flujo POS sin editar el código upstream.
 - ResourceBundle propio `es_AR`, inicialmente parcial.
 
 Este será el patrón de composición de los próximos bloques: un punto de entrada pequeño y módulos Rubrova separados por responsabilidad. Si una brecha se demuestra, podrán sumarse `RubrovaArgentina`, `RubrovaReporting` o conectores especializados, cada uno con sus dependencias, pruebas y límites. No agregaremos módulos por anticipado.
-- Adaptadores e integraciones futuras mediante las APIs, mecanismos de extensión o exportaciones soportadas.
-- Sin acceso SQL externo a tablas privadas, sin parches manuales al núcleo y sin duplicación del ledger.
+- Adaptadores e integraciones futuras mediante APIs, módulos y exportaciones soportadas.
+- Parches directos al motor sólo ante una brecha justificada, con archivo/commit de origen, contexto exacto, pruebas de regresión y plan de reaplicación.
+- Sin acceso SQL externo a tablas privadas ni duplicación de ventas, caja, pagos o stock.
 
-No agregamos un gateway, broker, una segunda base, microservicios ni un framework web propio de forma preventiva. Primero se prueba lo que resuelve la suite y se añade únicamente la pieza mínima que cubra una brecha demostrada.
+No agregamos un gateway, broker, una segunda base ni microservicios de forma preventiva. El runtime debe ser local: el servidor, la interfaz, la base de datos y los recursos se empaquetan con Rubrova. No se descargarán imágenes ni JAR/WAR al arrancar. El build Maven tendrá dependencias de terceros fijadas y un caché local para permitir recompilar sin Internet.
 
 ## Progreso real del Bloque 0 (20/11/2026)
 
@@ -72,7 +73,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación estática pasó en Linux, Windows y macOS Apple Silicon. El run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) terminó con sus cuatro jobs aprobados: validación Windows, validación macOS Apple Silicon, pruebas estáticas y runtime real MyCompany 6.2 en Linux x86_64. El runtime verificó imágenes/digests fijados, PostgreSQL, servidor, cliente, carga de `RubrovaPOSLocalization` y `RubrovaCustom`, login con Chromium y navegación Comercio → Punto de venta. La prueba encontró `Caja de prueba Rubrova`, pulsó `Abrir turno` sólo en la base descartable de CI y comprobó el número `SM/000001` junto con la acción `Cerrar turno`. Las capturas se conservaron como artefacto del run. El job limpió contenedores, red, volúmenes y archivos temporales. Esto demuestra que el POS puede arrancar y abrir un turno sintético; todavía no demuestra búsqueda de artículos, carrito, ventas, pagos, devoluciones, conciliación de stock, cierre de caja, seguridad productiva ni backup/restore. La prueba generó algunos avisos transitorios de SQLTimeout/SQLConflict en los logs; aunque no bloquearon la aceptación automatizada, deben revisarse antes del uso real.
+La validación estática pasó en Linux, Windows y macOS Apple Silicon. El run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) terminó con sus cuatro jobs aprobados: validación Windows, validación macOS Apple Silicon, pruebas estáticas y runtime real MyCompany 6.2 en Linux x86_64. El runtime verificó imágenes/digests fijados, PostgreSQL, servidor, cliente, carga de `RubrovaPOSLocalization` y `RubrovaCustom`, login con Chromium y navegación Comercio → Punto de venta. La prueba 44810418808 encontró `Caja de prueba Rubrova`, abrió un turno sintético y comprobó `SM/000001`. La ejecución 44811714783, también aprobada en los cuatro jobs, encontró `Producto de prueba Rubrova`, código de barras `7790000000013`, precio 1.250 y lo agregó al recibo con cantidad 1. No ejecutó Cobrar ni registró venta/pago. Todavía faltan cobro, vuelto, impacto en stock, devolución, cierre, seguridad productiva y backup/restore. La prueba generó algunos avisos transitorios de SQLTimeout/SQLConflict en los logs; aunque no bloquearon la aceptación automatizada, deben revisarse antes del uso real.
 
 ## Guía operativa del primer arranque
 

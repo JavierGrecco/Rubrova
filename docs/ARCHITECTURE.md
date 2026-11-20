@@ -4,7 +4,7 @@
 
 La plataforma está destinada a uso interno y privado del negocio, sin distribución ni reventa previstas. Por eso, la selección de tecnología debe considerar proyectos GPL y AGPL además de licencias permisivas. No se descarta un proyecto por copyleft: se evalúan su cobertura, capacidad de adaptación, mantenimiento y las condiciones concretas de la licencia. Para AGPL se analiza especialmente si usuarios interactúan remotamente por red con una versión modificada. Si cambia el uso previsto, se revisan las obligaciones antes de distribuir o habilitar acceso a terceros.
 
-La estrategia prioriza aprovechar proyectos completos y módulos maduros cuando su adaptación sea más eficiente que construirlos. Se permite adoptar, extender, modificar o mantener un fork interno si la licencia y el costo de mantenimiento son aceptables. Siempre se conservan licencias, avisos, atribuciones y un registro de origen/versiones.
+La estrategia prioriza aprovechar proyectos completos y módulos maduros cuando su adaptación sea más eficiente que construirlos. Cuando la independencia del producto lo requiera, se incorpora el código fuente completo en vendor/ y se mantiene un fork interno con commits de origen, licencias y pruebas de actualización. Se permite adoptar, extender, modificar o mantener un fork interno si la licencia y el costo de mantenimiento son aceptables. Siempre se conservan licencias, avisos, atribuciones y un registro de origen/versiones.
 
 ## Dirección técnica
 
@@ -54,6 +54,8 @@ No se empieza automáticamente por un Gateway, Ventas e Inventario propios. Tamp
 - La lógica de negocio no depende de una interfaz específica.
 - El modo local no depende de que una tarea del navegador siempre esté disponible.
 - El código externo no se incorpora sin revisión de licencia, mantenimiento, seguridad y compatibilidad.
+- El núcleo de Rubrova se construye desde fuentes versionadas dentro del repositorio; no depende de imágenes, JAR o WAR remotos para iniciar.
+- Las dependencias de compilación se fijan y cachean; el runtime productivo se empaqueta y debe operar sin salida a Internet.
 - Cada dato transaccional tiene un único sistema responsable; no se ejecutan dos motores de stock o ventas como fuentes de verdad.
 
 ## Módulos
@@ -258,3 +260,10 @@ OCRmyPDF/invoice2data y Paperless-ngx son candidatos de procesamiento/archivo, n
 El OLTP sigue siendo autoridad transaccional. DuckDB/Polars y los modelos de forecasting se utilizan en lecturas, snapshots y pipelines analíticos separados. Los reportes guardan definición, versión, fecha, cobertura y fuente; las predicciones se comparan con baselines mediante backtesting temporal. Ningún forecast confirma compras, modifica precios ni descuenta stock sin una decisión autorizada.
 
 El asistente puede sugerir, explicar y preparar simulaciones, pero las decisiones que cambian dinero, stock, impuestos o compromisos requieren validación de reglas y permisos.
+
+
+## Propiedad de fuentes y ejecución local
+
+La base inicial es un fork controlado de MyCompany 6.2 y lsFusion 6.2, versionados en vendor/mycompany/ y vendor/platform/. Los módulos de Rubrova permanecen separados en extensions/lsfusion/; los cambios directos del motor se documentan como parches bajo patches/lsfusion/. El agregador Maven build/rubrova/pom.xml compone el motor y la solución desde el mismo repositorio.
+
+El funcionamiento del POS/ERP principal es local en una PC. Ningún recurso estático, JAR, WAR, imagen Docker o base de datos se descarga durante el arranque. Las integraciones fiscales, de pagos, tiendas y transportistas son adaptadores remotos opcionales y sus fallos no detienen la operatoria local permitida. Ver [Propiedad del código y operación offline](SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md).

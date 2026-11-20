@@ -116,3 +116,15 @@ Cuando una unidad utiliza recursos de otra, el módulo propietario del recurso r
 En el consolidado de una misma entidad legal se eliminan los cargos/créditos internos, dejando el costo externo original una sola vez. Entre entidades legales distintas se usa el contrato intercompany, con facturación y obligaciones fiscales propias, más las eliminaciones de consolidación cuando haya estados de grupo.
 
 La auditoría conserva origen del costo, área emisora/receptora, política/tarifa aplicada y asiento de eliminación.
+
+
+## Incorporación de una suite como fuente propia
+
+Cuando una suite se convierte en el núcleo de Rubrova y la independencia operativa es un requisito, puede incorporarse como snapshot completo versionado en el repositorio, no como submódulo ni artefacto remoto. En esta composición inicial:
+- vendor/platform/ contiene lsFusion 6.2.
+- vendor/mycompany/ contiene MyCompany 6.2.
+- extensions/lsfusion/ contiene los módulos Rubrova.
+- patches/lsfusion/ contiene sólo las modificaciones directas del motor que no puedan resolverse por extensión.
+- build/rubrova/pom.xml mantiene el reactor de compilación.
+
+El código de terceros no pasa a ser de autoría de Rubrova: se mantienen licencias y atribuciones. Sí pasa a estar disponible en nuestro repositorio para modificación, auditoría, build y operación sin consultar el repositorio original. El procedimiento de upgrade compara el snapshot con el nuevo origen antes de integrar cualquier cambio.

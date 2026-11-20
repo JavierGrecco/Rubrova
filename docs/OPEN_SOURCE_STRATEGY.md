@@ -1,7 +1,7 @@
 # Estrategia de reutilización de código abierto
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado:** uso interno privado confirmado; selección técnica pendiente; no se incorporó código externo.
+**Estado:** MyCompany 6.2 y lsFusion 6.2 seleccionados como base fuente propia y fijados por commit. Se incorporan como snapshots completos en vendor/; falta completar y aceptar el build desde fuentes y el paquete offline.
 
 ## Objetivo
 
@@ -15,7 +15,7 @@ No vamos a desarrollar desde cero funciones maduras de ERP, POS, inventario, com
 2. **Extenderla con módulos/plugins soportados**, manteniendo las modificaciones fuera del núcleo cuando sea posible.
 3. **Integrar una aplicación especializada** como unidad de dominio independiente mediante su API y persistencia propias.
 4. **Incorporar SDK, drivers o bibliotecas** para funciones técnicas concretas.
-5. **Mantener un fork o extraer código** cuando se haya probado que es más económico que reemplazarlo y se pueda sostener con cada actualización.
+5. **Mantener un fork interno controlado y versionado** cuando la independencia, las modificaciones o el costo de adaptación lo justifiquen; conservar el origen exacto y someter cada actualización a comparación, rebase y regresión.
 6. **Crear código propio** sólo para necesidades que no estén cubiertas razonablemente.
 
 No se adopta una plataforma por cantidad de pantallas, popularidad o amplitud declarada. Cada producto debe pasar pruebas de los flujos que le asignaríamos.
@@ -92,3 +92,16 @@ La selección usa puertas obligatorias para fuente/licencia, instalación reprod
 La estrategia completa define el orden reuse-first, los candidatos y la selección en etapas. No hay decisión aprobada de lenguaje, base de datos o broker hasta conocer las plataformas que sobrevivan a las pruebas.
 
 **Estado:** la documentación y el validador de datos sintéticos están versionados. No existe todavía una aplicación funcional de Rubrova ni código externo incorporado.
+
+
+## Nueva política: fuentes propias y runtime local
+
+Rubrova ya no consumirá MyCompany como un JAR o una imagen upstream en el producto definitivo. Se incorporan los dos árboles de fuentes fijados:
+- vendor/mycompany/: MyCompany 6.2, Apache-2.0.
+- vendor/platform/: lsFusion 6.2, LGPL-3.0.
+
+La relación entre ambos, su orden de compilación y el diseño de operación sin Internet están definidos en [Propiedad del código y operación offline](SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md). El lock reproducible está en platform/source-lock.json.
+
+Las bibliotecas Maven transitivas no se copian indiscriminadamente como fuentes. Se fijan, auditan y conservan en un repositorio local de construcción. Los artefactos de ejecución se integran en imágenes Rubrova preparadas para iniciarse con pull_policy: never. La meta es probar un inicio de la aplicación con red externa bloqueada y una reconstrucción Maven offline tras preparar el caché.
+
+Para proyectos con otro framework, como Tryton, se incorporará únicamente el código que vaya a tener un uso real: módulo portado, biblioteca, adaptador o servicio local empaquetado. No se mantendrán dos motores de ventas/stock ni se exigirá Internet para la operatoria local.

@@ -60,16 +60,16 @@
     ]
   },
   "acceptance": [
-    "Clean isolated installation",
-    "Change the initial administrator password before LAN access",
-    "Load the custom module without patching upstream files",
-    "Complete Spanish localization for critical workflows",
-    "Validate POS, mixed payments, cash change, sessions, returns and inventory",
-    "Test concurrency, repeated requests, uncertain payments and restarts",
-    "Export and restore to a separate clean machine",
-    "Homologate Argentina tax and ARCA behavior before production"
+    "Complete pinned MyCompany and lsFusion source trees are committed in Rubrova",
+    "Retain Apache-2.0 and LGPL-3.0 license texts and source notices",
+    "Compile server, API, web client and MyCompany logic from the vendored source reactor",
+    "No upstream JAR/WAR or upstream logic image is used at runtime",
+    "Build offline from a prepared integrity-checked Maven repository",
+    "Run local runtime from Rubrova-built images with no image pulls or Internet egress",
+    "Validate POS search, receipt, payment, stock, refund, cash session and closure",
+    "Test clean installation, backup/restore and rollback before production"
   ],
-  "status": "pinned-pilot-not-installed-or-accepted",
+  "status": "source-fork-import-automation-added",
   "dockerImages": {
     "mycompany": {
       "image": "lsfusion/mycompany:6.2",
@@ -106,5 +106,14 @@
     },
     "digestPlatform": "linux/amd64",
     "digestSource": "Resolved from the official MyCompany 6.2 Compose, pulled and inspected by GitHub Actions runtime smoke test 44787405843 on 2026-11-20."
+  },
+  "sourceOwnership": {
+    "mode": "vendored-full-source",
+    "sourceLock": "platform/source-lock.json",
+    "platformDirectory": "vendor/platform",
+    "applicationDirectory": "vendor/mycompany",
+    "buildAggregator": "build/rubrova/pom.xml",
+    "patchDirectory": "patches/lsfusion",
+    "status": "source-import-automation-added-build-and-offline-acceptance-pending"
   }
 }

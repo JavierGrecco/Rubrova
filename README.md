@@ -59,7 +59,8 @@ Una plataforma que reúne en un solo lugar:
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P48 |
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
-| [Estado real del proyecto](docs/PROJECT_STATUS.md) | Qué funciona, qué está heredado de MyCompany, qué falta y el siguiente bloque de trabajo |
+| [Estado real del proyecto](docs/PROJECT_STATUS.md) | Qué funciona, qué falta y el siguiente bloque de trabajo |
+| [Propiedad del código y operación offline](docs/SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md) | Fork controlado de MyCompany/lsFusion, compilación reproducible, operación local, cambios y actualizaciones seguras |
 | [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md) | MyCompany 6.2 como primer piloto, módulos reutilizados, extensión propia y etapas POS + ERP |
 | [Instalación del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md) | Preparación de artefactos, instalación aislada y despliegue de la extensión modular Rubrova |
 | [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Desarrollo desde MacBook, validación Apple Silicon y límites reales del runtime MyCompany |
@@ -110,7 +111,7 @@ El detalle de módulos y bloques está en el [Inicio de implementación](docs/IM
 
 **Siguiente resultado:** una jornada de mostrador completa y repetible, conectada a los datos de gestión, con pagos y stock conciliados, devolución auditada, cierre de caja y recuperación probada.
 
-MyCompany 6.2 ya se ejecuta en un entorno efímero de CI Linux x86_64: la extensión carga, Chromium inicia sesión, abre Comercio → Punto de venta, muestra una caja sintética y permite abrir un turno. Esto no es todavía una instalación en tu equipo ni un POS aprobado para uso diario: no se probó añadir un artículo, cobrar, conciliar stock, devolver ni cerrar caja. La localización sigue incompleta. MyCompany se consume como dependencia externa; su código fuente no está copiado al repositorio. El estado detallado, con límites y pruebas, está en [Estado real del proyecto](docs/PROJECT_STATUS.md).
+MyCompany 6.2 ya se ejecuta en un entorno efímero de CI Linux x86_64. La prueba 44811714783 también confirmó la búsqueda de un artículo sintético y su carga al recibo, sin cobrar. La decisión ahora es incorporar a Rubrova los fuentes completos de MyCompany 6.2 y lsFusion 6.2, construir nuestros propios artefactos y eliminar las descargas remotas del runtime. El código fuente está en proceso de incorporación; build desde fuentes, paquete offline, venta real de prueba e instalación local siguen pendientes. El estado detallado está en [Estado real del proyecto](docs/PROJECT_STATUS.md) y la estrategia completa en [Propiedad del código y operación offline](docs/SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md).
 
 ## Forma de trabajo
 
