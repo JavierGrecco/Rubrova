@@ -89,25 +89,19 @@ Una plataforma que reúne en un solo lugar:
 
 **Ahora — Fase 0: piloto integrado MyCompany 6.2**
 
-Rubrova debe comenzar por la operación del negocio. El seguimiento de envíos se mantiene en el diseño para no limitar futuras capacidades, pero sus integraciones se dejan para una etapa posterior.
+MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el uso diario. Tryton 8.0 + tryton-ar 8.0 se mantiene como contraste fiscal argentino. ERPNext 16 queda en reserva y sólo se reabre si una brecha concreta justifica la comparación.
 
-- Evaluar el circuito completo POS + gestión: catálogo, carrito editable, ventas, pagos, vuelto, caja, stock, devoluciones, compras y reportes básicos.
-- Probar ERPNext 16, MyCompany 6.2 y Tryton 8.0 con el conjunto argentino tryton-ar 8.0; filtrar Dolibarr 24.0.3 como alternativa de menor complejidad. Tryton 8.2 queda como actualización posterior.
-- Mantener Posnic 1.9.2 como referencia POS secundaria, no como plataforma de gestión principal.
-- Aplicar el mismo dataset sintético y las puertas de instalación, licencia, API, exportación, backup, restauración, arquitectura y localización argentina.
-- Llevar como máximo dos finalistas a la prueba profunda. No elegir por cantidad de módulos ni por una demostración.
-- Capturar desde el inicio unidad de negocio, sucursal, canal, centro de costo y depósito para que los reportes posteriores sean correctos.
-- Mantener una autoridad única por dominio y construir/integrar servicios con APIs/eventos; no compartir tablas privadas entre aplicaciones.
+- Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
+- Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
+- Completar la localización española de las pantallas críticas; el glosario inicial es parcial.
+- Probar catálogo → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre.
+- Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.
 
 El detalle de módulos, instalación, riesgos y bloques está en el [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) conserva las puertas de aceptación.
 
-**Siguiente — primera entrega funcional**
+**Siguiente resultado:** una jornada de mostrador completa y repetible, conectada a los datos de gestión, con pagos y stock conciliados, devolución auditada, cierre de caja y recuperación probada.
 
-Un circuito de mostrador completo: producto → carrito → venta → pago y vuelto → caja → stock → ticket/documento separado → devolución → cierre y conciliación. Debe sobrevivir reintentos, desconexión y reinicio del proceso sin pérdidas ni duplicados.
-
-Después se completa la gestión administrativa y contable, se construyen reportes de rentabilidad con costos validados, se amplían perfiles sectoriales y canales digitales, y por último se incorporan conectores avanzados de transportistas y tracking.
-
-Todavía no se ha elegido una plataforma ni se ha incorporado código externo. No existe una aplicación funcional de Rubrova; el estado real y las pruebas pendientes se registran en el plan maestro y el roadmap.
+Todavía no hay una instalación ejecutada ni un POS/ERP funcional aceptado. La extensión Rubrova es un esqueleto inicial; la traducción es parcial y el código fuente upstream se consume como dependencia externa, no se ha copiado al repositorio.
 
 ## Forma de trabajo
 

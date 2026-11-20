@@ -27,33 +27,33 @@ El seguimiento de envíos **no es una prioridad de inicio**. Se conserva en el m
 
 Las dimensiones que afectan costos y reportes (unidad de negocio, canal, sucursal, centro de costo, depósito y proyecto) se incorporan desde el primer modelo. Se posterga el desarrollo sofisticado de BI, no la captura correcta de sus datos.
 
-## Fase 0 — seleccionar la base del POS y la gestión
+## Fase 0 — arrancar el piloto MyCompany 6.2
 
-**Objetivo:** decidir qué aplicación o composición puede resolver el circuito POS + ERP sin comprometer propiedad de datos, operación local, recuperación ni arquitectura.
+**Objetivo:** instalar una suite POS + ERP reproducible, extenderla desde fuera de su núcleo y probar el circuito antes de crear módulos equivalentes.
 
-### Orden de evaluación
+### Orden de ejecución
 
-1. **MyCompany 6.2 / lsFusion:** primer piloto integrado; utilizar los módulos de Retail POS, sesiones, pagos, devoluciones, inventario, costos, compras y facturación.
+1. **MyCompany 6.2 / lsFusion:** primer piloto integrado; utilizar Retail POS, sesiones, pagos, devoluciones, inventario, costos, compras y facturación.
 2. **Tryton 8.0 + tryton-ar 8.0:** contraste fiscal argentino y alternativa si MyCompany no supera las puertas.
-3. **ERPNext 16 / Frappe 16:** alternativa de reserva; reabrir sólo ante una brecha funcional o técnica medida.
-4. **Dolibarr 24.0.3:** filtro corto sólo si las opciones principales no superan las puertas.
-5. **Posnic 1.9.2:** referencia POS secundaria, no candidato a ERP principal. Revisar licencias y dependencias, localización india, límites offline y compatibilidad de escritorio.
+3. **ERPNext 16 / Frappe 16:** reserva; reabrir sólo ante una brecha funcional o técnica medida.
+4. **Dolibarr 24.0.3:** filtro corto si las opciones principales no superan las puertas.
+5. **Posnic 1.9.2:** referencia POS secundaria, nunca dueño paralelo de ventas o inventario.
 
-No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circuito: catálogo → carrito editable → venta → pago y vuelto → caja → stock → devolución → reportes → recuperación.
+El lock de versión, la extensión inicial, los scripts de preparación y el detalle de módulos están en [Inicio de implementación](IMPLEMENTATION_START.md).
 
-### Tareas pendientes
+### Tareas de esta fase
 
-- [ ] Fijar tags/commits y dependencias actuales de ERPNext 16, MyCompany 6.2, Tryton 8.0 + ocho módulos tryton-ar 8.0 y Dolibarr 24.0.3.
-- [ ] Ejecutar filtro documental, de licencia, instalación, API, exportación, backup y restauración en una instancia limpia y en un equipo distinto.
-- [ ] Probar ERPNext y MyCompany con el flujo POS completo y jornada simulada.
-- [ ] Instalar Tryton 8.0 con las ocho ramas tryton-ar fijadas en el [lock reproducible](TRYTON_ARGENTINA_8_0_LOCK.md), ejecutar tests y homologar WSFE/WSFEX; dejar Tryton 8.2 como upgrade posterior sujeto a port y revalidación.
-- [ ] Ejecutar filtro corto de Dolibarr y decidir si entra en la comparación profunda.
-- [ ] Mantener Posnic como comparador POS sólo si aporta una ventaja medible frente al POS incluido en los ERP.
-- [ ] Llevar como máximo dos candidatos a la prueba profunda P01–P67.
-- [ ] Decidir qué responsabilidades pueden quedar en una aplicación de dominio externa y qué dominios requieren servicios Rubrova independientes.
-- [ ] Documentar decisión, evidencia, riesgos, licencias, costo de adaptación y camino de actualización.
+- [x] Fijar MyCompany 6.2 por tag y commit; registrar los hashes oficiales del instalador Windows y del JAR.
+- [x] Inspeccionar el código fuente de POS, sesiones, pagos mixtos, efectivo, devoluciones, inventario, costos y compras.
+- [x] Crear el módulo superior Rubrova separado del núcleo y un glosario español inicial.
+- [x] Incorporar validación automática del lock, módulo y traducciones; workflow correcto en CI.
+- [ ] Descargar los artefactos, verificar hashes en la máquina de ejecución e instalar en entorno local aislado.
+- [ ] Cargar la extensión en el servidor, completar ResourceBundle es_AR y verificar pantallas críticas.
+- [ ] Ejecutar apertura → escaneo → carrito → pagos mixtos/vuelto → venta → stock → devolución → cierre.
+- [ ] Probar dos cajas, pagos pendientes/repetidos, caída/reinicio, exportación, backup y restauración.
+- [ ] Contrastar con Tryton 8.0 fiscalidad y comprobantes; homologar ARCA antes de producción.
 
-**Criterio de salida:** candidato/composición elegida con pruebas reproducibles; autoridades de venta, pago, caja, stock, contabilidad y fiscalidad definidas; no se construyen módulos propios sobre una plataforma aún no seleccionada.
+**Criterio de salida:** instalación reproducible, extensión cargada, POS completo en español, permisos, integridad de ventas/pagos/caja/stock, recuperación, exportación y restauración demostradas. Hasta entonces el piloto no se habilita para uso diario.
 
 ## Fase 1 — primera entrega: POS con gestión mínima real
 
