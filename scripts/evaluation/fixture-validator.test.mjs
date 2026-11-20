@@ -233,3 +233,69 @@ test("rechaza una ganancia bruta o contribución que no concilia", () => {
   assert.equal(result.valid, false);
   assert.ok(result.errors.some(message => message.includes("expectedContributionMinor")));
 });
+
+
+test("el mismo cliente puede pagar en efectivo, tarjeta y QR sin inferir identidad del instrumento", () => {
+  const fixture = readFixture();
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, true, result.errors.join("\n"));
+  const linked = fixture.paymentIdentity.transactions.filter(
+    transaction => transaction.identityLinkStatus === "confirmed"
+  );
+  assert.deepEqual(
+    linked.filter(transaction => ["cash", "card-present", "qr-transfer"].includes(transaction.method))
+      .map(transaction => transaction.customerAccountCode),
+    ["CLI-IDENTIFIED-001", "CLI-IDENTIFIED-001", "CLI-IDENTIFIED-001"]
+  );
+});
+
+test("rechaza el nombre del pagador como método de identificación de cliente", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.paymentIdentity.transactions[2].identityLinkMethod = "payer-name";
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("origen no permitido")));
+});
+
+test("rechaza los últimos cuatro dígitos de tarjeta como identidad", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.paymentIdentity.transactions[1].identityLinkMethod = "card-last-four";
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("origen no permitido")));
+});
+
+test("impide enviar campos de pagador restringidos a CRM o matching", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.paymentIdentity.transactions[2].payerObservation.useInCrm = true;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("payerObservation.useInCrm")));
+});
+
+test("mantiene permitido el pago anónimo y no deduce identidad en QR con tarjeta", () => {
+  const fixture = readFixture();
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, true, result.errors.join("\n"));
+  const qrCard = fixture.paymentIdentity.transactions.find(transaction => transaction.method === "qr-card");
+  assert.equal(qrCard.identityLinkStatus, "unlinked");
+  assert.equal(qrCard.customerAccountCode, null);
+});
+
+test("rechaza el almacenamiento de PAN, CVV y PIN", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.paymentIdentity.sensitiveCardDataPolicy.storesCvv = true;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("sensitiveCardDataPolicy.storesCvv")));
+});
+
+test("requiere id de pago único e impide vincular una venta sin identidad confirmada", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.paymentIdentity.transactions[1].paymentReference = fixture.paymentIdentity.transactions[0].paymentReference;
+  fixture.paymentIdentity.transactions[3].identityLinkStatus = "confirmed";
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("paymentReference está duplicado")));
+  assert.ok(result.errors.some(message => message.includes("confirma identidad sin customerAccountCode")));
+});
