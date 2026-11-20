@@ -63,6 +63,14 @@ DESIGN posPayment '{rubrova.pos.payment_title}' {
     PROPERTY(change) { caption = '{rubrova.pos.change}'; }
 }
 
+DESIGN posPaymentReturn '{rubrova.pos.return_payment_title}' {
+    PROPERTY(nameVendor(b)) { caption = '{rubrova.pos.customer}'; }
+    PROPERTY(amount(b)) { caption = '{rubrova.pos.return_amount}'; }
+    PROPERTY(invoicePaid(b, pm)) { caption = '{rubrova.pos.previous_payment}'; }
+    PROPERTY(amount(pm)) { caption = '{rubrova.pos.refund_by_method}'; }
+    PROPERTY(overFormOk) { caption = '{rubrova.pos.confirm_return}'; }
+}
+
 DESIGN inputMoney '{rubrova.pos.cash_adjustment}' {
     PROPERTY(keyboardDecimalInput()) { caption = '{rubrova.pos.amount}'; }
 }

@@ -100,6 +100,9 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
   assert.match(moduleSource, /DESIGN posPayment/);
+  assert.match(moduleSource, /DESIGN posPaymentReturn/);
+  assert.match(moduleSource, /PROPERTY\(invoicePaid\(b, pm\)\)/);
+  assert.match(moduleSource, /PROPERTY\(overFormOk\)/);
   assert.match(moduleSource, /PROPERTY\(nameVendor\(b\)\)/);
   assert.match(moduleSource, /PROPERTY\(amount\(b\)\).*rubrova\.pos\.return_amount/);
   assert.match(moduleSource, /nameDepositPaymentType/);
@@ -118,6 +121,8 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
     "Sales", "Vendor", "Date", "Search", "Cancel", "Confirm",
     "rubrova.pos.title", "rubrova.pos.cash_register", "rubrova.pos.to_pay",
     "rubrova.pos.payment_title", "rubrova.pos.amount_due", "rubrova.pos.refunds",
+    "rubrova.pos.return_payment_title", "rubrova.pos.previous_payment",
+    "rubrova.pos.refund_by_method", "rubrova.pos.confirm_return",
     "rubrova.payment.method_title"
   ];
   for (const key of required) assert.ok(entries.has(key), "Falta traducción obligatoria: " + key);
