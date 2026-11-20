@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Reproducible Rubrova integration pilot; not production approval.",
+  "application": {
+    "name": "MyCompany",
+    "version": "6.2",
+    "tag": "6.2",
+    "repository": "https://github.com/lsfusion-solutions/mycompany",
+    "sourceCommit": "d21ca6978717b98b6300d90267f9767db7414008",
+    "license": "Apache-2.0",
+    "platform": "lsFusion 6.x",
+    "platformLicense": "LGPL-3.0"
+  },
+  "artifacts": {
+    "windowsInstaller": {
+      "file": "mycompany-6.2-x64.exe",
+      "url": "https://download.lsfusion.org/solutions/mycompany-6.2-x64.exe",
+      "sha256": "0167322fea03e269abfae2a140ab4df5205f07633d2520a3d78e381346fbce75",
+      "platform": "Windows x64"
+    },
+    "applicationJar": {
+      "file": "mycompany-6.2.jar",
+      "url": "https://download.lsfusion.org/solutions/mycompany-6.2.jar",
+      "sha256": "fe5a9bda49295f2292ae229a30c9461a16c137fc350a0aa944df7812a1e2f392"
+    },
+    "dockerCompose": {
+      "file": "compose.yaml",
+      "url": "https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml",
+      "sha256": null,
+      "note": "Official version-specific directory. Download and inspect; compute and record the local digest and pin all image digests before running it."
+    }
+  },
+  "extension": {
+    "topModule": "RubrovaCustom",
+    "entrypoint": "extensions/lsfusion/RubrovaCustom.lsf",
+    "locale": "es_AR",
+    "resourceBundle": "extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties",
+    "translationStatus": "partial-bootstrap-glossary-not-approved-for-daily-use"
+  },
+  "acceptance": [
+    "Clean isolated installation",
+    "Change the initial administrator password before LAN access",
+    "Load the custom module without patching upstream files",
+    "Complete Spanish localization for critical workflows",
+    "Validate POS, mixed payments, cash change, sessions, returns and inventory",
+    "Test concurrency, repeated requests, uncertain payments and restarts",
+    "Export and restore to a separate clean machine",
+    "Homologate Argentina tax and ARCA behavior before production"
+  ],
+  "status": "pinned-pilot-not-installed-or-accepted"
+}

@@ -11,15 +11,15 @@ Este documento convierte la investigación en una prueba repetible. No elige una
 **Objetivo principal:** evaluar la capacidad de completar una operación POS y de gestión completa, no empezar por integraciones periféricas. El primer circuito de prueba es catálogo → carrito editable → venta → pago/vuelto → caja → inventario → devolución → reporte y recuperación.
 
 **Orden de la primera ronda:**
-1. **ERPNext 16 / Frappe 16:** primera prueba funcional por su POS integrado con inventario, pagos, caja, perfiles y reportes/dimensiones.
-2. **MyCompany 6.2 / lsFusion:** primera prueba funcional por su Retail POS y cobertura CRM, ventas, compras, inventario, fabricación y facturación.
-3. **Tryton 8.0 + tryton-ar 8.0:** evaluación POS/ERP con localización argentina alineada; se deben instalar las ocho ramas coordinadas, ejecutar sus tests y homologar. Tryton 8.2 queda como actualización posterior.
+1. **MyCompany 6.2 / lsFusion:** primer piloto integrado para instalación, extensión y circuito POS + ERP.
+2. **Tryton 8.0 + tryton-ar 8.0:** contraste fiscal argentino y alternativa si MyCompany no supera las puertas.
+3. **ERPNext 16 / Frappe 16:** alternativa de reserva; reabrir sólo ante una brecha medida.
 4. **Dolibarr 24.0.3:** filtro corto como alternativa de menor complejidad.
 5. **Posnic 1.9.2:** referencia POS secundaria, no ERP principal. Se prueba sólo si puede aportar algo que no cubre el POS de las plataformas anteriores.
 
 No se amplía la lista sin una razón funcional. uniCenta queda fuera de la primera ronda hasta tener el código fuente exacto y licencias verificables.
 
-**MyCompany:** su amplitud y POS justifican la prueba, pero todos los módulos de la instalación comparten una base. Esto es una restricción arquitectónica que se debe medir; no se presenta como microservicios independientes.
+**MyCompany:** será el primer piloto por la amplitud de su POS y módulos ERP. Los módulos comparten base y runtime, por lo que se evalúa como una suite integrada. La traducción española no viene completa y deberá cubrirse con un ResourceBundle es_AR antes del uso diario.
 
 **ERPNext:** su POS Profile configura empresa, almacén, métodos de pago, listas, impuestos y cuentas; la operación afecta inventario y contabilidad, con reportes y dimensiones. Hay que comprobar velocidad real de caja, experiencia táctil, hardware, offline y localización argentina. Un site/bench es una unidad de operación y persistencia, no módulos desplegables como microservicios independientes.
 
@@ -33,7 +33,7 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 
 **Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P67. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup portable verificable y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
 
-**Estado actual:** ninguna plataforma está aprobada, instalada y aceptada para producción. El repositorio todavía no contiene la aplicación funcional de Rubrova ni código externo incorporado. La validación de fixtures no prueba un POS ni un ERP.
+**Estado actual:** MyCompany 6.2 está fijado como piloto, pero no está instalado ni aprobado para producción. Rubrova contiene ahora una extensión de entrada y un glosario español parcial; no contiene la plataforma upstream ni un POS funcional. La validación de fixtures y del esqueleto de extensión no prueba un POS ni un ERP.
 
 ## Versiones y procedencia que se deben fijar
 
@@ -71,7 +71,7 @@ La aplicación MyCompany tiene licencia Apache-2.0 y utiliza la plataforma lsFus
 
 **Riesgos:** no se demostró adaptación argentina, ARCA ni terminales locales; el POS y módulos fiscales pueden depender de configuraciones regionales. El release etiquetado es 6.2 (commit d21ca6978717b98b6300d90267f9767db7414008), mientras la documentación online consultada se identifica como 7.0 y master declara 7.0-SNAPSHOT. No tomar instrucciones de 7.0 como prueba de funciones en 6.2.
 
-**Prueba requerida:** ejecutar POS, sesiones, pagos mixtos/vuelto, inventario, compras y producción; añadir un módulo custom mínimo sin parchear el core; comprobar comportamiento al actualizar.
+**Prueba requerida:** cargar RubrovaCustom sin parchear el núcleo; completar traducción; ejecutar POS, sesiones, pagos mixtos/vuelto, devoluciones, inventario y compras; verificar dos cajas, API, actualización, exportación, backup y restauración.
 
 ### Posnic
 

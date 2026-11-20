@@ -59,6 +59,7 @@ Una plataforma que reúne en un solo lugar:
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P48 |
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
+| [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md) | MyCompany 6.2 como primer piloto, módulos reutilizados, extensión propia y etapas POS + ERP |
 | [Conjunto Tryton 8.0 Argentina](docs/TRYTON_ARGENTINA_8_0_LOCK.md) | Ocho módulos locales fijados por commit, dependencias, licencias y plan de prueba |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
@@ -86,7 +87,7 @@ Una plataforma que reúne en un solo lugar:
 
 ## Etapa actual y próximos resultados
 
-**Ahora — Fase 0: elegir el núcleo POS + ERP**
+**Ahora — Fase 0: piloto integrado MyCompany 6.2**
 
 Rubrova debe comenzar por la operación del negocio. El seguimiento de envíos se mantiene en el diseño para no limitar futuras capacidades, pero sus integraciones se dejan para una etapa posterior.
 
@@ -98,7 +99,7 @@ Rubrova debe comenzar por la operación del negocio. El seguimiento de envíos s
 - Capturar desde el inicio unidad de negocio, sucursal, canal, centro de costo y depósito para que los reportes posteriores sean correctos.
 - Mantener una autoridad única por dominio y construir/integrar servicios con APIs/eventos; no compartir tablas privadas entre aplicaciones.
 
-El orden completo y los criterios de salida están en el [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) contiene el protocolo comparativo.
+El detalle de módulos, instalación, riesgos y bloques está en el [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) conserva las puertas de aceptación.
 
 **Siguiente — primera entrega funcional**
 
@@ -129,5 +130,5 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 
 ---
 
-**Estado del producto:** definición y arquitectura en preparación.  
-**Estado del software:** sin implementación funcional ni código externo incorporado.
+**Estado del producto:** arranque del piloto de integración POS + ERP.  
+**Estado del software:** módulo superior inicial y glosario español parcial; instalación y aceptación funcional pendientes.

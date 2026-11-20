@@ -5,7 +5,7 @@
 
 ## Estado real
 
-Rubrova se encuentra en **Fase 0: selección del núcleo operativo**. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
+Rubrova se encuentra en **Fase 0: arranque del piloto POS + ERP**. MyCompany 6.2 está fijado como primer candidato integrado y Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
 
 El validador del dataset tiene 34 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026), incluidas las reglas sintéticas de identidad de pagos y minimización de datos. El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova.
 
@@ -33,10 +33,10 @@ Las dimensiones que afectan costos y reportes (unidad de negocio, canal, sucursa
 
 ### Orden de evaluación
 
-1. **ERPNext 16 / Frappe 16:** prueba inicial por la cobertura de POS, inventario, compras, contabilidad, dimensiones y reportes.
-2. **MyCompany 6.2 / lsFusion:** prueba inicial por su Retail POS integrado y amplitud de CRM, ventas, compras, inventario, fabricación y facturación.
-3. **Tryton 8.0 + tryton-ar 8.0:** candidato prioritario porque existe un conjunto de ocho ramas argentinas alineadas. Se debe probar instalación, tests y homologación antes de elegirlo. Tryton 8.2 queda como actualización posterior con port/revalidación.
-4. **Dolibarr 24.0.3:** filtro de menor complejidad para POS/ERP y API.
+1. **MyCompany 6.2 / lsFusion:** primer piloto integrado; utilizar los módulos de Retail POS, sesiones, pagos, devoluciones, inventario, costos, compras y facturación.
+2. **Tryton 8.0 + tryton-ar 8.0:** contraste fiscal argentino y alternativa si MyCompany no supera las puertas.
+3. **ERPNext 16 / Frappe 16:** alternativa de reserva; reabrir sólo ante una brecha funcional o técnica medida.
+4. **Dolibarr 24.0.3:** filtro corto sólo si las opciones principales no superan las puertas.
 5. **Posnic 1.9.2:** referencia POS secundaria, no candidato a ERP principal. Revisar licencias y dependencias, localización india, límites offline y compatibilidad de escritorio.
 
 No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circuito: catálogo → carrito editable → venta → pago y vuelto → caja → stock → devolución → reportes → recuperación.

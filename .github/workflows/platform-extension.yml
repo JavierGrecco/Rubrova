@@ -1,0 +1,35 @@
+name: Validación del arranque de plataforma
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'platform/**'
+      - 'extensions/lsfusion/**'
+      - 'scripts/platform/**'
+      - '.github/workflows/platform-extension.yml'
+  pull_request:
+    paths:
+      - 'platform/**'
+      - 'extensions/lsfusion/**'
+      - 'scripts/platform/**'
+      - '.github/workflows/platform-extension.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v4
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validar lock, extensión y glosario
+        run: node --test scripts/platform/validate-mycompany-extension.test.mjs
+      - name: Validar script de preparación
+        run: bash -n scripts/platform/prepare-mycompany-6.2.sh

@@ -1,7 +1,7 @@
 # Estrategia de implementación basada primero en reutilización
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado de la decisión:** aprobada como criterio de trabajo. Ninguna plataforma quedó elegida y todavía no se incorporó código externo.
+**Estado de la decisión:** MyCompany 6.2 queda fijado como primer piloto integrado, aún no aprobado para producción. Tryton 8.0 + tryton-ar 8.0 es el contraste fiscal argentino; ERPNext 16 queda en reserva.
 
 ## Decisión ejecutiva
 
@@ -62,7 +62,7 @@ La selección se divide por tipo de responsabilidad. Las versiones siguientes so
 | [Dolibarr](https://www.dolibarr.org/) 24.0.3 | CRM, pedidos, compras, inventario, envíos, fabricación, facturación, pagos, POS y contabilidad | API REST, hooks y triggers; módulos dentro de una aplicación integrada. Se evalúa como filtro corto de menor complejidad y se mide TakePOS. | Filtro corto |
 | [Posnic](https://github.com/Posnic/POS) 1.9.2 | POS retail/gastronómico, ventas, devoluciones, pagos, compras, catálogo e inventario | Aplicación POS dedicada, pero el paquete revisado combina AGPL-3.0-only con MongoDB SSPL-1.0 y componente comercial; reglas fiscales orientadas a India y soporte macOS limitado. | Referencia POS secundaria |
 
-ERPNext y MyCompany son las primeras pruebas de cobertura porque permiten medir un POS integrado con catálogo, pagos, stock y administración. Tryton 8.0 merece una prueba prioritaria adicional: encontramos un conjunto de módulos argentinos 8.0 coordinados, con manifiestos y tests para contabilidad, CUIT/padrón, WSFE/WSFEX, pagos, cheques, reportes y POS en ventas. Sus fuentes y commits quedan fijados en [lock reproducible](TRYTON_ARGENTINA_8_0_LOCK.md). Hay que instalar el conjunto desde cero, no mezclarlo con `master`, verificar dependencias y homologar. Tryton 8.2 se conserva como actualización posterior porque exigiría adaptar y revalidar ese conjunto. Ninguno de los ERP integrados se aprueba por la cantidad de módulos: debe demostrar un límite de aplicación compatible con Rubrova. Dolibarr pasa por un filtro corto. El ganador no está predeterminado.
+MyCompany 6.2 es la primera prueba de cobertura y extensión sin modificar el núcleo. Tryton 8.0 se conserva como contraste focalizado: encontramos un conjunto de módulos argentinos 8.0 coordinados, con manifiestos y tests para contabilidad, CUIT/padrón, WSFE/WSFEX, pagos, cheques, reportes y POS en ventas. Sus fuentes y commits quedan fijados en [lock reproducible](TRYTON_ARGENTINA_8_0_LOCK.md). Hay que instalar el conjunto desde cero, no mezclarlo con `master`, verificar dependencias y homologar. Tryton 8.2 se conserva como actualización posterior porque exigiría adaptar y revalidar ese conjunto. Ninguno de los ERP integrados se aprueba por la cantidad de módulos: debe demostrar un límite de aplicación compatible con Rubrova. Dolibarr pasa por un filtro corto. La aprobación para producción sigue condicionada a instalación, flujo real, traducción, exportación, backup/restore y pruebas de recuperación.
 
 ### POS y operación de caja
 

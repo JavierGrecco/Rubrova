@@ -1,7 +1,7 @@
 # Plan maestro de implementación de Rubrova
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado:** dirección de producto y secuencia de trabajo propuestas; pendientes las pruebas funcionales comparables de plataformas.  
+**Estado:** MyCompany 6.2 fijado como primer piloto integrado; Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino; aceptación funcional pendiente.  
 **Estado real del software:** todavía no existe una aplicación funcional de Rubrova ni se incorporó código de terceros. El repositorio contiene definición, arquitectura, investigación y un validador de datos sintéticos.
 
 ## 1. Decisión ejecutiva
@@ -21,6 +21,13 @@ La secuencia aprobada para dirigir el trabajo es:
 7. **Logística avanzada:** fulfillment, agregadores, transportistas, etiquetas y seguimiento unificado.
 
 No significa postergar toda la administración hasta terminar el POS: las dimensiones de negocio, centros de costo, sucursal, canal, cliente, depósito, trazabilidad y reglas de precios deben estar en el modelo inicial. Lo que se posterga es la profundidad funcional de cada área, no los cimientos que después serían caros de corregir.
+
+
+### Decisión técnica para comenzar (20/11/2026)
+
+El primer piloto será MyCompany 6.2: su código ya contiene Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras y facturación dentro de una suite integrada. El tag y commit están fijados en el lock de plataforma. La suite comparte servidor y base, por lo que se evaluará como una aplicación integrada, no como microservicios.
+
+Tryton 8.0 con el conjunto argentino fijado se mantiene como contraste para fiscalidad, comprobantes y recuperación. ERPNext 16 queda en reserva; no se mantendrán tres implementaciones activas en paralelo. La primera extensión Rubrova se carga por encima de MyCompany sin editar su código fuente. La traducción es parcial y debe completarse. La instalación, ARCA, hardware, modo offline, concurrencia, exportación y restauración todavía no están probados. El plan detallado está en [Inicio de implementación](IMPLEMENTATION_START.md).
 
 ## 2. Qué tiene que ser la primera entrega
 
