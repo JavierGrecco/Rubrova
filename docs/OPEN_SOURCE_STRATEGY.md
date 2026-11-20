@@ -7,7 +7,7 @@
 
 Rubrova se construye para uso interno. La prioridad es aprovechar aplicaciones, módulos, plugins y bibliotecas existentes que ahorren desarrollo real, sin sumar dependencias que terminen siendo más difíciles de mantener que una implementación pequeña.
 
-No vamos a desarrollar desde cero funciones maduras de ERP, POS, inventario, compras, fabricación, fiscalidad, logística, hardware o analítica si podemos adoptarlas o integrarlas con garantías. La estrategia operativa se define en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md).
+No vamos a desarrollar desde cero funciones maduras de ERP, POS, inventario, compras, fabricación, fiscalidad, logística, hardware o analítica si podemos adoptarlas o integrarlas con garantías. La estrategia operativa se define en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La investigación de bibliotecas y SDKs especializados está en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
 
 ## Qué opciones evaluamos
 
@@ -32,6 +32,14 @@ No se adopta una plataforma por cantidad de pantallas, popularidad o amplitud de
 - **InvenTree y OpenBoxes:** opciones especializadas para inventario técnico y WMS. Se evalúan si la profundidad de depósito/manufactura lo requiere y si pueden asumir una autoridad de stock sin duplicarla.
 
 La lista y el estado de cada proyecto están en [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md). Los releases, resultados y puntuaciones se registran en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+
+## Componentes transversales investigados
+
+La shortlist actual incluye bibliotecas de importación/calidad de datos (Frictionless, RapidFuzz, python-stdnum, Pint), limpieza asistida (OpenRefine), documentos (OCRmyPDF, Docling, invoice2data y Paperless-ngx), hardware local (QZ Tray y pos-toolkit), pagos (SDK oficial Mercado Pago), fiscalidad argentina (LaPyme/facturas y arca-sdks), shipping (Karrio) y automatización (Node-RED/Temporal).
+
+Cada elemento tiene un uso acotado y sus propios límites. Karrio no incluye conectores argentinos en el árbol revisado; QZ Tray exige una cadena de confianza para impresión silenciosa; los SDK de ARCA necesitan homologación y recuperación de estados inciertos; las herramientas OCR no contabilizan ni aprueban por sí solas.
+
+Ver [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) para versiones, licencias, evidencia y orden de pruebas.
 
 ## Licencias y uso privado
 
