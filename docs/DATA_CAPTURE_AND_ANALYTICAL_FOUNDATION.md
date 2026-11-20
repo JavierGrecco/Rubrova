@@ -200,3 +200,25 @@ Las licencias y capacidades deben volver a verificarse para cada versión/archiv
 Cada operación debe conservar el CustomerAccount o el estado explícito de venta anónima, fuente/canal, área, sucursal, vendedor/cajero y líneas históricas. Para la ficha del cliente se derivan RFM, cohortes, marcas/categorías, frecuencia y contribución; no se guardan como hechos los pronósticos o segmentos calculados. Cada ejecución analítica conserva periodo, regla/modelo, entradas, versión, cobertura y confianza.
 
 Registrar preferencias declaradas y permisos de contacto por canal (correo, WhatsApp, SMS u otros) con origen, fecha y versión del aviso. No inferir atributos sensibles ni identificar compradores anónimos por coincidencias débiles. La ficha y los límites de uso se detallan en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md).
+
+
+## 12. Captura de pagos sin confundir pagador y cliente
+
+El pago se registra con un modelo canónico común, pero cada dato conserva su origen y finalidad. Separar comprador, pagador, titular del instrumento, receptor y CustomerAccount. Un pago con QR o tarjeta no prueba por sí solo quién compró; el mismo cliente puede usar métodos distintos y una misma tarjeta/cuenta puede pagar compras para terceros.
+
+Registrar por intento:
+- proveedor, cuenta del comercio, ID de operación/orden/intento y referencia externa;
+- canal de cobro (Point, QR interoperable, checkout, link, transferencia, tarjeta presencial u otro);
+- método/tipo de método, billetera y banco de origen cuando se informen;
+- importe, moneda, cuotas, comisión, neto, estados, timestamps y caja/terminal/sucursal;
+- clave idempotente, correlation ID, venta/orden asociada y referencias de liquidación;
+- datos de conciliación que el proveedor efectivamente expone (por ejemplo marca y últimos cuatro de tarjeta, autorización, nombre/documento de pagador en determinados QR/transferencias);
+- finalidad y restricciones de cada campo, incluyendo proveedor/versión y fecha de origen.
+
+Mantener `PayerObservation` aislada de `CustomerAccount`. Los datos del proveedor marcados sólo para conciliación no se usan para crear perfiles, matching de clientes, segmentación, campañas ni predicción. Las claves de cuenta/cliente de un PSP son internas de ese proveedor y no equivalen a una identidad transversal.
+
+La venta podrá asociarse a un CustomerAccount por sesión autenticada, código de fidelización, identificador voluntario verificado o relación B2B. Si no hay identidad, queda anónima. El pago mixto crea varios pagos/intentos y asignaciones: cada uno se concilia por separado, mientras el pedido mantiene un único cliente o estado anónimo.
+
+No persistir PAN completo, CVV, PIN, PIN block ni track. Preferir tokenización/herramientas hospedadas del proveedor; conservar sólo referencias permitidas y metadatos mínimos. Las APIs no deben recibir PII en campos de referencia externa o descripción que el proveedor prohíba usar para ese fin.
+
+La especificación completa por QR, tarjeta, transferencia, efectivo, Payway, Getnet, MODO, Fiserv y Mercado Pago está en [Identidad del pagador, pagos y conciliación](PAYMENT_IDENTITY_AND_RECONCILIATION.md).
