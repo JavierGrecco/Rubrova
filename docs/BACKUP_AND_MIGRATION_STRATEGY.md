@@ -72,6 +72,31 @@ Los objetivos de RPO y RTO se muestran como metas a medir en equipos reales. No 
 - Nunca guardar secretos en Git, logs, fixtures, manifiestos legibles ni backups sin cifrar.
 - Explicar que perder tanto la clave de recuperación como su copia protegida puede hacer imposible descifrar los respaldos.
 
+### 4.1 Esquema criptográfico portable obligatorio
+
+El diseño de implementación debe usar una jerarquía de claves, no cifrar directamente todo el paquete con una contraseña:
+
+1. Generar una clave de datos aleatoria y nueva para cada copia (DEK).
+2. Cifrar el contenido con un AEAD mantenido. Para archivos grandes, usar cifrado autenticado por bloques/stream con detección de truncamiento y marca final; no inventar un formato criptográfico propio.
+3. Proteger la DEK por separado con una clave derivada de la contraseña de respaldo y con una clave de recuperación independiente. El paquete contiene ambos envoltorios de DEK, no las claves en claro.
+4. Derivar la clave de contraseña con Argon2id y una sal aleatoria. El paquete guarda algoritmo/versión, sal y parámetros de costo usados; nunca depender de valores por defecto que puedan cambiar entre versiones.
+5. Generar la clave de recuperación con alta entropía mediante un generador criptográfico, no pedir al usuario que invente una segunda contraseña débil. Mostrarla como frase/código imprimible y permitir guardarla como archivo protegido, siempre fuera del mismo destino del backup.
+6. Guardar identificador de clave, versión de formato, algoritmo AEAD, KDF, parámetros, nonces/estado de stream y checksums en un encabezado versionado. El manifiesto legible no contiene secretos ni información personal innecesaria.
+
+**Candidato técnico para laboratorio:** libsodium, que ofrece Argon2id para derivación de claves y primitivas AEAD; validar bindings y empaquetado para Windows/macOS antes de fijarlo. Para streams grandes se probará una primitiva autenticada por bloques como crypto_secretstream_xchacha20poly1305. La selección final debe basarse en biblioteca mantenida, interoperabilidad y pruebas de restauración, no en implementar criptografía propia.
+
+**Separar cuatro cosas:**
+- cifrado del paquete de backup, que debe ser portable;
+- cifrado del disco/volumen del sistema (BitLocker/FileVault), que protege un equipo apagado pero no reemplaza el backup;
+- almacén local de credenciales, que puede usar DPAPI/Keychain para comodidad en esa instalación, pero nunca como única clave de recuperación;
+- secretos externos (certificados privados, credenciales ARCA, terminales, tokens), que requieren su propio ciclo de respaldo/revinculación.
+
+Cambiar la contraseña de backup no debe destruir la posibilidad de recuperar paquetes antiguos: éstos mantienen su envoltorio original y siempre el envoltorio de la clave de recuperación. Rotar la clave de recuperación requiere un proceso explícito de migración/reenvoltura de todas las copias retenidas o conservar la clave anterior hasta que expiren; nunca borrar la única clave que abre backups existentes.
+
+El asistente debe hacer una prueba de recuperación antes de habilitar el backup programado: crear un paquete de prueba, bloquear la instalación original, recuperar en un entorno limpio usando primero contraseña y después clave de recuperación, verificar autenticidad y datos. Repetir tras actualizar el motor criptográfico o el formato. Una prueba de hash aislada no demuestra que la clave sirva para descifrar.
+
+Una contraseña incorrecta, una clave ausente, una autenticación fallida o un stream truncado deben detener la restauración sin modificar el destino. Ningún fabricante ni soporte debe poder saltarse el cifrado con una puerta trasera. Si el usuario pierde todas las claves válidas, no existe recuperación criptográfica garantizada.
+
 ## 5. Recuperar en una PC nueva o después de reinstalar Windows
 
 El flujo debe ser guiado:
