@@ -305,7 +305,7 @@ Stack Next.js/Expo/Prisma/PostgreSQL/SQLite. Declara diseño de perfiles sobre e
 ## 6. Hallazgos y decisiones
 
 1. **MyCompany/lsFusion 6.2:** candidato para reutilizar módulos ERP/POS y probar extensiones propias; su base compartida exige demostrar la separación por dominio.
-2. **Tryton, serie 7.8:** incluye el módulo oficial `sale_point`, con ventas, pagos, caja y efectos en stock/contabilidad; debe comprobarse si puede respetar la propiedad independiente de esos dominios.
+2. **Tryton 8.2:** incluye el módulo oficial `sale_point`, con ventas, pagos, caja y efectos en stock/contabilidad; la compatibilidad de tags de tryton-ar con 8.2 sigue pendiente de verificarse.
 3. **Dolibarr 24.0.3:** entra al filtro inicial por su cobertura y REST API/hooks; la presencia de extensiones no demuestra despliegue independiente de cada módulo.
 4. **ERPNext 16.60.0/Frappe 16:** se mantiene en comparación por su cobertura de compras, inventario, producción y contabilidad.
 5. **Posnic 1.9.2:** se evalúa como candidato POS especializado, no como base ERP ni autoridad paralela de inventario. Su offline es limitado y el paquete incluye MongoDB SSPL-1.0 y amCharts comercial.
