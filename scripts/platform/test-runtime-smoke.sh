@@ -215,6 +215,19 @@ echo "Cliente web disponible: HTTP $HTTP_STATUS; carga de al menos $EXPECTED_TOT
 echo "7/7 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
 
+echo "Configuración efectiva de los cuatro servicios (sin valores de entorno):"
+for service_name in $SERVICES; do
+  service_container="$(compose ps -a -q "$service_name" | head -n 1)"
+  [[ -n "$service_container" ]] || continue
+  docker inspect --format 'SERVICE={{.Name}} IMAGE={{.Config.Image}} PATH={{.Path}} ARGS={{json .Args}} WORKDIR={{.Config.WorkingDir}}' "$service_container"
+  docker inspect --format '{{range .Mounts}}{{println "MOUNT" .Source "->" .Destination}}{{end}}' "$service_container"
+  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$service_container" | sed 's/=.*$/=<oculto>/'
+done
+echo "Parámetros logics.* del settings.properties montado:"
+grep -nE '^[[:space:]]*logics\.' "$SETTINGS_FILE" || true
+echo "Últimos registros específicos del servicio logics:"
+compose logs --no-color --tail=120 logics || true
+
 echo "Imágenes resueltas por el Compose:"
 IMAGES="$(compose config --images)"
 printf '%s\n' "$IMAGES"
