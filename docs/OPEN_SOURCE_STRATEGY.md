@@ -23,7 +23,7 @@ No se adopta una plataforma por cantidad de pantallas, popularidad o amplitud de
 ## Candidatos vigentes
 
 - **MyCompany/lsFusion 6.2:** primera prueba por la amplitud ERP/POS, módulos propios externos y API HTTP. MyCompany declara Apache-2.0; lsFusion se licencia por separado bajo LGPL-3.0. Todos los módulos de una instalación comparten base de datos, por lo que no se deben describir como microservicios.
-- **Tryton 7.8.4:** comparación prioritaria por arquitectura de tres capas, PostgreSQL, módulos de servidor y clientes Windows/macOS. Los módulos viven en el mismo servidor y deben evaluarse como una aplicación de dominio integrada.
+- **Tryton, serie 7.8:** comparación prioritaria por arquitectura de tres capas, PostgreSQL y clientes Windows/macOS. Incluye el módulo oficial `sale_point` para ventas, devoluciones, pagos y sesiones de caja; al contabilizar genera movimientos de stock y asientos en el mismo servidor/base. Fijar cada paquete por separado y probar la autoridad de stock/contabilidad.
 - **Dolibarr 24.0.3:** comparación prioritaria por CRM/ERP modular y API REST, triggers y hooks. Sigue siendo una aplicación integrada, no una separación automática en microservicios.
 - **ERPNext 16.60.0 + Frappe 16:** alternativa de amplia cobertura administrativa. ERPNext declara GPL-3.0 y Frappe Framework MIT; las licencias de otras apps y dependencias se revisan por separado.
 - **Posnic 1.9.2:** candidato específico para POS local. El código propio declara AGPL-3.0-only; el paquete revisado incluye componentes con licencias independientes (MongoDB SSPL-1.0 y amCharts comercial). No se aprueba el paquete completo por su licencia raíz.
@@ -35,9 +35,9 @@ La lista y el estado de cada proyecto están en [Catálogo de código reutilizab
 
 ## Componentes transversales investigados
 
-La shortlist actual incluye bibliotecas de importación/calidad de datos (Frictionless, RapidFuzz, python-stdnum, Pint), limpieza asistida (OpenRefine), documentos (OCRmyPDF, Docling, invoice2data y Paperless-ngx), hardware local (QZ Tray y pos-toolkit), pagos (SDK oficial Mercado Pago), fiscalidad argentina (LaPyme/facturas y arca-sdks), shipping (Karrio) y automatización (Node-RED/Temporal).
+La shortlist actual también cubre sincronización offline (PowerSync), ecommerce headless/B2B (Spree y Saleor), inventario técnico/fabricación (InvenTree y addons OCA), analítica (DuckDB y Superset), identidad (Keycloak), observabilidad (OpenTelemetry, Prometheus y Grafana) y backups (pgBackRest, restic y Kopia), además de importación, documentos, hardware, pagos, ARCA, logística y automatización.
 
-Cada elemento tiene un uso acotado y sus propios límites. Karrio no incluye conectores argentinos en el árbol revisado; QZ Tray exige una cadena de confianza para impresión silenciosa; los SDK de ARCA necesitan homologación y recuperación de estados inciertos; las herramientas OCR no contabilizan ni aprueban por sí solas.
+Cada elemento tiene un uso acotado y sus propios límites. PowerSync no resuelve concurrencia de stock; Spree/Saleor no deben crear una segunda autoridad de inventario; Karrio no incluye conectores argentinos en el árbol revisado; QZ Tray exige una cadena de confianza para impresión silenciosa; los SDK de ARCA necesitan homologación y recuperación de estados inciertos; los backups de archivos no sustituyen backups consistentes de bases de datos; y OCR no contabiliza ni aprueba por sí solo.
 
 Ver [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) para versiones, licencias, evidencia y orden de pruebas.
 
