@@ -50,6 +50,7 @@ Una plataforma que reúne en un solo lugar:
 | [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Roles, permisos, turnos, autorizaciones y trazabilidad |
 | [Perfiles sectoriales](docs/SECTOR_PROFILES.md) | Supermercados, panaderías, rotiserías y gastronomía |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
+| [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos, offline, sincronización, backup/restauración y pruebas P27–P36 |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
 | [Estrategia de reutilización de código abierto](docs/OPEN_SOURCE_STRATEGY.md) | Proyectos reutilizables, licencias, riesgos y prueba de compatibilidad |
@@ -57,6 +58,7 @@ Una plataforma que reúne en un solo lugar:
 | [Logística argentina](docs/ARGENTINA_LOGISTICS_INTEGRATION.md) | Andreani, PAQ.AR, OCA, Vía Cargo, agregadores y tracking unificado |
 | [Interoperabilidad contable](docs/ACCOUNTING_INTEROPERABILITY.md) | Tango, Catedral, Bejerman, Xubio, Colppy y reportes de gestión |
 | [Necesidades PyME y backlog](docs/PYME_NEEDS_AND_PRODUCT_BACKLOG.md) | Evidencia de pymes argentinas y mejoras priorizadas para Rubrova |
+| [Investigación de mercado y oportunidades](docs/MARKET_RESEARCH_AND_ADDITIONAL_OPPORTUNITIES.md) | Evidencia de adopción digital, problemas relatados y proyectos adicionales |
 | [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md) | Cobertura completa: ERP, POS, canales, WMS, producción, finanzas e inteligencia |
 | [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md) | Varias actividades, clientes y recursos compartidos con resultados separados |
 | [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md) | B2B, mínimos, escalas, crédito, retiros, reparto y envíos posteriores |
@@ -76,6 +78,9 @@ Una plataforma que reúne en un solo lugar:
 - Mantener el mapa integral: no reducir el proyecto a POS; comparar ERP modular, WMS, canales, producción, promociones y analítica.
 - Ampliar la comparación integral a MyCompany/lsFusion 6.2, además de Posnic 1.9.2 y ERPNext 16.60.0.
 - Evaluar módulos especializados como Simple WMS, InvenTree, OpenBoxes, OpenWMS, DuckDB/Superset y automatización detrás de contratos.
+- Ampliar la investigación con Dolibarr 24.0.3 e InvenTree 1.7.3; mantenerlos como candidatos sin aprobar hasta ejecutar pruebas comparables.
+- Convertir los hallazgos de mercado argentino en criterios de producto para continuidad, conciliación, tesorería, migración e inventario multiárea.
+- Ejecutar y documentar las pruebas de continuidad P27–P36, además del protocolo funcional P01–P26.
 - Definir adaptadores de logística argentina y perfiles de exportación contable para sistemas existentes.
 - Validar automáticamente la aritmética y consistencia del dataset de prueba mediante GitHub Actions (última ejecución: 21/21 pruebas aprobadas).
 - Comparar las tres plataformas integrales con el protocolo completo P01–P26.
