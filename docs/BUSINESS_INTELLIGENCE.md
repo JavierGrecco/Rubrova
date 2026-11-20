@@ -120,14 +120,20 @@ Consulta métricas verificables, explica cálculos y escenarios. No inventa resu
 
 La caja y las escrituras operativas no deben competir con consultas analíticas pesadas. La dirección es generar proyecciones/read models sobre datos conciliados y mantener el camino transaccional separado.
 
-Candidatos a evaluar:
-- DuckDB como motor analítico embebido y multiplataforma para prototipos, consultas locales y archivos Parquet.
-- Apache Superset como entorno self-hosted de exploración y dashboards, sujeto a evaluación de operación y permisos.
-- Modelos de datos derivados del ledger y con fecha de corte, fuente, cobertura y versión.
+Composición candidata para el laboratorio:
+- DuckDB (MIT) para consultas locales, datasets derivados y Parquet, sin reemplazar el ERP ni su ledger.
+- Parquet y Apache Arrow para intercambio columnar portable y tipado.
+- Polars (MIT) para transformar datasets cuando una prueba de rendimiento o memoria lo justifique.
+- dbt Core (Apache-2.0) para versionar SQL, pruebas y documentación de modelos métricos cuando se estabilicen las fuentes.
+- Evidence (MIT) para informes reproducibles en SQL/Markdown y publicación self-hosted.
+- Apache Superset (Apache-2.0) si aparece una necesidad real de BI multiusuario, SQL Lab y dashboards.
+- Metabase Open Source (AGPL) sólo tras revisar sus obligaciones y condiciones específicas de embedding; no incorporarlo automáticamente en la interfaz de Rubrova.
 
-Estas herramientas no reemplazan la base transaccional ni pueden escribir ventas, pagos o stock. Los dashboards deben ser de solo lectura y sus definiciones financieras deben coincidir con las del dominio.
+No se suman todos como dependencias. Primera prueba: DuckDB + Parquet + modelos SQL versionados; luego comparar Evidence para reportes curados y Superset para exploración multiusuario. Las exportaciones a XLSX/CSV también deben abrirse y manipularse fuera de Rubrova en Excel o LibreOffice. Las consultas pesadas operan sobre una capa de lectura con corte visible y conciliación, nunca sobre el camino de escritura del POS.
 
-Ver [Investigación de módulos ampliados](MODULAR_COMPONENT_RESEARCH.md).
+Cada exportación debe llevar diccionario, granularidad, relaciones, tipos, zona horaria, moneda, unidad, filtros, fórmula, fuentes, fecha de corte, cobertura, checksums y política de enmascaramiento. La IA local futura consulta esta capa de sólo lectura, valida métricas y filtros, limita filas/tiempo, cita los datos fuente y exporta la consulta y supuestos. No se habilita SQL libre de escritura ni envío de datos privados a IA externa por defecto.
+
+Ver [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md) y [Investigación de módulos ampliados](MODULAR_COMPONENT_RESEARCH.md).
 
 
 ## Rentabilidad por área de negocio
