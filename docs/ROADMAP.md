@@ -4,12 +4,12 @@
 
 **Fase 0 — selección técnica basada primero en reutilización.** Rubrova tiene definición funcional, modelos de dominio, arquitectura y un laboratorio de fixtures sintéticos; todavía no tiene una aplicación funcional ni código externo incorporado. La prioridad no es comenzar con servicios propios: es encontrar la mejor combinación de aplicaciones, módulos, plugins y bibliotecas existentes que podamos mantener y adaptar.
 
-La decisión vigente y las puertas de selección están en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La comparación reproducible está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+La decisión vigente y las puertas de selección están en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La comparación reproducible está en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Los módulos y SDKs que pueden acelerar las integraciones están en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
 
 ## Fase 0 — evaluar antes de construir
 
-1. **Base ERP/gestión:** comparar MyCompany/lsFusion 6.2, Tryton 7.8.4 y Dolibarr 24.0.3. Mantener ERPNext 16.60.0 en el filtro comparativo.
-2. **POS:** probar el POS incluido en cada plataforma; comparar Posnic 1.9.2 como candidato dedicado. No aprobar uniCenta 5.5.2 hasta verificar acceso a fuente, release y licencias.
+1. **Base ERP/gestión:** comparar MyCompany/lsFusion 6.2, Tryton serie 7.8 y Dolibarr 24.0.3. Mantener ERPNext 16.60.0 en el filtro comparativo.
+2. **POS:** probar el POS incluido en cada plataforma, incluido Tryton `sale_point`; comparar Posnic 1.9.2 como candidato dedicado. No aprobar uniCenta 5.5.2 hasta verificar acceso a fuente, release y licencias.
 3. **Componentes especializados:** revisar hardware/tickets, ARCA, WMS, tracking, contabilidad, importación, BI y automatización sólo cuando haya una necesidad concreta y un contrato compatible.
 4. Fijar tag/commit, licencias, dependencias, instalación, APIs, extensiones, exportación, respaldo y restauración de cada candidato.
 5. Probar los mismos datos sintéticos y flujos esenciales para evitar decidir por demos o promesas.
