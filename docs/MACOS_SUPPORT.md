@@ -8,8 +8,10 @@
 - Los scripts de preparación y staging se ejecutan con Bash en macOS.
 - El preparador usa `~/Library/Caches/Rubrova/platforms/mycompany-6.2` como caché predeterminada; respeta `RUBROVA_CACHE_DIR` y `XDG_CACHE_HOME`.
 - El staging Docker puede copiar la extensión y actualizar `settings.properties` sin iniciar contenedores.
-- La CI agrega un runner macOS 26 Apple Silicon para ejecutar pruebas estáticas, probar las herramientas BSD, ejercitar el staging y descargar el JAR con verificación de su SHA-256 fijado; también descarga el Compose y calcula su huella local, todavía sin un SHA de referencia fijado.
+- La CI agrega un runner macOS 26 Apple Silicon para ejecutar pruebas estáticas, probar las herramientas BSD, ejercitar el staging y descargar/verificar el JAR y el Compose contra sus SHA-256 fijados.
 - Una MacBook puede utilizarse como puesto cliente del sistema web cuando el servidor se encuentre disponible en un equipo compatible de la red.
+
+La primera ejecución del workflow [44785005509](https://github.com/JavierGrecco/Rubrova/actions/runs/44785005509) terminó correctamente en Linux, Windows y macOS ARM64. Sus logs permitieron fijar el SHA-256 del Compose oficial (`4b7eeb62c92a4701f46f18255c290f9227ab9694986aa82e8034b2ea8a3d2def`); la segunda ejecución desde caché devolvió la misma huella.
 
 La CI no instala MyCompany, no inicia el Compose y no certifica periféricos, navegador ni una jornada POS completa.
 
@@ -62,7 +64,7 @@ Esto permite trabajar desde Mac aunque el servidor POS/ERP esté alojado en un e
 
 ## Qué falta antes de declarar compatibilidad completa
 
-1. Fijar y verificar el SHA-256 del Compose oficial MyCompany 6.2; hoy el lock conserva `null` porque no se obtuvo una huella independiente verificable.
+1. Verificar el Compose fijado en futuros entornos y revisar los tags/digests de sus imágenes antes de iniciar contenedores.
 2. Instalar MyCompany 6.2 en un anfitrión x64 compatible y demostrar que carga `RubrovaCustom`, `RubrovaPOSLocalization` y `es_AR`.
 3. Probar el stack completo en Apple Silicon mediante emulación, o confirmar que la Mac se usará como cliente de un anfitrión x64.
 4. Aceptar la operación real en navegador y periféricos, incluidos reinicio, backup y restauración.

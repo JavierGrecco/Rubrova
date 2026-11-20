@@ -34,17 +34,32 @@ else
 fi
 
 COMPOSE_URL="https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml"
+COMPOSE_SHA256="4b7eeb62c92a4701f46f18255c290f9227ab9694986aa82e8034b2ea8a3d2def"
 COMPOSE_PATH="$CACHE_DIR/compose.yaml"
 COMPOSE_TMP="$COMPOSE_PATH.download"
 if [[ ! -f "$COMPOSE_PATH" ]]; then
-  curl --fail --location --retry 2 --connect-timeout 20 --max-time 120 "$COMPOSE_URL" --output "$COMPOSE_TMP"
+  if ! curl --fail --location --retry 2 --connect-timeout 20 --max-time 120 "$COMPOSE_URL" --output "$COMPOSE_TMP"; then
+    rm -f "$COMPOSE_TMP"
+    echo "No se pudo descargar el Compose oficial MyCompany 6.2." >&2
+    exit 1
+  fi
   [[ -s "$COMPOSE_TMP" ]] || { rm -f "$COMPOSE_TMP"; echo "El Compose descargado está vacío." >&2; exit 1; }
+  actual="$(shasum -a 256 "$COMPOSE_TMP" | awk '{print tolower($1)}')"
+  if [[ "$actual" != "$COMPOSE_SHA256" ]]; then
+    rm -f "$COMPOSE_TMP"
+    echo "Hash SHA-256 incorrecto para el Compose. Esperado $COMPOSE_SHA256, recibido $actual." >&2
+    exit 1
+  fi
   mv "$COMPOSE_TMP" "$COMPOSE_PATH"
 fi
 
 compose_hash="$(shasum -a 256 "$COMPOSE_PATH" | awk '{print tolower($1)}')"
-echo "Compose oficial versionado 6.2: $COMPOSE_PATH"
-echo "SHA-256 local del Compose: $compose_hash"
+if [[ "$compose_hash" != "$COMPOSE_SHA256" ]]; then
+  echo "El Compose existente no coincide con el SHA-256 fijado; no se sobrescribió." >&2
+  exit 1
+fi
+echo "Compose oficial 6.2 verificado: $COMPOSE_PATH"
+echo "SHA-256 del Compose: $compose_hash"
 echo "Revisá el contenido y fijá los digests de imagen antes de iniciar contenedores."
 case "$(uname -m)" in
   arm64|aarch64)

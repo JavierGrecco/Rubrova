@@ -48,7 +48,8 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 ## Progreso real del Bloque 0 (20/11/2026)
 
 - [x] Confirmar que el Compose específico de MyCompany 6.2 está publicado en el directorio oficial `solutions/mycompany-docker/6.2/`; no usar el Compose genérico de lsFusion.
-- [x] Confirmar hashes SHA-256 oficiales del instalador y JAR contra la release 6.2.
+- [x] Confirmar hashes SHA-256 del instalador y JAR contra la release 6.2.
+- [x] Obtener desde la descarga oficial y fijar el SHA-256 del Compose MyCompany 6.2; el runner macOS verificó el mismo digest en descarga y segunda lectura desde caché.
 - [x] Registrar las arquitecturas Docker: MyCompany 6.2 publica `linux/amd64`; las imágenes de servidor y cliente 6.2 publican `amd64` y `arm64`.
 - [x] Preparar scripts de descarga y verificación para Windows y macOS/Linux.
 - [x] Ejecutar el primer recorrido CI en Linux, Windows y macOS 26 Apple Silicon; los tres jobs aprobaron en el run [44785005509](https://github.com/JavierGrecco/Rubrova/actions/runs/44785005509). En macOS pasaron las pruebas Bash/BSD, staging y preparación del JAR con SHA-256.
@@ -63,7 +64,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación automatizada del repositorio ya pasó en Linux, Windows y un runner macOS Apple Silicon. En macOS comprueba scripts, staging con herramientas BSD, descarga del JAR y su SHA-256 fijado, además de una segunda ejecución desde caché; no instala MyCompany ni inicia Docker. La instalación y el runtime siguen requiriendo un anfitrión real. El SHA-256 del Compose oficial continúa sin fijarse en el lock: el preparador calcula una huella local, pero todavía no puede compararla contra un valor de confianza. El Bloque 0 no se declara completado hasta cerrar esas brechas.
+La validación automatizada del repositorio pasó en Linux, Windows y macOS Apple Silicon. El job macOS descargó el JAR y el Compose desde sus URLs oficiales, verificó el SHA-256 fijado de ambos artefactos y volvió a comprobar la caché en una segunda ejecución. Esto no instala MyCompany ni inicia Docker: la instalación, carga de módulos, traducción en runtime, seguridad y backup/restore siguen requiriendo un anfitrión real. El Bloque 0 no se declara completado hasta guardar esas evidencias.
 
 ## Guía operativa del primer arranque
 

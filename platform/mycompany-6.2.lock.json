@@ -26,10 +26,11 @@
     "dockerCompose": {
       "file": "compose.yaml",
       "url": "https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml",
-      "sha256": null,
+      "sha256": "4b7eeb62c92a4701f46f18255c290f9227ab9694986aa82e8034b2ea8a3d2def",
       "listedSizeBytes": 785,
       "listedModifiedDate": "2026-07-20",
-      "note": "Official MyCompany-specific Compose bundle. Do not use the generic lsFusion /docker/6.2/compose.yaml file. Compute a local digest and inspect service tags before launch."
+      "note": "Official MyCompany-specific Compose bundle. The SHA-256 is pinned from the official versioned download; inspect service image tags and digests before launch.",
+      "sha256Source": "Downloaded from the official versioned URL and hashed in successful GitHub Actions macOS 26 ARM64 run 44785005509 on 2026-11-20; the same cached file produced the same digest on the second run."
     }
   },
   "extension": {
