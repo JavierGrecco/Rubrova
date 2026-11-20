@@ -97,3 +97,27 @@ El contrato define lo prometido; las obligaciones definen qué debe suceder; las
 5. Los costos compartidos se asignan con reglas explícitas; la suma asignada debe coincidir con el costo original.
 6. Las integraciones usan IDs, correlación, idempotencia, estados tipados y conciliación.
 7. Las dimensiones económicas se guardan a nivel de línea cuando una operación pertenece a varias áreas.
+
+
+## Captura temporal y trazabilidad ampliada
+
+El modelo conceptual se completa con la especificación [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md). Como mínimo, mantener entidades/relaciones para:
+
+- establecimiento y perfil sectorial, separados de canal, área y fulfillment;
+- empleado, asignación, sesión de caja, cajero, supervisor, terminal y dispositivo;
+- versión temporal de categoría, marca/segmento, presentación, unidad, precio, costo, lista y promoción;
+- orden de compra, línea, recepción parcial, lote, factura proveedor y costo puesto;
+- movimiento de stock, reserva, transferencia y período de disponibilidad/quiebre por ubicación;
+- intención, intento, autorización, captura, reintegro, contracargo, liquidación y conciliación de pago;
+- promoción/versiones, descuento por línea, cupón, ajuste manual y aprobación;
+- reclamo, devolución autorizada, ingreso físico, disposición, reintegro y documento compensatorio;
+- referencia externa, idempotencia, auditoría, instante de ocurrencia y de registro.
+
+## Reglas temporales y analíticas
+
+1. Mantener `occurred_at`, `recorded_at`, vigencia efectiva y `business_date` como conceptos distintos; conservar UTC e IANA timezone.
+2. Las dimensiones que cambian deben mantener versiones/vigencias; los documentos confirmados conservan snapshots de valores y clasificaciones aplicados.
+3. El ledger de inventario y los hechos financieros/fiscales no se corrigen sobrescribiendo historia: se registran ajustes y compensaciones trazables.
+4. Un quiebre de stock debe estar representado como disponibilidad en el tiempo, no inferido sólo desde ausencia de ventas.
+5. Los informes derivan de una capa de lectura conciliada y nunca escriben en los agregados transaccionales.
+6. Las exportaciones deben incluir tipos, relaciones, IDs, moneda, unidades, zona horaria, fórmula de métricas, filtros y corte de datos.
