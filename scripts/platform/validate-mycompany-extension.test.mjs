@@ -95,7 +95,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /wait_until_form_loaded\(page, "UI_POS_SCREEN"/);
   assert.match(uiSmokeSource, /\{label\}_RENDER_STATUS=ready/);
   assert.match(uiSmokeSource, /stable_reads >= 2/);
-  assert.match(uiSmokeSource, /timeout_seconds: int = 30/);
+  assert.match(uiSmokeSource, /timeout_seconds: int = 45/);
   assert.match(uiSmokeSource, /"loading" in normalized or "cargando" in normalized/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN/);
   assert.match(uiSmokeSource, /-retail/);
@@ -107,6 +107,12 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_APPLICATION_SERVER_READY=true/);
   assert.match(uiSmokeSource, /page[.]screenshot/);
   assert.match(uiSmokeSource, /_INPUTS=/);
+  assert.match(uiSmokeSource, /_SELECTORS=/);
+  assert.match(uiSmokeSource, /selectedText/);
+  assert.match(uiSmokeSource, /Caja de prueba Rubrova/);
+  assert.match(uiSmokeSource, /Abrir turno/);
+  assert.match(uiSmokeSource, /UI_POS_REGISTER_FOUND=true/);
+  assert.match(uiSmokeSource, /UI_POS_SCREEN_RENDER_STATUS=ready/);
   assert.match(uiSmokeSource, /_BUTTONS=/);
   assert.match(uiSmokeSource, /_LINKS=/);
   assert.match(uiSmokeSource, /_ALERTS=/);
