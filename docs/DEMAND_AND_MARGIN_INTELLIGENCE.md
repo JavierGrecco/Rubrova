@@ -96,6 +96,15 @@ Como guía de madurez:
 
 Los intervalos se calibran con resultados medidos. No se confunden bandas heurísticas con intervalos probabilísticos calibrados.
 
+### 3.4 Primera ejecución reproducible (fixture sintético)
+
+La primera ejecución de GitHub Actions con StatsForecast 2.1.1 finalizó correctamente el 20/11/2026. El fixture contiene dos series de 48 meses, con cuatro cortes walk-forward y horizonte de tres meses.
+
+- **Serie regular:** AutoETS obtuvo WAPE 0,0069; AutoTheta 0,0538; el baseline de último valor 0,0580. En este patrón sintético, AutoETS capturó bien la tendencia y estacionalidad.
+- **Serie intermitente:** CrostonSBA obtuvo WAPE 1,360; el naive estacional obtuvo 1,417. El error sigue siendo alto (WAPE mayor a 1), por lo que el resultado demuestra dificultad real de la serie, no una predicción lista para compras.
+
+Este resultado sólo demuestra que el experimento es ejecutable y reproducible. No representa ventas de Rubrova ni permite elegir un modelo productivo. La próxima comparación debe incluir datos reales ya conciliados, stockouts censurados, promociones, variaciones de precio y más horizontes.
+
 ## 4. Rentabilidad y costos
 
 ### 4.1 Autoridad del costo
@@ -152,7 +161,7 @@ La inferencia causal se evita: correlación entre una suba de precio y una baja 
 | [MLForecast](https://github.com/Nixtla/mlforecast) | Apache-2.0 | Features temporales y ML con variables exógenas/estáticas | Segunda etapa; sólo si añade precisión demostrada frente a baselines/StatsForecast |
 | [HierarchicalForecast](https://github.com/Nixtla/hierarchicalforecast) | Apache-2.0 | Reconciliar pronósticos en jerarquías de producto/marca/categoría/local/canal | Etapa posterior; exige jerarquía estable y backtesting |
 | [DemandSense](https://github.com/mercer14k/DemandSense) | MIT | Referencia ejecutable de demanda intermitente, comparación de modelos, intervalos empíricos, rolling backtests y escenarios | Inspeccionar selectivamente; repositorio pequeño (4 commits y 2 estrellas en la consulta), no base de producción |
-| [DemandOS](https://github.com/RaulMermans/demand-OS) | Sin licencia declarada | Referencia funcional de riesgo de faltantes, features, backtesting y recomendaciones revisadas por humanos | Estudiar diseño; no copiar ni incorporar su código |
+| [DemandOS](https://github.com/RaulMermans/demand-OS) | Sin licencia declarada en el repositorio revisado | Referencia funcional de riesgo de faltantes, features, backtesting y recomendaciones revisadas por humanos | Se puede inspeccionar públicamente como referencia; la ausencia de licencia no concede permiso de reutilización. No copiar/modificar código sin licencia o autorización explícita del titular; reproducir las ideas de forma independiente. |
 | [DuckDB](https://github.com/duckdb/duckdb) | MIT | Motor analítico local para snapshots/Parquet y consultas | Primera opción a probar para read models si los reportes nativos no alcanzan |
 | [Apache Superset](https://github.com/apache/superset) | Apache-2.0 | Exploración y dashboards BI self-hosted | Alternativa futura, sólo si se justifica una aplicación BI multiusuario |
 | [ERPNext](https://github.com/frappe/erpnext) | GPL-3.0 en el repositorio principal revisado | Referencia de Stock Ledger, valuación y reportes de utilidad bruta | Evaluar como plataforma; no extraerlo como biblioteca aislada |
@@ -209,7 +218,8 @@ La capacidad no se considera terminada hasta demostrar en dataset sintético y d
 - [ ] Comparar los métodos de stock valuation y rentabilidad de los finalistas POS/ERP.
 - [ ] Ampliar el dataset sintético con escenarios de stockout, marcas, presentaciones, promociones y costos históricos.
 - [x] Preparar benchmark reproducible StatsForecast frente a baselines sobre 48 meses sintéticos y demanda regular/intermitente; CI registra MAE, WAPE y sesgo en backtesting walk-forward.
-- [ ] Ejecutar y revisar el benchmark en CI; comparar estabilidad y coste antes de aprobar cualquier motor productivo.
+- [x] Ejecutar y revisar la primera corrida CI del benchmark (20/11/2026); resultados sintéticos registrados, sin selección productiva.
+- [ ] Comparar estabilidad y coste en datos reales conciliados antes de aprobar cualquier motor productivo.
 - [ ] Evaluar MLForecast y HierarchicalForecast sólo después de obtener una línea base útil.
 - [ ] Probar el modelo de datos de segmentos de marca y métricas de sustitución con casos controlados.
 - [ ] Aprobar dependencias, licencias, versiones y pruebas antes de incorporarlas.
