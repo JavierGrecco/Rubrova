@@ -20,6 +20,16 @@ La arquitectura combinará:
 
 No adoptaremos Kubernetes, Kafka ni una malla de servicios por anticipado. La independencia de los servicios es una decisión de diseño; la infraestructura se elige después de medir el despliegue real. Para una instalación local privada, una plataforma de procesos o contenedores más sencilla puede ser más confiable y fácil de mantener que un clúster sobredimensionado.
 
+## 1.1 Reutilización primero sin perder independencia
+
+La preferencia por servicios independientes no obliga a desarrollar todo desde cero. Cada nuevo servicio debe partir de una búsqueda de código disponible y una prueba de reutilización. Pero no cualquier aplicación modular satisface el objetivo de arquitectura.
+
+Para adoptar una aplicación existente como servicio Rubrova, debe demostrar: límite de dominio acotado y dueño único de sus datos; persistencia/credenciales aislables; API/eventos públicos y versionados; ciclo propio de despliegue, migración, backup, restauración y rollback; actualización independiente; y pruebas de permisos, concurrencia, idempotencia y recuperación.
+
+**Los módulos dentro de un mismo ERP no se convierten automáticamente en servicios independientes.** Si comparten runtime, base y migraciones, se evalúa el producto como aplicación integrada. Sólo se puede aceptar completo si sus responsabilidades forman un límite de dominio deliberado y no absorben datos que la arquitectura asigna a otros servicios. De lo contrario, se reutilizan módulos o bibliotecas separables y el resto queda como referencia técnica.
+
+Ver [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
+
 ## 2. Qué aprendemos de las empresas y plataformas líderes
 
 Las fuentes públicas no revelan todos los sistemas internos de estas empresas. Tomamos sus guías y casos documentados como evidencia técnica puntual, sin asumir que Rubrova deba copiar su infraestructura completa.
