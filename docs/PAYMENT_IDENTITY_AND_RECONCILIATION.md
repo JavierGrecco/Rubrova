@@ -77,7 +77,7 @@ No calcular una puntuación de "persona probable" usando el nombre de la tarjeta
 ### Cómo reconocer al mismo cliente entre efectivo, tarjeta, QR y transferencia
 
 La clave es asociar la venta a una identidad de cliente **antes o durante la operación**, independientemente del medio de pago:
-- código/QR de cliente o fidelización que el comprador presenta;
+- código/QR de cliente o fidelización que el comprador presenta. Este QR pertenece a Rubrova y es distinto del QR del adquirente/billetera utilizado para pagar; no depende de los datos que revele el pago;
 - teléfono/email verificado mediante un flujo voluntario y breve;
 - sesión de usuario de tienda online/WhatsApp vinculada a la cuenta;
 - cuenta empresarial/B2B y contacto/orden de compra;
