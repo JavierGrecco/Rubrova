@@ -13,7 +13,7 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 |---|---|---|---|
 | Muy alta | [MyCompany/lsFusion](https://github.com/lsfusion-solutions/mycompany) | ERP/POS modular, CRM, compras, inventario, producción, RR. HH. y proyectos | Nuevo candidato integral; evaluar release 6.2 |
 | Alta | [Posnic](https://github.com/Posnic/POS) | POS local/offline, retail y gastronomía, ventas y devoluciones | Candidato POS especializado; revisar separación respecto del stock y compras |
-| Muy alta | [Tryton](https://www.tryton.org/) | ERP modular de tres capas, PostgreSQL y POS oficial `sale_point` | Primera ronda; probar POS y separación respecto de stock/contabilidad |
+| Muy alta | [Tryton](https://www.tryton.org/) 8.2 | ERP modular de tres capas, PostgreSQL y POS oficial `sale_point` | Primera ronda condicionada; verificar tags/versiones compatibles de tryton-ar y separación de dominios |
 | Alta | [Dolibarr](https://www.dolibarr.org/) | ERP/CRM modular con REST API, hooks y triggers | Reincorporado a la primera ronda |
 | Media-alta | [Apache OFBiz](https://ofbiz.apache.org/) | ERP y Service Engine orientado a SOA | Referencia de segunda etapa; complejidad y serie 24.09 feature-frozen |
 | Condicionada | [uniCenta oPOS](https://unicenta.com/) | POS multiplataforma, periféricos y caja | Fuente 5.5.2 requiere login; no aprobar reutilización hasta revisar código y licencia |
@@ -59,14 +59,17 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 
 ## 1. Plataformas integrales
 
-### Tryton, serie 7.8 — módulo oficial `sale_point`
+### Tryton 8.2 — módulo oficial sale_point
 
-Documentación: https://docs.tryton.org/7.8/modules-sale-point/design.html  
-Paquetes: https://downloads.tryton.org/7.8/
+Documentación: https://docs.tryton.org/8.2/modules-sale-point/design.html  
+Release notes: https://docs.tryton.org/8.2/modules-sale-point/releases.html
 
-Tryton mantiene un módulo oficial POS que registra ventas/devoluciones, métodos de pago y sesiones de caja; calcula el vuelto y, al contabilizar una venta, genera movimientos de stock y asientos. El módulo `sale_point` 7.8.4 se publicó el 16/04/2026; el cliente de escritorio tiene su propia secuencia de parches. Fijar la versión de servidor, cliente y cada módulo por separado.
+Tryton 8.2 se publicó el 05/10/2026. El módulo oficial sale_point 8.2 registra ventas y devoluciones, métodos de pago, vuelto y sesiones de caja; al contabilizar genera los movimientos de stock y el asiento correspondiente. Fijar servidor, cliente y cada módulo por paquete y versión.
 
-**Límite:** el POS utiliza ventas, stock y contabilidad dentro del mismo servidor/base. Es código funcional reutilizable, pero no equivale a tres servicios independientes. Probar dependencias, puntos de extensión y autoridad de datos antes de adoptarlo. La documentación tampoco demuestra que la experiencia de caja sea suficientemente rápida para Rubrova.
+**Límite:** el POS utiliza ventas, stock y contabilidad dentro del mismo servidor/base. Es código funcional reutilizable, pero no equivale a tres servicios independientes. La experiencia de caja debe medirse con el mismo guion que el resto de candidatos.
+
+**Localización argentina:** las ramas principales inspeccionadas de los repositorios tryton-ar muestran manifiestos de módulos en series 7.1 y 8.1. Esto no demuestra que no existan tags publicados compatibles. Antes de portear, verificar tags, dependencias y versiones instalables; si no hay un conjunto coherente con Tryton 8.2, estimar el port de los módulos necesarios. No mezclar ramas de series diferentes.
+
 
 ### Posnic — candidato POS especializado (no aprobado)
 
