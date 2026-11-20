@@ -51,7 +51,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Confirmar hashes SHA-256 oficiales del instalador y JAR contra la release 6.2.
 - [x] Registrar las arquitecturas Docker: MyCompany 6.2 publica `linux/amd64`; las imágenes de servidor y cliente 6.2 publican `amd64` y `arm64`.
 - [x] Preparar scripts de descarga y verificación para Windows y macOS/Linux.
-- [ ] Verificar en CI el nuevo recorrido macOS Apple Silicon: sintaxis Bash, staging BSD y descarga/hash de artefactos (se actualizará al recibir el primer resultado).
+- [x] Ejecutar el primer recorrido CI en Linux, Windows y macOS 26 Apple Silicon; los tres jobs aprobaron en el run [44785005509](https://github.com/JavierGrecco/Rubrova/actions/runs/44785005509). En macOS pasaron las pruebas Bash/BSD, staging y preparación del JAR con SHA-256.
 - [x] Preparar scripts de despliegue modular de RubrovaCustom + RubrovaPOSLocalization para Windows nativo, Linux nativo y Docker, con backup de settings y de los archivos existentes.
 - [x] Ejecutar un smoke test automatizado del staging Docker: confirma copia de los módulos y ResourceBundle, conservación de settings, backups y ausencia de invocaciones Docker.
 - [x] Incorporar la primera capa de captions `es_AR` en RubrovaCustom para caja, cliente, carrito, turno, búsqueda, cobro, movimientos de efectivo y devoluciones.
@@ -63,7 +63,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación automatizada del repositorio puede ejecutarse desde Linux, Windows y un runner macOS Apple Silicon; ésta comprueba scripts, staging y preparación de artefactos, pero no instala MyCompany ni inicia Docker. La instalación y el runtime siguen requiriendo un anfitrión real. Además, el SHA-256 del Compose oficial continúa sin fijarse en el lock, por lo que ese artefacto no se considera todavía verificado de extremo a extremo. El Bloque 0 no se declara completado hasta cerrar esas brechas.
+La validación automatizada del repositorio ya pasó en Linux, Windows y un runner macOS Apple Silicon. En macOS comprueba scripts, staging con herramientas BSD, descarga del JAR y su SHA-256 fijado, además de una segunda ejecución desde caché; no instala MyCompany ni inicia Docker. La instalación y el runtime siguen requiriendo un anfitrión real. El SHA-256 del Compose oficial continúa sin fijarse en el lock: el preparador calcula una huella local, pero todavía no puede compararla contra un valor de confianza. El Bloque 0 no se declara completado hasta cerrar esas brechas.
 
 ## Guía operativa del primer arranque
 

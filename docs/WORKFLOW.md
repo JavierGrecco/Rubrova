@@ -37,7 +37,7 @@ Mantener cambios pequeños y enfocados; no mezclar grandes refactorizaciones con
 
 ## Validación multiplataforma
 
-Los cambios de plataforma se validan en CI en Linux, Windows y macOS Apple Silicon. La tarea macOS ejecuta la suite estática, comprueba el staging con herramientas BSD y descarga/verifica los artefactos fijados; no instala MyCompany ni inicia Docker. La aceptación del runtime, periféricos y navegador sigue necesitando una prueba de extremo a extremo en equipos reales. No se toma un test de shell como evidencia de que el POS ya funciona.
+Los cambios de plataforma se validan en CI en Linux, Windows y macOS Apple Silicon. La tarea macOS ejecuta la suite estática, comprueba el staging con herramientas BSD, descarga el JAR y verifica su SHA-256 fijado; para el Compose calcula una huella local que todavía debe fijarse en el lock. No instala MyCompany ni inicia Docker. La aceptación del runtime, periféricos y navegador sigue necesitando una prueba de extremo a extremo en equipos reales. No se toma un test de shell como evidencia de que el POS ya funciona.
 
 ## Commits
 

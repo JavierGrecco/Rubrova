@@ -8,7 +8,7 @@
 - Los scripts de preparación y staging se ejecutan con Bash en macOS.
 - El preparador usa `~/Library/Caches/Rubrova/platforms/mycompany-6.2` como caché predeterminada; respeta `RUBROVA_CACHE_DIR` y `XDG_CACHE_HOME`.
 - El staging Docker puede copiar la extensión y actualizar `settings.properties` sin iniciar contenedores.
-- La CI agrega un runner macOS 26 Apple Silicon para ejecutar pruebas estáticas, probar las herramientas BSD, ejercitar el staging y descargar/verificar los artefactos fijados.
+- La CI agrega un runner macOS 26 Apple Silicon para ejecutar pruebas estáticas, probar las herramientas BSD, ejercitar el staging y descargar el JAR con verificación de su SHA-256 fijado; también descarga el Compose y calcula su huella local, todavía sin un SHA de referencia fijado.
 - Una MacBook puede utilizarse como puesto cliente del sistema web cuando el servidor se encuentre disponible en un equipo compatible de la red.
 
 La CI no instala MyCompany, no inicia el Compose y no certifica periféricos, navegador ni una jornada POS completa.
