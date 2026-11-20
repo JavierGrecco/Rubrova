@@ -1,0 +1,260 @@
+package lsfusion.server.data.expr.where.cases;
+
+import lsfusion.base.BaseUtils;
+import lsfusion.base.col.SetFact;
+import lsfusion.base.col.interfaces.immutable.ImSet;
+import lsfusion.base.col.interfaces.mutable.MMap;
+import lsfusion.base.col.interfaces.mutable.MSet;
+import lsfusion.base.mutability.TwinImmutableObject;
+import lsfusion.interop.form.property.Compare;
+import lsfusion.server.base.caches.ManualLazy;
+import lsfusion.server.base.caches.ParamLazy;
+import lsfusion.server.data.QueryEnvironment;
+import lsfusion.server.data.caches.OuterContext;
+import lsfusion.server.data.caches.hash.HashContext;
+import lsfusion.server.data.expr.BaseExpr;
+import lsfusion.server.data.expr.Expr;
+import lsfusion.server.data.expr.classes.IsClassType;
+import lsfusion.server.data.expr.join.classes.ObjectClassField;
+import lsfusion.server.data.expr.key.KeyType;
+import lsfusion.server.data.query.compile.CompileSource;
+import lsfusion.server.data.query.compile.FJData;
+import lsfusion.server.data.sql.syntax.SQLSyntax;
+import lsfusion.server.data.stat.Stat;
+import lsfusion.server.data.translate.ExprTranslator;
+import lsfusion.server.data.translate.MapTranslate;
+import lsfusion.server.data.type.Type;
+import lsfusion.server.data.type.reader.ClassReader;
+import lsfusion.server.data.type.reader.NullReader;
+import lsfusion.server.data.value.NullValue;
+import lsfusion.server.data.value.ObjectValue;
+import lsfusion.server.data.where.Where;
+import lsfusion.server.logics.classes.ConcreteClass;
+import lsfusion.server.logics.classes.ValueClassSet;
+import lsfusion.server.logics.classes.data.DataClass;
+
+public class CaseExpr extends Expr {
+
+    private final ExprCaseList cases;
+
+    // этот конструктор нужен для создания CaseExpr'а в результать mapCase'а
+    public CaseExpr(ExprCaseList cases) {
+        this.cases = cases;
+        assert !(this.cases.size()==1 && this.cases.get(0).where.isTrue());
+    }
+
+    // получает список ExprCase'ов
+    public ExprCaseList getCases() {
+        return cases;
+    }
+
+    public String getSource(CompileSource compile, boolean needValue) {
+
+        if (compile instanceof ToString) {
+            String result = "";
+            for (ExprCase exprCase : cases) {
+                result = (result.length() == 0 ? "" : result + ",") + exprCase.toString();
+            }
+            return "CE(" + result + ")";
+        }
+
+        if (cases.size() == 0) {
+            return SQLSyntax.NULL;
+        }
+
+        String source = "CASE";
+        boolean hasElse = true;
+        for (int i = 0; i < cases.size(); i++) {
+            ExprCase exprCase = cases.get(i);
+            String caseSource = exprCase.data.getSource(compile, needValue);
+
+            if (i == cases.size() - 1 && exprCase.where.isTrue()) {
+                source = source + " ELSE " + caseSource;
+                hasElse = false;
+            } else {
+                source = source + " WHEN " + exprCase.where.getSource(compile) + " THEN " + caseSource;
+            }
+        }
+        return source + (hasElse ? " ELSE " + SQLSyntax.NULL : "") + " END";
+    }
+
+    public ConcreteClass getStaticClass() {
+        ConcreteClass result = null;
+        for(ExprCase exprCase : cases) {
+            ConcreteClass staticClass = exprCase.data.getStaticClass();
+            if(staticClass != null) {
+                if(result == null)
+                    result = staticClass;
+                else
+                    if(!BaseUtils.hashEquals(result, staticClass))
+                        return null;
+            }
+        }
+        return result;
+    }
+
+    public Type getType(KeyType keyType) {
+        Type type = null;
+        for(ExprCase exprCase : cases) {
+            Type caseType = exprCase.data.getType(keyType);
+            if(caseType!=null) {
+                if(type==null) {
+                    if(!(caseType instanceof DataClass))
+                        return caseType;
+                    type = caseType;
+                } else
+                    type = type.getCompatible(caseType); // для того чтобы выбрать максимальную по длине
+            }
+        }
+        return type;
+    }
+    public Stat getTypeStat(Where fullWhere, boolean forJoin) {
+        Stat stat = null;
+        for(ExprCase exprCase : cases) {
+            Stat caseStat = exprCase.data.getTypeStat(fullWhere.and(exprCase.where), forJoin);
+            if(caseStat!=null)
+                return caseStat;
+        }
+        return stat;
+    }
+
+    public ClassReader getReader(KeyType keyType) {
+        Type type = getType(keyType);
+        if(type==null) return NullReader.instance;
+        return type;
+    }
+
+    protected CaseExpr translate(MapTranslate translator) {
+        return new CaseExpr(cases.translateOuter(translator));
+    }
+
+    @ParamLazy
+    public Expr translate(ExprTranslator translator) {
+        MExprCaseList translatedCases = new MExprCaseList(cases.exclusive);
+        for(ExprCase exprCase : cases)
+            translatedCases.add(exprCase.where.translateExpr(translator),exprCase.data.translateExpr(translator));
+        return translatedCases.getFinal();
+    }
+
+    public Expr followFalse(Where where, boolean pack) {
+        if(where.isFalse() && !pack) return this;
+
+        MExprCaseList mCases = new MExprCaseList(where, pack, cases.exclusive);
+        for(ExprCase exprCase : cases)
+            mCases.add(exprCase.where, exprCase.data);
+        return mCases.getFinal();
+    }
+
+    public ImSet<OuterContext> calculateOuterDepends() {
+        MSet<OuterContext> result = SetFact.mSet();
+        for(ExprCase exprCase : cases) {
+            result.add(exprCase.where);
+            result.add(exprCase.data);
+        }
+        return result.immutable();
+    }
+
+    public void fillJoinWheres(MMap<FJData, Where> joins, Where andWhere) {
+        // здесь по-хорошему надо andNot(верхних) но будет тормозить
+        for(ExprCase exprCase : cases) {
+            exprCase.where.fillJoinWheres(joins, andWhere);
+            exprCase.data.fillJoinWheres(joins, andWhere.and(exprCase.where));
+        }
+    }
+
+    public boolean calcTwins(TwinImmutableObject obj) {
+        return cases.equals(((CaseExpr)obj).cases);
+    }
+
+    protected boolean isComplex() {
+        return true;
+    }
+    public int hash(HashContext hashContext) {
+        return cases.hashOuter(hashContext) + 5;
+    }
+
+    // получение Where'ов
+
+    public Where calculateWhere() {
+        return cases.getWhere(cCase -> cCase.getWhere());
+    }
+
+    public Where isClass(final ValueClassSet set, final IsClassType type) {
+        return cases.getWhere(cCase -> cCase.isClass(set, type));
+    }
+
+    public Where compareBase(final BaseExpr expr, final Compare compareBack) {
+        return cases.getWhere(cCase -> cCase.compareBase(expr, compareBack));
+    }
+    public Where compare(final Expr expr, final Compare compare) {
+        return cases.getWhere(cCase -> cCase.compare(expr,compare));
+    }
+
+    // получение выражений
+
+/*
+    public Expr scale(int coeff) {
+        if(coeff==1) return this;
+        
+        ExprCaseList result = new ExprCaseList();
+        for(ExprCase exprCase : cases)
+            result.add(exprCase.where, exprCase.props.scale(coeff)); // new ExprCase(exprCase.where,exprCase.props.scale(coeff))
+        return result.getExpr();
+    }
+
+    public Expr sum(Expr expr) {
+        ExprCaseList result = new ExprCaseList();
+        for(ExprCase exprCase : cases)
+            result.add(exprCase.where,exprCase.props.sum(expr));
+        result.add(Where.TRUE(),expr); // если null то expr
+        return result.getExpr();
+    }*/
+
+    public Expr classExpr(ImSet<ObjectClassField> classes, IsClassType type) {
+        MExprCaseList result = new MExprCaseList(cases.exclusive);
+        for(ExprCase exprCase : cases)
+            result.add(exprCase.where,exprCase.data.classExpr(classes, type));
+        return result.getFinal();
+    }
+
+    public Where getBaseWhere() {
+        return cases.get(0).where;
+    }
+
+    private int whereDepth = -1;
+    @ManualLazy
+    public int getWhereDepth() {
+        if(whereDepth<0) {
+            int calcWhereDepth = -1;
+            for(ExprCase exprCase : cases)
+                calcWhereDepth = BaseUtils.max(calcWhereDepth, exprCase.data.getWhereDepth());
+            whereDepth = calcWhereDepth + 1;
+        }
+        return whereDepth;
+    }
+
+    public ImSet<BaseExpr> getBaseExprs() {
+        MSet<BaseExpr> result = SetFact.mSet();
+        for(ExprCase exprCase : cases)
+            result.addAll(exprCase.data.getBaseExprs());
+        return result.immutable();
+    }
+
+    @Override
+    public ObjectValue getObjectValue(QueryEnvironment env) {
+        if(cases.size()==0)
+            return NullValue.instance;
+        return super.getObjectValue(env);
+    }
+
+    @Override
+    public boolean isAlwaysPositiveOrNull() {
+        for(ExprCase exprCase : cases)
+            if(!exprCase.data.isAlwaysPositiveOrNull())
+                return false;
+        return true;
+    }
+
+    // placed here to prevent class initialization deadlocks 
+    public static final CaseExpr CaseNULL = new CaseExpr(new ExprCaseList(SetFact.EMPTY()));
+}

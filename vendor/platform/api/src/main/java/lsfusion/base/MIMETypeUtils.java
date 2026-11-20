@@ -1,0 +1,110 @@
+package lsfusion.base;
+
+import com.google.common.base.Throwables;
+
+import java.io.*;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/*
+Copyright © 2004-2016, Brian M. Clapper. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the distribution.
+Neither the names "clapper.org" nor the names of contributors may be used to endorse or promote products derived from this software
+without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+public class MIMETypeUtils {
+
+    private static Map<String, String> mimeTypeToExtensionMap = null;
+
+    private static Map<String, String> extensionToMIMETypeMap = null;
+
+    private MIMETypeUtils() {
+    }
+
+    public static String fileExtensionForMIMEType(String mimeType) {
+        loadMappings();
+        String extension = mimeTypeToExtensionMap.get(mimeType);
+        if(extension == null) {
+            Pattern p = Pattern.compile("\\b(application)/(\\w*)\\b");
+            Matcher m = p.matcher(mimeType);
+            if(m.find()) {
+                extension = m.group(2);
+            }
+        }
+        return extension;
+    }
+
+    public static String MIMETypeForFileExtension(String extension) {
+        loadMappings();
+        if (extension == null || extension.isEmpty()) {
+            return "application/octet-stream";
+        }
+        String mimeType = extensionToMIMETypeMap.get(extension);
+        return mimeType == null ? "application/" + extension : mimeType;
+    }
+
+    public static boolean isFileExtensionMIMEType(String extension) {
+        loadMappings();
+
+        return extensionToMIMETypeMap.containsKey(extension);
+    }
+
+    private static synchronized void loadMappings() {
+        if (mimeTypeToExtensionMap != null) return;
+
+        mimeTypeToExtensionMap = new HashMap<>();
+        extensionToMIMETypeMap = new HashMap<>();
+
+        try (InputStream is = MIMETypeUtils.class.getClassLoader().getResourceAsStream("MIMETypes.properties")) {
+            if(is != null) {
+                Scanner scanner = new Scanner(is);
+                String line;
+                while (scanner.hasNextLine()) {
+                    line = scanner.nextLine().trim();
+                    if (line.isEmpty() || line.startsWith("#")) continue;
+
+                    int separator = line.indexOf(':');
+                    if (separator > 0) {
+                        String type = line.substring(0, separator).trim();
+                        String[] extensions = split(line.substring(separator + 1).trim());
+                        if (mimeTypeToExtensionMap.get(type) == null) {
+                            mimeTypeToExtensionMap.put(type, extensions[0]);
+                        }
+                        for (String extension : extensions) {
+                            extensionToMIMETypeMap.put(extension, type);
+                        }
+                    }
+                }
+                scanner.close();
+            }
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private static String[] split(String s) {
+        String[] result;
+        StringTokenizer tok;
+        Collection<String> temp = new ArrayList<>();
+        tok = new StringTokenizer(s, " \t\n\r", false);
+        while (tok.hasMoreTokens()) {
+            String token = tok.nextToken();
+            temp.add(token);
+        }
+        result = new String[temp.size()];
+        temp.toArray(result);
+        return result;
+    }
+}

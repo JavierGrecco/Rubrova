@@ -1,0 +1,635 @@
+package lsfusion.server.physics.admin.authentication.security.controller.manager;
+
+import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import lsfusion.base.BaseUtils;
+import lsfusion.base.Pair;
+import lsfusion.base.col.MapFact;
+import lsfusion.base.col.interfaces.immutable.ImMap;
+import lsfusion.base.col.interfaces.immutable.ImOrderMap;
+import lsfusion.interop.base.exception.AuthenticationException;
+import lsfusion.interop.base.exception.LockedException;
+import lsfusion.interop.base.exception.LoginException;
+import lsfusion.interop.connection.authentication.*;
+import lsfusion.interop.connection.AuthenticationToken;
+import lsfusion.server.base.controller.lifecycle.LifecycleEvent;
+import lsfusion.server.base.controller.manager.LogicsManager;
+import lsfusion.server.data.expr.key.KeyExpr;
+import lsfusion.server.data.query.build.QueryBuilder;
+import lsfusion.server.data.sql.exception.SQLHandledException;
+import lsfusion.server.data.value.DataObject;
+import lsfusion.server.data.value.ObjectValue;
+import lsfusion.server.language.property.LP;
+import lsfusion.server.language.property.oraction.LAP;
+import lsfusion.server.logics.BaseLogicsModule;
+import lsfusion.server.logics.BusinessLogics;
+import lsfusion.server.logics.action.controller.stack.ExecutionStack;
+import lsfusion.server.logics.action.session.DataSession;
+import lsfusion.server.logics.navigator.NavigatorElement;
+import lsfusion.server.logics.property.oraction.ActionOrProperty;
+import lsfusion.server.physics.admin.Settings;
+import lsfusion.server.physics.admin.SystemProperties;
+import lsfusion.server.physics.admin.authentication.AuthenticationLogicsModule;
+import lsfusion.server.physics.admin.authentication.LDAPAuthenticationService;
+import lsfusion.server.physics.admin.authentication.UserInfo;
+import lsfusion.server.physics.admin.authentication.security.SecurityLogicsModule;
+import lsfusion.server.physics.admin.authentication.security.policy.RoleSecurityPolicy;
+import lsfusion.server.physics.admin.authentication.security.policy.SecurityPolicy;
+import lsfusion.server.physics.admin.log.ServerLoggers;
+import lsfusion.server.physics.admin.reflection.ReflectionLogicsModule;
+import lsfusion.server.physics.exec.db.controller.manager.DBManager;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginContext;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static lsfusion.base.ApiResourceBundle.getString;
+import static lsfusion.base.BaseUtils.trim;
+import static lsfusion.server.physics.admin.log.ServerLoggers.*;
+
+public class SecurityManager extends LogicsManager implements InitializingBean {
+    private static final Logger systemLogger = ServerLoggers.systemLogger;
+
+    @Deprecated
+    public static SecurityPolicy baseServerSecurityPolicy = new SecurityPolicy();
+
+    private final HashMap<Long, Object> cachedSecuritySemaphores = new HashMap<>();
+    private synchronized Object getCachedSecuritySemaphore(Long user) {
+        return cachedSecuritySemaphores.computeIfAbsent(user, k -> new Object());
+    }
+    public ConcurrentHashMap<Long, RoleSecurityPolicy> cachedSecurityPolicies = new ConcurrentHashMap<>();
+
+    private BusinessLogics businessLogics;
+    private DBManager dbManager;
+
+    @Override
+    protected BusinessLogics getBusinessLogics() {
+        return businessLogics;
+    }
+
+    private String initialAdminPassword;
+
+    private BaseLogicsModule LM;
+    private AuthenticationLogicsModule authenticationLM;
+    private SecurityLogicsModule securityLM;
+    private ReflectionLogicsModule reflectionLM;
+
+    public SecurityManager() {
+        super(SECURITYMANAGER_ORDER);
+    }
+
+    public void setBusinessLogics(BusinessLogics businessLogics) {
+        this.businessLogics = businessLogics;
+    }
+
+    public void setDbManager(DBManager dbManager) {
+        this.dbManager = dbManager;
+    }
+
+    public void setInitialAdminPassword(String initialAdminPassword) {
+        this.initialAdminPassword = initialAdminPassword;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        Assert.notNull(businessLogics, "businessLogics must be specified");
+        Assert.notNull(dbManager, "dbManager must be specified");
+    }
+
+    @Override
+    protected void onInit(LifecycleEvent event) {
+        startLog("Initializing security manager");
+        this.LM = businessLogics.LM;
+        this.authenticationLM = businessLogics.authenticationLM;
+        this.securityLM = businessLogics.securityLM;
+        this.reflectionLM = businessLogics.reflectionLM;
+
+//        not sure what it was for
+//        for (FormEntity formEntity : businessLogics.getAllForms())
+//            formEntity.proceedAllEventActions((eventAction, drawAction) -> {
+//            });
+    }
+
+    @Override
+    protected void onStarted(LifecycleEvent event) {
+        startLog("Starting security manager");
+        try {
+            businessLogics.initAuthentication(this);
+        } catch (SQLException | SQLHandledException e) {
+            throw new RuntimeException("Error starting security manager: ", e);
+        }
+    }
+
+    private DataObject adminUserRole = null;
+    private DataObject readOnlyUserRole = null;
+    private DataObject adminUser = null;
+    private DataObject anonymousUser = null;
+    public void initUsers() throws SQLException, SQLHandledException {
+        try(DataSession session = createSession()) {
+            securityLM.createSystemUserRoles.execute(session, getStack());
+            apply(session);
+        }
+
+        try(DataSession session = createSession()) {
+
+            //created in createSystemUserRoles
+            String admin = "admin";
+            this.adminUserRole = (DataObject) securityLM.userRoleSID.readClasses(session, new DataObject(admin));
+            this.readOnlyUserRole = (DataObject) securityLM.userRoleSID.readClasses(session, new DataObject("readonly"));
+
+            this.adminUser = initUser(admin, session);
+
+            this.anonymousUser = initUser("anonymous", session);
+        }
+    }
+
+    private DataObject initUser(String admin, DataSession session) throws SQLException, SQLHandledException {
+        DataObject adminUser = readUser(admin, session);
+
+        if (adminUser == null) {
+            adminUser = addUser(admin, initialAdminPassword, session);
+            apply(session);
+
+            // to update classes after apply
+            return new DataObject((Long) adminUser.object, authenticationLM.customUser);
+        }
+
+        return adminUser;
+    }
+
+    // LDAP or OAuth authentication
+    private Pair<DataObject, String> initAndUpdateUser(DataSession session, ExecutionStack stack, String userName, Supplier<String> password, String firstName, String lastName, String email, List<String> roles, boolean rolesOnlyIfNew, Map<String, String> attributes) throws SQLException, SQLHandledException {
+        Pair<DataObject, String> userObjectAndLogin = readUser(userName, email, session);
+
+        if (userObjectAndLogin == null || userObjectAndLogin.second == null) {
+            if(rolesOnlyIfNew && securityLM.disableRoleSID.read(session, new DataObject(roles.get(0))) != null) // if selfRegister is disabled
+                return null;
+
+            DataObject userObject;
+            if(userObjectAndLogin == null)
+                userObject = addUser(userName, password.get(), session);
+            else {
+                userObject = userObjectAndLogin.first;
+                authenticationLM.loginCustomUser.change(userName, session, userObject);
+            }
+            userObjectAndLogin = new Pair<>(userObject, userName);
+        } else if(rolesOnlyIfNew)
+            roles = null;
+
+        setUserParameters(userObjectAndLogin.first, firstName, lastName, email, roles, attributes, session);
+        apply(session, stack);
+
+        return userObjectAndLogin;
+    }
+
+    public DataObject getAdminUser() {
+        return adminUser;
+    }
+
+    public DataObject getDefaultLoginUser() {
+        return SystemProperties.inDevMode ? adminUser : anonymousUser;
+    }
+
+    private DataSession createSession() throws SQLException {
+        return dbManager.createSession();
+    }
+
+    protected DataObject addUser(String login, String defaultPassword, DataSession session) throws SQLException, SQLHandledException {
+        DataObject userObject = session.addObject(authenticationLM.customUser);
+        authenticationLM.loginCustomUser.change(login, session, userObject);
+        authenticationLM.sha256PasswordCustomUser.change(BaseUtils.calculateBase64Hash("SHA-256", defaultPassword.trim(), UserInfo.salt), session, userObject);
+        return userObject;
+    }
+
+    public Pair<DataObject, String> readUser(String login, String email, DataSession session) throws SQLException, SQLHandledException {
+        DataObject userObject = readUser(login, session);
+        if(userObject != null)
+            return new Pair<>(userObject, login);
+
+        boolean disableEmailLoginFallback = authenticationLM.disableEmailLoginFallback.read(session) != null;
+        if(email != null && !disableEmailLoginFallback) {
+            ObjectValue readUser = authenticationLM.customUserEmail.readClasses(session, new DataObject(email));
+            if(!readUser.isNull()) {
+                userObject = (DataObject) readUser;
+                return new Pair<>(userObject, (String) authenticationLM.loginCustomUser.read(session, userObject));
+            }
+        }
+
+        return null;
+    }
+
+    public DataObject readUser(String login, DataSession session) throws SQLException, SQLHandledException {
+        ObjectValue userObject = authenticationLM.customUserLogin.readClasses(session, new DataObject(login));
+        return userObject.isNull() ? null : (DataObject) userObject;
+    }
+
+    public DataObject getUser(String login, DataSession session) throws SQLException, SQLHandledException {
+        if(login != null) {
+            DataObject user = readUser(login, session);
+            if(user == null) {
+                throw new AuthenticationException(String.format("User with login %s not found", login));
+            }
+            return user;
+        }
+        return getDefaultLoginUser();
+    }
+
+    private String secret = null;
+    public void initSecret() throws SQLException, SQLHandledException {
+        try(DataSession session = createSession()) {
+            LP secretLCP = authenticationLM.secret;
+            String secretKey = (String) secretLCP.read(session);
+            if(secretKey == null) {
+                secretKey = BaseUtils.generatePassword(32, false, false);
+                secretLCP.change(secretKey, session);
+                apply(session);
+            }
+            this.secret = secretKey;
+        }
+    }
+
+    public String parseToken(AuthenticationToken token) {
+        if(token.isAnonymous())
+            return null;
+
+        Claims body;
+        try {
+            body = Jwts.parser()
+                    .setSigningKey(secret)
+                    .parseClaimsJws(token.string)
+                    .getBody();
+        } catch (Exception e) {
+            throw new AuthenticationException(String.format("Failed to parse token %s: %s", token.string, e.getMessage()));
+        }
+
+        // Integrity check: if the claim is present in the JWT, it must match the token wrapper field.
+        // Absent claim means an older token that was issued before this check was added — accepted as-is.
+        Boolean claimed2FA = body.get(CLAIM_USE_2FA, Boolean.class);
+        if (claimed2FA != null && claimed2FA != token.use2FA)
+            throw new AuthenticationException("Token use2FA claim mismatch");
+
+        return body.getSubject();
+//        u.setId(Long.parseLong((String) body.get("userId")));
+    }
+
+    public static final String CLAIM_USE_2FA = "2fa";
+
+    public AuthenticationToken generateToken(String userLogin, Integer tokenExpiration, boolean use2FA) { //tokenExpiration in minutes
+        Claims claims = Jwts.claims().setSubject(userLogin);
+
+        claims.setExpiration(new Date(System.currentTimeMillis() +
+                (tokenExpiration != null ? tokenExpiration : Settings.get().getAuthTokenExpiration()) * 1000 * 60));
+
+        if (use2FA)
+            claims.put(CLAIM_USE_2FA, true);
+
+        return new AuthenticationToken(Jwts.builder()
+                .setClaims(claims)
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact(), use2FA);
+    }
+
+    public String signData(String message) {
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(BaseUtils.getHashBytes(secret), "HmacSHA256");
+            sha256_HMAC.init(secretKeySpec);
+            byte[] hmacBytes = sha256_HMAC.doFinal(BaseUtils.getHashBytes(message));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hmacBytes);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    public boolean verifyData(String message, String signature) {
+        return signData(message).equals(signature);
+    }
+
+    private String getWebClientSecret() {
+        try (DataSession session = createSession()) {
+            return (String) authenticationLM.webClientSecret.read(session);
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    public AuthenticationToken authenticateUser(Authentication authentication, ExecutionStack stack) {
+        try (DataSession session = createSession()) {
+            String userName = authentication.getUserName();
+
+            Pair<DataObject, String> userObjectAndLogin = null;
+            boolean use2FA = false;
+            if (authentication instanceof PasswordAuthentication) {
+                String password = ((PasswordAuthentication) authentication).getPassword();
+
+                boolean useDefaultAuthentication = true;
+                if (authenticationLM.useLDAP.read(session) != null) {
+                    String server = (String) authenticationLM.serverLDAP.read(session);
+                    String baseDN = (String) authenticationLM.baseDNLDAP.read(session);
+                    String allowOnlyGroupUsers = (String) authenticationLM.allowOnlyGroupUsers.read(session);
+                    boolean useServiceUser = authenticationLM.useServiceUser.read(session) != null;
+                    boolean allowOnlyBaseDNUsers = authenticationLM.allowOnlyBaseDNUsers.read(session) != null;
+                    useDefaultAuthentication = authenticationLM.useDefaultAuthentication.read(session) != null;
+                    try {
+                        if (useServiceUser && !krbProps)
+                            setKrbProps(server, LDAPAuthenticationService.getRealm(baseDN));
+
+                        Subject subject = getSubject(session, userName, password, server, baseDN, useServiceUser, allowOnlyBaseDNUsers, allowOnlyGroupUsers);
+                        Map<String, Object> userPrincipals = subject.getPrincipals(LDAPAuthenticationService.UserPrincipal.class).stream()
+                                .collect(Collectors.toMap(LDAPAuthenticationService.UserPrincipal::getName, LDAPAuthenticationService.UserPrincipal::getValue));
+
+                        Map<String, String> userAttributesPrincipals = subject.getPrincipals(LDAPAuthenticationService.UserAttributePrincipal.class).stream()
+                                .collect(Collectors.toMap(LDAPAuthenticationService.UserAttributePrincipal::getName, LDAPAuthenticationService.UserAttributePrincipal::getValue));
+
+                        userObjectAndLogin = initAndUpdateUser(session, stack, userName, () -> password,
+                                (String) userPrincipals.get("firstName"), (String) userPrincipals.get("lastName"),
+                                (String) userPrincipals.get("email"), (List<String>) userPrincipals.get("groupNames"),
+                                false, userAttributesPrincipals);
+                    } catch (FailedLoginException fle) {
+                        useDefaultAuthentication = false;
+                        logLdapException(fle);
+                    } catch (javax.security.auth.login.LoginException e) {
+                        logLdapException(e);
+                    }
+                }
+
+                if(userObjectAndLogin == null) {
+                    if (useDefaultAuthentication)
+                        userObjectAndLogin = readUser(userName, userName, session);
+
+                    if (userObjectAndLogin == null || userObjectAndLogin.second == null || !authenticationLM.checkPassword(session, userObjectAndLogin.first, password))
+                        throw new LoginException();
+
+                    if (authenticationLM.use2FA.read(session) != null)
+                        use2FA = authenticationLM.emailContact.read(session, userObjectAndLogin.first) != null;
+                }
+            } else {
+                OAuth2Authentication oauth2 = (OAuth2Authentication) authentication;
+                String webClientAuthSecret = oauth2.getAuthSecret();
+                if ((webClientAuthSecret == null || !webClientAuthSecret.equals(getWebClientSecret())))
+                    throw new AuthenticationException(getString("exceptions.incorrect.web.client.auth.token"));
+
+                // Because user data can change on the oauth2 provider side - we will update userParameters on each authentication.
+                userObjectAndLogin = initAndUpdateUser(session, stack, oauth2.getUserName(), () -> BaseUtils.generatePassword(20, false, true), oauth2.getFirstName(), oauth2.getLastName(), oauth2.getEmail(), Collections.singletonList("selfRegister"), true, oauth2.getAttributes());
+                if(userObjectAndLogin == null)
+                    throw new LoginException();
+            }
+            if (authenticationLM.isLockedCustomUser.read(session, userObjectAndLogin.first) != null) {
+                throw new LockedException();
+            }
+            return generateToken(userObjectAndLogin.second, null, use2FA);
+        } catch (SQLException | SQLHandledException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private void logLdapException(javax.security.auth.login.LoginException e) {
+        systemLogger.error("LDAP authentication failed", e);
+    }
+
+    private boolean krbProps = false;
+    private void setKrbProps(String server, String realm) {
+        System.setProperty("java.security.krb5.realm", realm);
+        System.setProperty("java.security.krb5.kdc", server);
+        System.setProperty("java.security.auth.login.config", "");
+
+        krbProps = true;
+    }
+
+    private Subject getSubject(DataSession session, String userName, String password, String server, String baseDN, boolean useServiceUser, boolean allowOnlyBaseDNUsers, String allowOnlyGroupUsers) throws javax.security.auth.login.LoginException, SQLException, SQLHandledException {
+        Integer port = (Integer) authenticationLM.portLDAP.read(session);
+        String userDNSuffix = (String) authenticationLM.userDNSuffixLDAP.read(session);
+        String serviceUser = (String) authenticationLM.serviceUser.read(session);
+        String serviceUserPassword = (String) authenticationLM.serviceUserPassword.read(session);
+
+        Configuration config = new Configuration() {
+            @Override
+            public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                Map<String, Object> opts = new HashMap<>();
+                opts.put("server", server);
+                opts.put("port", port);
+                opts.put("userDNSuffix", userDNSuffix != null ? userDNSuffix.toUpperCase() : null);
+                opts.put("baseDN", baseDN);
+                opts.put("useServiceUser", useServiceUser);
+                opts.put("allowOnlyBaseDNUsers", allowOnlyBaseDNUsers);
+                opts.put("allowOnlyGroupUsers", allowOnlyGroupUsers);
+                opts.put("serviceUser", serviceUser);
+                opts.put("serviceUserPassword", serviceUserPassword);
+                return new AppConfigurationEntry[]{
+                        new AppConfigurationEntry(
+                                LDAPAuthenticationService.class.getName(),
+                                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                                opts
+                        )
+                };
+            }
+        };
+
+        CallbackHandler handler = callbacks -> {
+            for (Callback cb : callbacks) {
+                if (cb instanceof NameCallback)
+                    ((NameCallback) cb).setName(userName);
+                else if (cb instanceof PasswordCallback)
+                    ((PasswordCallback) cb).setPassword(password.toCharArray());
+            }
+        };
+
+        LoginContext lc = new LoginContext("LdapLogin", null, handler, config);
+        lc.login();
+
+        return lc.getSubject();
+    }
+
+    public SecurityPolicy getSecurityPolicy(DataSession session, DataObject userObject) {
+        List<RoleSecurityPolicy> policies = new ArrayList<>();
+        try {
+            Set<DataObject> userRoleSet = readUserRoleSet(session, userObject);
+            if(!SystemProperties.lightStart || !userRoleSet.contains(adminUserRole))
+                for (DataObject userRole : userRoleSet)
+                    policies.add(getRoleSecurityPolicy(session, userRole));
+            return new SecurityPolicy(policies);
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    public RoleSecurityPolicy getReadOnlySecurityPolicy(DataSession session) throws SQLException, SQLHandledException {
+        return getRoleSecurityPolicy(session, readOnlyUserRole);
+    }
+
+    private RoleSecurityPolicy getRoleSecurityPolicy(DataSession session, DataObject userRole) throws SQLException, SQLHandledException {
+        Long userRoleId = (Long) userRole.getValue();
+        RoleSecurityPolicy policy = cachedSecurityPolicies.get(userRoleId);
+        if (policy == null) {
+            Object cachedSecuritySemaphore = getCachedSecuritySemaphore(userRoleId);
+            synchronized (cachedSecuritySemaphore) { // we use semaphore to prevent simultaneous reading security policy, since this process consumes a lot of time and memory, can be run really a lot of times concurrently (for example when reconnecting users after server restart)
+                policy = cachedSecurityPolicies.get(userRoleId);
+                if (policy == null) { // double check
+                    policy = readSecurityPolicy(userRole, session);
+                    cachedSecurityPolicies.put((Long) userRole.getValue(), policy);
+                }
+            }
+        }
+        return policy;
+    }
+
+    public void prereadSecurityPolicies() {
+        try (DataSession session = createSession()) {
+            Set<DataObject> userRoleSet = readUserRoleSet(session, null);
+            for (DataObject userRole : userRoleSet) {
+                cachedSecurityPolicies.put((Long) userRole.getValue(), readSecurityPolicy(userRole, session));
+            }
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private RoleSecurityPolicy readSecurityPolicy(DataObject userRoleObject, DataSession session) throws SQLException, SQLHandledException {
+        session.sql.pushNoQueryLimit();
+        try {
+            RoleSecurityPolicy policy = new RoleSecurityPolicy(userRoleObject.equals(readOnlyUserRole));
+
+            KeyExpr navigatorElementExpr = new KeyExpr("navigatorElement");
+            QueryBuilder<Object, Object> query = new QueryBuilder<>(MapFact.singletonRev("navigatorElement", navigatorElementExpr));
+            query.addProperty("canonicalName", reflectionLM.canonicalNameNavigatorElement.getExpr(session.getModifier(), navigatorElementExpr));
+            query.addProperty("permission", securityLM.permissionUserRoleNavigatorElement.getExpr(session.getModifier(), userRoleObject.getExpr(), navigatorElementExpr));
+            query.and(reflectionLM.canonicalNameNavigatorElement.getExpr(session.getModifier(), navigatorElementExpr).getWhere());
+            query.and(securityLM.permissionUserRoleNavigatorElement.getExpr(session.getModifier(), userRoleObject.getExpr(), navigatorElementExpr).getWhere());
+
+            ImOrderMap<ImMap<Object, Object>, ImMap<Object, Object>> queryResult = query.execute(session);
+            for (ImMap<Object, Object> entry : queryResult.values()) {
+                String canonicalName = (String) entry.get("canonicalName");
+                NavigatorElement element = businessLogics.findNavigatorElement(canonicalName);
+                if (element != null) {
+                    policy.navigator.setPermission(element, getPermissionValue(entry.get("permission")));
+                } else {
+                    startLogDebug(String.format("NavigatorElement '%s' is not found when applying security policy", canonicalName));
+                }
+            }
+
+            KeyExpr actionOrPropertyExpr = new KeyExpr("actionOrProperty");
+            query = new QueryBuilder<>(MapFact.singletonRev("actionOrProperty", actionOrPropertyExpr));
+            query.addProperty("canonicalName", reflectionLM.canonicalNameActionOrProperty.getExpr(session.getModifier(), actionOrPropertyExpr));
+            query.addProperty("isProperty", reflectionLM.isProperty.getExpr(session.getModifier(), actionOrPropertyExpr));
+            query.addProperty("permissionView", securityLM.permissionViewUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr));
+            query.addProperty("permissionChange", securityLM.permissionChangeUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr));
+            query.addProperty("permissionEditObjects", securityLM.permissionEditObjectsUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr));
+            query.addProperty("permissionGroupChange", securityLM.permissionGroupChangeUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr));
+
+            query.and(reflectionLM.canonicalNameActionOrProperty.getExpr(session.getModifier(), actionOrPropertyExpr).getWhere());
+            query.and(securityLM.permissionViewUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr).getWhere().or(
+                    securityLM.permissionChangeUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr).getWhere()).or(
+                    securityLM.permissionEditObjectsUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr).getWhere()).or(
+                    securityLM.permissionGroupChangeUserRoleActionOrProperty.getExpr(session.getModifier(), userRoleObject.getExpr(), actionOrPropertyExpr).getWhere()
+            ));
+
+            queryResult = query.execute(session);
+            for (ImMap<Object, Object> entry : queryResult.values()) {
+
+                String canonicalName = trim((String) entry.get("canonicalName"));
+                boolean isProperty = entry.get("isProperty") != null;
+                try {
+                    LAP<?, ?> property = isProperty ? businessLogics.findProperty(canonicalName) : businessLogics.findAction(canonicalName);
+
+                    if (property != null) {
+                        ActionOrProperty<?> actionOrProperty = property.getActionOrProperty();
+                        policy.propertyView.setPermission(actionOrProperty, getPermissionValue(entry.get("permissionView")));
+                        policy.propertyChange.setPermission(actionOrProperty, getPermissionValue(entry.get("permissionChange")));
+                        policy.propertyEditObjects.setPermission(actionOrProperty, getPermissionValue(entry.get("permissionEditObjects")));
+                        policy.propertyGroupChange.setPermission(actionOrProperty, getPermissionValue(entry.get("permissionGroupChange")));
+                    } else {
+                        startLogDebug(String.format("Property '%s' is not found when applying security policy", canonicalName));
+                    }
+                } catch (Throwable ignored) {
+                }
+
+            }
+
+            return policy;
+        } finally {
+            session.sql.popNoQueryLimit();
+        }
+    }
+
+    private Set<DataObject> readUserRoleSet(DataSession session, DataObject userObject) throws SQLException, SQLHandledException {
+        Set<DataObject> userRoleSet = new HashSet<>();
+
+        KeyExpr userRoleExpr = new KeyExpr("userRole");
+        QueryBuilder<Object, Object> userRoleQuery = new QueryBuilder<>(MapFact.singletonRev("userRole", userRoleExpr));
+        userRoleQuery.and(LM.is(securityLM.userRole).getExpr(userRoleExpr).getWhere());
+        if(userObject != null) {
+            userRoleQuery.and(securityLM.hasUserRole.getExpr(session.getModifier(), userObject.getExpr(), userRoleExpr).getWhere());
+        }
+        userRoleQuery.and(securityLM.disableRole.getExpr(session.getModifier(), userRoleExpr).getWhere().not());
+        ImOrderMap<ImMap<Object, DataObject>, ImMap<Object, ObjectValue>> queryResult = userRoleQuery.executeClasses(session);
+        for (int i = 0, size = queryResult.size(); i < size; i++) {
+            userRoleSet.add(queryResult.getKey(i).get("userRole"));
+        }
+        return userRoleSet;
+    }
+
+    public Boolean getPermissionValue(Object permission) {
+        if (permission != null) {
+            switch ((String) permission) {
+                case "Security_Permission.permit":
+                    return true;
+                case "Security_Permission.forbid":
+                    return false;
+                default: //Security_Permission.default
+                    return null;
+            }
+        } else return null;
+    }
+
+    public void setUserParameters(DataObject customUser, String firstName, String lastName, String email, List<String> userRoleSIDs, Map<String, String> attributes, DataSession session) {
+        try {
+            if (firstName != null)
+                authenticationLM.firstNameContact.change(firstName, session, customUser);
+
+            if (lastName != null)
+                authenticationLM.lastNameContact.change(lastName, session, customUser);
+            
+            if (email != null)
+                authenticationLM.emailContact.change(email, session, customUser);
+
+            if (userRoleSIDs != null) {
+                for (String userRoleName : userRoleSIDs) {
+                    ObjectValue userRole = securityLM.userRoleSID.readClasses(session, new DataObject(userRoleName));
+                    if (userRole instanceof DataObject)
+                        securityLM.inCustomUserUserRole.change(true, session, customUser, (DataObject) userRole);
+                }
+            }
+
+            if (attributes != null) {
+                for (String key : attributes.keySet()) {
+                    String value = attributes.get(key);
+                    if (value != null)
+                        authenticationLM.attributes.change(value, session, customUser, new DataObject(key));
+                }
+            }
+        } catch (SQLException | SQLHandledException e) {
+            throw Throwables.propagate(e);
+        }
+    }    
+}
+

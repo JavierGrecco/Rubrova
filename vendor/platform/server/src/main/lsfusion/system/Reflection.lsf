@@ -1,0 +1,642 @@
+MODULE Reflection;
+
+REQUIRE System, Authentication;
+
+CLASS PropertyGroup '{reflection.property.group}';
+TABLE propertyGroup (PropertyGroup);
+
+TABLE propertyGroupPropertyGroup (PropertyGroup, PropertyGroup);
+parent '{reflection.parent.property.group}' = DATA PropertyGroup (PropertyGroup);
+level '{reflection.level}' (PropertyGroup child, PropertyGroup parent) = RECURSION 1l IF child IS PropertyGroup AND parent == child
+                                                                      STEP 2l IF parent == parent($parent) MATERIALIZED;
+
+caption '{reflection.caption.property.group}' = DATA STRING[250] (PropertyGroup);
+number '{reflection.number.property.group}' = DATA INTEGER (PropertyGroup) CHARWIDTH 8;
+SID '{reflection.sid.property.group}' = DATA STRING[100] (PropertyGroup);
+propertyGroup '{reflection.property.group.sid}' (sID) = GROUP AGGR PropertyGroup propertyGroup WHERE propertyGroup IS PropertyGroup BY SID(propertyGroup);
+
+
+CLASS NavigatorElement '{reflection.navigator.element}';
+CLASS NavigatorAction '{reflection.navigator.action}' : NavigatorElement;
+CLASS NavigatorFolder '{reflection.navigator.folder}' : NavigatorElement;    
+
+
+TABLE navigatorElement (NavigatorElement);
+TABLE navigatorElementNavigatorElement(NavigatorElement, NavigatorElement);
+
+caption '{reflection.caption.navigator.element}' = DATA STRING[250] (NavigatorElement);
+canonicalName '{reflection.canonical.name.navigator.element}' = DATA STRING[100] (NavigatorElement);
+number '{reflection.number.navigator.element}' = DATA INTEGER (NavigatorElement) CHARWIDTH 8;
+navigatorElementCanonicalName '{reflection.navigator.element}' (sid) = GROUP AGGR NavigatorElement navigatorElement WHERE navigatorElement IS NavigatorElement BY canonicalName(navigatorElement);
+
+parent '{reflection.parent.navigator.element}' = DATA NavigatorElement (NavigatorElement);
+level '{reflection.level}' (NavigatorElement child, NavigatorElement parent) = RECURSION 1l IF child IS NavigatorElement AND parent == child
+                                                              STEP 2l IF parent == parent($parent) MATERIALIZED;
+
+isNavigatorFolder (NavigatorElement element) = element IS NavigatorFolder;
+isNavigatorAction (NavigatorElement element) = element IS NavigatorAction;
+
+CLASS Form '{reflection.form}';
+
+TABLE form (Form);
+TABLE formNames (STRING[100]);
+
+caption '{reflection.caption.form}' = DATA ISTRING[250] (Form) CHARWIDTH 20 IN id;
+canonicalName '{reflection.canonical.name.form}' = DATA STRING[100] (Form) CHARWIDTH 20 IN id;
+form '{reflection.form}' (sid) = GROUP AGGR Form form WHERE form IS Form BY canonicalName(form) MATERIALIZED TABLE formNames; // for profiler
+is (Form form) = form IS Form;
+
+// need this for profiler
+CLASS NoForm { // do it with inheritance, because it is impossible to use Form.noForm (for example SET(f = Form.noForm) or even SET(f IS Form) AND form = Form.noForm), because compiler always thinks that Form.noForm is the constant of the constant class 
+    instance '{reflection.form.no.form}'
+} : Form;
+WHEN SET(NoForm f IS NoForm) DO { // need this for forms synchronization (for this object not to be deleted)
+    canonicalName(f) <- '_NOFORM';
+}
+
+currentForm = NATIVE STRING[100] (); // canonical name
+
+CLASS ABSTRACT ActionOrProperty '{reflection.action.or.property}';
+TABLE actionOrProperty(ActionOrProperty);
+
+CLASS Property '{reflection.property}' : ActionOrProperty;
+TABLE property (Property);
+
+CLASS Action '{reflection.action}' : ActionOrProperty;
+TABLE action (Action);
+
+parent '{reflection.parent.action.or.property}' = DATA PropertyGroup (ActionOrProperty);
+number '{reflection.number.action.or.property}' = DATA INTEGER (ActionOrProperty) CHARWIDTH 8;
+canonicalName '{reflection.canonical.name.property}' = DATA BPSTRING (Property) IN id INDEXED;
+canonicalName '{reflection.canonical.name.action}' = DATA BPSTRING (Action) IN id INDEXED;
+canonicalName '{reflection.canonical.name.action.or.property}' (ActionOrProperty p) = MULTI canonicalName[Property](p), canonicalName[Action](p);
+caption '{reflection.caption.action.or.property}' = DATA ISTRING[250] (ActionOrProperty) IN base;
+annotation '{reflection.annotation.action.or.property}' = DATA STRING[100] (ActionOrProperty);
+class '{reflection.class.action.or.property}' = DATA STRING[100] (ActionOrProperty);
+
+isProperty(ActionOrProperty aop) = aop IS Property;
+
+dbName '{reflection.db.name.property}' = DATA STRING[100] (Property) IN base;
+leftTo = FORMULA PG 'left($1, strpos($1, $2) - 1)', MS 'LEFT($1, CHARINDEX($2, $1) - 1)';
+loggable '{reflection.loggable.property}' = DATA BOOLEAN (Property);
+userLoggable '{reflection.user.loggable.property}' = DATA BOOLEAN (Property);
+userMaterialized '{reflection.user.materialized.property}' = DATA TBOOLEAN (Property);
+stored '{reflection.stored.property}' = DATA BOOLEAN (Property);
+isSetNotNull '{reflection.is.set.not.null.property}' = DATA BOOLEAN (Property);
+disableInputList '{reflection.disable.input.list}' = DATA BOOLEAN (Property);
+
+CLASS SelectType '{reflection.select}' {
+    Button '{reflection.select.type.button}',
+    ButtonGroup '{reflection.select.type.button.group}',
+    Dropdown '{reflection.select.type.dropdown}',
+    List '{reflection.select.type.list}',
+    No '{reflection.select.type.no}'
+}
+select '{reflection.select}' = DATA SelectType (Property);
+nameSelect '{reflection.select}' (Property property) = basicStaticName(select(property));
+staticCaptionSelect '{reflection.select}' (Property property) = staticCaption(select(property));
+
+updateSelect  INTERNAL  'lsfusion.server.physics.admin.service.action.UpdateSelectAction' (Property, STRING);
+
+return '{reflection.return.property}' = DATA STRING[100] (Property);
+complexity '{reflection.complexity.property}' = DATA LONG (Property);
+tableSID '{reflection.table.sid.property}' = DATA STRING[100] (Property);
+
+stats '{reflection.stats.property}' = DATA INTEGER (Property);
+maxStatsProperty '{reflection.max.stats.property}' = DATA INTEGER ();
+overMaxStatsProperty = OVERRIDE maxStatsProperty(), 2000000000;
+CONSTRAINT SET (userLoggable(Property p)) AND overMaxStatsProperty() AND stats(p) > overMaxStatsProperty() 
+           MESSAGE '{reflection.constraint.max.stats.property} ' + overMaxStatsProperty();
+           
+webServerUrl '{reflection.web.server.url}' = DATA BPSTRING[100]();
+
+form '{reflection.form.navigator.element}' = DATA Form (NavigatorElement);
+action '{reflection.action.navigator.element}' = DATA Action (NavigatorAction);
+
+EXTEND FORM options PROPERTIES maxStatsProperty(), webServerUrl();
+DESIGN options { 
+    commons { 
+        MOVE PROPERTY(maxStatsProperty());
+        MOVE PROPERTY(webServerUrl());   
+    } 
+}
+
+canonicalNameWithPostfix(ActionOrProperty aop) = canonicalName(aop) + '_' + (IF aop IS Action THEN 'action' ELSE 'property') MATERIALIZED INDEXED;
+actionOrPropertyCanonicalNameWithPostfix '{reflection.property}' (cn) = GROUP AGGR ActionOrProperty aop WHERE aop IS ActionOrProperty BY canonicalNameWithPostfix(aop);
+propertyCanonicalName '{reflection.property}' (cn) = GROUP AGGR Property property WHERE property IS Property BY canonicalName(property);
+actionCanonicalName '{reflection.action}' (cn) = GROUP AGGR Action property WHERE property IS Action BY canonicalName(property);
+INDEX tableSID(Property property), dbName(property);
+propertyTable '{reflection.property}' (string, sID) = GROUP AGGR Property property WHERE stored(property) BY tableSID(property), dbName(property);
+
+quantity '{reflection.quantity.property}' = DATA INTEGER (Property);
+quantityTop '{reflection.quantity.top.property}' = DATA INTEGER (Property);
+notNullQuantity '{reflection.not.null.quantity.property}' = DATA INTEGER (Property);
+overStats '{reflection.stats.property}' (Property property) = OVERRIDE notNullQuantity(property), stats(property);
+
+hasNotNullQuantity() = GROUP SUM 1 IF notNullQuantity(Property property);
+
+propertyDependencies = DATA LOCAL Property (INTEGER);
+propertyDependents = DATA LOCAL Property (INTEGER);
+getPropertyDependents (Property property, BOOLEAN dependencies)  INTERNAL  'lsfusion.server.physics.admin.service.action.GetPropertyDependentsAction';
+getPropertyDependencies '{reflection.get.property.dependencies}' (Property property) { getPropertyDependents(property, TRUE); }
+getPropertyDependents '{reflection.get.property.dependents}' (Property property) { getPropertyDependents(property, NULL); }
+
+lastRecalculate '{reflection.last.recalculate.property}' = DATA DATETIME (Property);
+
+CLASS PropertyDraw '{reflection.property.draw}';
+
+CLASS PropertyDrawShowStatus '{reflection.property.draw.status}' {
+    Show '{reflection.property.draw.status.show}',
+    Hide '{reflection.property.draw.status.hide}'
+}
+TABLE propertyDrawShowStatus(PropertyDrawShowStatus);
+
+FORM propertyDrawShowStatuses
+    OBJECTS s = PropertyDrawShowStatus
+    PROPERTIES(s) staticCaption
+    LIST PropertyDrawShowStatus OBJECT s
+;
+
+TABLE formPropertyDraw (Form, PropertyDraw);
+TABLE propertyDraw (PropertyDraw);
+TABLE propertyDrawCustomUser (PropertyDraw, CustomUser);
+
+actionOrProperty = DATA ActionOrProperty (PropertyDraw);
+canonicalNameActionOrProperty '{reflection.action.or.property}' (PropertyDraw p) = canonicalName(actionOrProperty(p)) IN id CHARWIDTH 20;
+sid '{reflection.sid.property.draw}' = DATA STRING[100] (PropertyDraw) IN id CHARWIDTH 20;
+caption '{reflection.caption.property.draw}' = DATA STRING[250] (PropertyDraw) CHARWIDTH 20;
+form '{reflection.form.property.draw}' = DATA Form (PropertyDraw) INDEXED;
+nameForm '{reflection.form.property.draw}' (PropertyDraw pd) = canonicalName(form(pd)) IN id;
+groupObject '{reflection.group.object.property.draw}' = DATA GroupObject (PropertyDraw);
+propertyDraw '{reflection.property.draw}' (form, sID) = GROUP AGGR PropertyDraw propertyDraw WHERE propertyDraw IS PropertyDraw BY form (propertyDraw), sid (propertyDraw);
+propertyDrawByFormNameAndPropertyDrawSid '{reflection.property.draw.by.form.name.and.property.draw.sid}' (STRING[100] str1, STRING[100] str2) = propertyDraw (form(str1), str2);
+
+show '{reflection.show.property.draw}' = DATA PropertyDrawShowStatus (PropertyDraw);
+show '{reflection.show.property.draw.custom.user}' = DATA PropertyDrawShowStatus (PropertyDraw, CustomUser);
+
+nameShow '{reflection.show.property.draw}' (PropertyDraw propertyDraw) = staticName(show (propertyDraw)) CHARWIDTH 50;
+nameShow '{reflection.show.property.draw.custom.user}' (PropertyDraw propertyDraw, CustomUser customUser) = staticName(show(propertyDraw, customUser)) CHARWIDTH 50;
+
+captionShow '{reflection.show.property.draw}' (PropertyDraw propertyDraw) = staticCaption(show (propertyDraw)) CHARWIDTH 20;
+captionShow '{reflection.show.property.draw.custom.user}' (PropertyDraw propertyDraw, CustomUser customUser) = staticCaption(show(propertyDraw, customUser)) CHARWIDTH 20;
+
+columnCaption '{reflection.column.caption.property.draw.custom.user}' = DATA STRING[100] (PropertyDraw, CustomUser);
+columnCaption '{reflection.column.caption.property.draw}' = DATA STRING[100] (PropertyDraw);
+
+columnPattern '{reflection.column.pattern.property.draw.custom.user}' = DATA STRING[100] (PropertyDraw, CustomUser) CHARWIDTH 15;
+columnPattern '{reflection.column.pattern.property.draw}' = DATA STRING[100] (PropertyDraw) CHARWIDTH 15;
+
+columnWidth '{reflection.column.width.property.draw.custom.user}' = DATA INTEGER (PropertyDraw, CustomUser);
+columnWidth '{reflection.column.width.property.draw}' = DATA INTEGER (PropertyDraw);
+
+columnFlex '{reflection.column.flex.property.draw.custom.user}' = DATA DOUBLE (PropertyDraw, CustomUser);
+columnFlex '{reflection.column.flex.property.draw}' = DATA DOUBLE (PropertyDraw);
+
+columnOrder '{reflection.column.order.property.draw.custom.user}' = DATA INTEGER (PropertyDraw, CustomUser);
+columnOrder '{reflection.column.order.property.draw}' = DATA INTEGER (PropertyDraw);
+
+columnSort '{reflection.column.sort.property.draw.custom.user}' = DATA INTEGER (PropertyDraw, CustomUser);
+columnSort '{reflection.column.sort.property.draw}' = DATA INTEGER (PropertyDraw);
+
+columnAscendingSort '{reflection.column.ascending.sort.property.draw.custom.user}' = DATA BOOLEAN (PropertyDraw, CustomUser);
+columnAscendingSort '{reflection.column.ascending.sort.property.draw}' = DATA BOOLEAN (PropertyDraw);
+
+inGrid = DATA BOOLEAN (PropertyDraw, CustomUser);
+inGrid = DATA BOOLEAN (PropertyDraw);
+
+hasUserPreferences '{reflection.has.user.preferences.group.object.custom.user}'= DATA BOOLEAN (GroupObject, CustomUser);
+countShowPropertyDraw(g, CustomUser u) = GROUP SUM 1 IF show(PropertyDraw property, u) == PropertyDrawShowStatus.Show AND inGrid(property, u) BY groupObject(property);
+countUserPreferences '{authentication.users.number}' (GroupObject g) = GROUP SUM 1 IF hasUserPreferences(g, CustomUser u);
+CONSTRAINT hasUserPreferences(GroupObject g, CustomUser u) AND NOT countShowPropertyDraw(g, u) MESSAGE '{reflection.constraint.has.user.preferences}';
+//reset user preferences if all shown properties were removed from form
+WHEN DROPPED(PropertyDraw p IS PropertyDraw) AND hasUserPreferences(PREV(groupObject(p)), CustomUser u) AND NOT countShowPropertyDraw(PREV(groupObject(p)), u) DO {
+    hasUserPreferences(PREV(groupObject(p)), u) <- NULL;
+    show(PropertyDraw pd, u) <- NULL WHERE groupObject(pd) == PREV(groupObject(p));
+}
+
+hasUserPreferences '{reflection.has.user.preferences.group.object}' = DATA BOOLEAN (GroupObject);
+countShowPropertyDraw(g) = GROUP SUM 1 IF show(PropertyDraw property) == PropertyDrawShowStatus.Show AND inGrid(property) BY groupObject(property);
+CONSTRAINT hasUserPreferences(GroupObject g) AND NOT countShowPropertyDraw(g) MESSAGE '{reflection.constraint.has.user.preferences}';
+hasUserPreferencesOverride '{reflection.has.user.preferences.group.object}' (GroupObject groupObject, CustomUser customUser) = OVERRIDE hasUserPreferences(groupObject, customUser), hasUserPreferences(groupObject) IF customUser IS CustomUser;
+//reset user preferences if all shown properties were removed from form
+WHEN DROPPED(PropertyDraw p IS PropertyDraw) AND hasUserPreferences(PREV(groupObject(p))) AND NOT countShowPropertyDraw(PREV(groupObject(p)))  DO {
+    hasUserPreferences(PREV(groupObject(p))) <- NULL;
+    show(PropertyDraw pd) <- NULL WHERE groupObject(pd) == PREV(groupObject(p));
+}
+
+WHEN SET(PropertyDraw p IS PropertyDraw) AND hasUserPreferences(groupObject(p)) DO
+    show(p) <- PropertyDrawShowStatus.Hide;
+    
+WHEN SET(PropertyDraw p IS PropertyDraw) AND hasUserPreferences(groupObject(p), CustomUser u) DO
+    show(p, u) <- PropertyDrawShowStatus.Hide;    
+
+fontSize '{reflection.font.size.group.object.custom.user}'= DATA INTEGER (GroupObject, CustomUser);
+fontSize '{reflection.font.size.group.object}' = DATA INTEGER (GroupObject);
+
+isFontBold '{reflection.is.font.bold.group.object.custom.user}'= DATA BOOLEAN (GroupObject, CustomUser);
+isFontBold '{reflection.is.font.bold.group.object}' = DATA BOOLEAN (GroupObject);
+
+isFontItalic '{reflection.is.font.italic.group.object.custom.object}'= DATA BOOLEAN (GroupObject, CustomUser);
+isFontItalic '{reflection.is.font.italic.group.object}' = DATA BOOLEAN (GroupObject);
+
+pageSize '{reflection.page.size.group.object.custom.object}'= DATA INTEGER (GroupObject, CustomUser);
+pageSize '{reflection.page.size.group.object}' = DATA INTEGER (GroupObject);
+
+headerHeight '{reflection.header.height.group.object.custom.object}'= DATA INTEGER (GroupObject, CustomUser);
+headerHeight '{reflection.header.height.group.object}' = DATA INTEGER (GroupObject);
+
+CLASS Table '{reflection.table}';
+TABLE tables (Table);
+
+sid '{reflection.sid.table}' = DATA ISTRING[100] (Table);
+table '{reflection.table}' (sID) = GROUP AGGR Table table WHERE table IS Table BY sid (table);
+rows '{reflection.row.table}' = DATA INTEGER (Table);
+skipVacuum '{reflection.skip.vacuum.table}' = DATA BOOLEAN (Table);
+table '{reflection.table}' = DATA Table (TableKey) NONULL DELETE;
+sidTable (TableKey tableKey) = sid(table(tableKey));
+
+CLASS TableKey '{reflection.table.key}';
+TABLE tableKey (TableKey);
+
+sid '{reflection.sid.table.key}' = DATA ISTRING[100] (TableKey);
+tableKey '{reflection.table.key}' (sID) = GROUP AGGR TableKey tableKey WHERE tableKey IS TableKey BY sid (tableKey);
+class '{reflection.class.table.key}' = DATA ISTRING[40] (TableKey);
+classSID '{reflection.class.sid.table.key}' = DATA STRING[100] (TableKey);
+name '{reflection.name.table.key}' = DATA ISTRING[20] (TableKey);
+quantity '{reflection.quantity.table.key}' = DATA INTEGER (TableKey);
+quantityTop '{reflection.quantity.top.table.key}' = DATA INTEGER (TableKey);
+overQuantity '{reflection.quantity.table.key}' (TableKey tableKey) = OVERRIDE quantityTop(tableKey), quantity(tableKey);
+
+CLASS TableColumn '{reflection.table.column}';
+TABLE tableColumn (TableColumn);
+
+table '{reflection.table.table.column}' = DATA Table(TableColumn) NONULL DELETE;
+sid '{reflection.sid.table.column}' = DATA ISTRING[100] (TableColumn);
+tableSID (sid) = GROUP MAX Table table BY sid(table);
+sidTable(TableColumn tableColumn) = sid(table(tableColumn));
+
+longSID(TableColumn tableColumn) = sid(table(tableColumn)) + '.' + sid(tableColumn);
+tableColumnLong '{reflection.table.column}' (sID) = GROUP AGGR TableColumn tableColumn WHERE tableColumn IS TableColumn BY longSID(tableColumn); 
+tableColumnSID (sid) = GROUP MAX TableColumn tableColumn BY sid(tableColumn);
+property '{reflection.property}' (TableColumn tableColumn) = propertyTable(sid(table(tableColumn)), sid(tableColumn));
+lastRecalculateProperty '{reflection.last.recalculate.property}' (TableColumn tableColumn) = lastRecalculate(property(tableColumn));
+caption '{reflection.caption.table.column}' (TableColumn tableColumn) = caption(property(tableColumn));
+canonicalName '{reflection.canonical.name.table.column}' (TableColumn tableColumn) = canonicalName(property(tableColumn));
+quantity '{reflection.quantity.property}' (TableColumn tableColumn) = quantity(property(tableColumn));
+quantityTop '{reflection.quantity.top.property}' (TableColumn tableColumn) = quantityTop(property(tableColumn));
+overQuantity (TableColumn tableColumn) = OVERRIDE quantityTop(tableColumn), quantity(tableColumn);
+notNullQuantity '{reflection.not.null.quantity.property}' (TableColumn tableColumn) = notNullQuantity(property(tableColumn));
+tableColumn(Property property) = tableColumnLong(tableSID(property) + '.' + dbName(property));
+annotation '{reflection.annotation.action.or.property}' (TableColumn tableColumn) = annotation(property(tableColumn));
+return '{reflection.return.table.column}' (TableColumn tableColumn) = return(property(tableColumn));
+
+percentNotNull '{reflection.percent.not.null}' (TableColumn tableColumn) = IF rows (table(tableColumn)) == 0
+                                                          THEN 100.00
+                                                          ELSE NUMERIC[15,2](notNullQuantity(tableColumn)) / rows (table(tableColumn)) * 100;
+sparseColumns '{reflection.sparse.columns}' (table) = GROUP SUM 1 BY table(TableColumn tableColumn) IF percentNotNull(tableColumn) < 50;
+
+notRecalculate '{reflection.not.recalculate.materializations}' = DATA BOOLEAN (TableColumn) @@deprecated('6.2','use notRecalculateMaterializations instead');
+notRecalculateMaterializations '{reflection.not.recalculate.materializations}' = DATA BOOLEAN (TableColumn);
+
+recalculateAggregation '{reflection.recalculate.materializations}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableColumnAction' (TableColumn) @@deprecated('6.2','use recalculateMaterializations instead');
+recalculateMaterializations '{reflection.recalculate.materializations}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableColumnAction' (TableColumn);
+recalculateAggregationWithDependencies '{reflection.recalculate.materializations.with.dependencies}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableColumnWithDependenciesAction' (TableColumn) @@deprecated('6.2','use recalculateMaterializationsWithDependencies instead');
+recalculateMaterializationsWithDependencies '{reflection.recalculate.materializations.with.dependencies}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableColumnWithDependenciesAction' (TableColumn);
+recalculateAggregationWithDependents '{reflection.recalculate.materializations.with.dependents}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableColumnWithDependentsAction' (TableColumn) @@deprecated('6.2','use recalculateMaterializationsWithDependents instead');
+recalculateMaterializationsWithDependents '{reflection.recalculate.materializations.with.dependents}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableColumnWithDependentsAction' (TableColumn);
+checkAggregation '{reflection.check.materializations}'  INTERNAL  'lsfusion.server.physics.admin.service.action.CheckTableColumnAction' (TableColumn) @@deprecated('6.2','use checkMaterializations instead');
+checkMaterializations '{reflection.check.materializations}'  INTERNAL  'lsfusion.server.physics.admin.service.action.CheckTableColumnAction' (TableColumn);
+checkAggregation(ISTRING[100] string)  { checkMaterializations(tableColumnSID(string)); }
+checkMaterializations(ISTRING[100] string)  { checkMaterializations(tableColumnSID(string)); }
+dropDB  INTERNAL  'lsfusion.server.physics.admin.service.action.DropColumnAction' (DropColumn);
+drop '{reflection.drop.drop.column}' (DropColumn cl)  { 
+    dropDB(cl);
+    DELETE cl;
+}
+
+recalculateColumnsAggregations '{reflection.recalculate.columns.materializations}' (Table table)  { 
+    FOR table == table(TableColumn tableColumn) AND tableColumn IS TableColumn DO {
+        recalculateMaterializations(tableColumn);    
+    }
+} @@deprecated('6.2','use recalculateColumnsMaterializations instead');
+recalculateColumnsMaterializations '{reflection.recalculate.columns.materializations}' (Table table)  {
+    FOR table == table(TableColumn tableColumn) AND tableColumn IS TableColumn DO {
+        recalculateMaterializations(tableColumn);
+    }
+}
+checkClasses '{reflection.check.classes}'  INTERNAL  'lsfusion.server.physics.admin.service.action.CheckTableClassesAction' (Table);
+checkClasses(ISTRING[100] string)  { checkClasses(table(string)); }
+recalculateClasses '{reflection.recalculate.classes}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableClassesAction' (Table);
+notRecalculateStats '{reflection.not.recalculate.stats}' = DATA BOOLEAN (Table);
+notRecalculateStats '{reflection.not.recalculate.stats}' (ISTRING[100] sid) = notRecalculateStats(tableSID(sid));
+recalculateStats '{reflection.recalculate.stats}'  INTERNAL  'lsfusion.server.physics.admin.service.action.RecalculateTableStatsAction' (Table);
+pack '{reflection.pack.table}'  INTERNAL  'lsfusion.server.physics.admin.service.action.PackTableAction' (Table);
+
+disableClasses '{reflection.disable.classes}' = DATA BOOLEAN (Table);
+disableStatsTable '{reflection.disable.stats}' (Table t) = notRecalculateStats(t);
+disableAggregations '{reflection.disable.materializations}' (TableColumn tc) = notRecalculateMaterializations(tc) @@deprecated('6.2','use disableMaterializations instead');
+disableMaterializations '{reflection.disable.materializations}' (TableColumn tc) = notRecalculateMaterializations(tc); 
+disableClasses '{reflection.disable.classes}' = DATA BOOLEAN (TableColumn);
+disableStatsTableColumn '{reflection.disable.stats}' = DATA BOOLEAN (TableColumn);
+
+disableClasses '{reflection.disable.classes}' (ISTRING[100] sid) = disableClasses(tableSID(sid));
+disableStatsTable '{reflection.disable.stats}' (ISTRING[100] sid) = disableStatsTable(tableSID(sid));
+disableAggregations (ISTRING[100] sid) = disableMaterializations(tableColumnSID(sid)) @@deprecated('6.2','use disableMaterializations instead');
+disableMaterializations (ISTRING[100] sid) = disableMaterializations(tableColumnSID(sid));
+disableStatsTableColumn '{reflection.disable.stats}' (ISTRING[100] sid) = disableStatsTableColumn(tableColumnSID(sid));
+
+CLASS DropColumn '{reflection.drop.column}';
+TABLE dropColumn (DropColumn);
+
+sid '{reflection.sid.drop.column}' = DATA STRING[100] (DropColumn);
+dropColumn '{reflection.drop.column}' (sID) = GROUP NAGGR DropColumn dropColumn WHERE dropColumn IS DropColumn BY sid (dropColumn);
+sidTable '{reflection.sid.table.drop.column}' = DATA STRING[100] (DropColumn);
+time '{reflection.time.drop.column}' = DATA DATETIME (DropColumn);
+revision '{reflection.revision.drop.column}' = DATA STRING[10] (DropColumn);
+
+dropColumns INTERNAL  'lsfusion.server.physics.admin.service.action.DropColumnsAction' ();
+dropAllColumns '{reflection.drop.drop.columns}' ()  {
+    dropColumns();
+    DELETE DropColumn cl WHERE sid(cl) AND sidTable(cl);
+}
+
+CLASS GroupObject '{reflection.group.object}';
+TABLE groupObjectCustomUser (GroupObject, CustomUser);
+TABLE groupObject (GroupObject);
+
+sid '{reflection.sid.group.object}' = DATA STRING[100] (GroupObject) IN id CHARWIDTH 10;
+form '{reflection.form.group.object}' = DATA Form (GroupObject);
+canonicalNameForm (GroupObject groupObject) = canonicalName (form(groupObject)) IN id;
+captionForm (GroupObject groupObject) = caption (form(groupObject)) IN id; 
+groupSIDFormGroupObject '{reflection.group.object}' (sidGroupObject, canonicalNameNavigatorElement) = GROUP AGGR GroupObject groupObject WHERE groupObject IS GroupObject BY sid (groupObject), canonicalNameForm (groupObject);
+
+CLASS FormGrouping '{reflection.form.grouping}';
+TABLE formGrouping (FormGrouping); 
+
+name '{reflection.name.form.grouping}' = DATA STRING[100] (FormGrouping);
+groupObject = DATA GroupObject (FormGrouping);
+itemQuantity '{reflection.item.quantity.form.grouping}' = DATA BOOLEAN (FormGrouping);
+formGrouping '{reflection.form.grouping}' (nameFormGrouping, groupObject) = GROUP AGGR FormGrouping formGrouping WHERE formGrouping IS FormGrouping BY name(formGrouping), groupObject(formGrouping);
+
+TABLE formGroupingPropertyDraw (FormGrouping, PropertyDraw);
+groupOrder '{reflection.group.order.form.grouping}' = DATA INTEGER (FormGrouping, PropertyDraw);
+sum '{reflection.sum.form.grouping}' = DATA BOOLEAN (FormGrouping, PropertyDraw);
+max '{reflection.max.form.grouping}' = DATA BOOLEAN (FormGrouping, PropertyDraw);
+pivot '{reflection.pivot.form.grouping}' = DATA BOOLEAN (FormGrouping, PropertyDraw);
+
+changeQuantity(Property p, INTEGER q)  { 
+    quantity(p) <- q;
+}
+
+changeQuantity(TableColumn tc)  { 
+    INPUT int = INTEGER DO
+        IF int THEN {
+            changeQuantity(property(tc), int);
+        }      
+}
+
+changeNotNullQuantity(Property p, INTEGER q)  { 
+    notNullQuantity(p) <- q;
+}
+
+changeNotNullQuantity(TableColumn tc)  { 
+    INPUT int = INTEGER DO
+        IF int THEN {
+            changeNotNullQuantity(property(tc), int);
+        }      
+}
+
+FORM physicalModel '{reflection.form.physical.model}'
+    OBJECTS t=Table
+    PROPERTIES(t) READONLY sid, rows, sparseColumns
+    PROPERTIES(t) GRID disableClasses, checkClasses, recalculateClasses,
+                       disableStatsTable, recalculateStats, 
+                       recalculateColumnsMaterializations, pack, skipVacuum
+
+    OBJECTS tk=TableKey
+    PROPERTIES(tk) READONLY class, classSID, name, quantity CHANGEABLE, quantityTop
+
+    OBJECTS tc=TableColumn
+    PROPERTIES(tc) READONLY sid, caption, canonicalName, annotation, property, return, quantity CHANGEABLE ON CHANGE changeQuantity(tc), quantityTop,
+                   notNullQuantity CHANGEABLE ON CHANGE changeNotNullQuantity(tc), percentNotNull, lastRecalculateProperty
+    PROPERTIES(tc) GRID disableMaterializations, disableClasses, disableStatsTableColumn, recalculateMaterializations, recalculateMaterializationsWithDependencies, 
+            recalculateMaterializationsWithDependents, checkMaterializations
+
+    OBJECTS dc=DropColumn
+    PROPERTIES(dc) READONLY sidTable, sid, time, revision
+    PROPERTIES(dc) drop GRID
+    
+    PROPERTIES() dropAllColumns DRAW dc TOOLBAR
+
+    FILTERGROUP filtersForm
+        FILTER '{reflection.form.physical.model.filter.table}' table(tc)==t 'F8' DEFAULT
+
+    FILTERS
+        table(tk)==t
+;
+
+DESIGN physicalModel {
+    BOX {
+        NEW container BEFORE TOOLBARBOX{
+            fill = 1;
+            tabbed = TRUE;
+            NEW modelContainer {
+                fill = 1;
+                caption = '{reflection.form.physical.model.caption.tables}';
+                MOVE BOX(t) {
+                    caption = '{reflection.form.physical.model.caption.tables}';
+                    fill = 1;
+                };
+                MOVE BOX(tk) {
+                    caption = '{reflection.form.physical.model.caption.keys}';
+                    fill = 0.5;
+                }
+                MOVE BOX(tc) {
+                    caption = '{reflection.form.physical.model.caption.columns}';
+                    fill = 1;
+                }
+            }
+
+            NEW dropColumnsContainer {
+                fill = 1;
+                caption = '{reflection.form.physical.model.caption.deleted.columns}';
+                MOVE BOX(dc);
+            }
+        }
+    }
+}
+
+FORM navigatorElements '{reflection.form.navigator.elements}'
+    TREE neTree ne=NavigatorElement PARENT parent(ne)
+    PROPERTIES(ne) READONLY caption, canonicalName, number
+    ORDERS number(ne)   
+;
+
+FORM forms '{reflection.form.forms}'
+    OBJECTS f = Form PANEL
+    PROPERTIES(f) SELECTOR canonicalName, caption
+
+    OBJECTS g = GroupObject
+    PROPERTIES(g) sid READONLY, hasUserPreferences, countUserPreferences READONLY
+    FILTERS form(g) = f
+
+    // global
+    OBJECTS p = PropertyDraw
+    PROPERTIES(p) READONLY canonicalNameActionOrProperty, sid, caption 
+    PROPERTIES(p) BACKGROUND RGB(224,224,255) captionShow, columnCaption, columnPattern, columnWidth, columnOrder, columnSort, columnAscendingSort, inGrid READONLY
+    ORDERS captionShow(p), columnOrder(p)
+    FILTERS groupObject(p) = g
+
+    // user
+    OBJECTS u = CustomUser
+    PROPERTIES(u) READONLY firstName, lastName, login
+    PROPERTIES(g, u) hasUserPreferences, fontSize, isFontBold, isFontItalic, pageSize, headerHeight
+    FILTERGROUP userPreferences
+        FILTER '{reflection.has.user.preferences.group.object.custom.user}' hasUserPreferences(g, u) DEFAULT
+
+    OBJECTS pu = PropertyDraw
+    PROPERTIES(pu) READONLY canonicalNameActionOrProperty, sid, caption
+    PROPERTIES(pu, u) BACKGROUND RGB(224,224,255) captionShow, columnCaption, columnPattern, columnWidth, columnFlex, columnOrder, columnSort, columnAscendingSort, inGrid READONLY
+    ORDERS captionShow(pu, u), columnOrder(pu, u)
+    FILTERS groupObject(pu) = g
+    
+    OBJECTS up = CustomUser
+    PROPERTIES(up) READONLY firstName, lastName, login
+    PROPERTIES(pu, up) BACKGROUND RGB(224,224,255) captionShow, columnCaption, columnPattern, columnWidth, columnFlex, columnOrder, columnSort, columnAscendingSort, inGrid READONLY
+    FILTERGROUP userShow
+        FILTER '{reflection.show.property.draw.custom.user}' show(pu, up) = PropertyDrawShowStatus.Show DEFAULT
+
+    // grouping
+    OBJECTS fg = FormGrouping
+    PROPERTIES(fg) name, itemQuantity
+    FILTERS groupObject(fg) = g
+
+    OBJECTS pfg = PropertyDraw
+    PROPERTIES(pfg) READONLY canonicalNameActionOrProperty, sid, caption
+    PROPERTIES(fg, pfg) groupOrder, sum, max, pivot
+    FILTERS groupObject(pfg) = g
+;
+
+DESIGN forms {
+    OBJECTS {
+        NEW pane FIRST {
+            fill = 1;
+            horizontal = TRUE;
+            NEW leftPane {
+                align = STRETCH;
+                MOVE PROPERTY(canonicalName(f)) { align = STRETCH; }
+                MOVE PROPERTY(caption(f)) { align = STRETCH; }
+                MOVE BOX(g);
+            }
+            NEW rightPane {
+                fill = 2;
+                tabbed = TRUE;
+                NEW global {
+                    caption = '{reflection.property.draw}';
+                    MOVE BOX(p);
+                }
+                NEW user {
+                    caption = '{authentication.custom.user}';
+                    MOVE BOX(u);
+                    MOVE BOX(pu) { fill = 2; }
+                    MOVE BOX(up);
+                }
+                NEW grouping {
+                    horizontal = TRUE;
+                    caption = '{reflection.form.grouping}';
+                    MOVE BOX(fg);
+                    MOVE BOX(pfg) { fill = 3; }
+                }
+            }
+        }
+    }
+}
+
+dumb (PropertyGroup pg) = ' ' IF pg IS PropertyGroup;
+
+FORM properties '{reflection.form.properties}'
+    OBJECTS p=Property
+    PROPERTIES(p) READONLY caption, canonicalName, dbName, annotation, tableSID, return, class, complexity, parent, number,
+        quantity, notNullQuantity, userLoggable CHANGEABLE, loggable, userMaterialized CHANGEABLE, stored CHANGEABLE, isSetNotNull CHANGEABLE, 
+        disableInputList CHANGEABLE, staticCaptionSelect CHANGEABLE, lastRecalculate
+
+    TREE treePropertiesObject tps=PropertyGroup PARENT parent(tps), ps=Property
+    PROPERTIES(tps) READONLY caption, SID, d1=dumb, d2=dumb, d3=dumb, d4=dumb, d5=dumb, parent, number, d6=dumb, d7=dumb, d8=dumb, d9=dumb
+    PROPERTIES(ps) READONLY caption, canonicalName, dbName, return, class, complexity, parent, number, quantity, notNullQuantity, 
+        userLoggable CHANGEABLE, loggable, userMaterialized CHANGEABLE, stored CHANGEABLE, isSetNotNull CHANGEABLE
+
+    ORDERS number(p)
+    ORDERS number(tps)
+
+    FILTERS
+        parent(ps)==tps
+;
+
+DESIGN properties {
+    BOX {
+        NEW container BEFORE TOOLBARBOX {
+            fill = 1;
+            tabbed = TRUE;
+
+            NEW treeContainer {
+                fill = 1;
+                caption = '{reflection.form.properties.caption.tree}';
+                MOVE BOX(TREE treePropertiesObject);
+            }
+
+            NEW tableContainer {
+                fill = 1;
+                caption = '{reflection.form.properties.caption.table}';
+                MOVE BOX(p);
+            }
+        }
+    }
+}
+
+FORM actions '{reflection.form.actions}'
+    OBJECTS p=Action
+    PROPERTIES(p) GRID READONLY caption, canonicalName, annotation, class, parent, number
+
+    TREE treeActionsObject tps=PropertyGroup PARENT parent(tps), ps=Action
+    PROPERTIES(tps) READONLY caption, SID, d1=dumb, d2=dumb, number
+    PROPERTIES(ps) GRID READONLY caption, canonicalName, class, parent, number
+
+    ORDERS number(p)
+    ORDERS number(tps)
+
+    FILTERS
+        parent(ps)==tps
+;
+
+DESIGN actions {
+    BOX {
+        NEW container BEFORE TOOLBARBOX {
+            fill = 1;
+            tabbed = TRUE;
+
+            NEW treeContainer {
+                fill = 1;
+                caption = '{reflection.form.actions.caption.tree}';
+                MOVE BOX(TREE treeActionsObject);
+            }
+
+            NEW tableContainer {
+                fill = 1;
+                caption = '{reflection.form.actions.caption.table}';
+                MOVE BOX(p);
+            }
+        }
+    }
+}
+
+NAVIGATOR {
+    system {
+        NEW FOLDER metadata '{navigator.metadata}' AFTER logs {
+            NEW Reflection.physicalModel;
+            NEW Reflection.navigatorElements;
+            NEW Reflection.forms;
+            NEW Reflection.properties;
+            NEW Reflection.actions;
+        }
+    }
+}

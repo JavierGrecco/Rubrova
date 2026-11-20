@@ -1,0 +1,13 @@
+package lsfusion.gwt.client.form.design.view.flex;
+
+import com.google.gwt.user.client.ui.Widget;
+
+public interface TabBar {
+    Widget asWidget();
+
+    void removeTab(int idx);
+    void insertTab(Widget tabWidget, int beforeIndex);
+
+    int getSelectedTab();
+    void selectTab(int index);
+}

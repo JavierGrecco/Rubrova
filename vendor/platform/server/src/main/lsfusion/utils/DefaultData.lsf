@@ -1,0 +1,51 @@
+MODULE DefaultData;
+
+REQUIRE System;
+
+GROUP loadDefault '{default.data.load.default}' : public;
+
+loadDefaultData ABSTRACT LIST();
+failedLoadDefaultData = DATA LOCAL BOOLEAN ();
+
+fillDefaultData '{default.data.load.default.data}' {
+    NEWSESSION {
+        loadDefaultData();
+        IF NOT failedLoadDefaultData() THEN
+            APPLY;
+    }
+}
+
+FORM defaultData '{default.data.form.default.data}'
+    PROPERTIES() fillDefaultData
+;
+DESIGN defaultData {
+    OBJECTS {
+        MOVE PROPERTY(fillDefaultData());
+        NEW pane {
+            fill = 1;
+            tabbed = TRUE;
+            NEW commons {
+                lines = 3;
+                caption = '{default.data.form.default.data.caption.general}';
+            }
+        }
+    }
+}
+
+NAVIGATOR {
+    application {
+        NEW defaultData;
+    }
+}
+
+META implementLoadDefaultData (property)
+    loadDefaultData () + { property(); }
+    EXTEND FORM defaultData
+        PROPERTIES() property
+    ;
+    DESIGN defaultData {
+        commons {
+            MOVE PROPERTY(property());
+        }
+    }
+END

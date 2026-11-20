@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>lsfusion.platform.build</groupId>
+        <artifactId>assemble</artifactId>
+        <version>6.2</version>
+        <relativePath>../assemble/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>logics</artifactId>
+    <packaging>pom</packaging>
+    <name>Logics</name>
+
+    <properties>
+        <assemble.mainClass>lsfusion.server.logics.BusinessLogicsBootstrap</assemble.mainClass>
+        <assemble.finalName>lsfusion-server-${project.version}</assemble.finalName>
+
+        <docker.singlearch>true</docker.singlearch>
+        <docker.multiarch>false</docker.multiarch>
+        <docker.image.namespace>local</docker.image.namespace>
+        <docker.image.repository>${project.artifactId}</docker.image.repository>
+        <docker.image.tag>${project.version}</docker.image.tag>
+        <docker.image.fullName>${docker.image.namespace}/${docker.image.repository}:${docker.image.tag}</docker.image.fullName>
+        <docker.logics.file.name>${assemble.file.name}</docker.logics.file.name>
+        <docker.template.subfolder>docker</docker.template.subfolder>
+        
+        <docker.compose.projectName>${project.artifactId}</docker.compose.projectName>
+        <docker.compose.outputDirectory>${project.build.directory}</docker.compose.outputDirectory>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>embed-server</id>
+            <properties>
+                <docker.image.repository>${project.artifactId}-embed-server</docker.image.repository>
+                <docker.template.subfolder>docker-embed-server</docker.template.subfolder>
+            </properties>
+        </profile>
+        <profile>
+            <id>multiarch</id>
+            <properties>
+                <docker.singlearch>false</docker.singlearch>
+                <docker.multiarch>true</docker.multiarch>
+            </properties>
+        </profile>
+        <profile>
+            <id>docker</id>
+            <properties>
+                <deploy.releases.repo>${deploy.dummy.repo}</deploy.releases.repo>
+                <deploy.snapshots.repo>${deploy.dummy.repo}</deploy.snapshots.repo>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-docker-templates</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>lsfusion.platform</groupId>
+                                            <artifactId>server</artifactId>
+                                            <type>jar</type>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}/templates</outputDirectory>
+                                            <includes>logics/${docker.template.subfolder}/**</includes>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-docker-files</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <resources>
+                                        <resource>  
+                                            <directory>${project.build.directory}/templates/logics/${docker.template.subfolder}</directory>
+                                            <filtering>true</filtering> <!-- filling property placeholders -->
+                                            <includes>
+                                                <include>Dockerfile</include>
+                                                <include>entrypoint.sh</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-compose</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${docker.compose.outputDirectory}</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.build.directory}/templates/logics/${docker.template.subfolder}</directory>
+                                            <filtering>true</filtering> <!-- filling property placeholders -->
+                                            <includes>
+                                                <include>compose.yaml</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-profile-active</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireActiveProfile>
+                                            <profiles>assemble</profiles>
+                                        </requireActiveProfile>
+                                    </rules>
+                                    <fail>true</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+
+                            <!-- MULTIARCH SETUP -->
+                            <execution>
+                                <id>docker-buildx-setup</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${docker.singlearch}</skip>
+
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>buildx</argument>
+                                        <argument>create</argument>
+                                        <argument>--name</argument>
+                                        <argument>multiarch-builder</argument>
+                                        <argument>--driver</argument>
+                                        <argument>docker-container</argument>
+                                        <argument>--use</argument>
+                                    </arguments>
+
+                                    <!-- ignore "builder already exists" -->
+                                    <successCodes>
+                                        <successCode>0</successCode>
+                                        <successCode>1</successCode>
+                                    </successCodes>
+                                </configuration>
+                            </execution>
+
+                            <!-- MULTIARCH BUILD/PUSH -->
+                            <execution>
+                                <id>docker-build-push-multiarch</id>
+                                <phase>deploy</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <skip>${docker.singlearch}</skip>
+
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>buildx</argument>
+                                        <argument>build</argument>
+                                        <argument>--builder</argument>
+                                        <argument>multiarch-builder</argument>
+                                        <argument>--platform</argument>
+                                        <argument>linux/amd64,linux/arm64</argument>
+                                        <argument>-t</argument>
+                                        <argument>${docker.image.fullName}</argument>
+                                        <argument>--build-arg</argument>
+                                        <argument>FILENAME=${docker.logics.file.name}</argument>
+                                        <argument>--push</argument>
+                                        <argument>-f</argument>
+                                        <argument>Dockerfile</argument>
+                                        <argument>.</argument>
+                                    </arguments>
+
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                </configuration>
+                            </execution>
+
+                            <!-- NORMAL docker build (install) -->
+                            <execution>
+                                <id>docker-build</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>install</phase>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>--progress=plain</argument>
+                                        <argument>--build-arg</argument>
+                                        <argument>FILENAME=${docker.logics.file.name}</argument>
+
+                                        <argument>-t</argument>
+                                        <!--namespace/repoName:tag-->
+                                        <argument>${docker.image.fullName}</argument>
+                                        <!--Dockerfile location-->
+                                        <argument>-f</argument>
+                                        <argument>Dockerfile</argument>
+                                        <!--Docker context-->
+                                        <argument>.</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                </configuration>
+                            </execution>
+
+                            <!-- NORMAL docker push (deploy) -->
+                            <execution>
+                                <id>docker-push</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <skip>${docker.multiarch}</skip>
+
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>push</argument>
+                                        <argument>${docker.image.fullName}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.gmaven</groupId>
+                        <artifactId>groovy-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>execute</goal>
+                                </goals>
+                                <configuration>
+                                    <properties>
+                                        <compose_file>${docker.compose.outputDirectory}${file.separator}compose.yaml</compose_file>
+                                    </properties>
+                                    <source>
+                                        System.out.println "Docker Compose configuration:\n"
+                                        System.out.println new File("${properties.compose_file}").getText()
+                                        System.out.println "\n---------------------------"
+                                        System.out.println "Generated compose.yaml is also placed in ${properties.compose_file}"
+                                    </source>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>exec-client</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <configuration>
+                            <exportAntProperties>true</exportAntProperties>
+                            <target>
+                                <java classpathref="maven.runtime.classpath" classname="lsfusion.client.controller.MainController" fork="true" clonevm="true" failonerror="true">
+                                    <jvmarg value="-Xms512m" />
+                                    <jvmarg value="-Xmx1200m" />
+                                    <jvmarg value="-ea" />
+                                </java>
+                            </target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <dependencies>
+                <dependency>
+                    <groupId>lsfusion.platform</groupId>
+                    <artifactId>desktop-client</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+    
+    <build>
+        <!-- multiple inheritance : abstract-logics -->
+        <resources>
+            <!-- lsfusion project structure : mark resource directories -->
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/src/main/lsfusion</directory>
+            </resource>
+            <resource>
+                <directory>${project.basedir}/src/main/java</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- lsfusion project structure : mark source root directories in IDE -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/lsfusion</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- to synchronize jrxml files in src and target folders (move or delete inside src) -->
+                                <delete quiet="true">
+                                    <fileset dir="${project.build.outputDirectory}" includes="**/*.jrxml" />
+                                </delete>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>com.nickwongdev</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <configuration>
+                    <!-- чтобы weave'лись аспекты из сервера -->
+                    <aspectLibraries>
+                        <aspectLibrary>
+                            <groupId>lsfusion.platform</groupId>
+                            <artifactId>server</artifactId>
+                        </aspectLibrary>
+                    </aspectLibraries>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>lsfusion.platform</groupId>
+            <artifactId>server</artifactId>
+        </dependency>
+    </dependencies>
+</project>

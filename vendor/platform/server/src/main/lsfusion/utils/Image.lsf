@@ -1,0 +1,21 @@
+MODULE Image;
+
+REQUIRE System;
+
+resizedImage = DATA LOCAL IMAGEFILE ();
+resizeImage(image, scale)  INTERNAL  'lsfusion.server.logics.classes.data.utils.image.ResizeImageScaleAction' (IMAGEFILE, DOUBLE);
+//width or height can be NULL
+resizeImage(image, width, height)  INTERNAL  'lsfusion.server.logics.classes.data.utils.image.ResizeImageSizeAction' (IMAGEFILE, INTEGER, INTEGER);
+resizeImageMaxSize(image, maxSize)  INTERNAL  'lsfusion.server.logics.classes.data.utils.image.ResizeImageMaxSizeAction' (IMAGEFILE, INTEGER);
+
+convertedImage = DATA LOCAL IMAGEFILE ();
+//file, convert extension 
+convertImage  INTERNAL  'lsfusion.server.logics.classes.data.utils.image.ConvertImageAction' (IMAGEFILE, STRING);
+
+widthImageInfo = DATA LOCAL INTEGER;
+heightImageInfo = DATA LOCAL INTEGER;
+//get image width and height in pixels
+getImageInfo(image) INTERNAL  'lsfusion.server.logics.classes.data.utils.image.GetImageInfoAction' (IMAGEFILE);
+
+mergedImage = DATA LOCAL IMAGEFILE ();
+mergeImages (background, front) INTERNAL  'lsfusion.server.logics.classes.data.utils.image.MergeImagesAction' (IMAGEFILE, IMAGEFILE);

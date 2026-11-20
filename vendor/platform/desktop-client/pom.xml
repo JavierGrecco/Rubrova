@@ -1,0 +1,268 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>lsfusion.platform.build</groupId>
+        <artifactId>platform-assemble</artifactId>
+        <version>6.2</version>
+        <relativePath>../build/platform-assemble/pom.xml</relativePath>
+    </parent>
+
+    <groupId>lsfusion.platform</groupId>
+    <artifactId>desktop-client</artifactId>
+    <packaging>jar</packaging>
+    <name>Desktop Client</name>
+
+    <properties>
+        <assemble.mainClass>lsfusion.client.controller.MainController</assemble.mainClass>
+        <assemble.finalName>lsfusion-client-${project.version}</assemble.finalName>
+        
+        <sign.jar>false</sign.jar>
+        <ssl.dir>/usr/share/jenkins/ssl</ssl.dir>
+        <signed.jars.dir>${ssl.dir}/signed</signed.jars.dir>
+        <signed.jar.file>${signed.jars.dir}/${assemble.file.name}</signed.jar.file>
+    </properties>
+    
+    <profiles>
+        <profile>
+            <!-- activated in settings.xml -->
+            <id>sign-desktop-jar</id>
+            <properties>
+                <sign.jar>true</sign.jar>
+            </properties>
+        </profile>
+    </profiles>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <!-- sign (for JWS) and pack -->
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ant-sign</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target if="${sign.jar}">
+                                <taskdef resource="net/sf/antcontrib/antlib.xml" classpathref="maven.plugin.classpath" />
+                                
+                                <echo message="Repacking jar ${assemble.jar}" />
+                                <exec executable="pack200">
+                                    <arg value="--repack" />
+                                    <arg value="--effort=1" />
+                                    <arg value="--segment-limit=-1" />
+                                    <arg value="${assemble.jar}" />
+                                </exec>
+
+                                <if>
+                                    <not>
+                                        <available file="${signed.jar.file}" />
+                                    </not>
+                                    <then>
+                                        <echo message="Signing file ${project.build.directory}/${assemble.file.name}" />
+                                        <exec executable="${ssl.dir}/sign.sh" failonerror="true">--&gt;
+                                            <arg value="${project.build.directory}/${assemble.file.name}" />
+                                            <arg value="${signed.jars.dir}" />
+                                        </exec>
+                                    </then>
+                                </if>
+                                
+                                <copy file="${signed.jar.file}" todir="${project.build.directory}" overwrite="true" />
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>ant-pack</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo message="Pack200-ing jar ${assemble.jar}" />
+                                <exec executable="pack200">
+                                    <arg value="--effort=1" />
+                                    <arg value="--segment-limit=-1" />
+                                    <arg value="${assemble.packed}" />
+                                    <arg value="${assemble.jar}" />
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                        <version>1.0b3</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>ant</groupId>
+                                <artifactId>ant</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <!-- pack200 : install and deploy -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-assembly-packed</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${assemble.packed}</file>
+                                    <type>pack.gz</type>
+                                    <classifier>assembly</classifier>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.nickwongdev</groupId>
+                <artifactId>aspectj-maven-plugin</artifactId>
+                <configuration>
+                    <!--<showWeaveInfo>true</showWeaveInfo>-->
+                    <!--<verbose>true</verbose>-->
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>lsfusion.platform</groupId>
+            <artifactId>api</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-beans</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.olap4j</groupId>
+                    <artifactId>olap4j</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.balloontip</groupId>
+            <artifactId>balloontip</artifactId>
+            <version>1.2.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.netty</groupId>
+            <artifactId>netty</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjtools</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.sf.jacob-project</groupId>
+            <artifactId>jacob</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.jexcelapi</groupId>
+            <artifactId>jxl</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>bibliothek.gui</groupId>
+            <artifactId>dockingFramesCore</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>bibliothek.gui</groupId>
+            <artifactId>dockingFramesCommon</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.toedter</groupId>
+            <artifactId>jcalendar</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.swinglabs</groupId>
+            <artifactId>swingx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.swinglabs</groupId>
+            <artifactId>jxlayer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jhlabs</groupId>
+            <artifactId>filters</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+        </dependency>
+        <!--need to print pdf files-->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+        </dependency>
+        <!--these plugins fix errors of default ImageIO-->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.sejda.imageio</groupId>
+            <artifactId>webp-imageio</artifactId>
+        </dependency>
+        <!-- for html link renderer -->
+        <dependency>
+            <groupId>net.sf.cssbox</groupId>
+            <artifactId>swingbox</artifactId>
+            <version>1.1</version>
+        </dependency>
+        <!-- for html escaping -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.glazedlists</groupId>
+            <artifactId>glazedlists</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+
+    </dependencies>
+</project>

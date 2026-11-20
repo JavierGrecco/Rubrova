@@ -1,0 +1,48 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- needed for distribution management to deploy everything with one command for top module-->
+    <parent>
+        <groupId>lsfusion.platform.build</groupId>
+        <artifactId>base</artifactId>
+        <version>6.2</version>
+        <relativePath>build/base/pom.xml</relativePath>
+    </parent>
+
+    <groupId>lsfusion</groupId>
+    <artifactId>platform</artifactId>
+    <packaging>pom</packaging>
+    <name>lsFusion platform</name>
+
+    <modules>
+        <module>build</module>
+        <module>api</module>
+        <module>desktop-client</module>
+        <module>server</module>
+        <module>web-client</module>
+    </modules>
+
+    <properties>
+        <project.scm.id>github.com</project.scm.id>
+        <next.beta.version>3</next.beta.version>
+    </properties>
+
+    <scm>
+        <developerConnection>scm:git:ssh://git@github.com/lsfusion/platform.git</developerConnection>
+      <tag>6.2</tag>
+    </scm>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

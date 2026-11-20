@@ -1,0 +1,42 @@
+package lsfusion.server.logics.form.interactive.action.focus;
+
+import lsfusion.interop.action.ActivateFormClientAction;
+import lsfusion.server.data.sql.exception.SQLHandledException;
+import lsfusion.server.logics.action.SystemExplicitAction;
+import lsfusion.server.logics.action.controller.context.ExecutionContext;
+import lsfusion.server.logics.form.interactive.design.ComponentView;
+import lsfusion.server.logics.form.interactive.instance.FormInstance;
+import lsfusion.server.logics.form.struct.FormEntity;
+import lsfusion.server.logics.property.classes.ClassPropertyInterface;
+import lsfusion.server.physics.dev.i18n.LocalizedString;
+
+import java.sql.SQLException;
+
+public class ActivateAction extends SystemExplicitAction {
+
+    private FormEntity requestedForm;
+    private ComponentView requestedTab;
+
+    public ActivateAction(LocalizedString caption, FormEntity form, ComponentView requestedTab) {
+        super(caption);
+        this.requestedForm = form;
+        this.requestedTab = requestedTab;
+    }
+
+    @Override
+    public void executeInternal(ExecutionContext<ClassPropertyInterface> context) throws SQLException, SQLHandledException {
+        if(requestedForm != null) {
+            if (requestedTab == null) {
+                //activate form
+                context.delayUserInteraction(new ActivateFormClientAction(requestedForm.getCanonicalName()));
+            } else {
+                //activate tab
+                FormInstance activeFormInstance = context.getFormInstance(false, true);
+                FormEntity activeForm = activeFormInstance == null ? null : activeFormInstance.entity;
+                if(activeForm != null && activeForm.equals(requestedForm))
+                    activeFormInstance.activateTab(requestedTab);
+            }
+        }
+
+    }
+}

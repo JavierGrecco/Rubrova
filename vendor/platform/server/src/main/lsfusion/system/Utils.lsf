@@ -1,0 +1,496 @@
+MODULE Utils;
+
+REQUIRE System, Time;
+
+GROUP print '{utils.group.print}' : public;
+
+// ---------------------------------- Files ---------------------------------- //
+fileName '{utils.file.name.integer}' = DATA LOCAL ISTRING[500] (INTEGER);
+fileIsDirectory '{utils.file.is.directory.integer}' = DATA LOCAL BOOLEAN (INTEGER);
+fileModifiedDateTime '{utils.file.modified.datetime.integer}' = DATA LOCAL DATETIME (INTEGER);
+fileSize '{utils.file.size.integer}' = DATA LOCAL LONG (INTEGER);
+
+//path, recursive, isClient
+listFiles '{utils.list.files}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.ListFilesAction' (ISTRING, BOOLEAN, BOOLEAN); 
+listFiles '{utils.list.files}' (ISTRING[500] path, BOOLEAN recursive)  { listFiles(path, recursive, NULL); }
+listFiles '{utils.list.files}' (ISTRING[500] path)  { listFiles(path, NULL, NULL); }
+listFilesClient '{utils.list.files.client}' (ISTRING[500] path, BOOLEAN recursive)  { listFiles(path, recursive, TRUE); }
+listFilesClient '{utils.list.files.client}' (ISTRING[500] path)  { listFiles(path, NULL, TRUE); }
+
+// ------------------------------ File exists ------------------------------ //
+fileExists = DATA LOCAL BOOLEAN ();
+//path, isClient
+fileExists '{utils.file.exists}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.FileExistsAction' (ISTRING[500], BOOLEAN); 
+fileExists '{utils.file.exists}' (ISTRING[500] path)  { fileExists(path, NULL); }
+fileExistsClient '{utils.file.exists.client}' (ISTRING[500] path)  { fileExists(path, TRUE); } 
+
+// --------------------------------- BPSTRING -> FILE/LINK/RICHTEXT -> BPSTRING --------------------------------- //
+resultFile = DATA LOCAL FILE ();
+//value, charset, extension
+stringToFile '{utils.string.to.file}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.StringToFileAction' (TEXT, STRING[10], STRING[10]);
+stringToFile(TEXT str) { stringToFile(str, 'UTF-8', ''); }
+
+resultString = DATA LOCAL TEXT ();
+//file, charset
+fileToString '{utils.file.to.string}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.FileToStringAction' (FILE, STRING[10]);
+fileToString(FILE file) { fileToString(file, 'UTF-8'); }
+//cast link to string
+linkToString '{utils.link.to.string}' INTERNAL 'lsfusion.server.physics.dev.integration.external.to.file.LinkToStringAction' (LINK);
+//cast richtext to string
+richTextToString '{utils.rich.text.to.string}' INTERNAL 'lsfusion.server.logics.classes.data.utils.string.RichTextToStringAction' (RICHTEXT);
+
+//path, text, charset
+appendToFile '{utils.append.to.file}' INTERNAL 'lsfusion.server.physics.dev.integration.external.to.file.AppendToFileAction' (STRING[1000], TEXT, STRING[10]);
+appendToFile(STRING[1000] path, TEXT text) { appendToFile(path, text, 'UTF-8'); };
+
+// ----------------------------------- File system ----------------------------------- //
+//path, isClient
+mkdir '{utils.mkdir}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.MkdirAction' (ISTRING[500], BOOLEAN);
+mkdir '{utils.mkdir}' (ISTRING[500] path)  { mkdir(path, NULL); }
+mkdirClient '{utils.mkdir.client}' (ISTRING[500] path)  { mkdir(path, TRUE); }
+//path, isClient
+delete '{utils.delete}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.DeleteAction' (ISTRING[500], BOOLEAN);
+delete '{utils.delete}' (ISTRING[500] path)  { delete(path, NULL); }
+deleteClient '{utils.delete.client}' (ISTRING[500] path)  { delete(path, TRUE); }
+//sourcePath, destinationPath, isClient
+copy '{utils.move}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.CopyAction' (ISTRING[500], ISTRING[500], BOOLEAN);
+copy '{utils.move}' (ISTRING[500] source, ISTRING[500] destination)  { copy(source, destination, NULL); }
+copyClient '{utils.move.client}' (ISTRING[500] source, ISTRING[500] destination)  { copy(source, destination, TRUE); }
+//sourcePath, destinationPath, isClient
+move '{utils.move}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.MoveAction' (ISTRING[500], ISTRING[500], BOOLEAN);
+move '{utils.move}' (ISTRING[500] source, ISTRING[500] destination)  { move(source, destination, NULL); }
+moveClient '{utils.move.client}' (ISTRING[500] source, ISTRING[500] destination)  { move(source, destination, TRUE); }
+
+fileSize = DATA LOCAL LONG ();
+getFileSize '{utils.get.file.size}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.GetFileSizeAction' (FILE);
+
+//zip files
+zipping '{utils.zipping.file}' = DATA LOCAL FILE (STRING[1000]);
+zippingPath '{utils.zipping.path}' = DATA LOCAL STRING (STRING[1000]);
+zipped '{utils.zipped}' = DATA LOCAL FILE ();
+makeZipFile '{utils.make.zip.file}' (BOOLEAN zeroTime)  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.MakeZipFileAction';
+makeZipFile '{utils.make.zip.file}' () { makeZipFile(NULL); }
+
+//unzip files
+unzipping '{utils.unzipping}' = DATA LOCAL FILE ();
+unzipped '{utils.unzipped.string}' = DATA LOCAL FILE (STRING[100]);
+makeUnzipFile '{utils.make.unzip.file}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.MakeUnzipFileAction' ();
+
+resource '{utils.resource.file}' = DATA LOCAL FILE ();
+resourcePath '{utils.resource.file.path}' = DATA LOCAL STRING ();
+readResource '{utils.read.resource}' (STRING path, BOOLEAN fullPaths)  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.ReadResourceAction';
+readResource(STRING path) { readResource(path, NULL); }
+
+getResource(STRING path) {
+    readResource(path);
+    exportFile() <- resource();
+    headersTo('Cache-Control') <- 'public, max-age=86400';
+    headersTo('Content-Disposition') <- 'inline';
+} @@api;
+
+resourcePaths = DATA LOCAL STRING (STRING);
+readResourcePaths (STRING pattern, BOOLEAN fullPaths)  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.ReadResourcePathsAction';
+readResourcePaths (STRING pattern) { readResourcePaths(pattern, NULL); }
+
+resourceFile '{utils.resource.file}' = resource() @@deprecated('6.1');
+
+properties = DATA LOCAL STRING (STRING);
+readProperties INTERNAL 'lsfusion.server.physics.dev.integration.external.to.file.ReadPropertiesAction' (RAWFILE);
+
+// ---------------------------------- Console  ---------------------------------- //
+cmdOut '{utils.cmd.std.out}' = DATA LOCAL STRING ();
+cmdErr '{utils.cmd.std.err}' = DATA LOCAL STRING ();
+cmd '{utils.cmd}' (TEXT command, TEXT directory, BOOLEAN isClient, BOOLEAN wait)  INTERNAL  'lsfusion.server.physics.admin.interpreter.action.RunCommandAction';
+cmd '{utils.cmd}' (TEXT command, BOOLEAN wait)  {cmd(command, NULL, NULL, wait); }
+cmd '{utils.cmd}' (TEXT command)  {cmd(command, NULL, NULL, TRUE ); }
+cmdClient '{utils.cmd.client}' (TEXT command, BOOLEAN wait)  {cmd(command, NULL, TRUE, wait); }
+cmdClient '{utils.cmd.client}' (TEXT command)  {cmdClient(command, TRUE); }
+
+pingError '{utils.ping.error}' = DATA LOCAL STRING ();
+ping '{utils.ping}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.net.PingAction' (TEXT, BOOLEAN);
+ping '{utils.ping}' (TEXT host)  {ping(host, NULL); }
+pingClient '{utils.ping.client}' (TEXT host)  {ping(host, TRUE); }
+
+// ---------------------------------- Excel file actions  ---------------------------------- //
+protectedExcel '{utils.excel.protected}' = DATA LOCAL EXCELFILE ();
+protectExcel '{utils.excel.protect}'  INTERNAL  'lsfusion.server.logics.classes.data.utils.excel.ProtectExcelAction' (EXCELFILE, STRING[100]);
+
+mergedExcel '{utils.excel.merged}' = DATA LOCAL EXCELFILE ();
+mergeExcel '{utils.excel.merge}'  INTERNAL  'lsfusion.server.logics.classes.data.utils.excel.MergeExcelAction' (EXCELFILE, EXCELFILE);
+
+columnsCount '{utils.excel.columns.count}' = DATA LOCAL INTEGER ();
+columnsCount '{utils.excel.columns.count}' (EXCELFILE file, INTEGER sheet)  INTERNAL  'lsfusion.server.logics.classes.data.utils.excel.ColumnsCountExcelAction';
+columnsCount '{utils.excel.columns.count}' (EXCELFILE file)  { columnsCount(file, NULL); }
+
+sheetNames '{utils.excel.sheet.names}' = DATA LOCAL STRING (INTEGER);
+sheetNames '{utils.excel.sheet.names}' (EXCELFILE file)  INTERNAL 'lsfusion.server.logics.classes.data.utils.excel.SheetNamesExcelAction';
+
+// ---------------------------------- Pdf file actions  ---------------------------------- //
+pagesCountPdf '{utils.pdf.pages.count}' = DATA LOCAL INTEGER ();
+pagesCountPdf '{utils.pdf.pages.count}'  INTERNAL  'lsfusion.server.logics.classes.data.utils.pdf.PagesCountPdfAction' (PDFFILE);
+
+pdfToString INTERNAL 'lsfusion.server.logics.classes.data.utils.pdf.PdfToStringAction' (PDFFILE, BOOLEAN);
+wordToPdf INTERNAL  'lsfusion.server.logics.classes.data.utils.pdf.WordToPdfAction' (WORDFILE);
+
+// ---------------------------------- Generate password  ---------------------------------- //
+generatedPassword '{utils.generated.password}' = DATA LOCAL TEXT();
+//length, use at least one digit requirement, use both registers requirement
+generatePassword '{utils.generate.password}' INTERNAL 'lsfusion.server.physics.admin.backup.action.GeneratePasswordAction' (INTEGER, BOOLEAN, BOOLEAN);
+
+// --------------------------------------------- String operations --------------------------------- //
+isWordInCSV = FORMULA NULL BOOLEAN PG 'CASE WHEN CAST($1 AS text)=ANY(string_to_array($2,\',\')) THEN 1 ELSE NULL END', MS 'CASE WHEN CHARINDEX(\' \' + CAST($1 AS nvarchar(max)) + \' \',\' \' + REPLACE($2,\',\',\' \') + \' \') > 0 THEN 1 ELSE NULL END';
+
+getWord (TEXT p1, TEXT separator, INTEGER p3) = FORMULA NULL TEXT '(string_to_array($1,$2))[($3)]';
+wordCount (TEXT p1, TEXT separator) = FORMULA INTEGER 'array_length((string_to_array($1,$2)),1)';
+splitPart (STRING string, STRING delimeter, INTEGER num) = FORMULA STRING 'split_part($1,$2,$3)';
+
+istartsWith = FORMULA NULL BOOLEAN PG 'CASE WHEN (($1) ILIKE (($2)||\'%\')) THEN 1 ELSE NULL END', MS 'CASE WHEN (($1) LIKE (($2)+\'%\')) THEN 1 ELSE NULL END';
+startsWith = FORMULA NULL BOOLEAN PG 'CASE WHEN (($1) LIKE (($2)||\'%\')) THEN 1 ELSE NULL END', MS 'CASE WHEN (($1) LIKE (($2)+\'%\')) THEN 1 ELSE NULL END';
+endsWith = FORMULA NULL BOOLEAN PG 'CASE WHEN (($1) LIKE (\'%\'||($2))) THEN 1 ELSE NULL END', MS 'CASE WHEN (($1) LIKE (\'%\'+($2))) THEN 1 ELSE NULL END';
+
+isISubstring = FORMULA NULL BOOLEAN PG 'CASE WHEN (($1) ILIKE (\'%\'||($2)||\'%\')) THEN 1 ELSE NULL END', MS 'CASE WHEN (($1) LIKE (\'%\'+($2)+\'%\')) THEN 1 ELSE NULL END'; 
+isSubstring = FORMULA NULL BOOLEAN PG 'CASE WHEN (($1) LIKE (\'%\'||($2)||\'%\')) THEN 1 ELSE NULL END', MS 'CASE WHEN (($1) LIKE (\'%\'+($2)+\'%\')) THEN 1 ELSE NULL END';
+
+replace (TEXT p1, TEXT p2, TEXT p3) = FORMULA TEXT 'replace($1,$2,$3)';
+
+length = FORMULA INTEGER PG 'length($1)', MS 'len($1)';
+
+strpos (TEXT string, TEXT substring) = FORMULA INTEGER PG 'strpos($1, $2)', MS 'charindex($2, $1)'; 
+regexpReplace (STRING source, STRING pattern, STRING replace, STRING flags) = FORMULA STRING PG 'REGEXP_REPLACE($1, $2, $3, $4)';
+
+substr (TEXT p1, INTEGER p2, INTEGER p3) = FORMULA TEXT 'substring($1, $2, $3)';
+substrFrom (TEXT p1, INTEGER p2) = FORMULA TEXT PG 'substring($1, $2)', MS 'substring($1, $2, len($1) - $2 + 1)';
+
+substring(STRING string, STRING regexp) = FORMULA NULL STRING PG 'SELECT substring($string, $regexp)';
+
+regexPatternMatch (TEXT str, STRING pattern) = FORMULA NULL BOOLEAN PG 'CASE WHEN $1~$2 THEN 1 ELSE NULL END';
+
+ltrim (TEXT p1) = FORMULA TEXT 'ltrim($1)';
+rtrim (TEXT p1) = FORMULA TEXT 'rtrim($1)';
+
+ltrim (TEXT p1, TEXT p2) = FORMULA TEXT PG 'ltrim($1,$2)';
+rtrim (TEXT p1, TEXT p2) = FORMULA TEXT PG 'rtrim($1,$2)';
+
+trim (TEXT p1) = FORMULA TEXT PG 'trim($1)', MS 'ltrim(rtrim($1))';
+
+left (TEXT p1, INTEGER p2) = FORMULA TEXT 'left($1,$2)';
+right (TEXT p1, INTEGER p2) = FORMULA TEXT 'right($1,$2)';
+
+lpad (TEXT p1, INTEGER p2, TEXT p3) = FORMULA TEXT PG 'lpad($1,$2,$3)';
+rpad (TEXT p1, INTEGER p2, TEXT p3) = FORMULA TEXT PG 'rpad($1,$2,$3)';
+
+repeat (TEXT p1, INTEGER p2) = FORMULA TEXT PG 'repeat($1,$2)', MS 'REPLICATE ($1,$2)';
+
+onlyDigits (TEXT p1) = FORMULA NULL BOOLEAN PG 'CASE WHEN trim($1) ~ \'^[0-9]*$\' THEN 1 ELSE NULL END', MS 'CASE WHEN ltrim($1) NOT LIKE \'%[^0-9]%\' THEN 1 ELSE NULL END';
+
+encode (RAWFILE f, STRING encoding) = FORMULA TEXT 'encode(($1),($2))';
+decode (STRING s, STRING encoding) = FORMULA RAWFILE 'decode(($1),($2))';
+encodeBase64 (RAWFILE f) = encode(f, 'base64');
+encodeBase64Unchunked (RAWFILE f) = replace(encode(f, 'base64'), '\n', '');
+decodeBase64 (STRING s) = decode(s, 'base64');
+
+encode (STRING f, STRING encoding) = encode(RAWFILE(f), encoding);
+encode (FILE f, STRING encoding) = encode(RAWFILE(f), encoding); 
+encode (NAMEDFILE f, STRING encoding) = encode(RAWFILE(f), encoding);
+
+encodeBase64 (STRING f) = encodeBase64(RAWFILE(f));
+encodeBase64Unchunked (STRING f) = encodeBase64Unchunked(RAWFILE(f));
+encodeBase64 (FILE f) = encodeBase64(RAWFILE(f));
+encodeBase64Unchunked (FILE f) = encodeBase64Unchunked(RAWFILE(f));
+encodeBase64 (NAMEDFILE f) = encodeBase64(RAWFILE(f));
+encodeBase64Unchunked (NAMEDFILE f) = encodeBase64Unchunked(RAWFILE(f));
+
+encodeBytes = FORMULA TEXT 'encode(($1),($2))';
+encodeBytesBase64(bytes) = encodeBytes(bytes, 'base64');
+
+encodeText = FORMULA TEXT 'encode(convert_to(($1),\'UTF8\'),($2))' @@deprecated('6.1');
+decodeText = FORMULA TEXT 'convert_from(decode(($1),($2)), \'UTF8\')' @@deprecated('6.1');
+
+encodedBase64 = DATA LOCAL TEXT();
+encodeBase64  INTERNAL  'lsfusion.server.logics.classes.data.utils.string.EncodeBase64Action' (TEXT);
+
+decodedBase64 = DATA LOCAL TEXT();
+decodeBase64  INTERNAL  'lsfusion.server.logics.classes.data.utils.string.DecodeBase64Action' (TEXT);
+
+urlEncoded = DATA LOCAL TEXT();
+urlEncode  INTERNAL 'lsfusion.server.logics.classes.data.utils.string.UrlEncodeAction' (TEXT, TEXT);
+urlEncode (TEXT text) { urlEncode(text, 'UTF-8'); };
+
+urlDecoded = DATA LOCAL TEXT();
+urlDecode  INTERNAL 'lsfusion.server.logics.classes.data.utils.string.UrlDecodeAction' (TEXT, TEXT);
+urlDecode (TEXT text) { urlDecode(text, 'UTF-8'); };
+
+urlFormatted = DATA LOCAL TEXT();
+urlParsed = DATA LOCAL TEXT(TEXT);
+//urlFormatted -> urlParsed
+urlParse INTERNAL 'lsfusion.server.logics.classes.data.utils.string.UrlParseAction' ();
+//urlParsed -> urlFormatted
+urlFormat INTERNAL 'lsfusion.server.logics.classes.data.utils.string.UrlFormatAction' ();
+
+cookie = DATA LOCAL STRING ();
+getCookie (STRING name) { INTERNAL CLIENT 'getCookie' PARAMS name TO cookie; }
+
+setCookie (STRING name, STRING value, JSON options) { INTERNAL CLIENT 'setCookie' PARAMS name, value, options; }
+
+generatedUUID = DATA LOCAL TEXT();
+generateUUID  INTERNAL 'lsfusion.server.logics.classes.data.utils.string.GenerateUUIDAction' ();
+
+escapeJSONValue (TEXT t) = replace(replace(replace(replace(replace(t, '\\', '\\\\'), '"', '\\"'), '\n', ''), '\r', ''), '\t', '');
+escapeXMLValue(TEXT t) = replace(replace(replace(replace(replace(t, '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;'), '\'', '&apos;');
+
+copyToClipboard INTERNAL 'lsfusion.server.logics.classes.data.utils.string.CopyToClipboardAction' (TEXT);
+
+array(STRING string, STRING delimeter, INTEGER row) = FORMULA STRING value 'unnest(string_to_array($string, $delimeter))';
+
+basicStaticName(StaticObject object) = getWord(staticName(object), '.', 2);
+
+zipReportResources() {
+    readResource('jasperreports.properties');
+    zipping('jasperreports.properties') <- resource();
+
+    readResourcePaths('.*/jasperreports_extension.properties', TRUE);
+    LOCAL result = STRING();
+    FOR resourcePaths(STRING path) ORDER DESC path DO {
+        readResource(path, TRUE);
+        result() <- CONCAT '\n', result(), STRING(resource());
+    }
+    zipping('jasperreports_extension.properties') <- file(RAWFILE(result()), '.properties');
+
+    resourcePaths(STRING path) <- NULL;
+    readResourcePaths('/fonts/.*');
+    FOR resourcePaths(STRING path) DO {
+        readResource(path);
+        zipping(substrFrom(path, 2)) <- resource(); //need to remove leading slash
+    }
+
+    makeZipFile(TRUE);
+}
+
+TABLE resources() NODEFAULT;
+reportResources = DATA FILE() TABLE resources;
+md5ReportResources = DATA STRING() TABLE resources;
+
+needCopyReportResources = DATA LOCAL BOOLEAN();
+checkCopyReportResources (STRING md5)  INTERNAL 'lsfusion.server.physics.dev.integration.external.to.file.report.CheckCopyReportResources';
+copyReportResources (FILE zipFile, STRING md5)  INTERNAL 'lsfusion.server.physics.dev.integration.external.to.file.report.CopyReportResources';
+
+copyReportResources() {
+    checkCopyReportResources(md5ReportResources());
+    IF needCopyReportResources() THEN
+        copyReportResources(reportResources(), md5ReportResources());
+}
+
+// --------------------------------------------- Numeric operations --------------------------------- //
+floor = FORMULA 'floor($1)';
+floor = FORMULA NULL 'floor(($1)/notZero($2))*($2)';
+ceil = FORMULA 'ceiling($1)';
+ceil = FORMULA NULL 'ceiling(($1)/notZero($2))*($2)';
+min = FORMULA '($1+$2-ABS($1-$2))/2';
+max = FORMULA '($1+$2+ABS($1-$2))/2';
+trunc = FORMULA 'trunc($1,$2)';
+
+sqr(a) = a*a;
+sqrt = FORMULA 'sqrt($1)';
+power = FORMULA DOUBLE 'power($1, $2)';
+percent = FORMULA '(($1)*($2)/100)';
+share = FORMULA '(($1)*100/($2))';
+round = FORMULA PG 'round(CAST(($1) as numeric),$2)', MS 'round(CAST(($1) as numeric(38,19)),$2)';
+abs = FORMULA 'abs($1)';
+delta = FORMULA 'abs(($1)-($2))';
+
+ln = FORMULA DOUBLE 'ln($1)';
+exp = FORMULA 'exp($1)';
+
+divideInteger(a,b) = INTEGER(a) / INTEGER(b);
+divideIntegerNeg = FORMULA INTEGER 'CASE WHEN CAST(($1) AS integer)<0 THEN -CAST(((-CAST(($1) as integer)-1)/CAST(($2) as integer)) as integer) ELSE CAST(CAST(($1) as integer)/CAST(($2) as integer) as integer) END';
+divideIntegerRnd = FORMULA INTEGER 'CAST(round(($1)/($2),0) as integer)';
+
+mod = FORMULA 'mod($1,$2)';
+
+iterate(INTEGER i, INTEGER from, INTEGER to) = RECURSION i==from AND from IS INTEGER AND to IS INTEGER STEP i==$i+1 AND i<=to CYCLES IMPOSSIBLE;
+count(INTEGER i, INTEGER count) = iterate(i, 1, count);
+
+toChar (object, format) = FORMULA TEXT 'to_char(($1),($2))'; 
+toInteger (i) = FORMULA INTEGER PG 'convert_to_integer($1)', MS 'dbo.convert_to_integer($1)';
+toNumeric (i) = FORMULA NUMERIC[38,19] PG 'convert_to_numeric($1)', MS 'dbo.convert_to_integer($1)';
+toNumericNull (i) = FORMULA NUMERIC[38,19] PG 'convert_to_numeric_null($1)', MS 'dbo.convert_to_integer($1)';
+
+// --------------------------------------- Bit operations --------------------------------- //
+bitwiseAnd = FORMULA INTEGER '$1 & $2';
+bitwiseOr = FORMULA INTEGER '$1 | $2';
+bitwiseNot = FORMULA INTEGER '~ $1';
+
+// --------------------------------------------- Round --------------------------------- //
+roundM1 (number) = round(number, -1);
+round0 (number) = round(number, 0);
+round1 (number) = round(number, 1);
+round2 (number) = round(number, 2);
+round3 (number) = round(number, 3);
+round4 (number) = round(number, 4);
+round5 (number) = round(number, 5);
+round6 (number) = round(number, 6);
+
+// --------------------------------------------- COLOR --------------------------------- //
+colorToHexString(COLOR i) = FORMULA STRING  '\'#\'||substring(to_hex($1::integer),3)';
+
+// ---------------------------------- TEXT SEARCH functions  ---------------------------------- //
+
+tsRank(TSVECTOR tsVector, TSQUERY search) = FORMULA DOUBLE PG 'ts_rank($1, $2)';
+tsRankCD(TSVECTOR tsVector, TSQUERY search) = FORMULA DOUBLE PG 'ts_rank_cd($1, $2)';
+tsRank(TSVECTOR tsVector, TSQUERY search, INTEGER normalization) = FORMULA DOUBLE PG 'ts_rank($1, $2, $3)';
+tsRankLN(TSVECTOR tsVector, TSQUERY search, DOUBLE base) = tsRank(tsVector, search) / (1 + ln(MAX length(tsVector), 1) / ln(base));
+tsRankCD(TSVECTOR tsVector, TSQUERY search, INTEGER normalization) = FORMULA DOUBLE PG 'ts_rank_cd($1, $2, $3)';
+
+setWeight(TSVECTOR tsVector, STRING group) = FORMULA TSVECTOR PG 'setweight($1, $2::"char")';
+toTsVector(STRING dictionary, STRING text) = FORMULA TSVECTOR PG 'to_tsvector($1::regconfig, coalesce($2, \'\'))';
+toTsVector(STRING text) = toTsVector('english', text);
+toTsQuery(STRING dictionary, STRING text) = FORMULA TSQUERY PG 'to_tsquery($1::regconfig, coalesce($2, \'\'))';
+toTsQuery(STRING text) = toTsQuery('english', text);
+
+numNode(TSQUERY search) = FORMULA INTEGER PG 'numnode($1)';
+
+// ---------------------------------- JSON functions  ---------------------------------- //
+
+// depreceated
+jsonObject (TEXT j, STRING key) = FORMULA STRING '(($1)::json->($2))::varchar';
+jsonArrayLength (TEXT j) = FORMULA INTEGER 'json_array_length(($1)::json)';
+jsonArrayElement (TEXT j, INTEGER i, STRING id) = FORMULA STRING '((($1)::json)->(($2)-1))->>($3)';
+
+merge(JSON a, JSON b) = FORMULA JSON 'jsonb_recursive_merge(($1)::jsonb,($2)::jsonb)';
+
+field (JSON json, STRING field) = FORMULA JSON 'jsonb_extract_path($json, $field)';
+array (JSON json, INTEGER row) = FORMULA JSON value 'jsonb_array_elements($json)';
+map (JSON json, STRING key) = FORMULA JSON value 'jsonb_each($json)';
+
+fieldText (JSON json, STRING field) = FORMULA STRING 'jsonb_extract_path_text($json, $field)';
+arrayText (JSON json, INTEGER row) = FORMULA STRING value 'jsonb_array_elements_text($json)';
+mapText (JSON json, STRING key) = FORMULA STRING value 'jsonb_each_text($json)';
+
+arrayElement(JSON json, INTEGER i) = FORMULA STRING '(($1)->(($2)-1))'; // one-based
+
+field (JSON json, STRING field1, STRING field2) = FORMULA JSON 'jsonb_extract_path($json, $field1, $field2)';
+field (JSON json, STRING field1, STRING field2, STRING field3) = FORMULA JSON 'jsonb_extract_path($json, $field1, $field2, $field3)';
+
+fieldText (JSON json, STRING field1, STRING field2) = FORMULA STRING 'jsonb_extract_path_text($json, $field1, $field2)';
+fieldText (JSON json, STRING field1, STRING field2, STRING field3) = FORMULA STRING 'jsonb_extract_path_text($json, $field1, $field2, $field3)';
+
+canonicalizedJSON = DATA LOCAL STRING();
+//json, encodeUnicode
+canonicalizeJSON  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.file.CanonicalizeJSONAction' (JSONFILE, BOOLEAN);
+canonicalizeJSON(JSONFILE file) { canonicalizeJSON(file, TRUE); }
+
+// -------------------------------------------- Files ---------------------------- //
+file = DATA LOCAL FILE ();
+wordFile = DATA LOCAL WORDFILE ();
+imageFile = DATA LOCAL IMAGEFILE ();
+pdfFile = DATA LOCAL PDFFILE ();
+dbfFile = DATA LOCAL DBFFILE ();
+rawFile = DATA LOCAL RAWFILE ();
+excelFile = DATA LOCAL EXCELFILE();
+textFile = DATA LOCAL TEXTFILE();
+csvFile = DATA LOCAL CSVFILE();
+htmlFile = DATA LOCAL HTMLFILE();
+jsonFile = DATA LOCAL JSONFILE();
+xmlFile = DATA LOCAL XMLFILE();
+tableFile = DATA LOCAL TABLEFILE();
+
+// --------------------------------- Logging --------------------------------- //
+printToLog '{utils.print.to.log}'  INTERNAL  'lsfusion.server.physics.admin.log.action.PrintToLogAction' (TEXT);
+logToFile (STRING[1000] file, TEXT message) {
+    appendToFile('logs/' + file + '.log', (CONCAT ' - ', toChar(currentDateTimeMillis(), 'YYYY-MM-DD HH24:MI:SS.MS'), message, '\n'));
+}
+logToFile (STRING[1000] file, FILE message) {
+    fileToString(message, 'UTF-8');
+    logToFile(file, resultString());
+}
+
+// --------------------------------------------- Yes/No --------------------------------- //
+CLASS YesNo '{utils.yes.no}' {
+    yes '{utils.yes.no.yes}',
+    no '{utils.yes.no.no}'
+}
+TABLE yesNo(YesNo);
+
+META defineHistorizableYesNo(property, defaultProperty, caption, object1, object1Identity, object2, object2Identity, group)
+    @defineHistorizableCustomDefault(property, defaultProperty, caption, YesNo, staticCaption,
+        object1, object1Identity, object2, object2Identity, 7, group);
+END
+
+META defineHistorizableYesNo(property, defaultProperty, caption, object1, object1Identity, object2, object2Identity, object3, object3Identity, group)
+    @defineHistorizableCustomDefault(property, defaultProperty, caption, YesNo, staticCaption,
+        object1, object1Identity, object2, object2Identity, object3, object3Identity, 7, group);
+END
+
+// --------------------------------------------- Dialogs --------------------------------- //
+FORM dialogString '{utils.form.dialog.string}'
+    OBJECTS s = STRING[200] PANEL
+    PROPERTIES(s) objValue = VALUE
+;
+
+DESIGN dialogString {
+    NEW string BEFORE TOOLBARBOX {
+        fill = 1;
+        MOVE PROPERTY (objValue) {
+            fill = 1;
+            caption = '{utils.caption.enter.string}';
+            font = 'bold 64';
+            panelCaptionVertical = TRUE;
+        }
+    }
+}
+
+FORM dialogDate '{utils.form.dialog.date}'
+    OBJECTS d = DATE PANEL
+    PROPERTIES(d) objValue = VALUE
+;
+
+DESIGN dialogDate {
+    NEW date BEFORE TOOLBARBOX {
+        fill = 1;
+        MOVE PROPERTY (objValue) {
+            fill = 1;
+            caption = '{utils.caption.enter.date}';
+            font = 'bold 64';
+            panelCaptionVertical = TRUE;
+        }
+    }
+
+}
+
+FORM dialogInteger '{utils.form.dialog.integer}'
+    OBJECTS i = INTEGER PANEL
+    PROPERTIES(i) objValue = VALUE
+;
+
+DESIGN dialogInteger {
+    PROPERTY (objValue) {
+        caption = '{utils.caption.enter.integer}';
+        font = 'bold 64';
+        panelCaptionVertical = TRUE;
+    }
+}
+
+FORM dialogNumeric '{utils.form.dialog.numeric}'
+    OBJECTS n = NUMERIC[20,7] PANEL
+    PROPERTIES(n) objValue = VALUE
+;
+
+DESIGN dialogNumeric {
+    PROPERTY (objValue) {
+        caption = '{utils.caption.enter.numeric}';
+        font = 'bold 64';
+        panelCaptionVertical = TRUE;
+    }
+}
+
+// --------------------------------------------- Print --------------------------------- //
+
+FORM printBlankPagePortrait;
+
+FORM printBlankPageLandscape;
+
+// --------------------------- File links --------------------------- //
+
+META defineFileLink (caption, fileType, property, class1)
+    fileLink caption (class1 param1) = fileType (webServerUrl() + '/readFile?sid=' + [ REFLECTION CANONICALNAME property[class1]]() + '&p=' + param1) IF property(param1); 
+END

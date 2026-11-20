@@ -1,0 +1,136 @@
+MODULE Word;
+
+REQUIRE System, SystemEvents, MasterData, Utils;
+
+CLASS Template '{word.template}';
+TABLE template(Template);
+
+name '{word.name.template}' = DATA STRING[100] (Template);
+file '{word.file.template}' (Template) = DATA WORDFILE (Template);
+loadFile '{word.load.file.template}'(Template t)  { INPUT =file(t) CHANGE; }
+openFile '{word.open.file.template}'(Template t)  { open(file(t)); }
+id '{word.id.template}' = DATA ISTRING[100] (Template) CHARWIDTH 5;
+
+process  INTERNAL  'lsfusion.server.logics.classes.data.utils.word.ProcessTemplateAction' (Template);
+
+resultTemplate = DATA LOCAL WORDFILE ();
+openResultTemplate ()  { open(resultTemplate()); }
+
+openProcess '{word.open.process.template}'(Template template)  { 
+    process(template);
+    openResultTemplate();
+}
+
+templateId (string1) = GROUP AGGR Template template WHERE template IS Template BY id(template);
+
+CLASS TemplateEntry '{word.template.entry}';
+TABLE templateEntry(TemplateEntry);
+
+objValue (TemplateEntry t) = INTEGER(t AS TemplateEntry);
+template '{word.template}' = DATA Template (TemplateEntry);
+key '{word.key.template.entry}' = DATA STRING[100](TemplateEntry);
+description '{word.description.template.entry}' = DATA STRING[100](TemplateEntry);
+value '{word.value.template.entry}' = DATA LOCAL TEXT (TemplateEntry) CHARWIDTH 100;
+
+CLASS Type '{word.type}' {
+   plain '{word.type.plain}',
+   table '{word.type.table}',
+   list '{word.type.list}'
+}
+TABLE type (Type);
+name '{word.name.type}' (Type o) = staticCaption(o) IF o IS Type CHARWIDTH 8;
+
+FORM dialogTypes '{word.type}'
+    OBJECTS o = Type
+    PROPERTIES(o) READONLY name
+    
+    LIST Type OBJECT o
+;
+
+type '{word.type.template.entry}' = DATA Type(TemplateEntry);
+nameType '{word.name.type.template.entry}' (TemplateEntry t) = name(type(t));
+idType '{word.id.type.template.entry}' (TemplateEntry t) = staticName(type(t));
+
+isTableTemplateEntry '{word.is.table.template.entry}' (TemplateEntry t) = type(t) == Type.table;
+isListTemplateEntry '{word.is.list.template.entry}' (TemplateEntry t) = type(t) == Type.list;
+notPlainTemplateEntry (TemplateEntry t) = isTableTemplateEntry(t) OR isListTemplateEntry(t);
+
+dataColumnSeparator = DATA STRING[20] (TemplateEntry);
+columnSeparator '{word.column.separator.template.entry}' (TemplateEntry e)= OVERRIDE dataColumnSeparator(e), ';'; 
+
+dataRowSeparator = DATA STRING[20] (TemplateEntry);
+rowSeparator '{word.row.separator.template.entry}' (TemplateEntry e)= OVERRIDE dataRowSeparator(e), '\r'; 
+
+templateEntryKeyEntryIdTemplate (string1, string2) = GROUP AGGR TemplateEntry templateEntry WHERE templateEntry IS TemplateEntry BY  key(templateEntry), id(template(templateEntry));
+
+FORM template '{word.form.template}'
+
+    OBJECTS t = Template PANEL
+    PROPERTIES (t) name, id
+    PROPERTIES (t) loadFile, openFile
+
+    OBJECTS te = TemplateEntry
+    PROPERTIES (te) nameType, key, description, value, NEW, DELETE GRID
+    PROPERTIES (te) PANEL SHOWIF isTableTemplateEntry(te) columnSeparator
+    PROPERTIES (te) PANEL SHOWIF notPlainTemplateEntry(te) rowSeparator
+    PROPERTIES (t) DRAW te TOOLBAR openProcess
+
+    FILTERS template (te) == t
+
+    EDIT Template OBJECT t
+;
+
+DESIGN template {
+    BOX {
+        size = (1024, 768);
+        MOVE BOX(t) {
+            horizontal = TRUE;
+            NEW row1 {
+                MOVE PROPERTY(name(t));
+                MOVE PROPERTY(id(t));
+            };
+            NEW row2 {
+                horizontal = TRUE;
+                MOVE PROPERTY(loadFile(t));
+                MOVE PROPERTY(openFile(t));
+            };
+        }
+        MOVE BOX(te);
+    }
+    MOVE TOOLBARBOX;
+}
+
+
+FORM templates '{word.form.templates}'
+
+    OBJECTS t = Template
+    PROPERTIES (t) READONLY name, id
+    PROPERTIES (t) NEWSESSION NEW, EDIT, DELETE GRID
+
+    OBJECTS te = TemplateEntry
+    PROPERTIES (te) READONLY nameType, key, description, value
+    FILTERS template (te) == t
+;
+
+FORM dialogTemplates '{word.form.templates}'
+
+    OBJECTS t = Template
+    PROPERTIES (t) READONLY name, id
+    PROPERTIES (t) NEWSESSION NEW, EDIT, DELETE GRID
+
+    LIST Template OBJECT t
+;
+DESIGN dialogTemplates {
+    BOX {
+        size = (1024, 768);
+    }
+}
+
+
+NAVIGATOR {
+    masterData {
+        templatesNavigator  {
+            NEW templates;
+        }
+    }
+}

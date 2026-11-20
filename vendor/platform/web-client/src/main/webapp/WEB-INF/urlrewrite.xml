@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE urlrewrite
+        PUBLIC "-//tuckey.org//DTD UrlRewrite 4.0//EN"
+        "http://www.tuckey.org/res/dtds/urlrewrite4.0.dtd">
+
+<urlrewrite>
+    <!--no need to set no-cache for nocache gwt resources (and others) because spring security 4 does this for us -->
+
+    <rule match-type="regex">
+        <!-- gwt .cache.js caching -->
+        <!-- this filter is not applied in dev mode (port is 9876 instead of 8888)-->
+        <from>\.cache\.</from> <!-- from matcher uses find and not match-->
+        <set type="response-header" name="Cache-Control">public, max-age=2592000</set>
+        <set type="expires">30 days</set>
+    </rule>
+
+    <!-- webapp, gwt/public, static file -->
+    <rule match-type="regex">
+        <from>.*\/static\/.*</from>
+        <set type="response-header" name="Cache-Control">public, max-age=86400</set>
+        <set type="expires">1 day</set>
+    </rule>
+    <!-- non static file, need for 'save as' dialog -->
+    <rule match-type="regex">
+        <from>.*\/temp\/.*</from>
+        <set type="response-header" name="Cache-Control">public, max-age=3600</set>
+        <set type="expires">1 hour</set>
+    </rule>
+</urlrewrite>

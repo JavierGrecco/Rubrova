@@ -1,0 +1,2024 @@
+/*
+/*
+ * Copyright 2010 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package lsfusion.gwt.client.base.view.grid;
+
+import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.dom.client.*;
+import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.event.dom.client.KeyCodes;
+import com.google.gwt.event.dom.client.MouseWheelHandler;
+import com.google.gwt.event.dom.client.ScrollHandler;
+import com.google.gwt.event.dom.client.TouchMoveHandler;
+import com.google.gwt.user.client.Event;
+import com.google.gwt.user.client.ui.AbstractNativeScrollbar;
+import com.google.gwt.user.client.ui.RootPanel;
+import com.google.gwt.user.client.ui.Widget;
+import lsfusion.gwt.client.base.FocusUtils;
+import lsfusion.gwt.client.base.GwtClientUtils;
+import lsfusion.gwt.client.base.Result;
+import lsfusion.gwt.client.base.StaticImage;
+import lsfusion.gwt.client.base.size.GSize;
+import lsfusion.gwt.client.base.view.*;
+import lsfusion.gwt.client.base.view.grid.cell.Cell;
+import lsfusion.gwt.client.form.EmbeddedForm;
+import lsfusion.gwt.client.form.event.GKeyStroke;
+import lsfusion.gwt.client.form.event.GMouseStroke;
+import lsfusion.gwt.client.form.object.table.TableComponent;
+import lsfusion.gwt.client.form.object.table.TableContainer;
+import lsfusion.gwt.client.form.object.table.tree.view.GTreeTable;
+import lsfusion.gwt.client.form.object.table.view.GridDataRecord;
+import lsfusion.gwt.client.form.property.table.view.GPropertyTableBuilder;
+import lsfusion.gwt.client.view.ColorThemeChangeListener;
+import lsfusion.gwt.client.view.MainFrame;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static java.lang.Math.min;
+import static lsfusion.gwt.client.view.MainFrame.v5;
+
+public abstract class DataGrid<T> implements TableComponent, ColorThemeChangeListener, HasMaxPreferredSize {
+
+    public static int nativeScrollbarWidth = AbstractNativeScrollbar.getNativeScrollbarWidth();
+    public static int nativeScrollbarHeight = AbstractNativeScrollbar.getNativeScrollbarHeight();
+
+    /**
+     * A boolean indicating that we are in the process of resolving state.
+     */
+    protected boolean isResolvingState;
+
+    /**
+     * The command used to resolve the pending state.
+     */
+    protected boolean isFocused() {
+        return tableContainer.isFocused;
+    }
+
+    private final ArrayList<Column<T, ?>> columns = new ArrayList<>();
+
+    private final DefaultHeaderBuilder<T> footerBuilder;
+    private final List<Header<?>> footers = new ArrayList<>();
+
+    private final DefaultHeaderBuilder<T> headerBuilder;
+    private final List<Header<?>> headers = new ArrayList<>();
+
+    // pending dom updates
+    // all that flags should dropped on finishResolving, and scheduleUpdateDOM should be called
+    private boolean columnsChanged;
+    private boolean headersChanged;
+    private boolean widthsChanged;
+    private boolean dataChanged;
+    private ArrayList<Column> dataColumnsChanged = new ArrayList<>(); // ordered set, null - rows changed
+    private boolean selectedRowChanged;
+    private boolean selectedColumnChanged;
+    private boolean focusedChanged;
+    private boolean onResizeChanged;
+
+    protected GPropertyTableBuilder<T> tableBuilder;
+
+    protected final TableWidget tableWidget;
+    protected final TableContainer tableContainer;
+
+    protected DataGridSelectionHandler selectionHandler;
+
+    public void setSelectionHandler(DataGridSelectionHandler selectionHandler) {
+        this.selectionHandler = selectionHandler;
+    }
+
+    //focused cell indices local to table (aka real indices in rendered portion of the data)
+    protected int renderedSelectedRow = -1;
+    int renderedSelectedCol = -1;
+    int renderedLeftStickyCol = -1;
+    Object renderedSelectedKey = null; // needed for saving scroll position when keys are update
+    Integer renderedSelectedExpandingIndex = null; // needed for saving scroll position when keys are update
+
+    protected abstract Object getSelectedKey();
+    protected abstract Integer getSelectedExpandingIndex();
+    // virtualKey - null means that we're looking for any selected key but object other key
+    protected int getRowByKey(Object key, Integer expandingIndex) {
+        Object selectedKey = getSelectedKey();
+        if(selectedKey != null && (selectedKey.equals(key) && (expandingIndex == null || expandingIndex.equals(getSelectedExpandingIndex())))) // optimization the most common case
+            return getSelectedRow();
+
+        return findRowByKey(key, expandingIndex == null ? GridDataRecord.objectExpandingIndex : expandingIndex);
+    }
+    protected abstract int findRowByKey(Object key, int expandingIndex);
+
+    private int pageIncrement = 30;
+
+    protected final boolean noHeaders;
+    protected final boolean noFooters;
+
+    private int latestHorizontalScrollPosition = 0;
+    private int latestLastStickedColumn = -1;
+
+    public DataGrid(TableContainer tableContainer, boolean noHeaders, boolean noFooters) {
+        this.tableContainer = tableContainer;
+
+        this.noHeaders = noHeaders;
+        this.noFooters = noFooters;
+
+        // INITIALIZING MAIN DATA
+        tableWidget = new TableWidget();
+
+        recentlyScrolledClassHandler = new RecentlyEventClassHandler(tableWidget, false, "was-scrolled-recently", 1000);
+
+        // we always need headers and footers to support scroll arrows
+        // INITIALIZING HEADERS
+        headerBuilder = new DefaultHeaderBuilder<>(this, false);
+
+        // INITIALIZING FOOTERS
+        footerBuilder = new DefaultHeaderBuilder<>(this, true);
+
+        MainFrame.addColorThemeChangeListener(this);
+    }
+
+    private final RecentlyEventClassHandler recentlyScrolledClassHandler;
+
+    private static boolean skipScrollEvent;
+
+    @Override
+    public ScrollHandler getScrollHandler() {
+        return event -> {
+            //skipScrollEvent crashes grid top border(.scrolled-down css class in <table><thead><tr>) when scrolling with up/down keyboard keys
+//            if(skipScrollEvent) {
+//                skipScrollEvent = false;
+//            } else {
+                calcLeftNeighbourRightBorder(true);
+                checkSelectedRowVisible();
+
+                updateScrolledStateVertical();
+                updateScrolledStateHorizontal();
+//            }
+        };
+    }
+
+    @Override
+    public MouseWheelHandler getMouseWheelScrollHandler() {
+        return event -> onHumanInputEvent();
+    }
+
+    @Override
+    public TouchMoveHandler getTouchMoveHandler() {
+        return event -> onHumanInputEvent();
+    }
+
+    private void onHumanInputEvent() {
+        recentlyScrolledClassHandler.onEvent();
+    }
+
+    protected abstract void scrollToEnd(boolean toEnd);
+
+    private void updateScrolledStateHorizontal() {
+        int horizontalScrollPosition = tableContainer.getHorizontalScrollPosition();
+        if(horizontalScrollPosition > MainFrame.mobileAdjustment)
+            GwtClientUtils.addClassName(tableWidget, "scrolled-left");
+        else
+            GwtClientUtils.removeClassName(tableWidget, "scrolled-left");
+
+        if (horizontalScrollPosition != latestHorizontalScrollPosition) {
+            updateStickyColumnsState(horizontalScrollPosition);
+
+            latestHorizontalScrollPosition = horizontalScrollPosition;
+        }
+    }
+    private int renderedFirstVisibleRow = -1;
+    private void updateScrolledStateVertical() {
+        int verticalScrollPosition = tableContainer.getVerticalScrollPosition();
+        if (verticalScrollPosition > MainFrame.mobileAdjustment)
+            GwtClientUtils.addClassName(tableWidget, "scrolled-down");
+        else
+            GwtClientUtils.removeClassName(tableWidget, "scrolled-down");
+        if (verticalScrollPosition < tableContainer.getScrollHeight() - tableContainer.getClientHeight() - MainFrame.mobileAdjustment)
+            GwtClientUtils.addClassName(tableWidget, "scrolled-up");
+        else
+            GwtClientUtils.removeClassName(tableWidget, "scrolled-up");
+
+        if(highlightDuplicateValue()) {
+            int firstVisibleRow = getFirstVisibleRow(verticalScrollPosition + getHeaderHeight() + 1, null, 0);
+            if (firstVisibleRow != renderedFirstVisibleRow) {
+                if (firstVisibleRow != -1)
+                    GwtClientUtils.addClassName(getChildElement(firstVisibleRow), "first-visible-row");
+
+                TableRowElement renderedFirstVisibleElement = getChildElement(renderedFirstVisibleRow);
+                if (renderedFirstVisibleElement != null)
+                    GwtClientUtils.removeClassName(renderedFirstVisibleElement, "first-visible-row");
+
+                renderedFirstVisibleRow = firstVisibleRow;
+            }
+        }
+    }
+
+    protected boolean highlightDuplicateValue() {
+        return false;
+    }
+    
+    private void updateStickyColumnsState(int horizontalScrollPosition) {
+        List<Integer> stickyColumns = getStickyColumns();
+        int lastSticked = getLastStickedColumn(horizontalScrollPosition, stickyColumns);
+
+        if (lastSticked != latestLastStickedColumn) {
+            if (!noHeaders)
+                headerBuilder.updateStickedState(stickyColumns, lastSticked);
+            if (!noFooters)
+                footerBuilder.updateStickedState(stickyColumns, lastSticked);
+
+            tableBuilder.updateStickedState(tableWidget.getSection(), stickyColumns, lastSticked);
+            
+            latestLastStickedColumn = lastSticked;
+        }
+    }
+
+    private int getLastStickedColumn(int horizontalScrollPosition, List<Integer> stickyColumns) {
+        if(stickyLefts != null) {
+            TableRowElement stickyLeftRow = getStickyLeftRow();
+            if (stickyLeftRow != null) {
+                NodeList<TableCellElement> trCells = stickyLeftRow.getCells();
+                for (int i = stickyColumns.size() - 1; i >= 0; i--) {
+                    Integer stickyColumn = stickyColumns.get(i);
+
+                    TableCellElement cell = trCells.getItem(stickyColumn);
+                    StickyParams left = stickyLefts.get(i);
+                    if (left != null) {
+                        int offsetLeft = cell.getOffsetLeft();
+                        // actually it is == but may differ for 1px (for now is being observed in Firefox, where no borders in header are seen)
+                        if (horizontalScrollPosition + left.left + 1 >= offsetLeft) {
+                            return i;
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static Set<String> browserKeyEvents;
+    private static Set<String> getBrowserKeyEvents() {
+        if(browserKeyEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+            eventTypes.add(BrowserEvents.KEYPRESS);
+            eventTypes.add(BrowserEvents.KEYDOWN);
+            eventTypes.add(BrowserEvents.KEYUP);
+            browserKeyEvents = eventTypes;
+        }
+        return browserKeyEvents;
+    }
+
+    private static Set<String> browserFocusEvents;
+    private static Set<String> getBrowserFocusEvents() {
+        if(browserFocusEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+            eventTypes.add(BrowserEvents.FOCUSIN);
+            eventTypes.add(BrowserEvents.FOCUSOUT);
+            eventTypes.add(BrowserEvents.BLUR);
+            eventTypes.add(BrowserEvents.FOCUS);
+            browserFocusEvents = eventTypes;
+        }
+        return browserFocusEvents;
+    }
+
+//    public static final String FOCUSEVENT = BrowserEvents.FOCUSIN; // BrowserEvents.FOCUS;
+//    public static final String BLUREVENT = BrowserEvents.FOCUSOUT; // BrowserEvents.BLUR;
+    public static final String FOCUSIN = BrowserEvents.FOCUSIN;
+    public static final String FOCUSOUT = BrowserEvents.FOCUSOUT;
+    // here it might be a problem because the editor can be "inside" of the element that handles focusout, so someone between editor and outside element (for example that element (grid)) can get focus and that won't trigger focus out
+    public static final String FOCUSCHANGEIN = BrowserEvents.FOCUS;
+    public static final String FOCUSCHANGEOUT = BrowserEvents.BLUR;
+    // needed for some "system" features, like getting last blurred + switching to another window
+    public static final String FOCUSPREVIEWIN = BrowserEvents.FOCUS;
+    public static final String FOCUSPREVIEWOUT = BrowserEvents.BLUR;
+
+    private static Set<String> nonBubblingEvents;
+    private static Set<String> getNonBubblingEvents() {
+        if(nonBubblingEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+            eventTypes.add(BrowserEvents.FOCUS);
+            eventTypes.add(BrowserEvents.BLUR);
+            eventTypes.add(BrowserEvents.LOAD);
+            eventTypes.add(BrowserEvents.ERROR);
+            nonBubblingEvents = eventTypes;
+        }
+        return nonBubblingEvents;
+    }
+
+    private static Set<String> browserMouseEvents;
+    private static Set<String> getBrowserMouseEvents() {
+        if(browserMouseEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+            eventTypes.add(BrowserEvents.CLICK);
+            eventTypes.add(BrowserEvents.DBLCLICK);
+            eventTypes.add(BrowserEvents.MOUSEDOWN);
+            eventTypes.addAll(getBrowserTooltipMouseEvents());
+            browserMouseEvents = eventTypes;
+        }
+        return browserMouseEvents;
+    }
+
+    private static Set<String> browserDragDropEvents;
+    private static Set<String> getBrowserDragDropEvents() {
+        if(browserDragDropEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+            eventTypes.add(BrowserEvents.DRAGOVER);
+            eventTypes.add(BrowserEvents.DRAGLEAVE);
+            eventTypes.add(BrowserEvents.DROP);
+            browserDragDropEvents = eventTypes;
+        }
+        return browserDragDropEvents;
+    }
+
+    // for tooltips on header
+    private static Set<String> browserTooltipMouseEvents;
+    public static Set<String> getBrowserTooltipMouseEvents() {
+        if(browserTooltipMouseEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+            eventTypes.add(BrowserEvents.MOUSEUP);
+            eventTypes.add(BrowserEvents.MOUSEOVER);
+            eventTypes.add(BrowserEvents.MOUSEOUT);
+            eventTypes.add(BrowserEvents.MOUSEMOVE);
+            browserTooltipMouseEvents = eventTypes;
+        }
+        return browserTooltipMouseEvents;
+    }
+
+    private static Set<String> browserEvents;
+    private static Set<String> getBrowserEvents() {
+        if(browserEvents == null) {
+            Set<String> eventTypes = new HashSet<>();
+//            eventTypes.addAll(getBrowserFocusEvents());
+            eventTypes.addAll(getBrowserMouseEvents());
+            eventTypes.addAll(getBrowserKeyEvents());
+            browserEvents = eventTypes;
+        }
+        return browserEvents;
+    }
+    // should be called for every widget that has Widget.onBrowserEvent implemented
+    // however now there are 2 ways of handling events:
+    // grid / panel handlers : uses this initSinkEvents + consumed event
+    // form bindings and others : manual sinkEvents
+    public static void initSinkEvents(Widget widget) {
+        CellBasedWidgetImpl.get().sinkEvents(widget, getBrowserEvents());
+
+        widget.sinkEvents(Event.ONPASTE | Event.ONCONTEXTMENU | Event.ONCHANGE);
+    }
+    // the problem that onpaste ('paste') event is not triggered when there is no "selection" inside element (or no other contenteditable element)
+    // also it's important that focusElement should have text, thats why EscapeUtils.UNICODE_NBSP is used in a lot of places
+    public static void sinkPasteEvent(Element focusElement) {
+        CopyPasteUtils.setEmptySelection(focusElement);
+    }
+
+    public static void initSinkMouseEvents(Widget widget) {
+        CellBasedWidgetImpl.get().sinkEvents(widget, getBrowserMouseEvents());
+    }
+
+    public static void initSinkFocusEvents(Widget widget) {
+        CellBasedWidgetImpl.get().sinkEvents(widget, getBrowserFocusEvents());
+    }
+
+    public static void initSinkDragDropEvents(Widget widget) {
+        CellBasedWidgetImpl.get().sinkEvents(widget, getBrowserDragDropEvents());
+    }
+
+    public static boolean isMouseEvent(Event event) {
+        String eventType = event.getType();
+        return getBrowserMouseEvents().contains(eventType);
+    }
+    public static boolean checkSinkEvents(Event event) {
+        String eventType = event.getType();
+        return getBrowserMouseEvents().contains(eventType) ||
+                getBrowserDragDropEvents().contains(eventType) ||
+                checkSinkGlobalEvents(event);
+    }
+    public static boolean checkNonBubblingEvents(Event event) {
+        String eventType = event.getType();
+        return getNonBubblingEvents().contains(eventType);
+    }
+    public static boolean checkSinkFocusEvents(Event event) {
+        String eventType = event.getType();
+        return getBrowserFocusEvents().contains(eventType);
+    }
+
+    public static void dispatchFocusAndCheckSinkEvents(EventHandler eventHandler, Element target, Element element, BiConsumer<Element, EventHandler> onFocus, BiConsumer<Element, EventHandler> onBlur) {
+        Event event = eventHandler.event;
+        String eventType = event.getType();
+        boolean consume = false;
+        // when element is null we want only dispatching
+        // when it is not null, there is an assertion that it is focusable (has tabIndex)
+        if (FOCUSIN.equals(eventType)) {
+            onFocus.accept(target, eventHandler);
+        } else if(FOCUSOUT.equals(eventType)) {
+            if(element == null || !FocusUtils.isFakeBlur(event, element))
+                onBlur.accept(target, eventHandler);
+            else // it's a fake focus out, but we let FOCUSCHANGE through
+                consume = true;
+        } else if(element != null) {
+            if (FOCUSCHANGEOUT.equals(eventType)) {
+                if (!FocusUtils.isFakeBlur(event, element)) // in that case we rely on FOCUSOUT
+                    consume = true;
+            } else if (FOCUSCHANGEIN.equals(eventType)) { // we rely on FOCUSIN
+                consume = true;
+            } else if (!DataGrid.checkSinkEvents(event)) {
+//            assert false; // actually only initFocus and initSinkEvents should be called
+                consume = true;
+            }
+        }
+        if(consume)
+            eventHandler.consume(true, true);
+    }
+    public static boolean checkSinkGlobalEvents(Event event) {
+        return getBrowserKeyEvents().contains(event.getType()) || event.getTypeInt() == Event.ONPASTE || event.getType().equals(BrowserEvents.CONTEXTMENU) || event.getType().equals(BrowserEvents.CHANGE);
+    }
+
+    public void setPageIncrement(int pageIncrement) {
+        this.pageIncrement = Math.max(1, pageIncrement);
+    }
+
+    private Runnable rowChangedHandler;
+    public void setRowChangedHandler(Runnable handler) {
+        rowChangedHandler = handler;
+    }
+
+    private Runnable columnChangedHandler;
+    public void setColumnChangedHandler(Runnable handler) {
+        columnChangedHandler = handler;
+    }
+
+    /**
+     * Get the overall data size.
+     *
+     * @return the data size
+     */
+    public int getRowCount() {
+        return getRows().size();
+    }
+
+    public T getRowValue(int row) {
+        return getRows().get(row);
+    }
+
+    protected abstract ArrayList<T> getRows();
+
+    @Override
+    public void onActivate() {
+        onFocus(null, null);
+    }
+
+    public final void onBrowserEvent(Element target, EventHandler eventHandler) {
+        Event event = eventHandler.event;
+        // Ignore spurious events (such as onblur) while we refresh the table.
+        if (isResolvingState) {
+            assert DataGrid.FOCUSOUT.equals(event.getType()) || DataGrid.FOCUSCHANGEOUT.equals(event.getType());
+            return;
+        }
+
+        // with that inner propagation scheme we need only dispatching (otherwise this FOCUSOUT / FOCUSCHANGEOUT will become inconsistent)
+        DataGrid.dispatchFocusAndCheckSinkEvents(eventHandler, target, null, this::onFocus, this::onBlur);
+        if(eventHandler.consumed)
+            return;
+
+        // Find the cell where the event occurred.
+        TableSectionElement tbody = getTableBodyElement();
+        TableSectionElement tfoot = !noFooters ? getTableFootElement() : null;
+        TableSectionElement thead = !noHeaders ? getTableHeadElement() : null;
+
+        int row = -1;
+        Column column = null;
+        TableCellElement columnParent = null;
+
+        Header header = null;
+        Element headerParent = null;
+        Header footer = null;
+        Element footerParent = null;
+
+        // debug
+        RowIndexHolder rowIndexHolder = null;
+
+        TableSectionElement targetTableSection = null;
+
+        if (target == getTableDataFocusElement() || GKeyStroke.isPasteFromClipboardEvent(event)) { // need this when focus is on grid and not cell itself, so we need to propagate key events there
+            // usually all events has target getTableDataFocusElement, but ONPASTE when focus is on grid somewhy has target tableElement (in last version something has changed and now target is copied cell, however it is also undesirable)
+            if (checkSinkGlobalEvents(event)) {
+                targetTableSection = tbody;
+
+                row = getSelectedRow();
+                columnParent = getSelectedElement(getSelectedColumn());
+                if(columnParent != null)
+                    column = tableBuilder.getColumn(columnParent);
+            }
+        } else {
+            Element cur = target;
+            while (cur != null) {
+                if (cur == tbody || cur == tfoot || cur == thead) {
+                    targetTableSection = cur.cast(); // We found the table section.
+                    break;
+                }
+
+                if(EmbeddedForm.is(cur)) {
+                    row = -1;
+                    column = null;
+                    columnParent = null;
+
+                    header = null;
+                    headerParent = null;
+                    footer = null;
+                    footerParent = null;
+                }
+
+                if(row < 0) {
+                    row = tableBuilder.getRowValueIndex(cur);
+                    rowIndexHolder = tableBuilder.getRowIndexHolder(cur);
+                }
+                if (column == null) {
+                    column = tableBuilder.getColumn(cur);
+                    if(column != null)
+                        columnParent = (TableCellElement) cur; // COLUMN_ATTRIBUTE is only set for TableCellElement
+                }
+                if (header == null && !noHeaders) {
+                    header = headerBuilder.getHeader(cur);
+                    if(header != null)
+                        headerParent = cur;
+                }
+                if (footer == null && !noFooters) {
+                    footer = footerBuilder.getHeader(cur);
+                    if(footer != null)
+                        footerParent = cur;
+                }
+
+                cur = cur.getParentElement();
+            }
+        }
+
+        if (targetTableSection == thead) {
+            if (header != null)
+                header.onBrowserEvent(headerParent, event);
+        } else if(targetTableSection == tfoot) {
+            if (footer != null)
+                footer.onBrowserEvent(footerParent, event);
+        } else {
+            if (column != null) {
+                assert rowIndexHolder == null || getRows().contains((T) rowIndexHolder);
+                RowIndexHolder rowValue;
+                try {
+                    rowValue = (RowIndexHolder) getRowValue(row);
+                } catch (IndexOutOfBoundsException e) {
+                    Object rowData = (rowIndexHolder == null ? "null" : getRows().indexOf((T) rowIndexHolder));
+                    throw new RuntimeException("INCORRECT ROW " + row + " " + event.getType() + " " + (this instanceof GTreeTable) + " " + target + " " + (target == getTableDataFocusElement()) + " " + getGridInfo() + " " + rowData + " " + getRows().size() + " " + RootPanel.getBodyElement().isOrHasChild(target));
+                }
+                onBrowserEvent(new Cell(row, getColumnIndex(column), column, rowValue), eventHandler, column, columnParent);
+            }
+        }
+    }
+
+    protected abstract String getGridInfo();
+
+    public abstract <C> void onBrowserEvent(Cell cell, EventHandler eventHandler, Column<T, C> column, TableCellElement parent);
+
+    /**
+     * Checks that the row is within bounds of the view.
+     *
+     * @param row row index to check
+     * @return true if within bounds, false if not
+     */
+    protected boolean isRowWithinBounds(int row) {
+        return row >= 0 && row < getRowCount();
+    }
+
+    /**
+     * Inserts a column into the table at the specified index with an associated
+     * header.
+     *
+     * @param beforeIndex the index to insert the column
+     * @param col         the column to be added
+     * @param header      the associated {@link Header}
+     */
+    public void insertColumn(int beforeIndex, Column<T, ?> col, Header<?> header, Header<?> footer) {
+        if (noHeaders && header != null) {
+            throw new UnsupportedOperationException("the table isn't allowed to have header");
+        }
+        if (noFooters && footer != null) {
+            throw new UnsupportedOperationException("the table isn't allowed to have footer");
+        }
+
+        // Allow insert at the end.
+        if (beforeIndex != getColumnCount()) {
+            checkColumnBounds(beforeIndex);
+        }
+
+        headers.add(beforeIndex, header);
+        footers.add(beforeIndex, footer);
+        columns.add(beforeIndex, col);
+
+        // Increment the keyboard selected column.
+        int selectedColumn = getSelectedColumn();
+        int newSelectedColumn = -1;
+        if(selectedColumn == -1)
+            newSelectedColumn = columns.size() - 1;
+        else if (beforeIndex <= selectedColumn)
+            newSelectedColumn = selectedColumn + 1;
+
+        if(newSelectedColumn != -1 && isFocusable(newSelectedColumn))
+            setSelectedColumn(newSelectedColumn);
+    }
+
+    public void moveColumn(int oldIndex, int newIndex) {
+        checkColumnBounds(oldIndex);
+        checkColumnBounds(newIndex);
+        if (oldIndex == newIndex) {
+            return;
+        }
+
+        int selectedColumn = getSelectedColumn();
+        if (oldIndex == selectedColumn)
+            setSelectedColumn(newIndex);
+        else if (oldIndex < selectedColumn && selectedColumn > 0)
+            setSelectedColumn(selectedColumn - 1);
+
+        Column<T, ?> column = columns.remove(oldIndex);
+        Header<?> header = headers.remove(oldIndex);
+        Header<?> footer = footers.remove(oldIndex);
+
+        columns.add(newIndex, column);
+        headers.add(newIndex, header);
+        footers.add(newIndex, footer);
+    }
+
+    /**
+     * Remove a column.
+     *
+     * @param col the column to remove
+     */
+    public void removeColumn(Column<T, ?> col) {
+        int index = columns.indexOf(col);
+        if (index < 0) {
+            throw new IllegalArgumentException("The specified column is not part of this table.");
+        }
+        removeColumn(index);
+    }
+
+    /**
+     * Remove a column.
+     *
+     * @param index the column index
+     */
+    public void removeColumn(int index) {
+        if (index < 0 || index >= columns.size()) {
+            throw new IndexOutOfBoundsException("The specified column index is out of bounds.");
+        }
+        columns.remove(index);
+        headers.remove(index);
+        footers.remove(index);
+
+        if (columns.isEmpty()) {
+            setSelectedColumn(-1);
+            return;
+        }
+
+        int selectedColumn = getSelectedColumn();
+        // Decrement the keyboard selected column.
+        if (index <= selectedColumn) {
+            if (selectedColumn == 0 && columns.size() > 0)
+                setSelectedColumn(0);
+            else
+                setSelectedColumn(selectedColumn - 1);
+        }
+    }
+
+    /**
+     * Get the column at the specified index.
+     *
+     * @param col the index of the column to retrieve
+     * @return the {@link Column} at the index
+     */
+    public Column<T, ?> getColumn(int col) {
+        checkColumnBounds(col);
+        return columns.get(col);
+    }
+
+    /**
+     * Get the number of columns in the table.
+     *
+     * @return the column count
+     */
+    public int getColumnCount() {
+        return columns.size();
+    }
+
+    /**
+     * Get the index of the specified column.
+     *
+     * @param column the column to search for
+     * @return the index of the column, or -1 if not found
+     */
+    public int getColumnIndex(Column<T, ?> column) {
+        return columns.indexOf(column);
+    }
+
+    public void setTableBuilder(GPropertyTableBuilder<T> tableBuilder) {
+        this.tableBuilder = tableBuilder;
+    }
+
+    public void columnsChanged() {
+        columnsChanged = true; // in fact leads to all other changes (widths, data, headers)
+        scheduleUpdateDOM();
+    }
+    public void widthsChanged() {
+        widthsChanged = true;
+        scheduleUpdateDOM();
+    }
+    public void rowsChanged() {
+        dataChanged(null);
+    }
+    private boolean areRowsChanged() {
+        return dataChanged && dataColumnsChanged == null;
+    }
+    public void dataChanged(ArrayList<? extends Column> updatedColumns) {
+        if(updatedColumns == null) // rows changed
+            dataColumnsChanged = null;
+        else if(dataColumnsChanged != null)
+            GwtClientUtils.addOrderedSets(dataColumnsChanged, updatedColumns);
+        dataChanged = true;
+
+        scheduleUpdateDOM();
+    }
+    public void headersChanged() {
+        headersChanged = true;
+        scheduleUpdateDOM();
+    }
+
+    public void selectedRowChanged() {
+        selectedRowChanged = true;
+        scheduleUpdateDOM();
+    }
+    public void selectedColumnChanged() {
+        selectedColumnChanged = true;
+        scheduleUpdateDOM();
+    }
+    public void focusedChanged(Element target) {
+        if(isFocused())
+            DataGrid.sinkPasteEvent(getTableDataFocusElement());
+
+        focusedChanged = true;
+        if(!isResolvingState) // hack, grid elements can have focus and not be in editing mode (for example input) and removing such elements will lead to blur
+            scheduleUpdateDOM();
+    }
+
+    public void onResizeChanged() {
+        onResizeChanged = true;
+        if(!isResolvingState) // hack, because in preUpdateScroll there is browser event flush, which causes scheduleDeferred flush => HeaderPanel.forceLayout => onResize and IllegalStateException, everything is really twisted here, so will just suppress ensurePendingState
+            scheduleUpdateDOM();
+    }
+
+    /**
+     * Get the {@link Header} from the footer section that was added with a
+     * {@link Column}.
+     */
+    public Header<?> getFooter(int index) {
+        return footers.get(index);
+    }
+
+    /**
+     * Get the {@link Header} from the header section that was added with a
+     * {@link Column}.
+     */
+    public Header<?> getHeader(int index) {
+        return headers.get(index);
+    }
+    public int getHeaderIndex(Header<?> header) {
+        return headers.indexOf(header);
+    }
+
+    /**
+     * Get the index of the column that is currently selected via the keyboard.
+     *
+     * @return the currently selected column, or -1 if none selected
+     */
+    public int getSelectedColumn() {
+        return selectedColumn;
+    }
+
+    public int getFocusedColumn() {
+        return isFocused() ? getSelectedColumn() : -1;
+    }
+
+    public boolean isSelectedRow(Cell cell) {
+        return getSelectedRow() == cell.getRowIndex();
+    }
+
+    public boolean isFocusedColumn(Cell cell) {
+        return getFocusedColumn() == cell.getColumnIndex();
+    }
+
+    protected TableRowElement getChildElement(int row) {
+        return getRowElementNoFlush(row);
+    }
+
+    protected abstract GSize getColumnWidth(int column);
+    protected abstract double getColumnFlexPerc(int column);
+    public abstract boolean isColumnFlex(int column);
+
+    public int getFullColumnWidth(int index) {
+        return GwtClientUtils.getFullWidth(getWidthElement(index));
+    }
+    public int getClientColumnWidth(int index) {
+        return GwtClientUtils.getWidth(getWidthElement(index));
+    }
+
+    // when row or column are changed by keypress in grid (KEYUP, PAGEUP, etc), no focus is lost
+    // so to handle this there are to ways of doing that, either with GFormController.checkCommitEditing, or moving focus to grid
+    // so far will do it with checkCommitEditing (like in form bindings)
+    // see overrides
+    public void changeSelectedCell(int row, int column, FocusUtils.Reason reason) {
+        // there are index checks inside, sometimes they are redundant, sometimes not
+        // however not it's not that important as well, as if the row / column actually was changed
+        changeSelectedRow(row);
+        changeSelectedColumn(column);
+    }
+
+    private void changeSelectedColumn(int column) {
+        int columnCount = getColumnCount();
+        if(columnCount == 0)
+            return;
+        if (column < 0)
+            column = 0;
+        else if (column >= columnCount)
+            column = columnCount - 1;
+
+        //assert isFocusable(column); //changeRow call changeSelectedColumn even if column is not focusable
+        if (isFocusable(column) && setSelectedColumn(column) && columnChangedHandler != null)
+            columnChangedHandler.run();
+    }
+
+    private void changeSelectedRow(int row) {
+        int rowCount = getRowCount();
+        if(rowCount == 0)
+            return;
+
+        if (row < 0)
+            row = 0;
+        else if (row >= rowCount)
+            row = rowCount - 1;
+
+        if(setSelectedRow(row))
+            rowChangedHandler.run();
+    }
+
+    public Cell getSelectedCell() {
+        return getSelectedCell(getSelectedColumn());
+    }
+
+    public Cell getSelectedCell(int column) {
+        return new Cell(getSelectedRow(), column, getColumn(column), (RowIndexHolder) getSelectedRowValue());
+    }
+
+    public boolean setSelectedColumn(int column) {
+        assert column >= 0 || columns.size() == 0 : "Column must be zero or greater";
+
+        if (getSelectedColumn() == column)
+            return false;
+
+        this.selectedColumn = column;
+        selectedColumnChanged();
+        return true;
+    }
+
+    public boolean isFocusable(int column) {
+        return getColumn(column).isFocusable();
+    }
+    public boolean isFocusable(Cell cell) {
+        return cell.getColumn().isFocusable();
+    }
+
+    protected void focusColumn(int columnIndex, FocusUtils.Reason reason) {
+        focus(reason);
+        selectionHandler.changeColumn(columnIndex, reason);
+    }
+
+    public abstract void focus(FocusUtils.Reason reason);
+
+    public boolean isChangeOnSingleClick(Cell cell, Event event, boolean rowChanged, Column column) {
+        return !isFocusable(cell);
+    }
+
+    public boolean setSelectedRow(int row) {
+        if (getSelectedRow() == row)
+            return false;
+
+        assert row >= -1 && row < getRowCount();
+        this.selectedRow = row;
+        selectedRowChanged();
+        return true;
+    }
+
+    @Override
+    public void setPreferredSize(boolean set, Result<Integer> grids) {
+        FlexPanel.setMaxPrefWidth(getElement(), set ? "min-content" : null);
+
+        grids.set(grids.result + 1);
+    }
+
+    /* see DataGrid.css, dataGridTableWrapperWidget description */
+    public static void updateTablePadding(boolean hasVerticalScroll, Element tableElement) {
+        if(hasVerticalScroll)
+            tableElement.getStyle().setPaddingRight(nativeScrollbarWidth + 1, Unit.PX); // 1 for right outer border margin
+        else
+            tableElement.getStyle().clearPaddingRight();
+    }
+
+    // there are two ways to remove outer grid borders :
+    // 1) set styles for outer cells and set border-left/top : none there
+    // 2) set margins (not paddings since they do not support negative values) to -1
+    // first solution is cleaner (since border can be wider than 1px + margin can be used for other purposes, for example scroller padding), however the problem is that in that case the same should be implemented for focus which is pretty tricky
+    // the second solution is easier to implement
+    // the same problem is in gpivot (.subtotalouterdiv .scrolldiv / .headerdiv), and there it is solved the same way (however since there is no focus cell there in history there should be a solution with styles, conditional css)
+
+    // in theory margin should be set for inner (child element)
+    // but 1) margin-right doesn't work for table if it's width 100%
+    // 2) it's hard to tell what to do with scroller, since we want right border when there is scroll, and don't wan't it when there is no such scroll
+    // however we can remove margin when there is a vertical scroller (so there's no difference whether to set border for child or parent)
+
+    public static void updateVerticalScroll(boolean hasVerticalScroller, Element tableElement) {
+        boolean setMargin = !hasVerticalScroller;
+        if(setMargin)
+            GwtClientUtils.addClassName(tableElement, "no-vertical-scroll");
+        else
+            GwtClientUtils.removeClassName(tableElement, "no-vertical-scroll");
+    }
+
+    private TableRowElement getRowElementNoFlush(int row) {
+        NodeList<TableRowElement> rows = getTableBodyElement().getRows();
+        if (!(row >= 0 && row < rows.getLength()))
+            return null;
+        return rows.getItem(row);
+    }
+
+    protected TableCellElement getSelectedElement(int column) {
+        return getElement(getSelectedRow(), column);
+    }
+
+    protected TableCellElement getElement(Cell cell) {
+        return getElement(cell.getRowIndex(), cell.getColumnIndex());
+    }
+
+    protected TableCellElement getElement(int rowIndex, int colIndex) { // element used for rendering
+        TableCellElement result = null;
+        TableRowElement tr = getChildElement(rowIndex); // Do not use getRowElement() because that will flush the presenter.
+        if (tr != null && colIndex >= 0) {
+            int cellCount = tr.getCells().getLength();
+            if (cellCount > 0) {
+                int column = min(colIndex, cellCount - 1);
+                result = tr.getCells().getItem(column);
+            }
+        }
+        return result;
+    }
+
+    public Element getElement() {
+        return tableWidget.getElement();
+    }
+
+    @Override
+    public Widget getWidget() {
+        return tableWidget;
+    }
+
+    protected final TableElement getTableElement() {
+        return tableWidget.tableElement;
+    }
+
+    protected final TableSectionElement getTableBodyElement() {
+        return tableWidget.getSection();
+    }
+
+    protected final TableSectionElement getTableFootElement() {
+        return tableWidget.footerElement;
+    }
+
+    public final TableSectionElement getTableHeadElement() {
+        return tableWidget.headerElement;
+    }
+
+    public void onFocus(Element target, EventHandler eventHandler) {
+        focusedChanged(target);
+    }
+
+    public void onBlur(Element target, EventHandler eventHandler) {
+        focusedChanged(target);
+    }
+
+    public Element getTableDataFocusElement() {
+//        if(!noScrollers)
+        return tableContainer.getFocusElement();
+//        return getTableElement();
+    }
+
+    /**
+     * Check that the specified column is within bounds.
+     *
+     * @param col the column index
+     * @throws IndexOutOfBoundsException if the column is out of bounds
+     */
+    private void checkColumnBounds(int col) {
+        if (col < 0 || col >= getColumnCount()) {
+            throw new IndexOutOfBoundsException("Column index is out of bounds: " + col);
+        }
+    }
+
+    /**
+     * Get the index of the row that is currently selected via the keyboard,
+     * relative to the page start index.
+     *
+     * <p>
+     * This is not same as the selected row in the {@link com.google.gwt.view.client.SelectionModel}. The
+     * keyboard selected row refers to the row that the user navigated to via the
+     * keyboard or mouse.
+     * </p>
+     *
+     * @return the currently selected row, or -1 if none selected
+     */
+    public int getSelectedRow() {
+        return selectedRow;
+    }
+
+    /**
+     * Get the value that the user selected.
+     *
+     * @return the value, or null if a value was not selected
+     */
+    public T getSelectedRowValue() {
+        int selectedRow = getSelectedRow();
+        return isRowWithinBounds(selectedRow) ? getRowValue(selectedRow) : null;
+    }
+
+    protected void startResolving() {
+        if (isResolvingState) {
+            return;
+        }
+
+        isResolvingState = true;
+    }
+
+    protected void updateDOM() {
+        if (columnsChanged || widthsChanged)
+            updateWidthsDOM(columnsChanged); // updating colgroup (column widths)
+
+        if (columnsChanged || headersChanged)
+            updateHeadersDOM(columnsChanged); // updating column headers table
+
+        if (columnsChanged || dataChanged)
+            updateDataDOM(columnsChanged, dataColumnsChanged); // updating data (rows + column values)
+
+        if((selectedRowChanged || selectedColumnChanged || focusedChanged)) // this is the check that all columns are already updated
+            updateSelectedDOM(dataColumnsChanged, !columnsChanged && !(dataChanged && dataColumnsChanged == null));
+
+        if (columnsChanged || selectedRowChanged || selectedColumnChanged || focusedChanged)
+            updateFocusedCellDOM(); // updating focus cell border
+
+        // moved to GridContainerPanel
+//        if(focusedChanged) // updating focus grid border
+//            getElement().getStyle().setBorderColor(isFocused ? "var(--focus-color)" : "var(--component-border-color)");
+    }
+
+    private void finishResolving() {
+        headersChanged = false;
+        columnsChanged = false;
+        widthsChanged = false;
+        dataChanged = false;
+        dataColumnsChanged = new ArrayList<>();
+        selectedRowChanged = false;
+        selectedColumnChanged = false;
+        focusedChanged = false;
+        onResizeChanged = false;
+
+        renderedSelectedKey = getSelectedKey();
+        renderedSelectedExpandingIndex = getSelectedExpandingIndex();
+        renderedSelectedRow = getSelectedRow();
+        renderedSelectedCol = getSelectedColumn();
+
+        isResolvingState = false;
+    }
+
+    private int getLastVisibleRow(Integer scrollTop, Integer scrollBottom, int start) {
+        for (int i = start; i >= 0; i--) {
+            TableRowElement rowElement = getChildElement(i);
+            int rowTop = rowElement.getOffsetTop();
+            if(rowTop <= scrollBottom) {
+                if (scrollTop == null || rowTop >= scrollTop) {
+                    return i;
+                } else {
+                    break;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int getFirstVisibleRow(Integer scrollTop, Integer scrollBottom, int start) {
+        for (int i = start; i < getRowCount(); i++) {
+            TableRowElement rowElement = getChildElement(i);
+            int rowBottom = rowElement.getOffsetTop() + rowElement.getClientHeight();
+            if (rowBottom >= scrollTop) {
+                if (scrollBottom == null || rowBottom <= scrollBottom) {
+                    return i;
+                } else {
+                    break;
+                }
+            }
+        }
+        return -1;
+    }
+
+    public void checkSelectedRowVisible() {
+        int selectedRow = getSelectedRow();
+        if (selectedRow >= 0) {
+            int scrollHeight = tableContainer.getClientHeight();
+            int scrollTop = tableContainer.getVerticalScrollPosition();
+
+            TableRowElement rowElement = getChildElement(selectedRow);
+            int rowTop = rowElement.getOffsetTop();
+            int rowBottom = rowTop + rowElement.getClientHeight();
+
+            int headerHeight = getHeaderHeight();
+            int footerHeight = getFooterHeight();
+            int visibleTop = scrollTop + headerHeight;
+            int visibleBottom = scrollTop + scrollHeight - footerHeight;
+
+            int newRow = -1;
+            if (rowBottom > visibleBottom + 1) { // 1 for border
+                newRow = getLastVisibleRow(rowTop <= visibleBottom ? visibleTop : null, visibleBottom, selectedRow - 1);
+            }
+            if (rowTop < visibleTop) {
+                newRow = getFirstVisibleRow(visibleTop, rowBottom >= visibleTop ? visibleBottom : null, selectedRow + 1);
+            }
+            if (newRow != -1) {
+                selectionHandler.changeRow(newRow, FocusUtils.Reason.SCROLLNAVIGATE);
+            }
+        }
+    }
+
+    private int getHeaderHeight() {
+        return !noHeaders ? getTableHeadElement().getClientHeight() : 0;
+//        return getTableHeadElement().getClientHeight();
+    }
+
+    private int getFooterHeight() {
+        return !noFooters ? getTableFootElement().getClientHeight() : 0;
+//        return getTableFootElement().getClientHeight();
+    }
+
+    private void beforeUpdateDOMScroll(SetPendingScrollState pendingState) {
+        beforeUpdateDOMScrollVertical(pendingState);
+    }
+
+    private void beforeUpdateDOMScrollVertical(SetPendingScrollState pendingState) {
+        if (areRowsChanged() && renderedSelectedRow >= 0 && renderedSelectedRow < getRowCount()) // rows changed and there was some selection
+            pendingState.renderedSelectedScrollTop = getChildElement(renderedSelectedRow).getOffsetTop() - tableContainer.getVerticalScrollPosition();
+    }
+
+    //force browser-flush
+    private void preAfterUpdateDOMScroll(SetPendingScrollState pendingState) {
+        preAfterUpdateDOMScrollHorizontal(pendingState);
+        preAfterUpdateDOMScrollVertical(pendingState);
+    }
+
+    private void preAfterUpdateDOMScrollHorizontal(SetPendingScrollState pendingState) {
+        boolean hasVerticalScroll = GwtClientUtils.hasVerticalScroll(tableContainer.getScrollableElement()); // probably getFullWidth should be used
+        if (this.hasVerticalScroll == null || !this.hasVerticalScroll.equals(hasVerticalScroll))
+            pendingState.hasVertical = hasVerticalScroll;
+
+        int currentScrollLeft = tableContainer.getHorizontalScrollPosition();
+
+        int viewportWidth = getViewportWidth();
+
+        //scroll column to visible if needed
+        int colToShow;
+        if (selectedColumnChanged && (colToShow = getSelectedColumn()) >=0 && getRowCount() > 0) {
+            NodeList<TableCellElement> cells = tableWidget.getDataRows().getItem(0).getCells();
+            TableCellElement td = cells.getItem(colToShow);
+
+            int columnLeft = td.getOffsetLeft() - getPrevStickyCellsOffsetWidth(cells, colToShow);
+            int columnRight = td.getOffsetLeft() + td.getOffsetWidth();
+
+            int scrollLeft = currentScrollLeft;
+            if (columnRight >= scrollLeft + viewportWidth) // not completely visible from right
+                scrollLeft = columnRight - viewportWidth;
+            if (columnLeft < scrollLeft) // not completely visible from left
+                scrollLeft = columnLeft;
+            if(currentScrollLeft != scrollLeft)
+                pendingState.left = scrollLeft;
+        }
+
+        //calculate left neighbour right border for focused cell
+        if (columnsChanged || selectedRowChanged || selectedColumnChanged || focusedChanged) {
+            pendingState.leftNeighbourRightBorder = calcLeftNeighbourRightBorder(isFocused());
+        }
+
+        //calculate left for sticky properties
+        if (columnsChanged || headersChanged || dataChanged || widthsChanged || onResizeChanged) {
+            pendingState.stickyLefts = getStickyLefts();
+        }
+
+//        updateScrollHorizontal(pendingState);
+    }
+
+    public static class StickyParams {
+        public final double left;
+        public final double borderRight;
+
+        public StickyParams(double left, double borderRight) {
+            this.left = left;
+            this.borderRight = borderRight;
+        }
+    }
+
+    private List<StickyParams> getStickyLefts() {
+        TableRowElement tr = getStickyLeftRow();
+        if(tr != null) {
+            List<StickyParams> stickyLefts = new ArrayList<>();
+            double left = 0.0;
+            List<Integer> stickyColumns = getStickyColumns();
+            double viewportWidth = getViewportWidth();
+            for (int i = 0; i < stickyColumns.size(); i++) {
+                Element cell = tr.getCells().getItem(stickyColumns.get(i));
+                double borderLeftWidth = GwtClientUtils.getDoubleBorderLeftWidth(cell);
+                double borderRightWidth = GwtClientUtils.getDoubleBorderRightWidth(cell);
+                double cellWidth = GwtClientUtils.getDoubleOffsetWidth(cell);
+                //protect from too much sticky columns
+                double nextLeft = left + cellWidth;
+                // assert that nextLeft is Fixed PX, so the resize size is not null
+                stickyLefts.add(nextLeft <= viewportWidth * MainFrame.maxStickyLeft ? new StickyParams(left - borderLeftWidth, borderRightWidth) : null);
+                left = nextLeft;
+            }
+            return stickyLefts;
+        }
+        return null;
+    }
+
+    private TableRowElement getStickyLeftRow() {
+        if(!noHeaders)
+           return headerBuilder.getHeaderRow();
+
+        NodeList<TableRowElement> dataRows = tableWidget.getDataRows();
+        if(dataRows.getLength() > 0)
+            return dataRows.getItem(0);
+
+        return null;
+    }
+
+    private void preAfterUpdateDOMScrollVertical(SetPendingScrollState pendingState) {
+        int rowCount = getRowCount();
+
+        int tableHeight = 0;
+        if (rowCount > 0) {
+            TableRowElement lastRowElement = getChildElement(rowCount - 1);
+            tableHeight = lastRowElement.getOffsetTop() + lastRowElement.getClientHeight();
+        }
+
+        int viewportHeight = tableContainer.getClientHeight();
+        int currentScrollTop = tableContainer.getVerticalScrollPosition();
+
+        int scrollTop = currentScrollTop;
+
+        int headerHeight = getHeaderHeight();
+        int footerHeight = getFooterHeight();
+
+        // we're trying to keep viewport the same after rerendering
+        int rerenderedSelectedRow;
+        if(pendingState.renderedSelectedScrollTop != null && (rerenderedSelectedRow = getRowByKey(renderedSelectedKey, renderedSelectedExpandingIndex)) >= 0) {
+            scrollTop = getChildElement(rerenderedSelectedRow).getOffsetTop() - pendingState.renderedSelectedScrollTop;
+
+            if(scrollTop < 0) // upper than top
+                scrollTop = 0;
+            if (scrollTop > tableHeight - viewportHeight) // lower than bottom (it seems it can be if renderedSelectedScrollTop is strongly negative)
+                scrollTop = tableHeight - viewportHeight;
+        }
+
+        //scroll row to visible if needed
+        int rowToShow;
+        if (selectedRowChanged && (rowToShow = getSelectedRow()) >= 0) {
+            TableRowElement rowElement = getChildElement(rowToShow);
+            int rowTop = rowElement.getOffsetTop();
+            int rowBottom = rowTop + rowElement.getClientHeight();
+            if (rowBottom >= scrollTop + viewportHeight - footerHeight) // not completely visible from bottom
+                scrollTop = rowBottom - viewportHeight + footerHeight;
+            if (rowTop <= scrollTop + headerHeight) // not completely visible from top
+                scrollTop = rowTop - headerHeight - 1; // 1 for border
+        }
+
+        if(scrollTop != currentScrollTop)
+            pendingState.top = scrollTop;
+    }
+
+    protected int getViewportWidth() {
+        return tableContainer.getWidth();
+//        return GwtClientUtils.getWidth(getTableElement());
+    }
+    public int getViewportClientHeight() {
+        return tableContainer.getClientHeight();
+//        return getTableElement().getClientHeight();
+    }
+
+    Boolean hasVerticalScroll;
+    private void afterUpdateDOMScroll(SetPendingScrollState pendingState) {
+        afterUpdateDOMScrollHorizontal(pendingState);
+        afterUpdateDOMScrollVertical(pendingState);
+    }
+
+    private void afterUpdateDOMScrollVertical(SetPendingScrollState pendingState) {
+        if (pendingState.top != null) {
+            skipScrollEvent = true;
+            tableContainer.setVerticalScrollPosition(pendingState.top);
+
+//            updateScrolledStateVertical(); // scroll handler is called after programmatic change
+        }
+    }
+
+    private List<StickyParams> stickyLefts;
+
+    private void afterUpdateDOMScrollHorizontal(SetPendingScrollState pendingState) {
+        if(pendingState.hasVertical != null) {
+            hasVerticalScroll = pendingState.hasVertical;
+            updateVerticalScroll(hasVerticalScroll, tableContainer.getScrollableElement());
+        }
+
+        //set left sticky, we want it before setting horizontal position to have relevant sticky lefts
+        if(pendingState.stickyLefts != null) {
+            stickyLefts = pendingState.stickyLefts;
+
+            updateStickyLeftDOM();
+        }
+
+        if (pendingState.left != null) {
+            tableContainer.setHorizontalScrollPosition(pendingState.left);
+
+//            updateScrolledStateHorizontal(); // scroll handler is called after programmatic change
+        }
+
+        //set left neighbour right border for focused cell
+        if(pendingState.leftNeighbourRightBorder != null) {
+            setLeftNeighbourRightBorder(pendingState.leftNeighbourRightBorder);
+        }
+    }
+
+    private void updateSelectedCells(int rowIndex, ArrayList<Column> dataColumnsChanged, boolean updateRowImpl, boolean selectedRow) {
+        TableRowElement rowElement = getChildElement(rowIndex);
+        if(updateRowImpl) {
+            // last parameter is an optimization (not to update already updated cells)
+            tableBuilder.updateRowImpl(rowIndex, getRowValue(rowIndex), null, rowElement, (tColumn, cell) -> (dataColumnsChanged == null || !dataColumnsChanged.contains(tColumn)));
+        }
+
+        setTableActive(rowElement, selectedRow);
+    }
+
+    private void updateDataDOM(boolean columnsChanged, ArrayList<Column> dataColumnsChanged) {
+        int[] columnsToRedraw = null;
+        if(!columnsChanged && dataColumnsChanged != null) { // if only columns has changed
+            int size = dataColumnsChanged.size();
+            columnsToRedraw = new int[size];
+            for (int i = 0 ; i < size; i++)
+                columnsToRedraw[i] = getColumnIndex(dataColumnsChanged.get(i));
+        }
+
+        tableBuilder.update(tableWidget.getSection(), getRows(), columnsChanged, columnsToRedraw);
+    }
+
+    private void updateStickyLeftDOM() {
+        List<Integer> stickyColumns = getStickyColumns();
+        if (!noHeaders)
+            headerBuilder.updateStickyLeft(stickyColumns, stickyLefts);
+        if (!noFooters)
+            footerBuilder.updateStickyLeft(stickyColumns, stickyLefts);
+
+        tableBuilder.updateRowStickyLeft(tableWidget.getSection(), stickyColumns, stickyLefts);
+    }
+
+    private List<Integer> getStickyColumns() {
+        List<Integer> stickyColumns = new ArrayList<>();
+        for(int i = 0; i < columns.size(); i++) {
+            if(columns.get(i).isSticky()) {
+                stickyColumns.add(i);
+            }
+        }
+        return stickyColumns;
+    }
+
+    private void updateSelectedDOM(ArrayList<Column> dataColumnsChanged, boolean updateRowImpl) {
+        NodeList<TableRowElement> rows = tableWidget.getDataRows();
+        int rowCount = rows.getLength();
+
+        int newLocalSelectedRow = getSelectedRow();
+
+        // CLEAR PREVIOUS STATE
+        if (renderedSelectedRow >= 0 && renderedSelectedRow < rowCount &&
+                renderedSelectedRow != newLocalSelectedRow)
+            updateSelectedCells(renderedSelectedRow, dataColumnsChanged, updateRowImpl, false);
+
+        // SET NEW STATE
+        if (newLocalSelectedRow >= 0 && newLocalSelectedRow < rowCount)
+            updateSelectedCells(newLocalSelectedRow, dataColumnsChanged, updateRowImpl, true);
+    }
+
+    private void updateFocusedCellDOM() {
+        NodeList<TableRowElement> rows = tableWidget.getDataRows();
+        TableRowElement headerRow = noHeaders ? null : headerBuilder.getHeaderRow(); // we need headerRows for upper border
+
+        int newLocalSelectedRow = getSelectedRow();
+        int newLocalSelectedCol = getSelectedColumn();
+
+        int columnCount = getColumnCount();
+        // CLEAR PREVIOUS STATE
+        // if old row index is out of bounds only by 1, than we still need to clean top cell, which is in bounds (for vertical direction there is no such problem since we set outer border, and not inner, for horz it's not possible because of header)
+        if (renderedSelectedRow >= 0 && renderedSelectedRow <= rows.getLength() && renderedSelectedCol >= 0 && renderedSelectedCol < columnCount &&
+                (renderedSelectedRow != newLocalSelectedRow || renderedSelectedCol != newLocalSelectedCol)) {
+            setFocusedCellStyles(renderedSelectedRow, renderedSelectedCol, rows, headerRow, false);
+            if(renderedSelectedRow < rows.getLength() && renderedLeftStickyCol >= 0 && renderedLeftStickyCol < columnCount) {
+                setLeftNeighbourRightBorder(new LeftNeighbourRightBorder(renderedSelectedRow, renderedLeftStickyCol, false));
+                renderedLeftStickyCol = -1;
+            }
+        }
+
+        // SET NEW STATE
+        if (newLocalSelectedRow >= 0 && newLocalSelectedRow < rows.getLength() && newLocalSelectedCol >= 0 && newLocalSelectedCol < columnCount) {
+            setFocusedCellStyles(newLocalSelectedRow, newLocalSelectedCol, rows, headerRow, isFocused());
+        }
+    }
+
+    private LeftNeighbourRightBorder calcLeftNeighbourRightBorder(boolean set) {
+        //border for previous sticky cell
+        //focused is sticky: draw border if prev cell is invisible
+        //focused is not sticky and prev cell is sticky: draw border if focused is visible
+        //focused is not sticky and prev cell is not sticky: draw border if prev sticky is at the border of focused
+        LeftNeighbourRightBorder leftNeighbourRightBorder = null;
+        NodeList<TableRowElement> rows = tableWidget.getDataRows();
+
+        int row = getSelectedRow();
+        int column = getSelectedColumn();
+
+        if (row >= 0 && row < rows.getLength() && column >= 0 && column < getColumnCount()) {
+            NodeList<TableCellElement> cells = tableWidget.getDataRows().getItem(row).getCells();
+            TableCellElement focusedCell = cells.getItem(column);
+            TableCellElement prevCell = cells.getItem(column - 1);
+            Integer prevStickyCellNum = getPrevStickyCell(cells, column);
+            if (prevStickyCellNum != null) {
+                TableCellElement prevStickyCell = cells.getItem(prevStickyCellNum);
+                if (isStickyCell(focusedCell)) {
+                    leftNeighbourRightBorder = new LeftNeighbourRightBorder(row, prevStickyCellNum, set && getAbsoluteRight(prevCell) <= getAbsoluteRight(prevStickyCell));
+                } else if (prevCell.equals(prevStickyCell)) {
+                    leftNeighbourRightBorder = new LeftNeighbourRightBorder(row, prevStickyCellNum, set && getAbsoluteLeft(focusedCell) + 1 >= getAbsoluteRight(prevStickyCell));
+                } else if (!isStickyCell(prevCell)) {
+                    leftNeighbourRightBorder = new LeftNeighbourRightBorder(row, prevStickyCellNum, set && (getAbsoluteLeft(focusedCell) == getAbsoluteRight(prevStickyCell)));
+                }
+            }
+        }
+        return leftNeighbourRightBorder;
+    }
+
+    private void setLeftNeighbourRightBorder(LeftNeighbourRightBorder leftNeighbourRightBorder) {
+        if (leftNeighbourRightBorder != null) {
+            setLeftNeighbourRightBorder(tableWidget.getDataRows().getItem(leftNeighbourRightBorder.row).getCells().getItem(leftNeighbourRightBorder.column), leftNeighbourRightBorder.value);
+            if (leftNeighbourRightBorder.value) {
+                renderedLeftStickyCol = leftNeighbourRightBorder.column;
+            }
+        }
+    }
+
+    private Integer getPrevStickyCell(NodeList<TableCellElement> cells, int column) {
+        for (int i = column - 1; i >= 0; i--) {
+            TableCellElement prevCell = cells.getItem(i);
+            if (isStickyCell(prevCell)) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    private int getPrevStickyCellsOffsetWidth(NodeList<TableCellElement> cells, int column) {
+        int left = 0;
+        for (int i = column - 1; i >= 0; i--) {
+            TableCellElement prevCell = cells.getItem(i);
+            if (isStickyCell(prevCell)) {
+                left += prevCell.getOffsetWidth();
+            }
+        }
+
+        return left;
+    }
+
+    //use native getAbsoluteLeft, because GWT methods are casting to int incorrect
+    private native double getAbsoluteLeft(Element elem) /*-{
+        var left = 0;
+        var curr = elem;
+        // This intentionally excludes body which has a null offsetParent.
+        while (curr.offsetParent) {
+            left -= curr.scrollLeft;
+            curr = curr.parentNode;
+        }
+        while (elem) {
+            left += elem.offsetLeft;
+            elem = elem.offsetParent;
+        }
+        return left;
+    }-*/;
+
+    public final double getAbsoluteRight(Element elem) {
+        return getAbsoluteLeft(elem) + getOffsetWidth(elem);
+    }
+
+    private native double getOffsetWidth(Element elem) /*-{
+        return elem.offsetWidth || 0;
+    }-*/;
+
+
+    private boolean isStickyCell(TableCellElement cell) {
+        return cell.hasClassName("data-grid-sticky-cell") && !cell.hasClassName("data-grid-sticky-overflow");
+    }
+
+    private void setFocusedCellStyles(int row, int column, NodeList<TableRowElement> rows, TableRowElement headerRow, boolean focused) {
+        // setting left and bottom borders since they are used to draw lines in grid
+        int rowCount = rows.getLength();
+        int columnCount = getColumnCount();
+        assert row >= 0 && row <= rowCount && column >= 0 && column <= columnCount;
+        // LEFT, RIGHT AND BOTTOM BORDER
+        if(row < rowCount) {
+            TableRowElement thisRow = rows.getItem(row);
+            NodeList<TableCellElement> cells = thisRow.getCells();
+
+            TableCellElement thisCell = cells.getItem(column);
+            if(column < columnCount) {
+                // LEFT BORDER (RIGHT of left column)
+                if(column > 0) {
+                    setLeftNeighbourRightBorder(cells.getItem(column - 1), focused);
+                }
+
+                // in theory we might want to prevent extra border on the bottom and on the right (on the top there is no problem because of header)
+                // but there is a problem (with scroller, in that case we'll have to track hasVerticalScroller, hasHorizontalScroller) + table can be not full of rows (and we also have to track it)
+                // so we'll just draw that borders always
+
+                // BOTTOM BORDER
+                setFocusedCellBottomBorder(thisCell, focused);
+
+                // RIGHT BORDER
+                setFocusedCellRightBorder(thisCell, focused);
+            }
+
+            setFocusedCell(thisCell, focused);
+        }
+
+        // TOP BORDER (BOTTOM of upper row)
+        if(column < columnCount) {
+            TableRowElement upperRow = row > 0 ? rows.getItem(row - 1) : headerRow;
+            if(upperRow != null)
+                setFocusedCellBottomBorder(upperRow.getCells().getItem(column), focused);
+        }
+    }
+
+    private void setFocusedCell(Element element, boolean focused) {
+        if (focused) {
+            GwtClientUtils.addClassName(element, "focused-cell");
+        } else {
+            GwtClientUtils.removeClassName(element, "focused-cell");
+        }
+    }
+
+    private void setTableActive(Element element, boolean active) {
+        if (active) {
+            GwtClientUtils.addClassName(element, "table-active");
+        } else {
+            GwtClientUtils.removeClassName(element, "table-active");
+        }
+    }
+
+    private void setFocusedCellBottomBorder(TableCellElement td, boolean focused) {
+        if (focused) {
+            GwtClientUtils.addClassName(td, "focused-cell-bottom-border", "focusedCellBottomBorder", v5);
+        } else {
+            GwtClientUtils.removeClassName(td, "focused-cell-bottom-border", "focusedCellBottomBorder", v5);
+        }
+    }
+
+    private void setFocusedCellRightBorder(TableCellElement td, boolean focused) {
+        if (focused) {
+            GwtClientUtils.addClassName(td, "focused-cell-right-border", "focusedCellRightBorder", v5);
+        } else {
+            GwtClientUtils.removeClassName(td, "focused-cell-right-border", "focusedCellRightBorder", v5);
+        }
+    }
+
+    private void setLeftNeighbourRightBorder(TableCellElement td, boolean focused) {
+        if (focused) {
+            GwtClientUtils.addClassName(td, "left-neighbour-right-border", "leftNeighbourRightBorder", v5);
+        } else {
+            GwtClientUtils.removeClassName(td, "left-neighbour-right-border", "leftNeighbourRightBorder", v5);
+        }
+    }
+
+    public void updateHeadersDOM(boolean columnsChanged) {
+        // we always need headers and footers to support scroll arrows
+//        if(!noHeaders)
+        headerBuilder.update(columnsChanged);
+//        if(!noFooters)
+        footerBuilder.update(columnsChanged);
+    }
+
+    public Element getHeaderElement(int element) {
+        assert !noHeaders;
+        return headerBuilder.getHeaderRow().getCells().getItem(element);
+    }
+
+    public Element getWidthElement(int element) {
+        int shift = 0;
+        for(int i=0;i<element;i++) {
+            shift++;
+            if(isColumnFlex(i))
+                shift++;
+        }
+        return tableWidget.colRowElement.getCells().getItem(shift);
+    }
+
+    // mechanism is slightly different - removing redundant columns, resetting others, however there is no that big difference from other updates so will leave it this way
+    protected void updateWidthsDOM(boolean columnsChanged) {
+        if(columnsChanged) {
+            tableBuilder.rebuildColumnRow(tableWidget.colRowElement);
+//            tableWidget.rebuildColumnGroup();
+        }
+
+        int colRowInd = 0;
+        for (int i = 0, columnCount = getColumnCount(); i < columnCount; i++) {
+            TableCellElement colElement = tableWidget.colRowElement.getCells().getItem(colRowInd++);
+//            TableColElement colElement = tableWidget.colGroupElement.getChild(i).cast();
+
+//            Column<T, ?> column = getColumn(i);
+//            Cell cell = new Cell(-1, i, column, null); // the same as in buildColumnRow
+//            Element sizeElement = SimpleTextBasedCellRenderer.getSizeElement(column.getSizedDom(cell, colElement));
+            Element sizeElement = colElement; // the problem is that table-loyout fixed doesn't care about the cell content, so it's not possible to do the sizing for the inner div / input components
+
+            FlexPanel.setGridWidth(sizeElement, getColumnWidth(i).getString());
+            GwtClientUtils.addClassName(sizeElement, "prop-size-value");
+
+            if(isColumnFlex(i)) {
+                double columnFlexPerc = getColumnFlexPerc(i);
+                colElement = tableWidget.colRowElement.getCells().getItem(colRowInd++);
+                FlexPanel.setGridWidth(colElement, columnFlexPerc + "%");
+            }
+        }
+    }
+
+    @Override
+    public void colorThemeChanged() {
+        columnsChanged();
+    }
+
+    protected int selectedRow = -1;
+    protected int selectedColumn = -1;
+
+    private static class SetPendingScrollState {
+        private Integer renderedSelectedScrollTop; // from selected till upper border
+
+        private Integer top;
+        private Integer left;
+        private Boolean hasVertical;
+
+        private LeftNeighbourRightBorder leftNeighbourRightBorder;
+        private List<StickyParams> stickyLefts;
+    }
+
+    private static class LeftNeighbourRightBorder {
+        int row;
+        int column;
+        boolean value;
+
+        public LeftNeighbourRightBorder(int row, int column, boolean value) {
+            this.row = row;
+            this.column = column;
+            this.value = value;
+        }
+    }
+
+    // all this pending is needed for two reasons :
+    // 1) update dom once if there are several changes before event loop
+    // 2) first do dom changes, then do getOffset* routing thus avoiding unnecessary layouting flushes
+    private static UpdateDOMCommand updateDOMCommandStatic;
+
+    private static class UpdateDOMCommand implements Scheduler.ScheduledCommand {
+        private final ArrayList<DataGrid> grids = new ArrayList<>();
+
+        public boolean executed;
+
+        @Override
+        public void execute() {
+            if(executed)
+                return;
+
+            for (DataGrid grid : grids)
+                grid.startResolving();
+
+            int size = grids.size();
+            boolean[] showing = new boolean[size];
+            SetPendingScrollState[] pendingStates = new SetPendingScrollState[size];
+            for (int i = 0; i < size; i++) {
+                DataGrid grid = grids.get(i);
+                if(GwtClientUtils.isShowing(grid.tableWidget)) { // need this check, since grid can be already hidden (for example when SHOW DOCKED is executed), and in that case get*Width return 0, which leads for example to updateTablePaddings (removing scroll) and thus unnecessary blinking when the grid becomes visible again
+                    showing[i] = true;
+                    pendingStates[i] = new SetPendingScrollState();
+                }
+            }
+
+            for (int i = 0; i < size; i++)
+                if(showing[i])
+                    grids.get(i).beforeUpdateDOMScroll(pendingStates[i]);
+
+            for (DataGrid grid : grids)
+                grid.updateDOM();
+
+            // not sure what for there is a separation of reading scroll position from it's setting
+            for (int i = 0; i < size; i++)
+                if(showing[i])
+                    grids.get(i).preAfterUpdateDOMScroll(pendingStates[i]);
+
+            for (int i = 0; i < size; i++)
+                if(showing[i])
+                    grids.get(i).afterUpdateDOMScroll(pendingStates[i]);
+
+            for (DataGrid grid : grids)
+                grid.finishResolving();
+
+            executed = true;
+            updateDOMCommandStatic = null;
+        }
+
+        public static void schedule(DataGrid grid) {
+            if (updateDOMCommandStatic == null) {
+                updateDOMCommandStatic = new UpdateDOMCommand();
+                updateDOMCommandStatic.add(grid);
+                Scheduler.get().scheduleFinally(updateDOMCommandStatic);
+            } else
+                updateDOMCommandStatic.add(grid);
+        }
+
+        public static void flush() {
+            if (updateDOMCommandStatic != null)
+                updateDOMCommandStatic.execute();
+        }
+
+        private void add(DataGrid grid) {
+            if(!grids.contains(grid))
+                grids.add(grid);
+        }
+    }
+
+    private void scheduleUpdateDOM() {
+        if (isResolvingState)
+            throw new IllegalStateException("It's not allowed to change current state, when resolving pending state");
+
+        UpdateDOMCommand.schedule(this);
+    }
+
+    public static void flushUpdateDOM() {
+        UpdateDOMCommand.flush();
+    }
+
+    protected class TableWidget extends Widget {
+        protected final TableElement tableElement;
+//        protected final TableColElement colGroupElement;
+        protected TableRowElement colRowElement;
+        protected TableSectionElement headerElement;
+        protected final TableSectionElement bodyElement;
+        protected TableSectionElement footerElement;
+
+        public TableWidget() {
+            tableElement = Document.get().createTableElement();
+
+            GwtClientUtils.addClassName(tableElement, "table");
+            GwtClientUtils.addClassName(tableElement, "lsf-table");
+            if (noHeaders) {
+                GwtClientUtils.addClassName(tableElement, "empty-header");
+            }
+            if (noFooters) {
+                GwtClientUtils.addClassName(tableElement, "empty-footer");
+            }
+
+            headerElement = tableElement.createTHead();
+            GwtClientUtils.addClassName(headerElement, "data-grid-header", "dataGridHeader", v5);
+
+            colRowElement = headerElement.insertRow(-1);
+
+            bodyElement = GwtClientUtils.createTBody(tableElement);
+            GwtClientUtils.addClassName(bodyElement, "data-grid-body", "dataGridBody", v5);
+
+            footerElement = tableElement.createTFoot();
+            GwtClientUtils.addClassName(footerElement, "data-grid-footer", "dataGridFooter", v5);
+
+            setElement(tableElement);
+        }
+
+//        public void rebuildColumnGroup() {
+//            GwtClientUtils.removeAllChildren(colGroupElement);
+//
+//            for(int i = 0, columnCount = getColumnCount(); i < columnCount; i++) {
+//                colGroupElement.appendChild(Document.get().createColElement());
+//            }
+//        }
+//
+        public TableSectionElement getSection() {
+            return bodyElement;
+        }
+
+        public NodeList<TableRowElement> getDataRows() {
+            return bodyElement.getRows();
+        }
+    }
+
+
+    public void onResize() {
+        onResizeChanged();
+        //need to recalculate scrollTop in preAfterUpdateDOMScrollVertical
+        selectedRowChanged = true;
+    }
+
+    public static abstract class DataGridSelectionHandler<T> {
+        protected final DataGrid<T> display;
+
+        public DataGridSelectionHandler(DataGrid<T> display) {
+            this.display = display;
+        }
+
+        public void onCellBefore(EventHandler handler, Cell cell, Function<Boolean, Boolean> isChangeOnSingleClick, Supplier<Element> getNativeEventElement) {
+            Event event = handler.event;
+            boolean changeEvent = GMouseStroke.isChangeEvent(event);
+            if (changeEvent || GMouseStroke.isContextMenuEvent(event)) {
+                int col = cell.getColumnIndex();
+                int row = cell.getRowIndex();
+                boolean rowChanged = display.getSelectedRow() != row;
+                int selectedColumn = display.getSelectedColumn();
+
+                if (selectedColumn != col || rowChanged) {
+                    FocusUtils.Reason reason = FocusUtils.Reason.MOUSENAVIGATE;
+                    if(!isFocusable(col))
+                        changeRow(row, reason);
+                    else
+                        changeCell(row, col, reason);
+
+                    if(changeEvent && !isChangeOnSingleClick.apply(rowChanged)) {
+                        Element nativeEventElement = getNativeEventElement.get();
+                        if(nativeEventElement != null)
+                            MainFrame.preventClickAfterDown(nativeEventElement, event); // most input elements show popups on mouse click (not mousedown)
+                        // we'll propagate native events by default, at least to enable (support) "text selection" feature
+                        handler.consume(nativeEventElement == null, true); // we'll propagate events upper, to process bindings if there are any (for example CTRL+CLICK)
+                    }
+                }
+//                else if(BrowserEvents.CLICK.equals(eventType) && // if clicked on grid and element is not natively focusable steal focus
+//                        !CellBasedWidgetImpl.get().isFocusable(Element.as(event.getEventTarget())))
+//                    display.focus();
+            }
+        }
+
+        public void onCellAfter(EventHandler handler, Cell cell) {
+            Event event = handler.event;
+            String eventType = event.getType();
+            if (BrowserEvents.KEYDOWN.equals(eventType) && handleKeyEvent(event))
+                handler.consume();
+        }
+
+        public boolean handleKeyEvent(Event event) {
+            int keyCode = event.getKeyCode();
+            FocusUtils.Reason reason = FocusUtils.Reason.KEYMOVENAVIGATE;
+            switch (keyCode) {
+                case KeyCodes.KEY_RIGHT:
+                    nextColumn(true, reason);
+                    return true;
+                case KeyCodes.KEY_LEFT:
+                    nextColumn(false, reason);
+                    return true;
+                case KeyCodes.KEY_DOWN:
+                    nextRow(true, reason);
+                    return true;
+                case KeyCodes.KEY_UP:
+                    nextRow(false, reason);
+                    return true;
+                case KeyCodes.KEY_PAGEDOWN:
+                    changeRow(display.getSelectedRow() + display.pageIncrement, reason);
+                    return true;
+                case KeyCodes.KEY_PAGEUP:
+                    changeRow(display.getSelectedRow() - display.pageIncrement, reason);
+                    return true;
+                case KeyCodes.KEY_HOME:
+                    changeRow(0, reason);
+                    return true;
+                case KeyCodes.KEY_END:
+                    changeRow(display.getRowCount() - 1, reason);
+                    return true;
+            }
+            return false;
+        }
+
+        protected boolean isFocusable(int column) {
+            return display.isFocusable(column);
+        }
+        protected void changeCell(int row, int column, FocusUtils.Reason reason) {
+            display.changeSelectedCell(row, column, reason);
+        }
+        public void changeColumn(int column, FocusUtils.Reason reason) {
+            changeCell(display.getSelectedRow(), column, reason);
+        }
+        public void changeRow(int row, FocusUtils.Reason reason) {
+            changeCell(row, display.getSelectedColumn(), reason);
+        }
+
+        public void nextRow(boolean down, FocusUtils.Reason reason) {
+            int rowIndex = display.getSelectedRow();
+            changeRow(down ? rowIndex + 1 : rowIndex - 1, reason);
+        }
+
+        public void nextColumn(boolean forward, FocusUtils.Reason reason) {
+            int rowCount = display.getRowCount();
+            if(rowCount == 0) // not sure if it's needed
+                return;
+            int columnCount = display.getColumnCount();
+            if(columnCount == 0)
+                return;
+
+            int rowIndex = display.getSelectedRow();
+            int columnIndex = display.getSelectedColumn();
+
+            while(true) {
+                if (forward) {
+                    if (columnIndex == columnCount - 1) {
+                        if (rowIndex != rowCount - 1) {
+                            columnIndex = 0;
+                            rowIndex++;
+                        } else
+                            break;
+                    } else {
+                        columnIndex++;
+                    }
+                } else {
+                    if (columnIndex == 0) {
+                        if (rowIndex != 0) {
+                            columnIndex = columnCount - 1;
+                            rowIndex--;
+                        } else
+                            break;
+                    } else {
+                        columnIndex--;
+                    }
+                }
+
+                if(isFocusable(columnIndex))
+                    break;
+            }
+
+            changeCell(rowIndex, columnIndex, reason);
+        }
+    }
+
+    public void initArrow(Element parent, boolean bottom) {
+        Element button = GwtClientUtils.createFocusElement("button");
+        GwtClientUtils.addClassName(button, "btn");
+        GwtClientUtils.addClassName(button, "btn-light");
+        GwtClientUtils.addClassName(button, "btn-sm");
+        GwtClientUtils.addClassName(button, "arrow");
+        button.appendChild(bottom ? StaticImage.CHEVRON_DOWN.createImage() : StaticImage.CHEVRON_UP.createImage());
+        GwtClientUtils.setOnClick(button, event -> scrollToEnd(bottom));
+
+        Element arrowTH = Document.get().createElement("th");
+        GwtClientUtils.addClassName(arrowTH, "arrow-th");
+        GwtClientUtils.addClassName(arrowTH, bottom ? "bottom-arrow" : "top-arrow");
+
+        Element arrowContainer = Document.get().createElement("div");
+        GwtClientUtils.addClassName(arrowContainer, "arrow-container");
+        arrowContainer.appendChild(button);
+
+        arrowTH.appendChild(arrowContainer);
+        parent.appendChild(arrowTH);
+    }
+
+    private boolean wasUnloaded;
+
+    public void onTableContainerUnload() {
+        wasUnloaded = true;
+    }
+
+    public void onTableContainerLoad() {
+        // when grid is unloaded and then loaded (when moving from one container to another in maximize / minimize tabspanel, not sure if there are other cases)
+        // scroll position changes to 0 (without any event, but that doesn't matter), and we want to keep the selected row, so we mark it as changed, and in afterUpdateDOM method it is ensured that selected cell is visible
+        if(wasUnloaded)
+            selectedRowChanged();
+    }
+}

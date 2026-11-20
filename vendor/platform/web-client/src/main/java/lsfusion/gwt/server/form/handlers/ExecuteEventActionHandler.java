@@ -1,0 +1,56 @@
+package lsfusion.gwt.server.form.handlers;
+
+import lsfusion.gwt.client.controller.remote.action.form.ExecuteEventAction;
+import lsfusion.gwt.client.controller.remote.action.form.ServerResponseResult;
+import lsfusion.gwt.client.form.object.GGroupObjectValue;
+import lsfusion.gwt.client.form.property.GEventSource;
+import lsfusion.gwt.client.form.property.async.GPushAsyncResult;
+import lsfusion.gwt.server.MainDispatchServlet;
+import lsfusion.gwt.server.convert.GwtToClientConverter;
+import lsfusion.gwt.server.form.FormServerResponseActionHandler;
+import lsfusion.http.provider.SessionInvalidatedException;
+import lsfusion.interop.form.property.EventSource;
+import net.customware.gwt.dispatch.server.ExecutionContext;
+
+import java.rmi.RemoteException;
+
+public class ExecuteEventActionHandler extends FormServerResponseActionHandler<ExecuteEventAction> {
+    private static GwtToClientConverter gwtConverter = GwtToClientConverter.getInstance();
+
+    public ExecuteEventActionHandler(MainDispatchServlet servlet) {
+        super(servlet);
+    }
+
+    @Override
+    protected String getActionDetails(ExecuteEventAction action) throws SessionInvalidatedException {
+        return super.getActionDetails(action) + ", action : " + action.actionSID;
+    }
+
+    @Override
+    public ServerResponseResult executeEx(final ExecuteEventAction action, ExecutionContext context) throws RemoteException {
+        return getServerResponseResult(action, remoteForm -> {
+            GGroupObjectValue[] actionFullKeys = action.fullKeys;
+            GPushAsyncResult[] actionPushAsyncResults = action.pushAsyncResults;
+            GEventSource[] actionEventSources = action.eventSources;
+            int length = actionFullKeys.length;
+
+            byte[][] fullKeys = new byte[length][];
+            byte[][] pushAsyncResults = new byte[length][];
+            EventSource[] eventSources = new EventSource[length];
+            for (int i = 0; i < length; i++) {
+                fullKeys[i] = gwtConverter.convertOrCast(actionFullKeys[i]);
+                pushAsyncResults[i] = gwtConverter.convertOrCast(actionPushAsyncResults[i]);
+                eventSources[i] = gwtConverter.convertOrCast(actionEventSources[i]);
+            }
+            return remoteForm.executeEventAction(
+                    action.requestIndex,
+                    action.lastReceivedRequestIndex,
+                    action.actionSID,
+                    action.propertyIds,
+                    fullKeys,
+                    eventSources,
+                    pushAsyncResults
+            );
+        });
+    }
+}

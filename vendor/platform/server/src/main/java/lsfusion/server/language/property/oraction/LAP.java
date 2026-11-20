@@ -1,0 +1,123 @@
+package lsfusion.server.language.property.oraction;
+
+import lsfusion.base.col.interfaces.immutable.ImList;
+import lsfusion.base.col.interfaces.immutable.ImMap;
+import lsfusion.base.col.interfaces.immutable.ImOrderSet;
+import lsfusion.base.col.interfaces.immutable.ImRevMap;
+import lsfusion.interop.form.property.PivotOptions;
+import lsfusion.server.data.value.DataObject;
+import lsfusion.server.data.value.ObjectValue;
+import lsfusion.server.logics.classes.ValueClass;
+import lsfusion.server.logics.classes.user.set.ResolveClassSet;
+import lsfusion.server.logics.form.struct.object.ObjectEntity;
+import lsfusion.server.logics.form.struct.property.oraction.ActionOrPropertyObjectEntity;
+import lsfusion.server.logics.property.classes.infer.ClassType;
+import lsfusion.server.logics.property.oraction.ActionOrProperty;
+import lsfusion.server.logics.property.oraction.PropertyInterface;
+import lsfusion.server.physics.dev.i18n.LocalizedString;
+
+import java.util.List;
+
+public abstract class LAP<T extends PropertyInterface, P extends ActionOrProperty<T>> {
+
+    public ImOrderSet<T> listInterfaces;
+    private String creationScript = null;
+    private String creationPath = null;
+    private String path = null;
+
+    public LAP(P property) {
+        listInterfaces = property.getFriendlyOrderInterfaces();
+    }
+
+    public LAP(P property, ImOrderSet<T> listInterfaces) {
+        this.listInterfaces = listInterfaces;
+        assert property.interfaces.size() == listInterfaces.size();
+    }
+
+    public ImMap<T, ObjectValue> getMapValues(final ObjectValue... objects) {
+        return getMap(objects);
+    }
+
+    public ImMap<T, DataObject> getMapDataValues(final DataObject... objects) {
+        return getMap(objects);
+    }
+
+    public <U> ImMap<T, U> getMap(final U... mapping) {
+        return listInterfaces.mapOrderValues((int i) -> mapping[i]);
+    }
+
+    public <U> ImMap<T, U> getMap(final ImList<U> mapping) {
+        return listInterfaces.mapOrderValues(mapping::get);
+    }
+
+    public <U> ImRevMap<T, U> getRevMap(final U... mapping) {
+        return listInterfaces.mapOrderRevValues(i -> mapping[i]);
+    }
+
+    public <U> ImRevMap<T, U> getRevMap(final ImOrderSet<U> mapping) {
+        return listInterfaces.mapOrderRevValues(mapping::get);
+    }
+
+    public <U> ImRevMap<T, U> getRevMap(final ImOrderSet<U> list, final Integer... mapping) {
+        return listInterfaces.mapOrderRevValues(i -> list.get(mapping[i] - 1));
+    }
+
+    public void setCustomEditorFunction(String customEditorFunction) {
+        getActionOrProperty().drawOptions.setCustomEditorFunction(customEditorFunction);
+    }
+
+    public void setPivotOptions(PivotOptions pivotOptions) {
+        getActionOrProperty().drawOptions.setPivotOptions(pivotOptions);
+    }
+
+    public String getCreationScript() {
+        return creationScript;
+    }
+
+    public void setCreationScript(String creationScript) {
+        this.creationScript = creationScript;
+    }
+
+    public String getCreationPath() {
+        return creationPath;
+    }
+
+    public void setCreationPath(String creationPath) {
+        this.creationPath = creationPath;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
+    }
+
+    public ActionOrPropertyObjectEntity<T, ?> createObjectEntity(ImOrderSet<ObjectEntity> objects) {
+        return ActionOrPropertyObjectEntity.create(getActionOrProperty(), getRevMap(objects), creationScript, creationPath, path);
+    }
+
+    public List<ResolveClassSet> getExplicitClasses() {
+        return getActionOrProperty().getExplicitClasses(listInterfaces);
+    }
+
+    public void setExplicitClasses(List<ResolveClassSet> signature) {
+        getActionOrProperty().setExplicitClasses(listInterfaces, signature);
+    }
+
+    @Override
+    public String toString() {
+        return getActionOrProperty().toString();
+    }
+
+    public ValueClass[] getInterfaceClasses(ClassType classType) {
+        return getActionOrProperty().getInterfaceClasses(listInterfaces, classType);
+    }
+
+    public ImOrderSet<String> getInterfaceNames() {
+        return getActionOrProperty().getInterfaceNames(listInterfaces);
+    }
+
+    public abstract P getActionOrProperty();
+}

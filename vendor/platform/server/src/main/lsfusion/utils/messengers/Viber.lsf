@@ -1,0 +1,113 @@
+MODULE Viber;
+
+REQUIRE Messenger;
+
+EXTEND CLASS Messenger { viber 'Viber' }
+isViber(Account a) = messenger(a) == Messenger.viber;
+
+setWebHookViberResult = DATA LOCAL STRING();
+setWebHookViber(Account account) {
+    LOCAL result = JSONFILE();
+    
+    LOCAL httpHeaders = STRING(STRING);
+    httpHeaders('X-Viber-Auth-Token') <- token(account);
+    
+    EXTERNAL HTTP POST 'https://chatapi.viber.com/pa/set_webhook' HEADERS httpHeaders 
+        PARAMS JSONFILE('\{ "url":"' + webServerUrl() + '/exec/webHookViber?botid=' + LONG(account) + '", "event_types":["unsubscribed","conversation_started"], "send_name": true, "send_photo": false\}') TO result;
+    
+    LOCAL status = INTEGER();
+    LOCAL status_message = STRING();
+    IMPORT FROM result() TO() status, status_message;
+    IF status() != 0 THEN {
+        setWebHookViberResult() <- status_message();
+    }
+}
+WHEN SET (Account a IS Account) AND isViber(a) DO {
+    setWebHookViber(a);
+    IF setWebHookViberResult() THEN {
+        MESSAGE setWebHookViberResult() NOWAIT;
+        CANCEL;
+    }
+}
+
+GROUP user;
+GROUP sender;
+GROUP message;
+event = DATA LOCAL STRING();
+user_id = DATA LOCAL STRING();
+userId = DATA LOCAL STRING();
+userName = DATA LOCAL STRING();
+senderId = DATA LOCAL STRING();
+senderName = DATA LOCAL STRING();
+text = DATA LOCAL STRING();
+
+FORM webHookViber
+    PROPERTIES() event, user_id
+    PROPERTIES() IN user userId EXTID 'id', userName EXTID 'name'
+    PROPERTIES() IN sender senderId EXTID 'id', senderName EXTID 'name'
+    PROPERTIES() IN message text;
+
+webHookViber(JSONFILE f) {
+    
+    IMPORT webHookViber JSON FROM f;
+    
+    IF event() == 'subscribed' OR event() == 'message' THEN {        
+        LOCAL chat = Chat();
+        chat() <- chatIdAccount(account(LONG(params('botid'))), IF event() == 'subscribed' THEN userId() ELSE senderId());
+        IF NOT chat() THEN {
+            NEW chat = Chat {
+                chat() <- chat;
+                account(chat) <- account(LONG(params('botid')));
+                id(chat()) <- IF event() == 'subscribed' THEN userId() ELSE senderId();
+            }
+        }
+        name(chat()) <- IF event() == 'subscribed' THEN userName() ELSE senderName();
+        chatType(chat()) <- ChatType.private;
+        NEW message = Message {
+            chat(message) <- chat();
+            message(message) <- text();
+            dateTime(message) <- currentDateTime();
+            from(message) <- OVERRIDE userName(), senderName();
+        }
+    } ELSE IF event() == 'unsubscribed' THEN {
+        DELETE Chat c WHERE id(c) == user_id() AND account(c) == account(LONG(params('botid')));
+    }
+ 
+    APPLY;
+} @@noauth;
+
+sendMessageViberResult = DATA LOCAL NESTED STRING();
+sendMessageViber(Chat chat, STRING message) {
+    sendMessageViberResult() <- NULL;
+    LOCAL result = JSONFILE();
+    
+    LOCAL httpHeaders = STRING(STRING);
+    httpHeaders('X-Viber-Auth-Token') <- token(account(chat));
+    
+    EXTERNAL HTTP POST 'https://chatapi.viber.com/pa/send_message' HEADERS httpHeaders 
+        PARAMS JSONFILE('\{"receiver": "' + id(chat) + '","text": "' + message + '","type": "text","sender": \{"name": "LSFusion"\}\}') TO result;
+    
+    LOCAL status = INTEGER();
+    LOCAL status_message = STRING();
+    IMPORT FROM result() TO() status, status_message;
+    IF status() != 0 THEN {
+        sendMessageViberResult() <- status_message();
+    } ELSE {
+        NEW botMessage = Message {
+            chat(botMessage) <- chat;
+            message(botMessage) <- message;
+            dateTime(botMessage) <- currentDateTime();
+            from(botMessage) <- 'YOU';
+        }
+    }  
+    APPLY;
+}
+
+sendFile(Chat chat, NAMEDFILE attachment) + WHEN isViber(account(chat)) AND attachment IS NAMEDFILE THEN {
+    sendMessageResult() <- '{messenger.send.file.warning}';
+}
+
+sendMessage(Chat chat, STRING message) + WHEN isViber(account(chat)) AND message IS STRING THEN {
+    sendMessageViber(chat, message);
+    sendMessageResult() <- sendMessageViberResult();
+}

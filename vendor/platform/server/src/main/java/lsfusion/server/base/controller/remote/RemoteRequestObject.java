@@ -1,0 +1,365 @@
+package lsfusion.server.base.controller.remote;
+
+import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import lsfusion.base.col.MapFact;
+import lsfusion.base.lambda.EFunction;
+import lsfusion.interop.action.*;
+import lsfusion.interop.base.remote.RemoteRequestInterface;
+import lsfusion.server.base.controller.context.Context;
+import lsfusion.server.base.controller.remote.context.ContextAwarePendingRemoteObject;
+import lsfusion.server.base.controller.remote.ui.RemotePausableInvocation;
+import lsfusion.server.base.controller.stack.ThrowableWithStack;
+import lsfusion.server.base.controller.thread.SyncType;
+import lsfusion.server.logics.action.controller.stack.EExecutionStackCallable;
+import lsfusion.server.logics.action.controller.stack.EExecutionStackRunnable;
+import lsfusion.server.logics.action.controller.stack.ExecutionStack;
+import lsfusion.server.physics.admin.log.ServerLoggers;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+
+import java.rmi.RemoteException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+
+import static com.google.common.base.Optional.fromNullable;
+
+public abstract class RemoteRequestObject extends ContextAwarePendingRemoteObject implements RemoteRequestInterface {
+
+    private final SequentialRequestLock requestLock;
+
+    protected Integer getInvocationsCount() {
+        return currentInvocations.size();
+    }
+
+    private final Map<Long, RemotePausableInvocation> currentInvocations = Collections.synchronizedMap(new HashMap<>());
+
+    private RemotePausableInvocation getInvocation(long requestIndex) {
+        return currentInvocations.get(requestIndex);
+    }
+
+    private void startInvocation(long requestIndex, RemotePausableInvocation invocation) {
+        currentInvocations.put(requestIndex, invocation);
+
+        if(requestLock != null)
+            requestLock.blockRequestLock(invocation.getSID(), requestIndex, this);
+    }
+    private void finishInvocation(long requestIndex, RemotePausableInvocation invocation) {
+        currentInvocations.remove(requestIndex);
+        if (requestLock == null) {
+            // in unsynchronized mode clearRecentResults skips ongoing invocations' entries; clean them up now
+            if (requestIndex < minReceivedRequestIndex) {
+                recentResults.remove(requestIndex);
+                requestsContinueIndices.remove(requestIndex);
+            }
+        } else
+            requestLock.releaseRequestLock(invocation.getSID(), requestIndex, this);
+    }
+
+    private final Map<Long, Optional<?>> recentResults = Collections.synchronizedMap(new HashMap<>());
+    private final Map<Long, Integer> requestsContinueIndices = Collections.synchronizedMap(new HashMap<>());
+
+    private long minReceivedRequestIndex = 0;
+
+    protected RemoteRequestObject(int port, ExecutionStack upStack, String sID, SyncType type) throws RemoteException {
+        super(port, upStack, sID, type);
+
+        setContext(createContext());
+
+        this.requestLock = synchronizeRequests() ? new SequentialRequestLock() : null;
+    }
+
+    protected abstract Context createContext();
+
+    protected boolean synchronizeRequests() { // should be synchronized with the same method / field in RemoteDispatchAsync, RmiQueue
+        return true;
+    }
+
+    protected <T> T processRMIRequest(long requestIndex, long lastReceivedRequestIndex, final EExecutionStackCallable<T> request) throws RemoteException {
+        Optional<?> optionalResult = recentResults.get(requestIndex);
+        if (optionalResult != null) {
+            assert requestIndex >= minReceivedRequestIndex;
+            return optionalResult(optionalResult);
+        }
+
+        if(requestIndex < minReceivedRequestIndex) // request can be lost and reach server only after retried and even next request already received, proceeded
+            return null; // this check is important, because otherwise acquireRequestLock will never stop
+
+        String invocationSID = generateInvocationSid(requestIndex);
+
+        if(requestLock != null)
+            requestLock.blockRequestLock(invocationSID, requestIndex, this);
+        try {
+            return callAndCacheResult(requestIndex, lastReceivedRequestIndex, () -> request.call(getStack()));
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        } finally {
+            if(requestLock != null)
+                requestLock.releaseRequestLock(invocationSID, requestIndex, this);
+        }
+    }
+
+    protected ServerResponse executeServerInvocation(long requestIndex, long lastReceivedRequestIndex, RemotePausableInvocation invocation) throws RemoteException {
+        Optional<?> optionalResult = recentResults.get(requestIndex);
+        if (optionalResult != null) {
+            ServerLoggers.pausableLog("Return cachedResult for: " + requestIndex);
+            return optionalResult(optionalResult);
+        }
+
+        if(requestIndex < minReceivedRequestIndex) // request can be lost and reach server only after retried and even next request already received, proceeded
+            return null; // this check is important, because otherwise acquireRequestLock will never stop and numberOfFormChangesRequests will be always > 0
+
+        startInvocation(requestIndex, invocation);
+
+        return callAndCacheResult(requestIndex, lastReceivedRequestIndex, invocation);
+    }
+
+    protected <T> T callAndCacheResult(long requestIndex, long lastReceivedRequestIndex, Callable<T> request) throws RemoteException {
+        clearRecentResults(lastReceivedRequestIndex);
+
+        Object result;
+        try {
+            result = request.call();
+        } catch (Throwable t) {
+            result = new ThrowableWithStack(t);
+        }
+
+        recentResults.put(requestIndex, fromNullable(result));
+
+        return cachedResult(result);
+    }
+
+    protected <T> T optionalResult(Optional<?> optionalResult) throws RemoteException {
+        if (!optionalResult.isPresent()) {
+            return null;
+        }
+
+        return cachedResult(optionalResult.get());
+    }
+
+    /**
+     * Если result instanceof Throwable, выбрасывает Exception, иначе кастит к T
+     */
+    private <T> T cachedResult(Object result) throws RemoteException {
+        if (result instanceof ThrowableWithStack) {
+            throw ((ThrowableWithStack) result).propagateRemote();
+        } else {
+            return (T) result;
+        }
+    }
+
+    // here there is a problem: this minReceivedRequestIndex should be used only when requests are synchronized
+    // however it's not clear what to do in the opposite case (because in that, case requests are not synchronized on the client, so we should send all request indexes to understand which one we can dispose)
+    // as a temporary solution, something like simple timer logics can be used (i.e dispose sent requests after some timeout), but for now we'll leave it this way
+    private void clearRecentResults(long lastReceivedRequestIndex) {
+        //assert: current thread holds the request lock
+        if(lastReceivedRequestIndex == -1)
+            return;
+        // if request is already received, there is no need for recentResults for that request (we'll assume that there cannot be retryableRequest after that)
+        // however it is < (and not <=) because the same requestIndex is used for continueServerInvocation (so it would be possible to clear result that might be needed for retryable request)
+        // the cleaner solution is to lookahead if there will be continueServerInvocation and don't set lastReceivedRequestIndex in RmiQueue in that case, but now using < is a lot easier
+        for (long i = minReceivedRequestIndex; i < lastReceivedRequestIndex; ++i) {
+            // in unsynchronized mode lastReceivedRequestIndex can advance past ongoing paused invocations;
+            // preserve their recentResults and requestsContinueIndices entries until they complete (see finishInvocation)
+            if (requestLock != null || !currentInvocations.containsKey(i)) {
+                recentResults.remove(i);
+                requestsContinueIndices.remove(i);
+            }
+        }
+        minReceivedRequestIndex = lastReceivedRequestIndex;
+    }
+
+    public void waitRecentResults(long waitRequestIndex) {
+        try {
+            if(waitRequestIndex != -1) { //see FormsController.executeNotificationAction
+                while (!recentResults.containsKey(waitRequestIndex)) {
+                    Thread.sleep(100);
+                }
+            }
+        } catch (InterruptedException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    protected abstract ServerResponse prepareResponse(long requestIndex, List<ClientAction> pendingActions, ExecutionStack stack, boolean forceLocalEvents, boolean paused);
+
+    protected ServerResponse processPausableRMIRequest(final long requestIndex, long lastReceivedRequestIndex, final EExecutionStackRunnable runnable) throws RemoteException {
+        return processPausableRMIRequest(requestIndex, lastReceivedRequestIndex, runnable, false);
+    }
+
+    protected ServerResponse processPausableRMIRequest(final long requestIndex, long lastReceivedRequestIndex, final EExecutionStackRunnable runnable, boolean forceLocalEvents) throws RemoteException {
+
+        return executeServerInvocation(requestIndex, lastReceivedRequestIndex, new RemotePausableInvocation(requestIndex, generateInvocationSid(requestIndex), pausablesExecutor, this) {
+            @Override
+            protected ServerResponse callInvocation() throws Throwable {
+                ExecutionStack stack = getStack();
+                runnable.run(stack);
+                return prepareResponse(requestIndex, delayedActions, stack, forceLocalEvents, false);
+            }
+
+            @Override
+            protected ServerResponse handlePaused() {
+                delayedMessageAction = null;
+                return prepareResponse(requestIndex, delayedActions, null, false, true);
+            }
+
+            @Override
+            protected ServerResponse handleFinished() {
+                unlockNextRmiRequest();
+                return super.handleFinished();
+            }
+
+            @Override
+            protected ServerResponse handleThrows(ThrowableWithStack t) throws RemoteException {
+                unlockNextRmiRequest();
+                return super.handleThrows(t);
+            }
+
+            private void unlockNextRmiRequest() {
+                finishInvocation(requestIndex, this);
+            }
+        });
+    }
+
+    private String generateInvocationSid(long requestIndex) {
+        String invocationSID;
+        if (ServerLoggers.isPausableLogEnabled()) {
+            StackTraceElement[] st = new Throwable().getStackTrace();
+            int i = 2;
+            String methodName;
+            while(true) {
+                methodName = st[i].getMethodName();
+                if(methodName.startsWith("process"))
+                    i++;
+                else
+                    break;
+            }
+
+            int aspectPostfixInd = methodName.indexOf("_aroundBody");
+            if (aspectPostfixInd != -1) {
+                methodName = methodName.substring(0, aspectPostfixInd);
+            }
+
+            invocationSID = "[f: " + getSID() + ", m: " + methodName + ", rq: " + requestIndex + "]";
+        } else {
+            invocationSID = "";
+        }
+        return invocationSID;
+    }
+
+    public ServerResponse continueServerInvocation(long requestIndex, long lastReceivedRequestIndex, int continueIndex, final Object actionResult) throws RemoteException {
+        return continueInvocation(requestIndex, lastReceivedRequestIndex, continueIndex, currentInvocation -> currentInvocation.resumeAfterUserInteraction(actionResult));
+    }
+
+    public ServerResponse throwInServerInvocation(long requestIndex, long lastReceivedRequestIndex, int continueIndex, final Throwable clientThrowable) throws RemoteException {
+        return continueInvocation(requestIndex, lastReceivedRequestIndex, continueIndex, currentInvocation -> currentInvocation.resumeWithThrowable(clientThrowable));
+    }
+
+    public boolean isInServerInvocation(long requestIndex) throws RemoteException {
+        boolean isInServerInvocation = getInvocation(requestIndex) != null;
+        Object recentResult = recentResults.get(requestIndex).get();
+        assert recentResult instanceof ServerResponse && isInServerInvocation == ((ServerResponse) recentResult).resumeInvocation;
+        return isInServerInvocation;
+    }
+
+    private ServerResponse continueInvocation(long requestIndex, long lastReceivedRequestIndex, int continueIndex, EFunction<RemotePausableInvocation, ServerResponse, RemoteException> continueRequest) throws RemoteException {
+        Integer cachedContinueIndex = requestsContinueIndices.get(requestIndex);
+        if (cachedContinueIndex != null && cachedContinueIndex == continueIndex) {
+            Optional<?> result = recentResults.get(requestIndex);
+            ServerLoggers.pausableLog("Return cachedResult for continue: rq#" + requestIndex + "; cont#" + continueIndex);
+            return optionalResult(result);
+        }
+        if (cachedContinueIndex == null) {
+            cachedContinueIndex = -1;
+        }
+
+        //следующий continue может прийти только, если был получен предыдущий
+        assert continueIndex == cachedContinueIndex + 1;
+
+        requestsContinueIndices.put(requestIndex, continueIndex);
+
+        return callAndCacheResult(requestIndex, lastReceivedRequestIndex, () -> continueRequest.apply(getInvocation(requestIndex)));
+    }
+
+    public void delayUserInteraction(ClientAction action) {
+        RemotePausableInvocation.runUserInteraction(currentInvocation -> { currentInvocation.delayUserInteraction(action); return null;});
+    }
+
+    public Object requestUserInteraction(ClientAction action) {
+        return RemotePausableInvocation.runUserInteraction(currentInvocation -> currentInvocation.pauseForUserInteraction(action));
+    }
+
+    private Map<Long, SyncExecution> syncExecuteServerInvocationMap = MapFact.mAddRemoveMap();
+    private Map<Long, SyncExecution> syncContinueServerInvocationMap = MapFact.mAddRemoveMap();
+    private Map<Long, SyncExecution> syncThrowInServerInvocationMap = MapFact.mAddRemoveMap();
+    private Map<Long, SyncExecution> syncProcessRMIRequestMap = MapFact.mAddRemoveMap();
+
+    private static class SyncExecution {
+        private boolean executed;
+    }
+
+    @Aspect
+    public static class RemoteFormExecutionAspect {
+        private Object syncExecute(Map<Long, SyncExecution> syncMap, long requestIndex, ProceedingJoinPoint joinPoint) throws Throwable {
+            boolean needToWait = true;
+            SyncExecution obj;
+            Object result;
+
+            synchronized (syncMap) {
+                obj = syncMap.get(requestIndex);
+                if (obj == null) { // this thread will do the calculation
+                    obj = new SyncExecution();
+                    syncMap.put(requestIndex, obj);
+                    needToWait = false;
+                }
+            }
+
+            if(needToWait) {
+                synchronized (obj) {
+                    while(!obj.executed)
+                        obj.wait();
+                }
+            }
+
+            try {
+                result = joinPoint.proceed();
+            } finally {
+                if(!needToWait) {
+                    synchronized (obj) {
+                        obj.executed = true;
+                        obj.notifyAll();
+                    }
+                    synchronized (syncMap) {
+                        syncMap.remove(requestIndex);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        // syncing executions with the same index to avoid simultaneous executing retryable requests
+        @Around("execution(* lsfusion.server.base.controller.remote.RemoteRequestObject.executeServerInvocation(long, long, lsfusion.server.base.controller.remote.ui.RemotePausableInvocation)) && target(object) && args(requestIndex, lastReceivedRequestIndex, invocation)")
+        public Object execute(ProceedingJoinPoint joinPoint, RemoteRequestObject object, long requestIndex, long lastReceivedRequestIndex, RemotePausableInvocation invocation) throws Throwable {
+            return syncExecute(object.syncExecuteServerInvocationMap, requestIndex, joinPoint);
+        }
+
+        @Around("execution(* lsfusion.server.base.controller.remote.RemoteRequestObject.continueServerInvocation(long, long, int, Object)) && target(object) && args(requestIndex, lastReceivedRequestIndex, continueIndex, actionResult)")
+        public Object execute(ProceedingJoinPoint joinPoint, RemoteRequestObject object, long requestIndex, long lastReceivedRequestIndex, int continueIndex, final Object actionResult) throws Throwable {
+            return syncExecute(object.syncContinueServerInvocationMap, requestIndex, joinPoint);
+        }
+        @Around("execution(* lsfusion.server.base.controller.remote.RemoteRequestObject.throwInServerInvocation(long, long, int, Throwable)) && target(object) && args(requestIndex, lastReceivedRequestIndex, continueIndex, throwable)")
+        public Object execute(ProceedingJoinPoint joinPoint, RemoteRequestObject object, long requestIndex, long lastReceivedRequestIndex, int continueIndex, Throwable throwable) throws Throwable {
+            return syncExecute(object.syncThrowInServerInvocationMap, requestIndex, joinPoint);
+        }
+
+        @Around("execution(* lsfusion.server.base.controller.remote.RemoteRequestObject.processRMIRequest(long, long, lsfusion.server.logics.action.controller.stack.EExecutionStackCallable)) && target(object) && args(requestIndex, lastReceivedRequestIndex, request)")
+        public Object execute(ProceedingJoinPoint joinPoint, RemoteRequestObject object, long requestIndex, long lastReceivedRequestIndex, EExecutionStackCallable request) throws Throwable {
+            return syncExecute(object.syncProcessRMIRequestMap, requestIndex, joinPoint);
+        }
+    }
+}

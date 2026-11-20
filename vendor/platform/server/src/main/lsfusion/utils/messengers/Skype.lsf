@@ -1,0 +1,115 @@
+MODULE Skype;
+
+REQUIRE Messenger;
+
+EXTEND CLASS Messenger { skype 'Skype' }
+isSkype(Account a) = messenger(a) == Messenger.skype;
+webHookUrl(Account a) = webServerUrl() + '/exec/webHookSkype?botid=' + LONG(a) CHARWIDTH 100;
+
+GROUP from;
+GROUP conversation;
+serviceUrl = DATA LOCAL STRING();
+action = DATA LOCAL STRING();
+fromName = DATA LOCAL STRING();
+conversationId = DATA LOCAL STRING();
+text = DATA LOCAL STRING();
+
+FORM webHookSkype
+    PROPERTIES() serviceUrl, action, text
+    PROPERTIES() IN from fromName EXTID 'name'
+    PROPERTIES() IN conversation conversationId EXTID 'id';
+
+clientSecretSkype 'Client Secret' = DATA STRING (Account) CHARWIDTH 25;
+baseUrlSkype = DATA STRING (Chat);
+webHookSkype(JSONFILE f) {
+    printToLog(STRING(f));
+    
+    IMPORT webHookSkype JSON FROM f;
+    
+    IF action() == 'add' THEN {
+        LOCAL chat = Chat();
+        chat() <- chatIdAccount(account(LONG(params('botid'))), conversationId());
+        IF NOT chat() THEN {
+            NEW chat = Chat {
+                chat() <- chat;
+                account(chat) <- account(LONG(params('botid')));
+                id(chat()) <- conversationId();
+            }
+        }
+        name(chat()) <-fromName();
+        baseUrlSkype(chat()) <- serviceUrl();
+        chatType(chat()) <- ChatType.private;
+        NEW message = Message {
+            chat(message) <- chat();
+            message(message) <- text();
+            dateTime(message) <- currentDateTime();
+            from(message) <- OVERRIDE fromName();
+        }
+    } ELSE IF action() == 'remove' THEN {
+        DELETE Chat c WHERE id(c) == conversationId() AND account(c) == account(LONG(params('botid')));
+    }
+ 
+    APPLY;
+} @@noauth;
+
+
+accessTokenSkype = DATA STRING(Account);
+accessTokenDateSkype = DATA DATETIME(Account);
+getAccessTokenSkype(Account a) {
+    NEWSESSION {
+        LOCAL result = JSONFILE();
+        EXTERNAL HTTP POST 'https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token' 
+            BODYURL 'grant_type=client_credentials&scope=$1&client_id=$2&client_secret=$3' PARAMS 'https://api.botframework.com/.default', token(a), clientSecretSkype(a) TO result;
+            
+        LOCAL access_token = STRING();
+        IMPORT FROM result() TO() access_token;
+        accessTokenSkype(a) <- access_token();
+        accessTokenDateSkype(a) <- currentDateTime();
+        APPLY;
+    }
+}
+
+sendMessageSkypeResult = DATA LOCAL NESTED STRING();
+sendMessageSkype(Chat chat, STRING message) {
+    sendMessageSkypeResult() <- NULL;
+
+    IF NOT accessTokenSkype(account(chat)) OR secondsBetweenDates(currentDateTime(), accessTokenDateSkype(account(chat))) > 3600 THEN {
+        getAccessTokenSkype(account(chat));
+    }
+
+    LOCAL result = JSONFILE();
+    
+    LOCAL httpHeaders = STRING(STRING);
+    httpHeaders('Authorization') <- 'Bearer ' + accessTokenSkype(account(chat));
+    
+    EXTERNAL HTTP POST baseUrlSkype(chat) + 'v3/conversations/' + id(chat) + '/activities/' HEADERS httpHeaders 
+        PARAMS JSONFILE('\{"type": "message","text": "' + message + '"\}') TO result;
+        
+    LOCAL message = STRING();
+    IMPORT FROM result() TO() message;
+    sendMessageSkypeResult() <- message();
+    NEW botMessage = Message {
+        chat(botMessage) <- chat;
+        message(botMessage) <- message;
+        dateTime(botMessage) <- currentDateTime();
+        from(botMessage) <- 'YOU';
+    }
+    APPLY;     
+}
+
+sendFile(Chat chat, NAMEDFILE attachment) + WHEN isSkype(account(chat)) AND attachment IS NAMEDFILE THEN {
+    sendMessageResult() <- '{messenger.send.file.warning}';
+}
+
+sendMessage(Chat chat, STRING message) + WHEN isSkype(account(chat)) AND message IS STRING THEN {
+    sendMessageSkype(chat, message);
+    sendMessageResult() <- sendMessageSkypeResult();
+}
+
+EXTEND FORM messengers
+    PROPERTIES(a) PANEL SHOWIF isSkype(a) clientSecretSkype, webHookUrl 
+;
+
+EXTEND FORM messenger
+    PROPERTIES(a) SHOWIF isSkype(a) clientSecretSkype, webHookUrl 
+;

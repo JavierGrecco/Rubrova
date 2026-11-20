@@ -1,0 +1,11 @@
+MODULE ShipmentPack;
+
+REQUIRE ItemSalesPack, BarCodePack,
+        ShipmentDone, ShipmentSearch;
+
+NAMESPACE Inventory;
+
+@defineDocPack(shipment, sales, product, done, s);
+DESIGN shipmentType { otherInformation { MOVE PROPERTY(pack(o)); } }
+
+@defineBarCodeSearchPack(shipment, l, done);

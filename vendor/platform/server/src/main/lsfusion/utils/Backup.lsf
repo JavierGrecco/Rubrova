@@ -1,0 +1,166 @@
+MODULE Backup;
+
+REQUIRE System, Reflection, Scheduler, DefaultData;
+
+makeBackup '{backup.make.backup}' INTERNAL  'lsfusion.server.physics.admin.backup.action.BackupAction' () TOOLBAR;
+makeBackupAction '{backup.make.backup}'  { 
+    makeBackup();
+    formRefresh();
+}
+makePartialBackup '{backup.make.partial.backup}' INTERNAL  'lsfusion.server.physics.admin.backup.action.PartialBackupAction' () TOOLBAR;
+makePartialBackupAction '{backup.make.partial.backup}'  { 
+    makePartialBackup();
+    formRefresh();
+}
+save '{backup.save.backup}' INTERNAL  'lsfusion.server.physics.admin.backup.action.SaveBackupAction' (Backup) TOOLBAR;
+delete '{backup.delete.backup}' INTERNAL  'lsfusion.server.physics.admin.backup.action.DeleteBackupAction' (Backup);
+
+deleteAction '{backup.delete.backup}' (Backup b)  { 
+    delete(b);
+    formRefresh();
+} CONFIRM;
+
+binPath '{backup.bin.directory.path}' = DATA STRING ();
+setBinPath  INTERNAL 'lsfusion.server.physics.admin.backup.action.SetBinPathAction'();
+WHEN CHANGED(binPath()) DO setBinPath();
+dumpDir '{backup.dump.directory.path}' = DATA STRING ();
+setDumpDir  INTERNAL 'lsfusion.server.physics.admin.backup.action.SetDumpDirAction'();
+WHEN CHANGED(dumpDir()) DO setDumpDir();
+onStarted() + {
+    setBinPath();
+    setDumpDir();
+}
+threadCount '{backup.thread.count}' = DATA INTEGER();
+
+saveMondayBackups '{backup.dave.monday.backups}' = DATA BOOLEAN ();
+saveFirstDayBackups '{backup.first.day.backups}' = DATA BOOLEAN ();
+maxQuantityBackups '{backup.max.quantity.backups}' = DATA INTEGER ();
+decimateBackups '{backup.decimate.backups}' INTERNAL  'lsfusion.server.physics.admin.backup.action.DecimateBackupsAction' () TOOLBAR CONFIRM;
+decimateBackupsAction '{backup.decimate.backups}'  { 
+    decimateBackups();
+    formRefresh();
+}
+
+customRestore '{backup.custom.restore}'  INTERNAL  'lsfusion.server.physics.admin.backup.action.CustomRestoreAction' (Backup);
+inCustomRestore '{backup.in.custom.restore}' = DATA  LOCAL NESTED BOOLEAN (Table);
+restoreObjects '{backup.restore.objects}' = DATA LOCAL NESTED BOOLEAN (Table);
+inCustomRestore '{backup.in.custom.restore}' = DATA LOCAL NESTED  BOOLEAN (TableColumn);
+replaceOnlyNull '{backup.replace.only.null}' = DATA LOCAL NESTED  BOOLEAN (TableColumn);
+
+CLASS Backup '{backup.backup}';
+TABLE backup(Backup);
+
+partial '{backup.partial.backup}' = DATA BOOLEAN (Backup);
+date '{backup.date.backup}' = DATA DATE (Backup);
+time '{backup.time.backup}' = DATA TIME (Backup);
+file '{backup.file.backup}' = DATA STRING[200] (Backup);
+name '{backup.name.backup}' = DATA STRING[100] (Backup);
+fileLog '{backup.file.log.backup}' = DATA STRING[200] (Backup);
+isMultithread '{backup.file.is.multithread}' = DATA BOOLEAN (Backup);
+fileDeleted '{backup.file.deleted}' = DATA BOOLEAN (Backup);
+log '{backup.log.backup}' = DATA TEXT (Backup);
+notSucceeded '{backup.not.succeeded.backup}' (Backup b) = NOT log(b);
+
+exclude '{backup.exclude.table}' = DATA BOOLEAN (Table);
+
+TABLE backupTable(Backup, Table);
+exclude '{backup.exclude.backup.table}' = DATA BOOLEAN (Backup, Table);
+
+extraExclude '{backup.exclude.table}' = DATA STRING ();
+extraExclude '{backup.exclude.backup.tables}' = DATA STRING (Backup);
+
+FORM backup '{backup.backup}'
+    OBJECTS b = Backup
+    PROPERTIES() binPath, dumpDir, threadCount, saveFirstDayBackups, maxQuantityBackups, saveMondayBackups
+    PROPERTIES() DRAW b  decimateBackupsAction, makeBackupAction, makePartialBackupAction
+    PROPERTIES(b) save
+    PROPERTIES(b) READONLY partial, date, time, file, isMultithread, fileDeleted, notSucceeded, log PANEL
+    PROPERTIES(b) deleteAction GRID
+    FILTERGROUP notDeleted FILTER '{backup.form.backup.filter.not.deleted}' NOT fileDeleted(b) DEFAULT 
+    FILTERGROUP succeeded FILTER '{backup.form.backup.filter.succeeded}' log(b) DEFAULT 
+    
+    OBJECTS t1 = Table
+    PROPERTIES(t1) READONLY sid, rows
+    PROPERTIES(t1) exclude
+    
+    OBJECTS t2 = Table
+    PROPERTIES(t2) READONLY sid
+    PROPERTIES(b, t2) READONLY exclude
+    
+    PROPERTIES extraExclude(), extraExclude(b) PANEL
+;
+
+DESIGN backup {
+    NEW pane {
+        fill = 1;
+        tabbed = TRUE;
+        NEW pane1 {
+            caption = '{backup.backups}';
+            horizontal = TRUE;
+            NEW leftPane {
+                fill = 1;
+                MOVE BOX(b);
+                MOVE BOX(t1);
+                MOVE PROPERTY(extraExclude());
+            }
+            NEW rightPane {
+                fill = 1;
+                MOVE PROPERTY(log(b)) {
+                    fill = 1;
+                    panelCaptionVertical = TRUE;
+                }
+                MOVE BOX(t2) {
+                    caption = '{backup.form.backup.caption.copied.tables}';
+                }
+                MOVE PROPERTY(extraExclude(b));
+            }
+        }
+        NEW pane2 {
+            caption = '{backup.form.backup.caption.settings}';
+            align = STRETCH;
+            MOVE PROPERTY(binPath());
+            MOVE PROPERTY(dumpDir());
+            MOVE PROPERTY(threadCount());
+            MOVE PROPERTY(saveFirstDayBackups());
+            MOVE PROPERTY(saveMondayBackups());
+            MOVE PROPERTY(maxQuantityBackups());
+        }        
+    }
+    MOVE TOOLBARBOX;
+}
+
+FORM backups '{backup.backups}'
+    OBJECTS b=Backup
+    PROPERTIES(b) READONLY partial, name, file, isMultithread, fileDeleted
+    FILTERS NOT fileDeleted(b)
+    LIST Backup OBJECT b
+;
+
+FORM customRestore '{backup.form.custom.restore}'
+    OBJECTS t = Table
+    PROPERTIES(t) inCustomRestore, restoreObjects, sid READONLY
+    FILTERGROUP active FILTER '{backup.form.custom.restore.filter.active}' inCustomRestore(t) 
+        
+    OBJECTS tc=TableColumn
+    PROPERTIES(tc) inCustomRestore, replaceOnlyNull
+    PROPERTIES(tc) READONLY sid, caption, canonicalName
+    FILTERS table(tc) == t
+
+    
+    OBJECTS b = Backup PANEL
+    PROPERTIES(b) name SELECTOR, customRestore
+    ORDERS name(b) DESC
+;
+
+NAVIGATOR {
+    scheduler {
+        NEW backup;
+        NEW customRestore;
+    }
+}
+
+loadDefaultData () + {     
+    createScheduledTask ('{backup.backuping}',dateTimeToDateTime(currentDate(), 01:00), 86400, SchedulerStartType.afterStart);
+    createScheduledTaskDetail ('{backup.backuping}', 1, 'Backup.makeBackup[]');
+    createScheduledTaskDetail ('{backup.backuping}', 2, 'Backup.decimateBackups[]');        
+}

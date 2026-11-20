@@ -1,0 +1,152 @@
+    /*body {*/
+    /*    font-family: Verdana;*/
+    /*}*/
+
+    .subtotalouterdiv {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        overflow: hidden; 
+    }
+
+    .subtotalouterdiv .headerdiv {
+        flex: 0 1 auto;
+        position: relative;
+        overflow: hidden;
+
+        /* see DataGrid.removeOuterGridBorders  */
+        margin-left : -1px;
+        margin-right : -1px;
+    }
+
+    .subtotalouterdiv .headertable {
+        table-layout: fixed;
+        width: 100%;
+
+        /* see DataGrid.css, dataGridTableWrapperWidget*/
+        border-spacing: 0;
+    }
+
+    .subtotalouterdiv .bodydiv {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .subtotalouterdiv .scrolldiv {
+        background-color: var(--component-background-color);
+        position: relative;
+        overflow: auto;
+        height: 100%;
+
+        /* see DataGrid.removeOuterGridBorders  */
+        margin-left : -1px;
+        margin-right : -1px;
+    }
+
+    .subtotalouterdiv .bodytable {
+        table-layout: fixed;
+        width: 100%;
+
+        /* see DataGrid.css, dataGridTableWrapperWidget*/
+        border-spacing: 0;
+    }
+    
+    /* AxisLabel */
+    table.pvtTable .pvtAxisLabel {
+	    white-space: nowrap;
+    }
+    table.pvtTable .pvtAxisLabel.expanded {
+	    white-space: nowrap;
+    }
+    table.pvtTable .pvtAxisLabel.collapsed {
+	    white-space: nowrap;
+    }
+
+    /* RowLabel */
+    table.pvtTable tbody tr th.pvtRowLabel {
+	    vertical-align: top;
+	    white-space: nowrap;
+    }
+    table.pvtTable tbody tr th.pvtRowLabel.rowexpanded {
+    }
+    table.pvtTable tbody tr th.pvtRowLabel.rowcollapsed {
+    }
+
+    /* RowLabelFiller */
+    table.pvtTable .pvtRowLabelFiller {
+    }
+
+    /* RowSubtotal */
+    table.pvtTable .pvtRowSubtotal {
+    }
+    table.pvtTable tr td.pvtRowSubtotal.rowcollapsed {
+    }
+
+    /* ColLabel */
+    table.pvtTable thead tr th.pvtColLabel {
+	    white-space: nowrap;
+    }
+
+    /* ColLabelFiller */
+    table.pvtTable .pvtColLabelFiller {
+    }
+
+    /* ColSubtotal */
+    table.pvtTable .pvtColSubtotal {
+    }
+    table.pvtTable tr td.pvtColSubtotal {
+    }
+
+    /* wrapArrow (see GPropertyTableHeader wrappers) */
+
+    table.pvtTable thead tr .wrapperDiv {
+        display: flex;
+    }
+
+    table.pvtTable thead tr .axisHeaderArrowDiv {
+        /*align-content: center;*/
+        padding-right: 5px;
+
+        flex: 0 0 auto;
+        align-self: center;
+    }
+    
+    table.pvtTable thead tr .axisHeaderTextDiv {
+        flex: 1 1 auto; 
+        align-self: center;
+    }
+    
+    table.pvtTable thead tr .colAttrHeaderArrowDiv {
+        padding-right: 5px;
+
+        flex: 0 0 auto;
+        align-self: center;
+    }
+    
+    table.pvtTable thead tr .colAttrHeaderTextDiv {
+        flex: 1 1 auto;
+        align-self: center;
+    }
+
+    /*
+    *
+    * IMPORTANT: Please do not remove the lines below this point
+    *
+    */
+    .subtotalouterdiv col.colhide {
+        display: none;    
+    }
+    
+    table.pvtTable tr .rowhide {
+        display: none;
+    }
+
+    table.pvtTable tr .colhide {
+        display: none;
+    }
+

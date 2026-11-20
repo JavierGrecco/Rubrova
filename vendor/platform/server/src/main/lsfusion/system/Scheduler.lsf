@@ -1,0 +1,371 @@
+MODULE Scheduler;
+
+REQUIRE System, SystemEvents, Service;
+
+
+CLASS SchedulerStartType '{scheduler.scheduler.start.type}' {
+    afterStart '{scheduler.scheduler.start.type.after.start}',
+    afterFinish '{scheduler.scheduler.start.type.after.finish}'
+}
+TABLE schedulerStartType(SchedulerStartType);
+
+FORM schedulerStartTypes '{scheduler.form.scheduler.start.types}'
+    OBJECTS s = SchedulerStartType
+    PROPERTIES(s) READONLY staticCaption
+    LIST SchedulerStartType OBJECT s
+;
+
+DESIGN schedulerStartTypes {
+    BOX {
+        PROPERTY(staticCaption(s)) {
+            caption = '{scheduler.scheduler.start.type}';
+        }
+    }
+}
+
+CLASS ABSTRACT ScheduledTask '{scheduler.scheduled.task}';
+TABLE scheduledTask (ScheduledTask);
+
+CLASS UserScheduledTask '{scheduler.scheduled.task}' : ScheduledTask;
+
+name '{scheduler.name.scheduled.task}' = ABSTRACT ISTRING[100] (ScheduledTask) CHARWIDTH 15;
+name '{scheduler.name.scheduled.task}' = DATA ISTRING[100] (UserScheduledTask) CHARWIDTH 15;
+name[ScheduledTask](UserScheduledTask t) += name(t);
+
+scheduledTask (name) = GROUP AGGR ScheduledTask task WHERE task IS ScheduledTask BY name(task);
+
+runAtStart '{scheduler.run.at.start.scheduled.task}' = ABSTRACT BOOLEAN (ScheduledTask);
+runAtStart '{scheduler.run.at.start.scheduled.task}' = DATA BOOLEAN (UserScheduledTask);
+runAtStart[ScheduledTask](UserScheduledTask t) += runAtStart(t);
+
+timeFrom '{scheduler.time.from.scheduled.task}' = ABSTRACT TIME (ScheduledTask);
+timeFrom '{scheduler.time.from.scheduled.task}' = DATA TIME (UserScheduledTask);
+timeFrom[ScheduledTask](UserScheduledTask t) += timeFrom(t);
+
+timeTo '{scheduler.time.to.scheduled.task}' = ABSTRACT TIME (ScheduledTask);
+timeTo '{scheduler.time.to.scheduled.task}' = DATA TIME (UserScheduledTask);
+timeTo[ScheduledTask](UserScheduledTask t) += timeTo(t);
+
+startDate '{scheduler.start.date.scheduled.task}' = ABSTRACT DATETIME (ScheduledTask);
+startDate '{scheduler.start.date.scheduled.task}' = DATA DATETIME (UserScheduledTask);
+startDate[ScheduledTask](UserScheduledTask t) += startDate(t);
+
+startTime '{scheduler.start.time.scheduled.task}' (ScheduledTask t) = TIME(startDate(t));
+
+period '{scheduler.period.scheduled.task}' = ABSTRACT INTEGER (ScheduledTask); // in seconds
+period '{scheduler.period.scheduled.task}' = DATA INTEGER (UserScheduledTask);
+period[ScheduledTask](UserScheduledTask t) += period(t);
+
+schedulerStartType '{scheduler.scheduler.start.type}' = ABSTRACT SchedulerStartType (ScheduledTask);
+schedulerStartType '{scheduler.scheduler.start.type}' = DATA SchedulerStartType (UserScheduledTask);
+schedulerStartType[ScheduledTask](UserScheduledTask t) += schedulerStartType(t);
+
+nameSchedulerStartType '{scheduler.scheduler.start.type}' = staticCaption(schedulerStartType(ScheduledTask ScheduledTask));
+
+active '{scheduler.active.scheduled.task}' = ABSTRACT BOOLEAN (ScheduledTask);
+active '{scheduler.active.scheduled.task}' = DATA BOOLEAN (UserScheduledTask);
+active[ScheduledTask](UserScheduledTask t) += active(t);
+
+WHEN DROPPED(serverComputer()) DO {
+    active(ScheduledTask t) <- NULL WHERE t IS ScheduledTask;
+}
+
+daysOfMonth '{scheduler.days.of.month.scheduled.task}' = ABSTRACT STRING[255] (ScheduledTask);
+daysOfMonth '{scheduler.days.of.month.scheduled.task}' = DATA STRING[255] (UserScheduledTask);
+daysOfMonth[ScheduledTask](UserScheduledTask t) += daysOfMonth(t);
+
+TABLE DOWScheduledTask(DOW, ScheduledTask);
+
+in '{scheduler.in.dow.scheduled.task}' = ABSTRACT BOOLEAN (DOW, ScheduledTask); 
+in '{scheduler.in.dow.scheduled.task}' = DATA BOOLEAN (DOW, UserScheduledTask); 
+in[DOW, ScheduledTask](DOW d, UserScheduledTask t) += in(d, t);
+
+daysOfWeek (ScheduledTask t)= GROUP CONCAT STRING[3](numberM(DOW d)) IF in (d,t), ', ' ORDER d;   
+
+CLASS ABSTRACT ScheduledTaskDetail '{scheduler.scheduled.task.detail}';
+TABLE scheduledTaskDetail (ScheduledTaskDetail);
+
+CLASS UserScheduledTaskDetail '{scheduler.scheduled.task.detail}' : ScheduledTaskDetail;
+
+active '{scheduler.active.scheduled.task.detail}' = ABSTRACT BOOLEAN (ScheduledTaskDetail);
+active '{scheduler.active.scheduled.task.detail}' = DATA BOOLEAN (UserScheduledTaskDetail);
+active[ScheduledTaskDetail](UserScheduledTaskDetail t) += active(t);
+
+order '{scheduler.order.scheduled.task.detail}' = ABSTRACT INTEGER (ScheduledTaskDetail);
+order '{scheduler.order.scheduled.task.detail}' = DATA INTEGER (UserScheduledTaskDetail);
+order[ScheduledTaskDetail](UserScheduledTaskDetail t) += order(t);
+
+script '{scheduler.script.scheduled.task.detail}' = ABSTRACT TEXT (ScheduledTaskDetail);
+script '{scheduler.script.scheduled.task.detail}' = DATA TEXT (UserScheduledTaskDetail);
+script[ScheduledTaskDetail](UserScheduledTaskDetail t) += script(t);
+
+scheduledTask = ABSTRACT ScheduledTask (ScheduledTaskDetail) NONULL DELETE;
+scheduledTask = DATA UserScheduledTask (UserScheduledTaskDetail) NONULL DELETE;
+scheduledTask[ScheduledTaskDetail](UserScheduledTaskDetail t) += scheduledTask(t);
+
+nameScheduledTask '{scheduler.form.scheduled.task.filter.all}' (ScheduledTaskDetail d) = name(scheduledTask(d));
+startTime '{scheduler.start.time.scheduled.task}' (ScheduledTaskDetail d) = startTime(scheduledTask(d));
+period '{scheduler.period.scheduled.task}' (ScheduledTaskDetail d) = period(scheduledTask(d));
+
+action = ABSTRACT Action (ScheduledTaskDetail);
+action = DATA Action (UserScheduledTaskDetail);
+action[ScheduledTaskDetail](UserScheduledTaskDetail t) += action(t);
+
+captionAction '{scheduler.caption.action.scheduled.task.detail}' (ScheduledTaskDetail d) = caption(action(d)) CHARWIDTH 20;
+canonicalNameAction '{scheduler.canonical.name.action.scheduled.task.detail}' (ScheduledTaskDetail d) = canonicalName(action(d));
+
+codeAction '{scheduler.canonical.name.action.scheduled.task.detail}' (ScheduledTaskDetail d) = ISTRING(OVERRIDE script(d), canonicalNameAction(d)) CHARWIDTH 20; 
+
+parameter '{scheduler.parameter.scheduled.task.detail}' = ABSTRACT TEXT (ScheduledTaskDetail);
+parameter '{scheduler.parameter.scheduled.task.detail}' = DATA TEXT (UserScheduledTaskDetail);
+parameter[ScheduledTaskDetail](UserScheduledTaskDetail t) += parameter(t);
+
+timeout '{scheduler.timeout.scheduled.task.detail}' = ABSTRACT INTEGER (ScheduledTaskDetail);
+timeout '{scheduler.timeout.scheduled.task.detail}' = DATA INTEGER (UserScheduledTaskDetail);
+timeout[ScheduledTaskDetail](UserScheduledTaskDetail t) += timeout(t);
+
+ignoreExceptions '{scheduler.ignore.exceptions.scheduled.task.detail}' = ABSTRACT BOOLEAN (ScheduledTaskDetail);
+ignoreExceptions '{scheduler.ignore.exceptions.scheduled.task.detail}' = DATA BOOLEAN (UserScheduledTaskDetail);
+ignoreExceptions[ScheduledTaskDetail](UserScheduledTaskDetail t) += ignoreExceptions(t);
+
+CONSTRAINT script(ScheduledTaskDetail d) AND action(d) MESSAGE '{scheduler.constraint.script.and.action}';
+
+CLASS ScheduledTaskLog '{scheduler.scheduled.task.log}';
+TABLE scheduledTaskLog (ScheduledTaskLog);
+TABLE scheduledTaskScheduledTaskLog (ScheduledTask, ScheduledTaskLog);
+
+scheduledTask '{scheduler.scheduled.task}' = DATA ScheduledTask (ScheduledTaskLog) INDEXED NONULL DELETE;
+nameScheduledTask '{scheduler.form.scheduled.task}' (ScheduledTaskLog l) = name(scheduledTask(l)); 
+
+last (ScheduledTask t) = GROUP LAST ScheduledTaskLog l ORDER l BY scheduledTask(l);
+isLast (ScheduledTaskLog l) = last(scheduledTask(l)) = l;   
+
+result '{scheduler.result.scheduled.task.log}' = DATA ISTRING[200] (ScheduledTaskLog) CHARWIDTH 20;
+exceptionOccurred '{scheduler.exception.occurred.scheduled.task.log}' = DATA BOOLEAN (ScheduledTaskLog);
+property '{scheduler.property.scheduled.task.log}' = DATA ISTRING[200] (ScheduledTaskLog) CHARWIDTH 20;
+date '{scheduler.date.scheduled.task.log}' = DATA DATETIME (ScheduledTaskLog);
+toDate '{scheduler.to.date.scheduled.task.log}' (ScheduledTaskLog d) = DATE(date(d));
+
+@defineLog (ScheduledTaskLog, '{scheduler.define.log.of.scheduled}', log, toDate);
+
+CLASS ScheduledClientTaskLog '{scheduler.scheduled.client.task.log}';
+TABLE scheduledClientTaskLog (ScheduledClientTaskLog);
+
+scheduledTaskLog '{scheduler.scheduled.client.task.log}'= DATA ScheduledTaskLog (ScheduledClientTaskLog) NONULL DELETE INDEXED;
+message '{scheduler.message.scheduled.client.task.log}'= DATA TEXT (ScheduledClientTaskLog);
+failed '{scheduler.failed.scheduled.client.task.log}'= DATA BOOLEAN (ScheduledClientTaskLog);
+lsfStack '{scheduler.lsf.stack.scheduled.client.task.log}'= DATA TEXT (ScheduledClientTaskLog);
+date '{scheduler.date.scheduled.client.task.log}'= DATA DATETIME (ScheduledClientTaskLog);
+
+isFailed '{scheduler.is.failed.scheduled.client.task.log}' (ScheduledTaskLog stl)= TRUE IF [GROUP SUM 1 IF failed(ScheduledClientTaskLog stcl) BY scheduledTaskLog(stcl)](stl);
+isMessages '{scheduler.is.messages.scheduled.client.task.log}' (ScheduledTaskLog stl)= TRUE IF [GROUP SUM 1 IF message(ScheduledClientTaskLog stcl) BY scheduledTaskLog(stcl)](stl) AND NOT exceptionOccurred(stl);
+
+stopScheduler '{scheduler.stop.scheduler}'  INTERNAL  'lsfusion.server.physics.admin.scheduler.action.StopSchedulerAction' ();
+stopSchedulerApply '{scheduler.stop.scheduler}'  {
+    stopScheduler();
+    apply();
+} CONFIRM;
+runSetupScheduler '{scheduler.run.setup.scheduler}'  INTERNAL  'lsfusion.server.physics.admin.scheduler.action.SetupSchedulerAction' ();
+runSetupSchedulerApply '{scheduler.run.setup.scheduler}'  { 
+    runSetupScheduler();
+    apply();
+} CONFIRM;
+isStartedScheduler '{scheduler.is.started.scheduler}'  = DATA BOOLEAN ();
+isStoppedScheduler = NOT isStartedScheduler();
+onlySystemTasks '{scheduler.only.system.tasks}' = DATA BOOLEAN();
+
+threadCountScheduler '{scheduler.thread.count.scheduler}' = DATA INTEGER ();
+
+onStarted() + {  runSetupScheduler(); }
+
+scriptText '{scheduler.script.text}' () = DATA LOCAL TEXT ();
+evalScript '{scheduler.eval.script}' ()  { EVAL scriptText(); }
+                                         
+changedSchedulerTask (ScheduledTask t) = GROUP SUM 1 IF (((CHANGED (runAtStart(t)) OR CHANGED (startDate(t)) OR CHANGED (timeFrom(t)) 
+                                         OR CHANGED (timeTo(t)) OR CHANGED (period(t)) OR CHANGED (daysOfMonth(t))
+                                         OR CHANGED (schedulerStartType(t)) OR CHANGED (schedulerStartType(t))) AND active(t)
+                                         OR CHANGED (active(t))) OR
+                                                (((CHANGED (active(ScheduledTaskDetail td)) OR CHANGED (order(td)) OR CHANGED(script(td)) 
+                                         OR CHANGED (scheduledTask(td)) OR CHANGED (action(td)) 
+                                         OR CHANGED (ignoreExceptions(td)) OR CHANGED (timeout(td)) OR CHANGED (parameter(td)))) AND scheduledTask(td)==t) OR 
+                                                CHANGED(in(DOW dow, t))) AND isStartedScheduler() AND t IS ScheduledTask AND td IS ScheduledTaskDetail AND dow IS DOW;
+                                                
+executeScheduledTask '{scheduler.execute.scheduled.task}'  INTERNAL  'lsfusion.server.physics.admin.scheduler.action.ExecuteScheduledTaskAction' (ScheduledTask) CONFIRM;                                                                                                                                 
+setupScheduledTask '{scheduler.setup.scheduled.task}'  INTERNAL  'lsfusion.server.physics.admin.scheduler.action.SetupScheduledTaskAction' (ScheduledTask) CONFIRM;                                         
+WHEN changedSchedulerTask(ScheduledTask t) DO 
+    setupScheduledTask(t);
+WHEN DROPPED(ScheduledTaskDetail td IS ScheduledTaskDetail) AND PREV(active(td)) AND isStartedScheduler() DO 
+    setupScheduledTask(PREV(scheduledTask(td)));
+
+allTasks '{scheduler.form.scheduled.task.filter.all}' = DATA LOCAL NESTED BOOLEAN () TOOLBAR; 
+
+json '{scheduler.script.scheduled.task.detail}' (ScheduledTaskDetail td) = JSON FROM text = (OVERRIDE script(td), ''), type = 'action';
+changeScript(ScheduledTaskDetail std) {
+    INPUT s = TEXT DO {
+        stringToFile(s);
+        LOCAL text = TEXT();
+        IMPORT JSON FROM resultFile() TO() text;
+        script(std) <- IF length(text()) == 0 THEN NULL ELSE text();
+    }
+}
+
+FORM scheduledTask '{scheduler.form.scheduled.tasks}'
+
+    PROPERTIES() threadCountScheduler
+
+    OBJECTS t = ScheduledTask
+    PROPERTIES (t) GRID active, name, timeFrom, timeTo, startDate, startTime READONLY, period,
+                    nameSchedulerStartType, runAtStart, daysOfMonth PANEL, executeScheduledTask, setupScheduledTask
+    PROPERTIES (t) NEW[UserScheduledTask], DELETE GRID
+    FILTERGROUP filtersTaskActive
+            FILTER '{scheduler.form.scheduled.task.filter.active}' active(t)
+         
+    OBJECTS td=ScheduledTaskDetail
+    PROPERTIES (td) active, ignoreExceptions, order, captionAction, 
+                    codeAction ON CHANGE { INPUT s = codeAction(td) DO action(td) <- actionCanonicalName(s); }, 
+                    parameter, timeout, script PANEL SHOWIF NOT isWeb()
+    
+    OBJECTS std = ScheduledTaskDetail
+    PROPERTIES json(std) PANEL CUSTOM 'interpreter' SHOWIF isWeb() AND td IS ScheduledTaskDetail ON CHANGE changeScript(std)
+    EVENTS ON CHANGE td { SEEK scheduledTask.std = td; }
+    
+    PROPERTIES (td) NEW[UserScheduledTaskDetail], DELETE GRID
+    PROPERTIES (td) READONLY SHOWIF allTasks() nameScheduledTask, startTime, period
+    ORDERS order(td)
+    
+    PROPERTIES allTasksTd = allTasks() DRAW td 
+    FILTERS scheduledTask(td) = t OR allTasks()
+
+    FILTERGROUP filtersDetailActive
+            FILTER '{scheduler.form.scheduled.task.filter.active}' active(td) AND (active(scheduledTask(td)) OR NOT allTasks())
+    
+    OBJECTS tl = ScheduledTaskLog LAST
+    PROPERTIES (tl) READONLY property, result, exceptionOccurred, isMessages, isFailed, date, 
+                             nameScheduledTask SHOWIF allTasks()
+
+    PROPERTIES allTasksTl = allTasks() DRAW tl 
+    FILTERS scheduledTask(tl) = t OR allTasks()
+    
+    FILTERGROUP filtersTaskLast
+            FILTER '{scheduler.form.scheduled.task.filter.last}' isLast(tl)
+    
+    FILTERGROUP stlFilters 
+        FILTER '{scheduler.form.scheduled.task.filter.exception}' exceptionOccurred(tl) OR isMessages(tl)
+
+    OBJECTS ctl=ScheduledClientTaskLog
+    PROPERTIES (ctl) READONLY message, failed, date, lsfStack
+    FILTERS scheduledTaskLog(ctl) = tl
+    
+    OBJECTS dow=DOW
+    PROPERTIES (dow) number, staticCaption 
+    PROPERTIES (dow, t) in 
+    
+    PROPERTIES () TOOLBAR onlySystemTasks SHOWIF onlySystemTasks() READONLY, stopSchedulerApply SHOWIF isStartedScheduler() , runSetupSchedulerApply SHOWIF isStoppedScheduler() 
+    
+    ORDERS number(dow)
+;
+
+DESIGN scheduledTask {
+    NEW specContainer {
+        fill = 1; 
+        lines = 1;
+        MOVE BOX(t);
+        NEW south {
+            fill = 2;
+            tabbed = TRUE;
+            NEW property {
+                caption = '{scheduler.form.scheduled.task.caption.properties}';
+                horizontal = TRUE;
+                MOVE BOX(td) {
+                    PROPERTY(parameter(td)) {
+                        valueSize = (-1, 18);
+                    }
+                    TOOLBARLEFT(td) {
+                        MOVE PROPERTY(allTasksTd);
+                    }
+                }
+                MOVE PROPERTY(script(td)) {
+                    panelCaptionVertical = TRUE;
+                    fill = 0.5;
+                }
+                MOVE PROPERTY(json(std)) {
+                    panelCaptionVertical = TRUE;
+                    fill = 1;
+                }
+            }
+            NEW logContainer {
+                caption = '{scheduler.form.scheduled.task.caption.log}';
+                horizontal = TRUE;
+                MOVE BOX(tl) {
+                    TOOLBARLEFT(tl) {
+                        MOVE PROPERTY(allTasksTl);
+                    }
+                }
+                MOVE BOX(ctl) {
+                    GRID(ctl) {
+                        height = 0;
+                    }
+                }
+            }
+            NEW dowContainer {
+                caption = '{scheduler.form.scheduled.task.caption.filter.by.days}';
+                MOVE BOX(dow);
+                PROPERTY(number(dow)) {
+                    hide = TRUE;
+                }
+                MOVE PROPERTY(daysOfMonth(t));
+            }        
+            NEW settingsContainer {
+                caption = '{scheduler.form.scheduled.task.caption.settings}';
+                MOVE PROPERTY(threadCountScheduler());
+            }
+        }
+    }
+    NEW bottom {
+        horizontal = TRUE;
+        align = END;
+        MOVE PROPERTY(onlySystemTasks());
+        MOVE PROPERTY(runSetupSchedulerApply());
+        MOVE PROPERTY(stopSchedulerApply());
+    }
+    MOVE TOOLBARBOX;
+}
+
+FORM scheduledTaskProperties '{scheduler.form.scheduled.task.properties}'
+    OBJECTS p = Action
+    PROPERTIES(p) READONLY caption, canonicalName, class
+;
+
+NAVIGATOR {
+    scheduler {
+        NEW Scheduler.scheduledTask FIRST;
+    }
+}
+// default tasks
+
+createScheduledTask '{scheduler.default.data.load.default.scheduled.task}'(STRING[100] iname, DATETIME startTime, INTEGER integer, SchedulerStartType type)  {
+    NEW s = UserScheduledTask {
+        name(s) <- iname;
+        active(s) <- TRUE;
+        startDate(s) <- startTime;
+        period(s) <- integer;
+        schedulerStartType(s) <- type;
+    }
+}
+
+createScheduledTaskDetail '{scheduler.default.data.load.default.scheduled.task.detail}'(STRING[100] iname, INTEGER order, STRING prop)  {
+    NEW d = UserScheduledTaskDetail {
+        order(d) <- order;
+        active(d) <- TRUE;
+        action(d) <- actionCanonicalName(prop);
+        scheduledTask(d) <- scheduledTask(iname);
+    }
+}
+
+onFinallyStarted() + {
+    IF (NOT GROUP SUM 1 IF d IS ScheduledTask) AND actionCanonicalName('Service.recalculateStatsAction[]') AND actionCanonicalName('Service.vacuumDBAction[]') THEN {
+        createScheduledTask ('{scheduler.default.data.load.default.service.db}', dateTimeToDateTime(currentDate(), 03:00), 86400, SchedulerStartType.afterStart);
+        createScheduledTaskDetail ('{scheduler.default.data.load.default.service.db}', 1, 'Service.recalculateStatsAction[]');
+        createScheduledTaskDetail ('{scheduler.default.data.load.default.service.db}', 2, 'Service.vacuumDBAction[]');
+    }
+}

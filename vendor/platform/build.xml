@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<project name="lsFusion Build Utils">
+
+    <condition property="isWindows">
+        <os family="windows"/>
+    </condition>
+
+    <condition property="isUnix">
+        <os family="unix"/>
+    </condition>
+
+    <target name="recursiveCompile_win" if="isWindows">
+        <property name="mvn.executable" value="cmd"/>
+        <property name="mvn.args" value="/c"/>
+    </target>
+
+    <target name="recursiveCompile_unix" if="isUnix">
+        <property name="mvn.executable" value="/bin/sh"/>
+        <property name="mvn.args" value="-c"/>
+    </target>
+
+
+    <target name="recursiveCompile" depends="recursiveCompile_win, recursiveCompile_unix">
+        <exec dir="${basedir}" executable="${mvn.executable}">
+            <arg line="${mvn.args} 'mvn --also-make --projects :${artifactId} compile'"/>
+        </exec>
+    </target>
+
+    <!-- ============================================================================= -->
+
+    <target name="base-recursiveCompile">
+        <antcall target="recursiveCompile">
+            <param name="artifactId" value="base"/>
+        </antcall>
+    </target>
+
+    <target name="logics-recursiveCompile">
+        <antcall target="recursiveCompile">
+            <param name="artifactId" value="logics"/>
+        </antcall>
+    </target>
+
+    <target name="api-recursiveCompile">
+        <antcall target="recursiveCompile">
+            <param name="artifactId" value="api"/>
+        </antcall>
+    </target>
+
+    <target name="desktop-client-recursiveCompile">
+        <antcall target="recursiveCompile">
+            <param name="artifactId" value="desktop-client"/>
+        </antcall>
+    </target>
+
+    <target name="server-recursiveCompile">
+        <antcall target="recursiveCompile">
+            <param name="artifactId" value="server"/>
+        </antcall>
+    </target>
+
+    <target name="web-client-recursiveCompile">
+        <antcall target="recursiveCompile">
+            <param name="artifactId" value="web-client"/>
+        </antcall>
+    </target>
+</project>

@@ -1,0 +1,28 @@
+MODULE Printer;
+
+REQUIRE System;
+
+//text, charset, printerName
+writeToPrinter '{printer.write.to.printer}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.equ.printer.WriteToPrinterAction' (TEXT, STRING[255], ISTRING[255]);
+writeToServerPrinter '{printer.write.to.server.printer}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.equ.printer.WriteToServerPrinterAction' (TEXT, STRING[255], ISTRING[255]);
+printed '{printer.printed}' = DATA LOCAL BOOLEAN ();
+
+getAvailablePrinters '{printer.get.available.printers}'  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.equ.printer.GetAvailablePrintersAction' ();
+
+writeToSocket (text, charset, ip, port, isClient)  INTERNAL  'lsfusion.server.physics.dev.integration.external.to.equ.printer.WriteToSocketAction' (TEXT, STRING[10], STRING[30], INTEGER, BOOLEAN);
+writeToServerSocket (text, charset, ip, port) { writeToSocket(text, charset, ip, port, NULL); }
+
+//isClient, path, printerName, trayName, duplex
+printPath INTERNAL  'lsfusion.server.physics.dev.integration.external.to.equ.printer.PrintFileAction' (BOOLEAN, STRING, STRING, STRING, BOOLEAN);
+printPath '{printer.print.file}' (STRING path, STRING printer, STRING trayName, BOOLEAN duplex) { printPath(TRUE, path, printer, trayName, duplex); }
+printPath '{printer.print.file}' (STRING path) { printPath(TRUE, path, NULL, NULL, NULL); }
+printPathServer '{printer.print.file}' (STRING path, STRING printer, STRING trayName, BOOLEAN duplex) { printPath(NULL, path, printer, trayName, duplex); }
+
+//isClient, pdfFile, printerName, trayName, duplex
+printFile INTERNAL 'lsfusion.server.physics.dev.integration.external.to.equ.printer.PrintFileAction' (BOOLEAN, PDFFILE, STRING, STRING, BOOLEAN);
+printFile '{printer.print.file}' (PDFFILE file, STRING printer, STRING trayName, BOOLEAN duplex) { printFile(TRUE, file, printer, trayName, duplex); }
+printFile '{printer.print.file}' (PDFFILE file) { printFile(TRUE, file, NULL, NULL, NULL); }
+printFileServer '{printer.print.file}' (PDFFILE file, STRING printer, STRING trayName, BOOLEAN duplex) { printFile(NULL, file, printer, trayName, duplex); }
+
+//'trayName' and 'duplex' params are retained for backward compatibility. In 'printer' param after printer name you can pass 'print-sides', 'print-tray', 'sheet-collate', 'copies' options semicolon-separated
+printFile '{printer.print.file}' (BOOLEAN isClient, PDFFILE file, STRING printer) { printFile(isClient, file, printer, NULL, NULL); }

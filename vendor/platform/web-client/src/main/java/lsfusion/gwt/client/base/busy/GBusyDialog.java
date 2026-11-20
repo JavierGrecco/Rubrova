@@ -1,0 +1,243 @@
+package lsfusion.gwt.client.base.busy;
+
+import com.google.gwt.user.client.Timer;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.*;
+import lsfusion.gwt.client.ClientMessages;
+import lsfusion.gwt.client.base.GProgressBar;
+import lsfusion.gwt.client.base.GwtClientUtils;
+import lsfusion.gwt.client.base.StaticImage;
+import lsfusion.gwt.client.base.view.*;
+import lsfusion.gwt.client.view.MainFrame;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import static lsfusion.gwt.client.base.view.FormButton.ButtonStyle.SECONDARY;
+
+public class GBusyDialog extends DialogModalWindow {
+    private static final ClientMessages messages = ClientMessages.Instance.get();
+    public Boolean needInterrupt = null;
+
+    ResizableComplexPanel content;
+    boolean pauseTopProgressBar = false;
+    private final StaticImageWidget topProgressBarDynamic;
+    private final StaticImageWidget topProgressBarStatic;
+
+    private final ResizableComplexPanel message;
+    private final FormButton btnExit;
+    private final FormButton btnReconnect;
+    private final FormButton btnCancel;
+    private final FormButton btnInterrupt;
+
+    private List prevMessageList;
+    private Timer longActionTimer;
+    private boolean longAction;
+
+    private int latestWindowHeight;
+    private int latestWindowWidth;
+
+    public GBusyDialog() {
+        super(messages.busyDialogLoading(), false, inDevMode() ? ModalWindowSize.EXTRA_LARGE : ModalWindowSize.LARGE);
+
+        content = new ResizableComplexPanel();
+        GwtClientUtils.addClassName(content, "dialog-busy-content");
+
+        topProgressBarDynamic = new StaticImageWidget(StaticImage.LOADING_BAR_GIF);
+        topProgressBarStatic = new StaticImageWidget(StaticImage.LOADING_BAR);
+        topProgressBarStatic.setVisible(false);
+        topProgressBarDynamic.addClickHandler(clickEvent -> {
+            pauseTopProgressBar = true;
+            topProgressBarDynamic.setVisible(false);
+            topProgressBarStatic.setVisible(true);
+        });
+        topProgressBarStatic.addClickHandler(clickEvent -> {
+            pauseTopProgressBar = false;
+            topProgressBarDynamic.setVisible(true);
+            topProgressBarStatic.setVisible(false);
+        });
+
+        content.add(topProgressBarDynamic);
+        content.add(topProgressBarStatic);
+
+        message = new ResizableComplexPanel();
+        GwtClientUtils.addClassName(message, "dialog-busy-message-container");
+        if (inDevMode())
+            GwtClientUtils.addClassName(message, "dialog-busy-message-container-dev-mode");
+
+        content.add(message);
+
+        setBodyWidget(content);
+
+        FormButton btnCopy = new FormButton(messages.busyDialogCopyToClipboard(), SECONDARY);
+        if (inDevMode()) {
+            btnCopy.addClickHandler(clickEvent -> copyToClipboard());
+            addFooterWidget(btnCopy);
+        }
+
+        btnExit = new FormButton(messages.busyDialogExit(), SECONDARY, clickEvent -> exitAction());
+        btnExit.setEnabled(false);
+        addFooterWidget(btnExit);
+
+        btnReconnect = new FormButton(messages.busyDialogReconnect(), SECONDARY, clickEvent -> reconnectAction());
+        btnReconnect.setEnabled(false);
+        addFooterWidget(btnReconnect);
+
+        btnCancel = new FormButton(messages.cancel(), SECONDARY, clickEvent -> cancelAction());
+        btnCancel.setEnabled(false);
+        addFooterWidget(btnCancel);
+
+        btnInterrupt = new FormButton(messages.busyDialogBreak(), SECONDARY, clickEvent -> interruptAction());
+        btnInterrupt.setEnabled(false);
+        addFooterWidget(btnInterrupt);
+    }
+    
+    private static boolean inDevMode() {
+        return MainFrame.showDetailedInfo;
+    }
+
+    public void scheduleButtonEnabling() {
+        longActionTimer = new Timer() {
+            @Override
+            public void run() {
+                btnExit.setEnabled(true);
+                btnReconnect.setEnabled(true);
+                btnInterrupt.setEnabled(true);
+                longAction = true;
+            }
+        };
+        longActionTimer.schedule(inDevMode() ? 5000 : 60000);
+    }
+
+    public void hideBusyDialog() {
+        message.clear();
+        btnExit.setEnabled(false);
+        btnReconnect.setEnabled(false);
+        btnCancel.setEnabled(false);
+        btnInterrupt.setEnabled(false);
+        if(longActionTimer != null)
+            longActionTimer.cancel();
+    }
+
+    public void updateBusyDialog(List messageList) {
+        message.clear();
+
+        boolean firstUpdate = false;
+        if (prevMessageList == null) {
+            prevMessageList = new ArrayList(messageList.size());
+            firstUpdate = true;
+        }
+
+        boolean changed = false;
+        boolean showTopProgressBar = true;
+        boolean visibleCancelBtn = false;
+        int progressBarCount = 0;
+        LinkedHashMap<String, Boolean> stackLines = new LinkedHashMap<>();
+        for (int i = 0; i < messageList.size(); i++) {
+            Object prevMessage = prevMessageList.size() > i ? prevMessageList.get(i) : null;
+            final Object message = messageList.get(i);
+            if (prevMessage == null || !prevMessage.equals(message))
+                changed = true;
+
+            if (message instanceof GProgressBar) {
+                if (progressBarCount == 0 && stackLines.isEmpty())
+                    showTopProgressBar = false;
+                if (!stackLines.isEmpty() && inDevMode()) {
+                    createStackPanel(stackLines);
+                }
+
+                createProgressBarPanel((GProgressBar) message);
+                stackLines = new LinkedHashMap<>();
+                progressBarCount++;
+            } else if (message instanceof Boolean) {
+                visibleCancelBtn = true;
+            } else if (inDevMode())
+                stackLines.put((String) message, changed);
+
+        }
+
+        prevMessageList = messageList;
+
+        if (!stackLines.isEmpty() && inDevMode()) {
+            createStackPanel(stackLines);
+        }
+        if(pauseTopProgressBar)
+            topProgressBarStatic.setVisible(showTopProgressBar);
+        else
+            topProgressBarDynamic.setVisible(showTopProgressBar);
+
+        if (longAction)
+            btnCancel.setEnabled(visibleCancelBtn);
+    }
+
+    private boolean windowResized() {
+        return latestWindowHeight != Window.getClientHeight() || latestWindowWidth != Window.getClientWidth();
+    }
+
+    private void copyToClipboard() {
+        CopyPasteUtils.putIntoClipboard(message.getElement());
+    }
+
+    private void exitAction() {
+        //we make logout instead of close browser window because JavaScript can only close windows that were opened by JavaScript
+        GwtClientUtils.logout();
+    }
+
+    private void reconnectAction() {
+        GwtClientUtils.reconnect();
+    }
+
+    private void cancelAction() {
+        stopAction(messages.busyDialogCancelTransaction(), messages.busyDialogCancelTransactionConfirm(), false);
+    }
+
+    public PopupOwner getPopupOwner() {
+        return new PopupOwner(this);
+    }
+
+    private void stopAction(String caption, String message, boolean needInterrupt) {
+        DialogBoxHelper.showConfirmBox(caption,
+                message, getPopupOwner(),
+                chosenOption -> {
+                    if (chosenOption == DialogBoxHelper.OptionType.YES) {
+                        this.needInterrupt = needInterrupt;
+                    }
+                });
+    }
+
+    private void interruptAction() {
+        stopAction(messages.busyDialogInterruptTransaction(), messages.busyDialogInterruptTransactionConfirm(), true);
+    }
+
+    private void createStackPanel(LinkedHashMap<String, Boolean> stackLines) {
+        String messageText = "";
+        for (Map.Entry<String, Boolean> stackLine : stackLines.entrySet()) {
+            if (stackLine.getValue())
+                messageText += "<div style=\"color: var(--focus-color);\">" + stackLine.getKey() + "</div>";
+            else
+                messageText += (messageText.isEmpty() ? "" : "<br/>") + stackLine.getKey();
+        }
+        HTML stack = new HTML(messageText);
+        GwtClientUtils.addClassName(stack, "dialog-busy-message-item");
+        message.add(stack);
+    }
+
+    private void createProgressBarPanel(final GProgressBar line) {
+
+        FlexPanel panel = new FlexPanel(true);
+        GwtClientUtils.addClassName(panel, "dialog-busy-message-item");
+        panel.add(new ProgressBar(0, line.total, line.progress, new ProgressBar.TextFormatter() {
+            @Override
+            protected String getText(ProgressBar bar, double curProgress) {
+                return line.message;
+            }
+        }), GFlexAlignment.STRETCH);
+        if (line.params != null)
+            panel.add(new HTML(line.params), GFlexAlignment.STRETCH);
+
+        message.add(panel);
+    }
+
+}

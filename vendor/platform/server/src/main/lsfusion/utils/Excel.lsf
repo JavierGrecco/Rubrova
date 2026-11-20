@@ -1,0 +1,108 @@
+MODULE Excel;
+
+REQUIRE System, MasterData, Utils;
+
+CLASS Template '{excel.template}';
+TABLE template(Template);
+
+name '{excel.name.template}' = DATA STRING[100] (Template);
+file '{excel.file.template}' (Template) = DATA EXCELFILE (Template);
+loadFile '{excel.load.file.template}'(Template t)  { INPUT =file(t) CHANGE; }
+openFile '{excel.open.file.template}'(Template t)  { open(file(t)); }
+id '{excel.id.template}' = DATA ISTRING[100] (Template) CHARWIDTH 5;
+
+process  INTERNAL  'lsfusion.server.logics.classes.data.utils.excel.ProcessTemplateAction' (Template);
+
+resultTemplate = DATA LOCAL EXCELFILE ();
+openResultTemplate ()  { open(resultTemplate()); }
+
+openProcess '{excel.open.process.template}'(Template template)  { 
+    process(template);
+    openResultTemplate();
+}
+
+CLASS TemplateEntry '{excel.template.entry}';
+TABLE templateEntry(TemplateEntry);
+
+template '{excel.template}' = DATA Template (TemplateEntry);
+key '{excel.key.template.entry}' = DATA STRING[100](TemplateEntry);
+description '{excel.description.template.entry}' = DATA STRING[100](TemplateEntry);
+isNumeric '{excel.is.numeric.template.entry}' = DATA BOOLEAN (TemplateEntry);
+format '{excel.format.template.entry}' = DATA STRING[20] (TemplateEntry);
+value '{excel.value.template.entry}' = DATA LOCAL TEXT (TemplateEntry) CHARWIDTH 100;
+
+isTable '{excel.is.table.template.entry}' = DATA BOOLEAN(TemplateEntry);
+dataRowSeparator = DATA STRING[20] (TemplateEntry);
+rowSeparator '{excel.row.separator}' (TemplateEntry e)= OVERRIDE dataRowSeparator(e), '\n'; 
+
+FORM template '{excel.form.template}'
+
+    OBJECTS t = Template PANEL
+    PROPERTIES (t) name, id
+    PROPERTIES (t) loadFile, openFile
+
+    OBJECTS te = TemplateEntry
+    PROPERTIES (te) isTable, key, description, isNumeric, format, value, rowSeparator SHOWIF isTable(te), NEW, DELETE GRID
+    PROPERTIES (t) DRAW te TOOLBAR openProcess
+
+    FILTERS template (te) == t
+
+    EDIT Template OBJECT t
+;
+
+DESIGN template {
+    BOX {
+        size = (1024, 768);
+        MOVE BOX(t) {
+            horizontal = TRUE;
+            NEW row1 {
+                MOVE PROPERTY(name(t));
+                MOVE PROPERTY(id(t));
+            };
+            NEW row2 {
+                horizontal = TRUE;
+                MOVE PROPERTY(loadFile(t));
+                MOVE PROPERTY(openFile(t));
+            };
+        }
+        MOVE BOX(te);
+    }
+    MOVE TOOLBARBOX;
+}
+
+FORM templates '{excel.form.templates}'
+
+    OBJECTS t = Template
+    PROPERTIES (t) READONLY name, id
+    PROPERTIES (t) NEWSESSION NEW, EDIT, DELETE GRID
+
+    OBJECTS te = TemplateEntry
+    PROPERTIES (te) READONLY isTable, key, description, isNumeric, value
+
+    FILTERS template (te) == t
+;
+
+FORM dialogTemplates '{excel.form.templates}'
+
+    OBJECTS t = Template
+    PROPERTIES (t) READONLY name, id
+    PROPERTIES (t) NEWSESSION NEW, EDIT, DELETE GRID
+
+    LIST Template OBJECT t
+;
+DESIGN dialogTemplates {
+    BOX {
+        size = (1024, 768);
+    }
+}
+
+NAVIGATOR {
+    masterData {
+        templatesNavigator {
+            NEW templates;
+        }
+    }
+}
+
+
+

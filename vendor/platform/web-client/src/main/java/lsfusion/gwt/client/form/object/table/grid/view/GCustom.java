@@ -1,0 +1,73 @@
+package lsfusion.gwt.client.form.object.table.grid.view;
+
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.core.client.JsArray;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.user.client.Event;
+import lsfusion.gwt.client.base.FocusUtils;
+import lsfusion.gwt.client.base.GwtClientUtils;
+import lsfusion.gwt.client.form.controller.GFormController;
+import lsfusion.gwt.client.form.object.table.TableContainer;
+import lsfusion.gwt.client.form.object.table.grid.controller.GGridController;
+import lsfusion.gwt.client.form.property.cell.view.CustomCellRenderer;
+
+public class GCustom extends GTippySimpleStateTableView {
+    private final JavaScriptObject renderFunction;
+    private final boolean renderFunctionWithoutArguments; //backward compatibility
+
+    public GCustom(GFormController form, GGridController grid, TableContainer tableContainer, String renderFunction) {
+        super(form, grid, tableContainer);
+        this.renderFunction = GwtClientUtils.getGlobalField(renderFunction);
+        this.renderFunctionWithoutArguments = !GwtClientUtils.isFunctionContainsArguments(this.renderFunction);
+    }
+
+    @Override
+    public void onRender(Event editEvent) {
+        Element drawElement = getDrawElement();
+        CustomCellRenderer.setCustomElement(drawElement);
+
+        if (renderFunctionWithoutArguments)
+            render(renderFunction, drawElement, controller, editEvent);
+    }
+
+    @Override
+    public void onClear() {
+        if (renderFunctionWithoutArguments)
+            clear(renderFunction, getDrawElement(), controller);
+    }
+
+    @Override
+    protected void onUpdate(Element element, JsArray<JavaScriptObject> list) {
+        FocusUtils.startFocusTransaction(element);
+
+        if (renderFunctionWithoutArguments)
+            update(renderFunction, element, controller, list, getCustomOptions());
+        else
+            runFunction(element, list, renderFunction, controller);
+
+        FocusUtils.endFocusTransaction();
+    }
+
+    @Override
+    protected Element getCellParent(Element target) {
+        return null;
+    }
+
+    protected native void runFunction(Element element, JavaScriptObject list, JavaScriptObject renderFunction, JavaScriptObject controller)/*-{
+        renderFunction(element, list, controller);
+    }-*/;
+
+    protected native void render(JavaScriptObject renderFunction, Element element, JavaScriptObject controller, Event event)/*-{
+        renderFunction().render(element, controller, event);
+    }-*/;
+
+    protected native void update(JavaScriptObject renderFunction, Element element, JavaScriptObject controller, JsArray<JavaScriptObject> list, JavaScriptObject customOptions)/*-{
+        renderFunction().update(element, controller, list, customOptions);
+    }-*/;
+
+    protected native void clear(JavaScriptObject renderFunction, Element element, JavaScriptObject controller)/*-{
+        if (renderFunction().clear !== undefined)
+            renderFunction().clear(element, controller);
+    }-*/;
+
+}

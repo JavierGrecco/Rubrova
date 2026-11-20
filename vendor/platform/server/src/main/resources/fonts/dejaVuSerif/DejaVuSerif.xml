@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fontFamilies>
+    <fontFamily name="DejaVu Serif">
+        <normal>fonts/dejaVuSerif/DejaVuSerif.ttf</normal>
+        <bold>fonts/dejaVuSerif/DejaVuSerif-Bold.ttf</bold>
+        <italic>fonts/dejaVuSerif/DejaVuSerif-Italic.ttf</italic>
+        <boldItalic>fonts/dejaVuSerif/DejaVuSerif-BoldItalic.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+    </fontFamily>
+</fontFamilies>

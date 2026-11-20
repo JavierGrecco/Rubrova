@@ -1,0 +1,230 @@
+MODULE Numerator;
+
+REQUIRE System, MasterData, DefaultData;
+
+DESIGN options {
+    commons {
+        NEW numerator {
+            caption = '{numerator.numerator}';
+        }
+    }            
+}
+
+CLASS Numerator '{numerator.numerator}';
+TABLE numerator (Numerator);
+
+name '{numerator.name.numerator}' = DATA ISTRING[100](Numerator) CHARWIDTH 20;
+
+series '{numerator.series.numerator}' = DATA STRING[10] (Numerator) IN id CHARWIDTH 5 NOFLEX;
+
+minValue '{numerator.min.value.numerator}' = DATA LONG (Numerator) IN id CHARWIDTH 15;
+maxValue '{numerator.max.value.numerator}' = DATA LONG (Numerator) IN id CHARWIDTH 15;
+
+stringLength '{numerator.string.length.numerator}' = DATA INTEGER (Numerator) IN base;
+
+curValue '{numerator.cur.value.numerator}' = DATA LONG (Numerator) IN id CHARWIDTH 15;
+curValue(Numerator numerator) <- minValue(numerator) WHEN SET(numerator IS Numerator);
+
+lpadStringWithZero = FORMULA STRING[48] PG 'lpad(CAST($1 AS text),$2,\'0\')', MS 'RIGHT(REPLICATE(\'0\', $2) + $1, $2)';
+
+curStringValue '{numerator.cur.string.value.numerator}' (Numerator numerator) = lpadStringWithZero(curValue(numerator), stringLength(numerator)) IN base;
+
+incrementedValue = DATA LOCAL NESTED STRING[48] ();
+
+incrementValue '{numerator.increment.value.numerator}'(Numerator numerator)  { 
+	NEWSESSION {
+	    incrementedValue() <- NULL;
+	    IF curValue(numerator) >= maxValue(numerator) THEN
+	        MESSAGE '{numerator.increment.value.message.1} ' + name(numerator) + ' {numerator.increment.value.message.2}';
+	    ELSE {
+	        APPLY {
+	            incrementedValue() <- curStringValue(numerator);
+	            curValue(numerator) <- curValue(numerator) + 1;
+	        }
+	    };
+	}
+};
+
+// -------------- Generate number on the form to take out of transaction to reduce probability of CONFLICT UPDATE
+@defineOption(generateNumberOnForm, '{numerator.generate.number.on.form}', numerator);
+
+META addEventGenerateNumberOnForm(form, o, object)
+    generateNumber (###object ob) { 
+        IF generateNumberOnForm() AND numerator(ob) AND NOT number(ob) THEN {
+            incrementValue(numerator(ob));
+            number(ob) <- incrementedValue();
+            series(ob) <- series(numerator(ob));
+        }
+    }
+    EXTEND FORM form
+        EVENTS ON APPLY BEFORE generateNumber(o)
+    ;
+END
+
+// --------------
+
+incrementValueSession '{numerator.increment.value.numerator}'(Numerator numerator)  { 
+    IF curValue(numerator) >= maxValue(numerator) THEN
+        MESSAGE '{numerator.increment.value.message.1} {numerator.increment.value.message.2}';
+    ELSE
+        curValue(numerator) <- curValue(numerator) + 1;
+}
+
+FORM numerator '{numerator.numerator}'
+    OBJECTS n = Numerator PANEL
+    PROPERTIES(n) name, series, minValue, maxValue, stringLength, curValue, curStringValue
+
+    EDIT Numerator OBJECT n
+;
+
+FORM dialogNumerators '{numerator.numerators}'
+    OBJECTS n = Numerator
+    PROPERTIES(n) READONLY name, series, curValue
+
+    LIST Numerator OBJECT n
+;
+
+FORM numerators '{numerator.numerators}'
+    OBJECTS n = Numerator
+    PROPERTIES(n) READONLY name, series, minValue, maxValue, stringLength, curValue, curStringValue
+    PROPERTIES(n)          NEWSESSION NEW, EDIT, DELETE 
+;
+
+FORM defaultNumerators '{numerator.numerators}'
+    OBJECTS n = Numerator
+    PROPERTIES(n) READONLY name, series, minValue, maxValue, stringLength, curValue, curStringValue
+    PROPERTIES(n)          NEWSESSION NEW, EDIT, DELETE 
+;
+
+DESIGN defaultNumerators {
+    BOX {
+        NEW defaultContainer AFTER OBJECTS {
+            lines = 3;
+            caption = '{numerator.caption.default.numerators}';
+        }
+    }
+}
+
+NAVIGATOR {
+    masterData {
+        NEW defaultNumerators;
+    }
+}
+
+// --------------------------------------------- Numbered object ---------------------------- //
+GROUP numbered '{numerator.numerator}' : id;
+
+META defineNumberedAbstract(class, stype)
+    number '{numerator.number.numerator}' = ABSTRACT STRING[48] (class) IN numbered MATERIALIZED CHARWIDTH 8;
+    series '{numerator.series.numerator}' = ABSTRACT stype (class) IN numbered MATERIALIZED CHARWIDTH 3 NOFLEX; 
+
+    seriesNumber '{numerator.series.number.numerator}' (class o) = 
+        CONCAT '', series(o), number(o) 
+        CHARWIDTH 8 INDEXED MATERIALIZED;
+        
+END
+
+useLoweredNumber '{numerator.use.lowered.number}' = DATA BOOLEAN ();
+useUpperedSeries '{numerator.use.uppered.series}' = DATA BOOLEAN (); 
+keepNumberSpaces '{numerator.keep.number.spaces}' = DATA BOOLEAN (); 
+
+EXTEND FORM options
+    PROPERTIES () useLoweredNumber, useUpperedSeries, keepNumberSpaces
+;
+DESIGN options{
+    numerator {
+        MOVE PROPERTY (useLoweredNumber());
+        MOVE PROPERTY (useUpperedSeries());
+        MOVE PROPERTY (keepNumberSpaces());
+    }
+}
+
+META defineNumbered(class, stype)
+    number '{numerator.number.numerator}' = DATA STRING[48] (class) IN numbered INDEXED CHARWIDTH 8;
+    series '{numerator.series.numerator}' = DATA stype (class) IN numbered CHARWIDTH 3 NOFLEX;
+     
+    WHEN useLoweredNumber() AND CHANGED(number(class o))
+         INLINE DO number(o) <- lower(number(o));
+         
+    WHEN useUpperedSeries() AND CHANGED(series(class o))
+         INLINE DO series(o) <- upper(series(o));
+    
+    WHEN CHANGED(number(class o)) AND NOT keepNumberSpaces()
+        INLINE DO number(o) <- replace(number(o), ' ', '');
+
+    seriesNumber '{numerator.series.number.numerator}' (class o) = 
+        CONCAT '', series(o), number(o) 
+        CHARWIDTH 7 INDEXED MATERIALIZED;
+        
+END
+
+META defineNumerated(class)
+    numerator '{numerator.id.numerator}' = DATA Numerator (class);
+    nameNumerator '{numerator.numerator}' (class o) = name(numerator(o)) IN numbered CHARWIDTH 7;
+
+    generateSeriesNumber '{numerator.generate.number}'(class o)  { 
+        number(o) <- curStringValue(numerator(o));
+        series(o) <- series(numerator(o));
+        incrementValueSession(numerator(o));
+    }
+    
+    WHEN SETCHANGED(numerator(class o)) AND
+         NOT CHANGED(number(o)) AND
+         NOT CHANGED(series(o))
+         DO generateSeriesNumber(o) ;
+END
+
+META defineNumeratedDefault(class, captionV, seriesV)
+    @defineNumeratedDefault(class, captionV, seriesV, );
+END
+
+META defineNumeratedDefault(class, captionV, seriesV, prefix)
+    @defineNumerated(class);
+    @defineNumeratedDefaultPrefix(class, captionV, seriesV, prefix);
+END
+
+GROUP defaultNumerator '{numerator.caption.default.numerators}' : public;
+
+META defineNumeratedDefaultPrefix(class, captionV, seriesV, prefix)
+
+    defaultNumerator##class = DATA Numerator ();
+    nameDefaultNumerator##class captionV = name(defaultNumerator##class()) IN defaultNumerator;
+
+    numerator(class o) <- defaultNumerator##class() WHEN SET(o IS class);
+
+    EXTEND FORM defaultNumerators
+        PROPERTIES() name##prefix##DefaultNumerator##class = nameDefaultNumerator##class
+    ;
+    
+    loadDefaultNumerators() + { 
+        NEW n = Numerator {
+            name(n) <- captionV;
+            series(n) <- seriesV;
+            minValue(n) <- 1L;
+            maxValue(n) <- 99999L;
+            stringLength(n) <- 5;
+
+            defaultNumerator##class() <- n;
+        }
+    }
+
+END
+
+META defineNumeratedID(object, caption, prefix)
+    default##prefix##Numerator##object = DATA Numerator ();
+    nameDefault##prefix##Numerator##object caption = name(default##prefix##Numerator##object()) IN defaultNumerator;
+    WHEN SET(object o IS object) AND default##prefix##Numerator##object() AND NOT id(o) DO {
+        id(o) <- CONCAT '', series(default##prefix##Numerator##object()), curStringValue(default##prefix##Numerator##object());  
+        incrementValueSession(default##prefix##Numerator##object());
+    } 
+    
+    EXTEND FORM defaultNumerators PROPERTIES() nameDefault##prefix##Numerator##object;
+END
+
+META defineNumeratedID(object, caption)
+    @defineNumeratedID(object, caption, );
+END
+// --------------------------------------------- Default numerators ---------------------------- //
+
+loadDefaultNumerators '{numerator.load.default.numerators}'  ABSTRACT LIST ( );
+@implementLoadDefaultData(loadDefaultNumerators);
