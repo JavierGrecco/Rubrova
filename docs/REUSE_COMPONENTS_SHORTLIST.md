@@ -80,7 +80,7 @@ Versión observada: 3.6.2 (11/11/2026). Licencia MIT; Node.js >=18.
 
 SDK oficial para consumir APIs de Mercado Pago desde Node.js/TypeScript. **Límite:** no demuestra por sí mismo la integración con un terminal Point físico. Emparejamiento, estados presenciales, voucher, timeouts y webhooks requieren prueba con API/dispositivo concretos. Todo cobro necesita referencia idempotente y estado incierto recuperable.
 
-## 5. Fiscalidad argentina: dos SDK para comparar
+## 5. Fiscalidad argentina: localización Odoo y SDKs para comparar
 
 ### [LaPyme/facturas](https://github.com/LaPyme/facturas)
 
@@ -88,6 +88,36 @@ SDK oficial para consumir APIs de Mercado Pago desde Node.js/TypeScript. **Lími
 - Licencia del paquete: Apache-2.0; Node.js >=22, ESM; estado pre-1.0.
 - Facturación electrónica, notas de crédito/débito, consultas de padrón, CLI y documentación en español.
 - Estados `authorized`, `rejected`, `indeterminate` y `conflict`, claves idempotentes y recuperación/conciliación del número reservado.
+
+### Odoo — localización oficial argentina y facturación electrónica
+
+Código público de la localización base: [odoo/odoo — addons/l10n_ar, rama 19.0](https://github.com/odoo/odoo/tree/19.0/addons/l10n_ar) y [rama 20.0](https://github.com/odoo/odoo/tree/20.0/addons/l10n_ar).
+
+- El manifiesto público del addon `l10n_ar` declara versión `3.7` y licencia LGPL-3.
+- Contiene plan de cuentas y plantillas por responsabilidad fiscal, impuestos/IVA, posiciones fiscales, tipos de documentos, identificaciones, códigos ARCA, monedas y unidades; también contempla CBU y datos fiscales de contacto.
+- El manifiesto describe `l10n_ar` como la localización contable base y señala que algunos campos se usan posteriormente por el módulo de factura electrónica. **No debe confundirse con el emisor electrónico WSFE/CAE.**
+
+La [documentación oficial de Odoo 19 para Argentina](https://www.odoo.com/documentation/19.0/es/applications/finance/fiscal_localizations/argentina.html) enumera por separado:
+- `l10n_ar`: localización contable base.
+- `l10n_ar_reports`: informes de Libro IVA y resumen de IVA.
+- `l10n_ar_edi`: facturación electrónica por web service ARCA.
+- `l10n_ar_website_sale`: campos fiscales y facturación electrónica en checkout online.
+- `l10n_ar_withholding`: retenciones de pago.
+
+**Disponibilidad de código:** en el repositorio público Community `odoo/odoo`, las rutas `addons/l10n_ar_edi` de las ramas 19.0 y 20.0 no existen; sí existe el código de `l10n_ar`. La documentación oficial acredita que el módulo EDI forma parte de la oferta Odoo, pero no demuestra que su código fuente esté disponible en el repositorio Community que estamos inspeccionando. Antes de reutilizarlo hay que obtener el código exacto, conocer su licencia y condiciones de acceso para la edición elegida y verificar si puede operarse en nuestra instalación privada.
+
+### [leonobitech/l10n_ar_arca_edi](https://github.com/leonobitech/l10n_ar_arca_edi) — alternativa comunitaria Odoo 19
+
+- Manifiesto observado: `19.0.1.0.0`, licencia AGPL-3.0 y estado explícito **Beta**.
+- Tiene código para WSAA, WSFEv1/CAE, gestión de certificados y entornos de homologación/producción; el repositorio incluye tests para facturas y WSFE.
+- Depende de `l10n_ar` y `account_edi`, y de `cryptography`, `zeep` y `lxml`.
+- Última actividad observada: 17/03/2026; fijar el commit y revisar el mantenimiento antes de instalar.
+
+**Decisión:** candidato real para una prueba aislada sobre Odoo 19 Community, no módulo aprobado para producción. Contrastar CAE, facturas A/B/C/E, notas de crédito/débito, certificados, errores, numeración concurrente, timeout/estado incierto, retenciones, RG vigentes y homologación. La etiqueta Beta y la antigüedad del último commit obligan a validar normativa y compatibilidad actual antes de confiarle emisión fiscal.
+
+### Estado de OCA Argentina
+
+La rama [OCA/l10n-argentina 19.0](https://github.com/OCA/l10n-argentina/tree/19.0) tiene raíz AGPL-3.0, pero el árbol inspeccionado al 20/11/2026 sólo contiene configuración, workflows, licencia y README: no aparecen carpetas de addons ni manifiestos instalables. Por tanto, **no es una localización lista para instalar** en ese estado. `leonobitech/l10n-argentina` 18.0 también aparece como repositorio de scaffolding sin addons en el árbol revisado.
 
 ### [ramiidv/arca-sdks](https://github.com/ramiidv/arca-sdks)
 
