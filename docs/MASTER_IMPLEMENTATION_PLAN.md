@@ -240,17 +240,17 @@ El primer despliegue implementa el flujo sobre las unidades del apartado anterio
 
 ### Entrega 4 — Reportes de gestión y analítica
 
-Primero reportes nativos y métricas definidas con fórmulas conocidas. Después, si la plataforma elegida no alcanza, construir un modelo analítico de sólo lectura; DuckDB es candidato para análisis/exports y Metabase o Superset se comparan sólo si hay necesidad de BI multiusuario.
+Primero usar los reportes nativos de la plataforma elegida y validar el Stock Ledger, la valuación y los reportes de utilidad bruta contra movimientos. Después construir read models analíticos de sólo lectura. DuckDB es la primera opción a probar para snapshots/Parquet; Metabase o Superset se comparan sólo si hay necesidad demostrada de BI multiusuario. StatsForecast es la primera biblioteca de forecasting a evaluar; MLForecast sólo si variables exógenas e historial mejoran el backtesting; HierarchicalForecast queda para reconciliar agregados en una etapa posterior. DemandSense se inspecciona como referencia MIT de demanda intermitente y escenarios, no como motor de producción; DemandOS sirve sólo como referencia de diseño porque no declara licencia. La segmentación de primeras/segundas marcas y el análisis de sustitución se implementan en el dominio Rubrova, no con una etiqueta ABC ni un notebook externo. Todas las herramientas analíticas trabajan sobre datos conciliados y no escriben en los ledgers transaccionales. Ver [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
 Requisitos obligatorios de inteligencia comercial:
 
 - Seguimiento diario, semanal, mensual, trimestral y por estación del hemisferio sur.
 - Alertas tempranas de crecimiento, aceleración, desaceleración, estancamiento y caída por SKU, familia, marca, sucursal y canal.
-- Pronóstico previo a cada trimestre/estación, con rangos, confianza, historial disponible, calendario y factores relevantes.
+- Pronóstico previo a cada trimestre/estación, con rangos, confianza, historial disponible, calendario y factores relevantes; comparar baselines y métodos de series regulares/intermitentes, ejecutar backtesting temporal y declarar cobertura/limitaciones.
 - Ajuste por quiebres de stock, disponibilidad, promociones, precios y surtido.
 - Rentabilidad por producto/marca: ganancia absoluta, margen porcentual, contribución neta de costos variables, costo de reposición, GMROI y capital inmovilizado.
 - Matriz de alta/baja venta versus alta/baja rentabilidad.
-- Clasificación configurable de primeras marcas, segundas, económicas, propias y alternativas; medir participación por unidades, tickets, ventas y ganancia.
+- Clasificación configurable y con vigencia histórica de primeras marcas, segundas, económicas, propias y alternativas por categoría; medir participación por unidades, tickets, ventas netas, ganancia y contribución, precio comparable por unidad y sustitución con control de faltantes/promociones.
 - Detección de sustitución y cambios de preferencia entre segmentos.
 - Simulación de compras, precios y promociones; toda ejecución requiere aprobación.
 - Backtesting y medición de error/sesgo de pronósticos.
@@ -335,7 +335,7 @@ Ninguna entrega se cierra por tener pantallas o completar un README. Requiere:
 
 ## 10. Qué queda deliberadamente fuera del inicio
 
-No construir primero tracking multioperador, ecommerce complejo, asistente con IA, pronósticos avanzados, dashboards sofisticados, WMS completo, nómina, infraestructura de Kubernetes/Kafka ni numerosos microservicios. Tampoco elegir Bigcapital, InvenTree, PowerSync, Metabase, Superset, Keycloak o Grafana sólo porque existan.
+No construir primero tracking multioperador, ecommerce complejo, asistente con IA, pronósticos avanzados, dashboards sofisticados, WMS completo, nómina, infraestructura de Kubernetes/Kafka ni numerosos microservicios. Los pronósticos avanzados y tableros quedan diferidos a Entrega 4, pero sus datos fuente se capturan desde el POS/ERP y sus pruebas se preparan con fixtures. Tampoco elegir Bigcapital, InvenTree, PowerSync, Metabase, Superset, Keycloak o Grafana sólo porque existan.
 
 Cada uno podrá entrar cuando una brecha concreta y medible justifique su costo de instalación, integración, actualización y soporte.
 
@@ -367,4 +367,5 @@ La decisión no se tomará por cantidad de funciones ni por estrellas de GitHub.
 - [Requisitos del POS](POS_REQUIREMENTS.md)
 - [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md)
 - [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md)
+- [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md)
 - [Continuidad y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md)
