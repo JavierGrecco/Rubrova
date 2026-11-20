@@ -152,6 +152,23 @@ docker exec "$SERVER_CONTAINER_ID" sh -ec '
   grep -E "^[[:space:]]*logics\\.(topModule|includePaths|excludePaths)[[:space:]]*=" "$mount_dir/settings.properties" || true
 ' sh "$SERVER_MOUNT_DESTINATION"
 
+echo "Diagnóstico de rutas de configuración y parámetros superiores dentro del contenedor:"
+docker exec "$SERVER_CONTAINER_ID" sh -ec '
+  for root in "$1" /etc/lsfusion6-server /etc/lsfusion-server /opt/lsfusion /app; do
+    test -d "$root" || continue
+    find "$root" -maxdepth 4 -type f \\( -name "lsfusion.properties" -o -name "settings.properties" \\) -print 2>/dev/null |
+    while IFS= read -r file; do
+      echo "CONFIG_FILE=$file"
+      grep -HnE "^[[:space:]]*logics\\\\.topModule[[:space:]]*=" "$file" || true
+      grep -HnE "^[[:space:]]*logics\\\\.(includePaths|excludePaths)[[:space:]]*=" "$file" || true
+    done
+  done
+  echo "JAVA_TOP_MODULE_ARGUMENTS:"
+  grep -aoE -- "-Dlogics\\\\.topModule=[^[:cntrl:]]+" /proc/1/cmdline || true
+  echo "RELEVANT_ENVIRONMENT_KEYS:"
+  env | cut -d= -f1 | grep -Ei "JAVA_OPTS|LOGICS|SETTINGS|CONFIG" || true
+' sh "$SERVER_MOUNT_DESTINATION"
+
 echo "6/7 Esperando respuesta web y fin de la carga completa de la lógica Rubrova"
 SECONDS=0
 HTTP_STATUS="000"
