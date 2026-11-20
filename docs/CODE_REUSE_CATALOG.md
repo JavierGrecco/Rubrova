@@ -1,6 +1,6 @@
 # Catálogo de código reutilizable
 
-**Revisión:** 19 de noviembre de 2026.  
+**Revisión:** 20 de noviembre de 2026.  
 **Propósito:** identificar proyectos y componentes concretos que podamos adoptar, extender, adaptar o usar como base para el sistema de gestión de uso interno.
 
 Este catálogo no declara componentes aprobados para producción. Distingue evidencia documental, hipótesis de reutilización y validaciones pendientes. Antes de incorporar código se debe fijar un commit o release, revisar licencias y dependencias, ejecutar pruebas y conservar procedencia.
@@ -12,8 +12,8 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Prioridad | Proyecto | Qué puede adelantarnos | Estado |
 |---|---|---|---|
 | Muy alta | [MyCompany/lsFusion](https://github.com/lsfusion-solutions/mycompany) | ERP/POS modular, CRM, compras, inventario, producción, RR. HH. y proyectos | Nuevo candidato integral; evaluar release 6.2 |
-| Muy alta | [Posnic](https://github.com/Posnic/POS) | POS local/offline, retail y gastronomía, ventas, inventario, compras y devoluciones | Evaluar como base integral |
-| Muy alta | [Tryton](https://www.tryton.org/) | ERP modular de tres capas, PostgreSQL, ventas, compras, inventario, contabilidad y fabricación | Nueva primera ronda; validar módulos y límites de servicio |
+| Alta | [Posnic](https://github.com/Posnic/POS) | POS local/offline, retail y gastronomía, ventas y devoluciones | Candidato POS especializado; revisar separación respecto del stock y compras |
+| Muy alta | [Tryton](https://www.tryton.org/) | ERP modular de tres capas, PostgreSQL y POS oficial `sale_point` | Primera ronda; probar POS y separación respecto de stock/contabilidad |
 | Alta | [Dolibarr](https://www.dolibarr.org/) | ERP/CRM modular con REST API, hooks y triggers | Reincorporado a la primera ronda |
 | Media-alta | [Apache OFBiz](https://ofbiz.apache.org/) | ERP y Service Engine orientado a SOA | Referencia de segunda etapa; complejidad y serie 24.09 feature-frozen |
 | Condicionada | [uniCenta oPOS](https://unicenta.com/) | POS multiplataforma, periféricos y caja | Fuente 5.5.2 requiere login; no aprobar reutilización hasta revisar código y licencia |
@@ -30,10 +30,30 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Exploratoria | [l10n_ar_arca_edi](https://github.com/leonobitech/l10n_ar_arca_edi) | Integración Odoo 19 con WSAA/WSFE | Referencia; beta declarada |
 | Exploratoria | [DearPOS](https://github.com/engindearing-projects/dearpos) | Perfiles, terminal local, SQLite y cola de sincronización | Proyecto temprano |
 | Exploratoria | [ElitaleRestro](https://github.com/tirforge/restro) | KDS, mesas, recetas, modificadores, stock por receta y PIN | AGPL; evaluar partes |
+| Alta | [QZ Tray](https://github.com/qzind/tray) | Puente local para impresoras, ESC/POS, USB, serie, HID y sockets | Comparar con pos-toolkit; impresión silenciosa exige firma |
+| Alta | [Mercado Pago SDK Node](https://github.com/mercadopago/sdk-nodejs) | SDK oficial TypeScript para APIs de Mercado Pago | MIT; probar Point físico/webhooks por separado |
+| Alta | [Karrio](https://github.com/karrioapi/karrio) | API multi-carrier para tarifas, etiquetas y tracking | LGPL-3.0 en componentes comunitarios; no aparecen conectores argentinos en el árbol revisado |
+| Alta | [OpenRefine](https://github.com/OpenRefine/OpenRefine) | Limpieza asistida, clustering y reconciliación de datos sucios | BSD-3-Clause; herramienta de preparación, no autoridad |
+| Alta | [Frictionless](https://github.com/frictionlessdata/frictionless-py) | Validación estructural y transformación de CSV/XLS/JSON | MIT; candidato para importador |
+| Alta | [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz) | Coincidencias aproximadas y sugerencias de deduplicación | MIT; nunca fusionar automáticamente por score |
+| Alta | [python-stdnum](https://github.com/arthurdejong/python-stdnum) | Validación de formatos CUIT, CBU y DNI | LGPL-2.1; no sustituye el padrón ARCA |
+| Media-alta | [Docling](https://github.com/docling-project/docling) | Extracción estructurada de PDF, tablas y documentos ofimáticos | MIT; medir rendimiento y precisión |
+| Media-alta | [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Archivo documental OCR local con API | GPL-3.0; no es libro contable |
+| Media | [Node-RED](https://github.com/node-red/node-red) | Automatización de eventos, webhooks y dispositivos | Apache-2.0; sólo flujos periféricos |
+| Exploratoria | [Simple WMS](https://github.com/q7-technology/simple-wms) | Ledger append-only, scanner PWA y tareas de depósito | MIT; sin release estable, referencia en vigilancia |
 
 ## 1. Plataformas integrales
 
-### Posnic — primer candidato para prueba local
+### Tryton, serie 7.8 — módulo oficial `sale_point`
+
+Documentación: https://docs.tryton.org/7.8/modules-sale-point/design.html  
+Paquetes: https://downloads.tryton.org/7.8/
+
+Tryton mantiene un módulo oficial POS que registra ventas/devoluciones, métodos de pago y sesiones de caja; calcula el vuelto y, al contabilizar una venta, genera movimientos de stock y asientos. El módulo `sale_point` 7.8.4 se publicó el 16/04/2026; el cliente de escritorio tiene su propia secuencia de parches. Fijar la versión de servidor, cliente y cada módulo por separado.
+
+**Límite:** el POS utiliza ventas, stock y contabilidad dentro del mismo servidor/base. Es código funcional reutilizable, pero no equivale a tres servicios independientes. Probar dependencias, puntos de extensión y autoridad de datos antes de adoptarlo. La documentación tampoco demuestra que la experiencia de caja sea suficientemente rápida para Rubrova.
+
+### Posnic — candidato POS especializado (no aprobado)
 
 Repositorio: https://github.com/Posnic/POS  
 Release fijado: `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680` (16/11/2026).  
@@ -57,7 +77,7 @@ El código revisado cubre POS, ventas, devoluciones, pagos parciales, productos,
 - El mismo aviso identifica amCharts 4 como comercialmente licenciado. No reutilizarlo sin confirmar permiso; contemplar reemplazo.
 - Las dependencias npm y los recursos visuales/fuentes requieren inventario propio. La licencia raíz no cubre automáticamente todo el instalador.
 
-**Recomendación:** priorizar una prueba integral en VM compatible, pero no aprobar todavía como base. Medir si la adaptación argentina y la recuperación offline pasan los controles sin un fork profundo. Los instaladores y sus hashes se documentan en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md); los resultados se registran con [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+**Recomendación:** priorizar una prueba acotada de POS, caja, operación multi-terminal y recuperación en VM compatible. No tratarlo como base ERP ni permitir que sea un segundo dueño de inventario; comprobar si POS y stock pueden delimitarse según la arquitectura. Los instaladores y sus hashes se documentan en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md); los resultados se registran con [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 ### ERPNext + Frappe
 
 Repositorios: https://github.com/frappe/erpnext y https://github.com/frappe/frappe  
@@ -115,6 +135,16 @@ El repositorio contiene:
 **Límites:** el plugin de hardware es Rust/Tauri v2, no un driver universal de navegador/PWA. Requiere comprobar el empaquetado y los permisos del sistema operativo. El mantenedor declara compromisos de soporte modestos. `packages/register-core` figura como **planned**, no implementado.
 
 **Recomendación:** evaluar el constructor de tickets como componente aislado y el plugin solo si la arquitectura final elige una aplicación de escritorio Tauri o una pasarela compatible. Validar impresoras, lectores, balanzas y cajón físicos concretos.
+### QZ Tray — puente local para impresión y periféricos
+
+Repositorio: https://github.com/qzind/tray  
+Release observada: `v2.3.0` (11/09/2026).  
+Licencia del código fuente según `LICENSE.txt`: LGPL-2.1; ejemplos de API public domain y componentes de terceros con licencias propias.
+
+QZ Tray conecta aplicaciones web con impresoras y dispositivos locales; documenta ESC/POS, USB, serie, HID, sockets y archivos. Ofrece paquetes para Windows, macOS y Linux.
+
+**Condición:** imprimir silenciosamente requiere firmar las solicitudes; la documentación contempla adquirir un certificado de QZ o implementar una autoridad raíz propia. Esto exige proteger y distribuir correctamente las claves. Compararlo en laboratorio con [pos-toolkit](https://github.com/narisolutions/pos-toolkit). Probar impresoras, cajón, balanza y lector concretos.
+
 ### emupos — simulador de hardware
 
 Repositorio: https://github.com/ahmedalrifai/emupos  
@@ -152,6 +182,15 @@ El README describe errores diferenciados para rechazo, error de servicio y respu
 **Alerta operativa:** la versión anterior ramiidv/arca-facturacion fue archivada el 1/11/2026; el desarrollo se trasladó a arca-sdks. No integrar desde el repositorio archivado.
 
 **Recomendación:** candidato fiscal prioritario si elegimos TypeScript. Revisar el código y changelog de la versión exacta, ejecutar pruebas de homologación, verificar normativa vigente y añadir nuestra propia capa de idempotencia, conciliación y bloqueo ante estado incierto. El SDK no resuelve por sí solo la prevención de doble factura con Mercado Libre.
+
+### LaPyme/facturas — alternativa de SDK ARCA
+
+Repositorio: https://github.com/LaPyme/facturas  
+Release observada: `facturas@0.28.0` (17/11/2026). Licencia del paquete: Apache-2.0. Node.js >=22, ESM; estado pre-1.0.
+
+Cubre facturación electrónica, notas de crédito/débito y consultas de padrón; incluye CLI y documentación en español. Expone estados `authorized`, `rejected`, `indeterminate` y `conflict`, claves idempotentes y recuperación/conciliación del número reservado.
+
+**Recomendación:** comparar con `@ramiidv/arca-facturacion` en homologación. Fijar versión, revisar tests, certificados, concurrencia y recuperación. No ejecutar dos SDK emisores en producción.
 
 ### Afip.py
 
@@ -224,19 +263,22 @@ Stack Next.js/Expo/Prisma/PostgreSQL/SQLite. Declara diseño de perfiles sobre e
 
 ## 6. Hallazgos y decisiones
 
-1. **MyCompany/lsFusion 6.2** se suma como candidato integral por su POS, CRM, compras, inventario, producción, facturación y mecanismo de módulos seleccionables. No está aprobado: deben comprobarse el runtime, la localización argentina, los pagos y el offline.
-2. **Posnic 1.9.2** conserva prioridad para probar una caja local; su evidencia offline es limitada, la sincronización entre bases independientes es un servicio aparte y el paquete contiene MongoDB SSPL-1.0 y amCharts comercial.
-3. **ERPNext 16.60.0/Frappe 16** aporta profundidad en compras, inventario, producción y contabilidad; su POS y continuidad offline deben probarse.
-4. La ronda integral compara MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16. Dolibarr 24.0.3 queda como candidato de inspección dirigida: ya se comprobó que tiene objetos propios de contrato, intervención, envío y margen, pero todavía no se demostró una dimensión nativa de unidad de negocio que satisfaga nuestra rentabilidad multiárea. Odoo Community 20 y Medusa v2 quedan fuera de la ronda activa; NexoPOS continúa bloqueado por discrepancia de licencia.
-4. **pos-toolkit** aporta código concreto para hardware y tickets. La parte de hardware requiere Tauri v2; `register-core` está planificado.
-5. **emupos + ESCPost** pueden reducir la compra temprana de periféricos y hacer reproducibles las pruebas de hardware.
-6. **arca-sdks** es el adaptador fiscal candidato para TypeScript; el paquete de facturación 7.1.0 declara MIT y requiere Node >=22.12. La homologación y la recuperación de estados inciertos siguen siendo responsabilidad de nuestra integración.
-7. **PowerSync** se evalúa como motor de sincronización, distinguiendo Open Edition de Enterprise/Cloud; **Dexie** es almacenamiento IndexedDB, no sincronizador completo.
-8. No integrar varios ERP/POS como fuentes de verdad. El sistema elegido será dueño de ventas, pagos, caja y stock; el resto aporta herramientas o módulos aislados.
-9. El uso privado permite considerar GPL/AGPL, pero no elimina obligaciones ni licencias separadas de dependencias, fuentes, recursos comerciales y servicios.
-10. La evaluación completa, con versiones fijadas, datos sintéticos y escenarios P01–P26, está en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+1. **MyCompany/lsFusion 6.2:** candidato para reutilizar módulos ERP/POS y probar extensiones propias; su base compartida exige demostrar la separación por dominio.
+2. **Tryton, serie 7.8:** incluye el módulo oficial `sale_point`, con ventas, pagos, caja y efectos en stock/contabilidad; debe comprobarse si puede respetar la propiedad independiente de esos dominios.
+3. **Dolibarr 24.0.3:** entra al filtro inicial por su cobertura y REST API/hooks; la presencia de extensiones no demuestra despliegue independiente de cada módulo.
+4. **ERPNext 16.60.0/Frappe 16:** se mantiene en comparación por su cobertura de compras, inventario, producción y contabilidad.
+5. **Posnic 1.9.2:** se evalúa como candidato POS especializado, no como base ERP ni autoridad paralela de inventario. Su offline es limitado y el paquete incluye MongoDB SSPL-1.0 y amCharts comercial.
+6. **uniCenta 5.5.2:** queda condicionado a disponer del código actual y avisos verificables.
+7. **pos-toolkit / QZ Tray:** candidatos de puente de periféricos con arquitecturas y requisitos de firma diferentes; deben compararse con hardware real.
+8. **SDK de ARCA:** LaPyme/facturas y arca-sdks son alternativas a probar en homologación; no usarlas como emisores simultáneos.
+9. **Karrio:** puede acelerar la API multi-carrier, pero el repositorio inspeccionado no trae conectores para los operadores argentinos prioritarios.
+10. **Calidad e importación:** OpenRefine, Frictionless, RapidFuzz y python-stdnum pueden reducir tareas repetitivas y errores de carga; no reemplazan las validaciones de dominio.
+11. No integrar varios ERP/POS como fuentes de verdad. Cada dominio tendrá un dueño único de ventas, pagos, caja y stock; el resto aporta herramientas o módulos aislados.
+12. El uso privado permite considerar GPL/AGPL, pero no elimina obligaciones ni licencias separadas de dependencias, recursos comerciales y servicios.
+13. La investigación detallada y la priorización de componentes están en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
 
-Ninguno de estos candidatos está incorporado ni ejecutado dentro de Rubrova.
+Ningún candidato de esta investigación está incorporado ni aprobado para producción.
+
 ## 7. Prueba técnica siguiente
 
 Seguir el protocolo único de [Evaluación de plataformas](PLATFORM_EVALUATION.md). No duplicar guiones ni comenzar a copiar módulos antes de ejecutar los tres candidatos integrales.
@@ -322,6 +364,8 @@ La investigación de alcance, stack, licencias, madurez y recomendaciones está 
 - **Envíopack:** agregador comercial con tracking normalizado y webhooks; confirmar operadores incluidos.
 - **Kangu:** la información pública revisada sobre la adquisición por Mercado Libre menciona Brasil, Colombia y México; no demuestra disponibilidad API/servicio para Argentina.
 
+**Karrio como motor multi-carrier:** https://github.com/karrioapi/karrio ofrece una API autohospedada para tarifas, etiquetas y tracking. El archivo raíz declara LGPL-3.0 fuera de `ee/`, con Enterprise bajo licencia separada. En el árbol de conectores de la rama principal consultado el 20/11/2026 no aparecen Andreani, PAQ.AR, OCA ni Vía Cargo. Puede acelerar el modelo multioperador, pero requiere conectores argentinos propios y credenciales de QA.
+
 Ver [Logística argentina y seguimiento unificado](ARGENTINA_LOGISTICS_INTEGRATION.md).
 
 ## 12. Interoperabilidad administrativa/contable
@@ -345,3 +389,10 @@ La arquitectura y las pruebas de estos destinos están en [Interoperabilidad con
 - **Bigcapital (AGPL-3.0):** aplicación completa de contabilidad/inventario y API headless de doble partida. Útil para estudiar ledger y estados financieros; no está probada su adaptación argentina y no debe convertirse en otro libro contable paralelo.
 
 Investigación de detalle y límites: [Investigación ampliada de módulos](MODULAR_COMPONENT_RESEARCH.md). Requisitos de integración contable: [Interoperabilidad contable](ACCOUNTING_INTEROPERABILITY.md).
+
+
+## 14. Componentes transversales investigados (20/11/2026)
+
+El detalle de licencias, versiones, límites y priorización de OpenRefine, Frictionless, RapidFuzz, python-stdnum, Pint, libpostal, OCRmyPDF, Docling, invoice2data, Paperless-ngx, QZ Tray, Mercado Pago SDK, Karrio, Node-RED y Temporal está en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
+
+Ninguno está aprobado ni incorporado. La shortlist distingue componentes candidatos a prueba controlada, proyectos de referencia y piezas que conviene diferir por complejidad o madurez.
