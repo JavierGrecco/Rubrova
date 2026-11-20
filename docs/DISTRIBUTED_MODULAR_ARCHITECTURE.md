@@ -5,12 +5,10 @@
 
 ## 1. Decisión de arquitectura
 
-Rubrova se diseñará como una **plataforma de servicios de dominio independientes**, no como un monolito. Cada servicio tendrá responsabilidad acotada, datos propios, contrato público, ciclo de pruebas, despliegue, versionado y rollback independientes.
+Rubrova se diseñará como una **plataforma modular con límites de dominio explícitos**. Cuando Rubrova desarrolle un servicio propio, tendrá responsabilidad acotada, datos propios, contrato público, ciclo de pruebas, despliegue, versionado y rollback independientes. Sin embargo, el núcleo POS+ERP puede ser una aplicación integrada reutilizada, con sus módulos de ventas, inventario, compras, caja, costos y contabilidad dentro de un mismo límite operativo. No se afirmará que esos módulos son microservicios.
 
-Los servicios podrán ejecutarse juntos en un mismo equipo local cuando la instalación sea pequeña, pero seguirán siendo procesos o unidades de despliegue separados. Compartir hardware no significa compartir código interno, tablas, credenciales ni ciclo de vida.
-
-La arquitectura combinará:
-- servicios independientes, alineados con capacidades del negocio;
+La arquitectura combinará, según la composición elegida:
+- un núcleo operativo integrado o un conjunto de servicios independientes cuando la evidencia justifique esa separación;
 - un gateway local de APIs para aplicaciones y dispositivos;
 - comunicación síncrona para operaciones que necesitan respuesta inmediata;
 - mensajería durable y eventos para procesos asíncronos;
@@ -26,7 +24,7 @@ La preferencia por servicios independientes no obliga a desarrollar todo desde c
 
 Para adoptar una aplicación existente como servicio Rubrova, debe demostrar: límite de dominio acotado y dueño único de sus datos; persistencia/credenciales aislables; API/eventos públicos y versionados; ciclo propio de despliegue, migración, backup, restauración y rollback; actualización independiente; y pruebas de permisos, concurrencia, idempotencia y recuperación.
 
-**Los módulos dentro de un mismo ERP no se convierten automáticamente en servicios independientes.** Si comparten runtime, base y migraciones, se evalúa el producto como aplicación integrada. Sólo se puede aceptar completo si sus responsabilidades forman un límite de dominio deliberado y no absorben datos que la arquitectura asigna a otros servicios. De lo contrario, se reutilizan módulos o bibliotecas separables y el resto queda como referencia técnica.
+**Los módulos dentro de un mismo ERP no se convierten automáticamente en servicios independientes.** Si comparten runtime, base y migraciones, se evalúan como aplicación integrada. Esa integración puede ser aceptable como núcleo operativo único siempre que pase la prueba POS+ERP, sea autoridad exclusiva de los datos que administra, permita exportación/backup/restauración completos y exponga interfaces soportadas hacia los demás componentes. Se registran sus trade-offs; no se la rechaza únicamente por compartir base. Las capacidades que queden fuera se integran por contratos y no acceden a tablas privadas.
 
 Ver [Estrategia reuse-first](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
 

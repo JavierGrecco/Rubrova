@@ -8,17 +8,18 @@ La estrategia prioriza aprovechar proyectos completos y módulos maduros cuando 
 
 ## Dirección técnica
 
-La dirección es una **plataforma compuesta por servicios de dominio independientes**. Cada dominio que Rubrova mantenga como servicio propio tendrá responsabilidad, almacenamiento, contrato, pruebas, despliegue, versión y recuperación propios. Los servicios se comunican mediante APIs y eventos; no comparten tablas ni escriben en datos ajenos.
+La dirección es una **plataforma modular con límites explícitos**, que puede combinar un núcleo POS+ERP integrado y servicios Rubrova independientes donde realmente aporten valor. Cada servicio que Rubrova desarrolle o separe tendrá responsabilidad, almacenamiento, contrato, pruebas, despliegue, versión y recuperación propios. No se obliga a que todas las capacidades del negocio sean microservicios desde la primera versión.
 
-La estrategia de implementación es **reuse-first**: antes de construir un dominio propio, se buscan aplicaciones, módulos, plugins, SDK y bibliotecas existentes que resuelvan la necesidad de forma mantenible. La reutilización no modifica la arquitectura objetivo ni autoriza una aplicación integrada a absorber dominios que deben conservar independencia.
+La estrategia de implementación es **reuse-first**: antes de construir un dominio propio, se buscan aplicaciones, módulos, plugins, SDK y bibliotecas existentes que resuelvan la necesidad de forma mantenible. Una suite integrada puede conservar juntas POS, ventas, inventario, compras, costos, pagos/caja y contabilidad como núcleo único, sin llamar microservicios a sus módulos. Las capacidades adicionales de Rubrova se conectan mediante APIs/eventos soportados y no duplican autoridades.
 
 ### Puerta arquitectónica para reutilizar una aplicación
 
-Una aplicación externa sólo puede adoptarse directamente en producción si puede asumir un límite de dominio válido y controlable: almacenamiento y credenciales aislables; API/eventos versionados; despliegue, migraciones, backup, restauración y rollback propios; invariantes comprobables; y ausencia de una segunda autoridad sobre datos ajenos.
+Para adoptar una aplicación externa hay dos caminos válidos:
 
-**Una API no convierte por sí sola un ERP integrado en microservicios.** Si ventas, inventario, pagos y contabilidad comparten base y ciclo de despliegue, son módulos de una aplicación integrada. Puede servir como referencia funcional o fuente de componentes, pero no se aprobará como composición de servicios independientes por tener módulos o endpoints.
+1. **Servicio de dominio acotado:** almacenamiento/credenciales propios, API/eventos versionados, despliegue, migraciones, backup, restauración y rollback independientes; invariantes comprobables y ninguna autoridad duplicada.
+2. **Núcleo operativo integrado POS+ERP:** puede compartir servidor, base y ciclo de despliegue si eso permite cerrar el circuito comercial/administrativo con una única autoridad coherente. La evaluación debe registrar el acoplamiento, el impacto de actualizaciones, la API disponible, exportación completa, restauración en equipo limpio, permisos, extensibilidad y ruta de salida. No se presenta como microservicios.
 
-Un producto integrado sólo podrá adoptarse completo mediante una excepción arquitectónica explícita si representa un único límite de dominio aceptable. Esa excepción documentará qué responsabilidades quedan juntas, qué independencia se sacrifica y cómo se evita el acoplamiento con el resto de Rubrova. No es la opción predeterminada ni se presentará como microservicios.
+**Una API no convierte por sí sola un ERP integrado en microservicios.** La decisión no es fingir que la suite es distribuida, sino medir si la aplicación integrada es la mejor base de operación para el negocio privado y aislar sólo las capacidades de Rubrova que deban evolucionar por separado.
 
 ### Candidatos actuales: oportunidades, no decisiones
 
@@ -37,7 +38,7 @@ Ninguno está aprobado. Una prueba funcional exitosa no basta: deben superarse p
 2. Probar instalaciones acotadas con los mismos escenarios.
 3. Comprobar que el módulo candidato se opera, actualiza y restaura como unidad independiente.
 4. Reutilizarlo y crear adaptadores cuando supere las puertas.
-5. Construir como servicio propio sólo la brecha que no cubra una pieza existente.
+5. Adoptar la suite como núcleo integrado cuando supere la comparación; construir como servicio propio sólo las brechas que deban aislarse y que la plataforma no cubra.
 
 No se empieza automáticamente por un Gateway, Ventas e Inventario propios. Tampoco se cambia a un monolito propio si falla una suite integrada. Se mantiene el diseño distribuido y se reutiliza todo componente compatible que sostenga esos límites.
 
