@@ -31,7 +31,7 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 
 **Regla de arquitectura:** hay dos resultados válidos. (A) Una suite POS+ERP se adopta como núcleo operativo integrado y autoridad única para los dominios que cubra; sus módulos comparten base/runtime y no se llaman microservicios. (B) Los dominios se resuelven con servicios independientes cuando exista una ventaja comprobable y contratos soportados. La base compartida se registra como coste de acoplamiento, actualización y salida, pero no descarta automáticamente una suite. En ambos casos, los componentes externos acceden mediante APIs/eventos/exportaciones soportadas; no por SQL cruzado ni replicando ventas, pagos, stock o costos.
 
-**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P60. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup portable verificable y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
+**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P67. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup portable verificable y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
 
 **Estado actual:** ninguna plataforma está aprobada, instalada y aceptada para producción. El repositorio todavía no contiene la aplicación funcional de Rubrova ni código externo incorporado. La validación de fixtures no prueba un POS ni un ERP.
 
@@ -214,6 +214,20 @@ P49 se evalúa dentro del circuito POS+ERP, aunque el motor de forecasting no se
 
 La ficha, métricas y pruebas detalladas están en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md). P58–P60 deben ejecutarse con datos de prueba que incluyan una venta anónima, un cliente minorista recurrente y una cuenta B2B con varias sedes/contactos.
 
+### P61–P67 — datos de pagador, identidad y medios de pago
+
+| ID | Escenario | Evidencia exigida | Falla crítica |
+|---|---|---|---|
+| P61 | Datos de pagador por canal | Probar efectivo, tarjeta presencial, tarjeta online, QR interoperable con transferencia, QR con tarjeta y transferencia; registrar sólo campos realmente devueltos y su procedencia | Suponer que todos los medios entregan nombre/DNI o persistir datos inexistentes |
+| P62 | Uso restringido de identidad de pago | Si el PSP limita nombre/documento a conciliación, dichos campos no son accesibles para CRM, RFM, búsqueda de clientes ni campañas | Reutilizar un dato de conciliación para perfilar o comercializar |
+| P63 | Un cliente, varios medios | Cliente identificado voluntariamente paga tickets separados en efectivo, tarjeta y QR; las compras se asocian a CustomerAccount por su identidad confirmada, no por PAN/CBU/nombre | Vincular compras de un tercero o exigir identificación para cobrar |
+| P64 | Aprobación e idempotencia de pagos | QR dinámico, terminal y transferencia; webhook duplicado, timeout, pago tardío, importe incorrecto, reembolso parcial, contracargo y cierre de lote | Doble cobro, confirmación prematura o reintento ciego |
+| P65 | Datos PCI y minimización | Verificar que PAN/CVV/PIN/track no pasan a logs, eventos, base, backups ni reportes; tokenización y referencias cumplen el proveedor | Almacenar datos sensibles prohibidos o ampliar innecesariamente el alcance PCI |
+| P66 | Identidad dudosa y revisión humana | Nombre coincidente, teléfono no verificado o instrumento compartido no fusiona automáticamente registros; mostrar origen y motivo de cualquier sugerencia | Fusión automática o identidad falsa no reversible |
+| P67 | Integración y recuperación del proveedor | Caída de red, reinicio POS, consulta de estado tras timeout y restauración; conciliar con proveedor antes de reintentar, conservando IDs/idempotencia | Pagos huérfanos, ventas duplicadas o estado de caja no conciliado |
+
+La matriz detallada de campos, finalidades y adaptadores está en [Identidad del pagador, pagos y conciliación](PAYMENT_IDENTITY_AND_RECONCILIATION.md). Los datos de pagador que una API permita sólo para conciliación se deben mantener separados del perfil 360.
+
 ## Medición y decisión
 
 Cada criterio se califica de 0 a 5 únicamente después de ejecutar la prueba:
@@ -280,13 +294,13 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Ejecución P01–P26 (POS/ERP) | Pendiente |
 | Ejecución P27–P48 (resiliencia/arquitectura) | Pendiente |
 | Ejecución P49–P57 (historial, trazabilidad y exportación) | Pendiente |
-| Ejecución P58–P60 (perfil 360, RFM y privacidad) | Pendiente |
+| Ejecución P58–P60 (perfil 360, RFM y privacidad) | Pendiente |\n| Ejecución P61–P67 (identidad de pagos, proveedores y PCI) | Pendiente |
 | Pruebas físicas de terminales y hardware | Pendiente |
 | Revisión completa de dependencias y seguridad | Pendiente |
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P60. En la comparación documental Odoo 19 queda como referencia CRM/marketing y posible filtro breve; no desplaza automáticamente a los finalistas existentes. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
+**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P67. En la comparación documental Odoo 19 queda como referencia CRM/marketing y posible filtro breve; no desplaza automáticamente a los finalistas existentes. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
 
 
 ## Extensión del protocolo: varias áreas y operación B2B (P20–P25)
