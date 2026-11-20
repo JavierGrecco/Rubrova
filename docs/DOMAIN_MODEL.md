@@ -130,3 +130,17 @@ El maestro Party/CustomerAccount comparte identidad y relaciones entre las área
 Las clasificaciones estables (retail, mayorista, empresa, institucional) se distinguen de los segmentos conductuales temporales (RFM, activo, en riesgo, inactivo, leal). Cada evaluación de segmento guarda fecha de cálculo, período, regla/modelo, entradas, versión, confianza y explicación. Las preferencias derivadas de compras se separan de las declaradas por el cliente y de las recomendaciones predictivas.
 
 La especificación de entidades, métricas, privacidad y pruebas está en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md).
+
+
+## Pagos: separar cliente, pagador e instrumento
+
+Agregar como agregados/entidades tipadas:
+- PaymentIntent / PaymentAttempt / Payment / PaymentAllocation;
+- ProviderOperation / ProviderWebhookEvent / PaymentSettlement;
+- PaymentRefund / PaymentReversal / Chargeback;
+- PayerObservation y PaymentInstrumentReference;
+- ProviderAccount / Acquirer / PSP / Wallet / Bank / Terminal.
+
+Un Payment puede asignarse a una venta y una venta a CustomerAccount, pero el pagador observado no se convierte automáticamente en cliente. Cada PayerObservation debe llevar proveedor, canal, campo, fuente, finalidad permitida, retención y estado de vinculación. Los datos restringidos a conciliación no pueden consultarse desde los servicios CRM/BI. El token/ID de tarjeta o cuenta es sólo referencia del proveedor y no una clave global de persona.
+
+Ver [Identidad del pagador, pagos y conciliación](PAYMENT_IDENTITY_AND_RECONCILIATION.md) para flujos, controles y pruebas.
