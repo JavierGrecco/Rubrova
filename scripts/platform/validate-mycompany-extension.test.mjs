@@ -54,6 +54,13 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
+  assert.match(runtimeSmokeSource, /docker inspect/);
+  assert.match(runtimeSmokeSource, /docker exec/);
+  assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
+  assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES=712/);
+  assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
+  assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
+  assert.match(runtimeSmokeSource, /módulos Rubrova/);
   assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
   assert.match(runtimeSmokeSource, /compose down --volumes --remove-orphans/);
   assert.match(runtimeSmokeSource, /trap cleanup EXIT/);

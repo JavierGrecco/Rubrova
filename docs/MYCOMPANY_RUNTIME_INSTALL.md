@@ -109,8 +109,11 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 2. Copia `RubrovaCustom`, `RubrovaPOSLocalization` y el ResourceBundle a `docker-server` sin editar el código upstream.
 3. Valida la configuración con `docker compose config` y confirma al menos cuatro servicios.
 4. Inicia el stack con un nombre de proyecto efímero y espera hasta 15 minutos la respuesta HTTP 2xx/3xx del cliente web en `127.0.0.1:8080`.
-5. Fija por digest las cuatro imágenes del runtime Linux x86_64 mediante un override temporal y compara la imagen realmente descargada contra el lock; también imprime los archivos y logs de inicio del servidor para identificar errores de carga del módulo Rubrova.
-6. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
+5. Fija por digest las cuatro imágenes del runtime Linux x86_64 mediante un override temporal y compara la imagen realmente descargada contra el lock.
+6. Comprueba dentro del contenedor que están montados los archivos Rubrova y que `settings.properties` establece `logics.topModule = RubrovaCustom`.
+7. Espera la respuesta web y el final de la inicialización de la lógica. La imagen MyCompany 6.2 inicializa 712 módulos base; la prueba exige al menos 714 al incorporar los dos módulos propios.
+8. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
+9. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 
 La prueba no carga datos de negocio ni confirma el POS, pagos, devoluciones, idioma o backup/restore. En macOS Apple Silicon no se ejecuta el stack mediante emulación; esa plataforma continúa cubierta por las pruebas estáticas y el uso previsto como cliente web.
 

@@ -6,7 +6,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 PREPARE_SCRIPT="$SCRIPT_DIR/prepare-mycompany-6.2.sh"
 DEPLOY_SCRIPT="$SCRIPT_DIR/deploy-mycompany-6.2.sh"
 
-for command_name in docker curl shasum; do
+for command_name in docker curl shasum python3; do
   command -v "$command_name" >/dev/null 2>&1 || {
     echo "Falta el comando requerido: $command_name" >&2
     exit 2
@@ -110,35 +110,109 @@ if [[ "$SERVICE_COUNT" -lt 4 ]]; then
 fi
 printf 'Servicios definidos (%s):\n%s\n' "$SERVICE_COUNT" "$SERVICES"
 
-echo "4/6 Iniciando MyCompany 6.2 en un proyecto efímero"
+echo "4/7 Iniciando MyCompany 6.2 en un proyecto efímero"
 compose up -d --remove-orphans
 
-echo "5/6 Esperando la respuesta HTTP del cliente web: $WEB_URL"
+echo "5/7 Comprobando que la configuración y los módulos Rubrova estén montados en el servidor"
+SERVER_CONTAINER_ID="$(compose ps -q server)"
+[[ -n "$SERVER_CONTAINER_ID" ]] || {
+  echo "No se encontró el contenedor del servicio server." >&2
+  exit 1
+}
+SERVER_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$SERVER_CONTAINER_ID")"
+printf 'Montajes del servidor:\n%s\n' "$SERVER_MOUNTS"
+SERVER_MOUNT_DESTINATION="$(docker inspect "$SERVER_CONTAINER_ID" | python3 -c '
+import json, os, sys
+expected = os.path.realpath(sys.argv[1])
+container = json.load(sys.stdin)[0]
+matches = [
+    mount["Destination"]
+    for mount in container.get("Mounts", [])
+    if os.path.realpath(mount.get("Source", "")) == expected
+]
+if len(matches) != 1:
+    print("No se encontró un único montaje docker-server dentro del contenedor.", file=sys.stderr)
+    sys.exit(2)
+print(matches[0])
+' "$COMPOSE_DIR/docker-server")"
+echo "docker-server está montado en: $SERVER_MOUNT_DESTINATION"
+docker exec "$SERVER_CONTAINER_ID" sh -ec '
+  mount_dir="$1"
+  for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf MyCompanyResourceBundle_es_AR.properties; do
+    test -s "$mount_dir/$module_file" || {
+      echo "El contenedor server no ve $module_file en $mount_dir" >&2
+      exit 1
+    }
+  done
+  grep -qx "logics.topModule = RubrovaCustom" "$mount_dir/settings.properties" || {
+    echo "El contenedor server no ve logics.topModule=RubrovaCustom en settings.properties" >&2
+    exit 1
+  }
+  echo "Configuración activa visible en el contenedor:"
+  grep -E "^[[:space:]]*logics\\.(topModule|includePaths|excludePaths)[[:space:]]*=" "$mount_dir/settings.properties" || true
+' sh "$SERVER_MOUNT_DESTINATION"
+
+echo "6/7 Esperando respuesta web y fin de la carga completa de la lógica Rubrova"
 SECONDS=0
 HTTP_STATUS="000"
+LOG_DIR="$COMPOSE_DIR/docker-server/logs"
+START_LOG="$LOG_DIR/start.log"
+STDOUT_LOG="$LOG_DIR/stdout.log"
+EXPECTED_UPSTREAM_MODULES=712
+EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 2))
+MODULES_READY=false
+LAST_MODULE_PROGRESS=""
+MODULE_PROGRESS_CHANGED_AT=0
 while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
   HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
-  if [[ "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
+  MODULE_PROGRESS="$(grep -hE 'Initializing main logic for module.*#[0-9]+ of [0-9]+' "$START_LOG" "$STDOUT_LOG" 2>/dev/null | tail -n 1 || true)"
+  if [[ "$MODULE_PROGRESS" != "$LAST_MODULE_PROGRESS" && -n "$MODULE_PROGRESS" ]]; then
+    LAST_MODULE_PROGRESS="$MODULE_PROGRESS"
+    MODULE_PROGRESS_CHANGED_AT="$SECONDS"
+    echo "Progreso de inicialización: $MODULE_PROGRESS"
+  fi
+
+  ALL_MODULES_READY=false
+  if [[ "$MODULE_PROGRESS" =~ #([0-9]+) of ([0-9]+) ]]; then
+    current_module="${BASH_REMATCH[1]}"
+    total_modules="${BASH_REMATCH[2]}"
+    if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
+      ALL_MODULES_READY=true
+    elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
+      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + RubrovaCustom + RubrovaPOSLocalization)." >&2
+      exit 1
+    fi
+  fi
+
+  if [[ "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ && "$ALL_MODULES_READY" == "true" ]]; then
+    MODULES_READY=true
     break
   fi
-  if (( SECONDS % 60 < 10 )); then
-    echo "Esperando cliente web... HTTP=$HTTP_STATUS, transcurridos=${SECONDS}s"
+
+  if (( SECONDS % 30 < 5 )); then
+    echo "Esperando inicio completo... HTTP=$HTTP_STATUS, lógica completa=$ALL_MODULES_READY, módulos esperados>=$EXPECTED_TOTAL_MODULES, transcurridos=${SECONDS}s"
     compose ps --all
   fi
-  sleep 10
+  sleep 5
 done
 
 if [[ ! "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
-  echo "MyCompany no respondió con HTTP 2xx/3xx en ${STARTUP_TIMEOUT_SECONDS}s; último estado: $HTTP_STATUS." >&2
+  echo "El cliente web no respondió HTTP 2xx/3xx en ${STARTUP_TIMEOUT_SECONDS}s; último estado: $HTTP_STATUS." >&2
   exit 1
 fi
 [[ -s "$WORK_DIR/web-response.html" ]] || {
   echo "El cliente web respondió HTTP $HTTP_STATUS, pero el cuerpo está vacío." >&2
   exit 1
 }
-echo "Cliente web disponible: HTTP $HTTP_STATUS después de ${SECONDS}s."
+if [[ "$MODULES_READY" != "true" ]]; then
+  echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 2 de Rubrova)." >&2
+  echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
+  exit 1
+fi
+echo "Cliente web disponible: HTTP $HTTP_STATUS; carga de al menos $EXPECTED_TOTAL_MODULES módulos finalizada después de ${SECONDS}s."
 
-echo "6/6 Recopilando evidencia del runtime, la extensión y las imágenes"
+echo "7/7 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
 
 echo "Imágenes resueltas por el Compose:"
