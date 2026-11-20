@@ -48,6 +48,7 @@ Una plataforma que reúne en un solo lugar:
 | [Modelo de dominio](docs/DOMAIN_MODEL.md) | Entidades, movimientos, estados y relaciones |
 | [Captura de datos y base analítica](docs/DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md) | Fechas históricas, áreas/canales, compras, stock, pagos, cajeros, reclamos, exportaciones e IA de lectura |
 | [Inteligencia del negocio](docs/BUSINESS_INTELLIGENCE.md) | Métricas, rentabilidad, estacionalidad, tendencias y pronósticos |
+| [Perfil 360 e inteligencia por cliente](docs/CUSTOMER_360_AND_INTELLIGENCE.md) | Preferencias, marcas, productos, RFM, retención, CLV y rentabilidad por cliente |
 | [Implementación de demanda, rentabilidad y marcas](docs/DEMAND_AND_MARGIN_INTELLIGENCE.md) | Datos fuente, herramientas reutilizables, costos, pronósticos, primeras/segundas marcas y pruebas de aceptación |
 | [Benchmark de demanda](scripts/forecasting/benchmark.py) | Comparación reproducible de baselines y StatsForecast sobre datos mensuales sintéticos |
 | [Canales e integraciones](docs/CHANNELS_AND_INTEGRATIONS.md) | Omnicanalidad, ARCA, Mercado Libre y pagos |
@@ -55,7 +56,7 @@ Una plataforma que reúne en un solo lugar:
 | [Perfiles sectoriales](docs/SECTOR_PROFILES.md) | Supermercados, panaderías, rotiserías y gastronomía |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P48 |
-| [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable, cifrado, reinstalación de Windows, cambio de PC y restauración guiada |
+| [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
 | [Conjunto Tryton 8.0 Argentina](docs/TRYTON_ARGENTINA_8_0_LOCK.md) | Ocho módulos locales fijados por commit, dependencias, licencias y plan de prueba |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
@@ -78,7 +79,7 @@ Una plataforma que reúne en un solo lugar:
 | [Investigación de módulos ampliados](docs/MODULAR_COMPONENT_RESEARCH.md) | WMS, ERP, conectores, promociones, BI y automatización |
 | [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de las plataformas integrales con escenarios comunes |
 | [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md) | Instalación aislada, versiones fijadas y registro de evidencias |
-| [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
+| [Revisión competitiva](docs/COMPETITIVE_MARKET_REVIEW.md) | Comparación con POS/ERP/CRM disponibles en Argentina e internacionales |\n| [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
 
