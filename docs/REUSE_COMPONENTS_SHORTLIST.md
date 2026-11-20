@@ -135,7 +135,7 @@ SDK oficial para consumir APIs de Mercado Pago desde Node.js/TypeScript. **Lími
 - Licencia: BSD-3-Clause.
 - Plataforma headless con REST API, SDK TypeScript, panel administrativo y storefront Next.js. La documentación del proyecto describe catálogos por canal, listas de precios/volumen, grupos de clientes, empresas y casos B2B/mayoristas y marketplaces.
 
-**Valor:** candidato sólido para acelerar tienda online, canal mayorista o marketplace sin construir storefront y checkout desde cero.
+**Valor:** candidato sólido para acelerar tienda online, canal mayorista o marketplace sin construir storefront y checkout desde cero. El storefront oficial está en [spree/storefront](https://github.com/spree/storefront), una aplicación Next.js separada con licencia MIT; el backend Spree conserva BSD-3-Clause. Hay que registrar ambas licencias y versiones como componentes distintos.
 
 **Límite:** Spree conserva modelos propios de catálogos, órdenes, pagos y stock. Rubrova tendría que definir una sola autoridad para cada dato: por ejemplo, Spree puede gestionar carrito y checkout, pero las existencias vendibles, los costos y la disponibilidad real deben consultarse/reservarse contra el servicio o plataforma que Rubrova haya designado. Los pedidos externos se importan idempotentemente y se concilian.
 
@@ -171,6 +171,17 @@ SDK oficial para consumir APIs de Mercado Pago desde Node.js/TypeScript. **Lími
 
 **Regla:** verificar el manifiesto y dependencias de cada addon individual. No asumir que toda la colección tiene la licencia del primer módulo inspeccionado.
 
+### Otros repositorios OCA para Odoo
+
+- [OCA/stock-logistics-workflow](https://github.com/OCA/stock-logistics-workflow), rama 19.0: addons de procesos de almacén, transferencias y flujos de stock.
+- [OCA/purchase-workflow](https://github.com/OCA/purchase-workflow), rama 19.0: addons de compras, órdenes y flujos de aprobación/proceso.
+
+Ambos repositorios raíz declaran AGPL-3.0, pero cada addon puede declarar LGPL-3 u otra licencia en su `__manifest__.py`. Revisar las dependencias de Odoo y de otros addons; no incorporar repositorios completos ni copiar un módulo sin entender qué modelos y reglas extiende.
+
+**Uso potencial:** aceleradores condicionados a que Odoo gane la comparación. No son servicios independientes y no se pueden portar directamente a Tryton, Frappe u otro ERP.
+
+
+
 ## 11. Analítica y BI local
 
 ### [DuckDB](https://github.com/duckdb/duckdb)
@@ -193,7 +204,17 @@ SDK oficial para consumir APIs de Mercado Pago desde Node.js/TypeScript. **Lími
 
 **Límite:** agrega servicios y operación, y los dashboards deben consultar un repositorio/modelo analítico de sólo lectura. No dar permisos de escritura a bases transaccionales ni exponer datos sensibles entre áreas.
 
-**Recomendación:** DuckDB para la primera prueba analítica con datasets exportados; Superset sólo cuando la necesidad de paneles multiusuario justifique una aplicación BI dedicada. No adoptar ambos automáticamente como una pila indivisible.
+### [Metabase](https://github.com/metabase/metabase)
+
+- Release observada: `v0.65.6` (18/11/2026).
+- Código Community Edition fuera del directorio `enterprise/`: AGPL-3.0.
+- Código de `enterprise/` y funciones Enterprise: Metabase Commercial License. El software `app-embed.js` tiene un acuerdo de licencia separado.
+
+**Valor:** alternativa de BI con una experiencia de exploración y dashboards más orientada a usuarios de negocio. Puede ser más simple de operar que Superset para consultas y paneles internos.
+
+**Límite de licencia:** para uso como aplicación de BI independiente, revisar y cumplir AGPL-3.0. No asumir que el SDK de embedding se incluye en la licencia comunitaria: el propio repositorio separa sus términos. Para mostrar tableros incrustados dentro de la interfaz Rubrova, verificar el acuerdo específico antes de elegirlo.
+
+**Recomendación:** DuckDB para la primera prueba analítica con datasets exportados; Metabase es una alternativa más simple para BI independiente si su AGPL y licencia de embedding encajan; Superset es una alternativa Apache-2.0 con una operación más técnica. Elegir uno sólo después de una prueba de uso. No adoptar ambos automáticamente como una pila indivisible.
 
 ## 12. Identidad, autenticación y observabilidad
 
