@@ -1,6 +1,6 @@
 # Evaluación comparativa de plataformas
 
-**Revisión:** 19 de noviembre de 2026  
+**Revisión:** 20 de noviembre de 2026  
 **Estado:** laboratorio preparado; validación automática del dataset aprobada; ejecución local de plataformas pendiente.  
 **Alcance:** uso interno, personal y privado. No se prevé distribuir, revender ni ofrecer el sistema como servicio a terceros.
 
@@ -8,41 +8,39 @@ Este documento convierte la investigación en una prueba repetible. No elige una
 
 ## Decisión de evaluación
 
-La prueba pasa a un esquema de selección por etapas para respetar la estrategia reuse-first. No vamos a obligar a todos los proyectos a superar un protocolo idéntico ni a ampliar indefinidamente la lista de candidatos.
+**Objetivo principal:** evaluar la capacidad de completar una operación POS y de gestión completa, no empezar por integraciones periféricas. El primer circuito de prueba es catálogo → carrito editable → venta → pago/vuelto → caja → inventario → devolución → reporte y recuperación.
 
-**Ronda ERP/gestión (filtro corto):**
-1. MyCompany/lsFusion 6.2.
-2. Tryton serie 7.8.
-3. Dolibarr 24.0.3.
-4. ERPNext 16.60.0 + Frappe 16.
+**Orden de la primera ronda:**
+1. **ERPNext 16 / Frappe 16:** primera prueba funcional por su POS integrado con inventario, pagos, caja, perfiles y reportes/dimensiones.
+2. **MyCompany 6.2 / lsFusion:** primera prueba funcional por su Retail POS y cobertura CRM, ventas, compras, inventario, fabricación y facturación.
+3. **Tryton 8.2:** evaluación en paralelo de POS/ERP. Su módulo oficial sale_point pertenece a la serie 8.2; la prueba fiscal queda condicionada al port de tryton-ar.
+4. **Dolibarr 24.0.3:** filtro corto como alternativa de menor complejidad.
+5. **Posnic 1.9.2:** referencia POS secundaria, no ERP principal. Se prueba sólo si puede aportar algo que no cubre el POS de las plataformas anteriores.
 
-**Ronda POS (responsabilidad específica):**
-1. POS incluido en las plataformas ERP anteriores; Tryton incluye el módulo oficial `sale_point`.
-2. Posnic 1.9.2 como POS dedicado.
-3. uniCenta 5.5.2 sólo cuando podamos verificar el código fuente actual y su licencia; la descarga oficial consultada requiere iniciar sesión.
+No se amplía la lista sin una razón funcional. uniCenta queda fuera de la primera ronda hasta tener el código fuente exacto y licencias verificables.
 
-**Regla:** primero se realiza un filtro de código, licencia, instalación, exportación, API, persistencia y extensión. Sólo los dos mejores candidatos de gestión pasan a P01–P44. El protocolo POS se aplica a quien vaya a asumir ventas y caja. Los módulos especializados —InvenTree, OpenBoxes, hardware, ARCA, logística, BI— se evalúan contra una responsabilidad concreta, no como plataformas equivalentes.
+**MyCompany:** su amplitud y POS justifican la prueba, pero todos los módulos de la instalación comparten una base. Esto es una restricción arquitectónica que se debe medir; no se presenta como microservicios independientes.
 
-**MyCompany no es ganador por ser modular:** su documentación confirma que todos los módulos de una instalación comparten una base de datos. Su mecanismo de módulos externos y su API son fortalezas, pero la prueba debe determinar si ese conjunto puede ser una aplicación de dominio aislada sin imponer acceso cruzado ni impedir un ciclo de vida controlado.
+**ERPNext:** su POS Profile configura empresa, almacén, métodos de pago, listas, impuestos y cuentas; la operación afecta inventario y contabilidad, con reportes y dimensiones. Hay que comprobar velocidad real de caja, experiencia táctil, hardware, offline y localización argentina. Un site/bench es una unidad de operación y persistencia, no módulos desplegables como microservicios independientes.
 
-**Tryton entra en la primera ronda:** aporta una arquitectura de tres capas con aplicación servidor, PostgreSQL y clientes web/de escritorio, incluyendo Windows y macOS. Su módulo oficial `sale_point` gestiona ventas, devoluciones, métodos y sesiones de caja; al contabilizar genera movimientos de stock y asientos contables. Es un candidato POS concreto. Sus módulos se ejecutan sobre el servidor/base común; no se los considera servicios independientes sin demostrar extracción y aislamiento.
+**Tryton:** actualizar la referencia anterior 7.8 a la serie 8.2, publicada el 05/10/2026. El módulo sale_point 8.2 cubre pagos, vuelto, stock, movimientos contables y sesiones de caja. Sin embargo, la localización argentina disponible en tryton-ar no está alineada: account_invoice_ar, bank_ar, account_voucher_ar, account_check_ar, account_report_ar y sale_pos_ar declaran 7.1; account_ar y party_ar declaran 8.1. No se puede considerar la combinación lista para Tryton 8.2. La prueba debe medir el esfuerzo de port, actualizar dependencias y ejecutar todos los escenarios fiscales en homologación. No mezclar paquetes de series diferentes.
 
-**Dolibarr se reincorpora:** su API REST, triggers y hooks ofrecen un camino de integración y extensión. La existencia de módulos no significa que cada uno pueda desplegarse o recuperar datos independientemente.
+**Dolibarr:** su API REST, triggers, hooks y TakePOS justifican un filtro corto. Medir la profundidad del flujo de caja y gestión, la localización argentina, los costos y la recuperación.
 
-**ERPNext sigue vigente:** Frappe permite instalar aplicaciones, pero un site/bench es una unidad de operación con servicios y persistencia compartidos. Debe evaluarse como aplicación completa o límite de dominio, no declarar sus módulos microservicios.
+**Posnic:** mantenerlo acotado a POS. Revisar código AGPL-3.0-only, MongoDB SSPL-1.0 y amCharts comercial por separado, además de la adaptación argentina y los límites offline publicados.
 
-**Posnic queda acotado a POS:** probar su funcionamiento local y el modo multi-terminal. Revisar el paquete y sus dependencias por separado: el código AGPL-3.0-only no vuelve AGPL a MongoDB SSPL ni a componentes comerciales incluidos. También se debe verificar el costo de adaptación de impuestos, comprobantes y procesos argentinos.
+**Regla de arquitectura:** un producto existente puede funcionar como aplicación externa de un dominio acotado, con API y persistencia propias. Si comparte servidor/base para POS, ventas, inventario y contabilidad, no se describen sus módulos como microservicios. Si no puede ser encapsulado sin absorber o duplicar autoridades de otros dominios, se reutilizan componentes realmente separables o se descarta.
 
-No se adopta más de una autoridad para el mismo dominio. Una plataforma puede ser descartada como base, pero sus bibliotecas o módulos sí pueden aprobarse por separado después de comprobar dependencias, licencia y mantenimiento.
+**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P44. Se debe demostrar instalación local, permisos, exportación, backup/restore, API, arquitectura, operación en español, integridad y camino fiscal argentino. Una demo o un README no cuentan como aprobación.
 
-**Resultado actual: ninguna plataforma está aprobada.** Los ERP integrados se evalúan para encontrar módulos reutilizables y comprobar si alguna capacidad puede operar como servicio de dominio aislado. No se aprobará un ERP completo que mezcle ventas, stock, pagos y contabilidad en una sola base/ciclo de despliegue como sustituto de la arquitectura distribuida. El repositorio no contiene una aplicación de Rubrova ni código externo incorporado; leer documentación o validar el dataset sintético no equivale a haber instalado y probado un candidato.
+**Estado actual:** ninguna plataforma está aprobada, instalada y aceptada para producción. El repositorio todavía no contiene la aplicación funcional de Rubrova ni código externo incorporado. La validación de fixtures no prueba un POS ni un ERP.
 
 ## Versiones y procedencia que se deben fijar
 
 | Proyecto | Referencia para laboratorio | Licencia declarada / dato relevante | Precaución |
 |---|---|---|---|
 | MyCompany | Tag 6.2, commit `d21ca6978717b98b6300d90267f9767db7414008` | Aplicación Apache-2.0; lsFusion LGPL-3.0 | La documentación online puede referirse a otra versión. Los módulos comparten una base de datos. |
-| Tryton | Serie 7.8; fijar servidor, cliente y módulos por paquete | Verificar licencia y dependencias del módulo exacto | Cliente/servidor y PostgreSQL; backup antes de migrar. `sale_point` 7.8.4 es versión de módulo, no de toda la suite. |
+| Tryton | Serie 8.2; fijar servidor, cliente y cada módulo por paquete | GPL-3.0 en módulos tryton-ar revisados; verificar cada paquete | `sale_point` 8.2.0 es versión del módulo. Los addons argentinos consultados mezclan 7.1 y 8.1 y necesitan port/verificación antes de usarse con 8.2. |
 | Dolibarr | 24.0.3, release estable consultada | Proyecto GPL-3.0; verificar módulos externos individualmente | API REST y hooks/triggers; probar autenticación y límites de API. |
 | ERPNext | Release 16.60.0, tag/commit fijados en el laboratorio existente | ERPNext GPL-3.0; Frappe Framework MIT | Registrar la versión efectiva del framework y no mezclar tags. |
 | Posnic | Tag `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680` | Código AGPL-3.0-only | Verificar MongoDB SSPL-1.0, amCharts comercial y todas las dependencias del instalador. |
@@ -113,13 +111,13 @@ ERPNext aporta procesos ERP profundos: inventario, abastecimiento, compras, fabr
 - La prueba local usa la configuración oficial desechable `frappe_docker/pwd.yml`, fijada al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce` y a la imagen `frappe/erpnext:v16.60.0`. No admite instalar aplicaciones propias en esta modalidad. Registrar la versión exacta de Frappe con `bench version`.
 - La adaptación del POS, localización argentina, hardware y experiencia de uso puede exigir extensiones considerables.
 
-### Tryton, serie 7.8, y `sale_point`
+### Tryton, serie 8.2, y `sale_point`
 
-La documentación oficial describe una arquitectura cliente-servidor de tres capas con PostgreSQL. La distribución ofrece cliente web y clientes de escritorio para Windows y macOS. El módulo oficial `sale_point` contempla ventas y devoluciones, métodos de pago y sesiones de caja; al contabilizar una venta genera movimientos de inventario y asientos contables. El módulo 7.8.4 se publicó el 16/04/2026; servidor, cliente y módulos tienen versiones independientes y deben fijarse por separado. Fuentes: [diseño de Sale Point](https://docs.tryton.org/7.8/modules-sale-point/design.html), [release notes](https://docs.tryton.org/7.8/modules-sale-point/releases.html) y [paquetes Tryton 7.8](https://downloads.tryton.org/7.8/).
+La documentación oficial describe una arquitectura cliente-servidor de tres capas con PostgreSQL. Tryton 8.2 se publicó el 05/10/2026; servidor, cliente y módulos tienen versiones independientes y deben fijarse por separado. El módulo oficial sale_point 8.2 documenta ventas y devoluciones, métodos de pago, vuelto, sesiones de caja y los efectos de una venta contabilizada en stock y contabilidad. Fuentes: [diseño de Sale Point 8.2](https://docs.tryton.org/8.2/modules-sale-point/design.html), [release notes de Sale Point](https://docs.tryton.org/8.2/modules-sale-point/releases.html) y [anuncio de Tryton 8.2](https://discuss.tryton.org/t/tryton-release-8-2/9421).
 
 **Ventaja de reutilización:** existe código oficial real de POS, con reglas de caja, pagos y efectos transaccionales, no sólo una pantalla o demo.
 
-**Riesgo de arquitectura:** `sale_point` utiliza ventas, stock y contabilidad dentro del mismo servidor/base. Si no puede delimitarse como servicio con autoridad clara, no se adoptará como conjunto de microservicios. Se evaluará extracción, extensión y operación aislada. La documentación funcional no demuestra que la experiencia de caja sea suficientemente rápida para Rubrova.
+**Riesgos:** sale_point integra ventas, stock y asiento contable dentro del servidor/base Tryton; no es un microservicio. Además, los addons argentinos inspeccionados no están alineados con la serie actual: account_invoice_ar, bank_ar, account_voucher_ar, account_check_ar, account_report_ar y sale_pos_ar declaran 7.1; account_ar y party_ar declaran 8.1. Hay que resolver el port completo antes de probar fiscalidad y no mezclar módulos de versiones distintas.
 
 **Prueba específica:** venta al contado y pago mixto, vuelto, devolución, sesión de caja, asiento, movimientos de stock, lector simulado, API, exportación y restauración. Añadir cierre abrupto del servidor y recuperación después de reiniciarlo.
 
@@ -201,19 +199,20 @@ Cada criterio se califica de 0 a 5 únicamente después de ejecutar la prueba:
 | 4 | Funciona mediante extensión/configuración limpia y mantenible |
 | 5 | Función nativa demostrada con pruebas repetibles y evidencia |
 
-Ponderación propuesta:
+Ponderación propuesta después de superar las puertas obligatorias:
 
 | Área | Peso |
 |---|---:|
-| Integridad transaccional, offline, reinicio y restauración | 30% |
-| POS, pagos, caja, devoluciones y operación del cajero | 20% |
-| Inventario, compras, costos y producción | 15% |
-| Límites de servicio, APIs, despliegue/rollback independiente y esfuerzo de mantenimiento | 10% |
-| Argentina, ARCA y adaptación fiscal | 10% |
-| Hardware, terminales y compatibilidad de sistemas operativos | 10% |
-| Simplicidad de operación y experiencia de uso | 5% |
+| POS y flujo de ventas/caja: velocidad, facilidad, devoluciones, pagos y hardware | 25% |
+| ERP diario: catálogo, clientes/proveedores, compras, stock y costos | 20% |
+| Contabilidad, fiscalidad y adaptación argentina | 15% |
+| Arquitectura, APIs, extensibilidad y separación de datos | 15% |
+| Reportes, dimensiones de negocio y trazabilidad hasta el movimiento | 10% |
+| Confiabilidad, offline, backup, restore y actualización | 10% |
+| Usabilidad administrativa y mantenimiento de la instalación | 5% |
+| **Total** | **100%** |
 
-La matriz debe incluir una evaluación obligatoria de arquitectura distribuida: propiedad del almacenamiento por servicio, contratos públicos, compatibilidad hacia atrás, Outbox/Inbox, idempotencia atómica, correlación de extremo a extremo, rollback y despliegue independiente. Los escenarios P27–P44 de [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md) forman parte de las puertas de aceptación.
+La matriz y los escenarios detallados están en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). No se calcula un ganador ponderado si falla una puerta excluyente. Para pasar a la fase siguiente deben demostrarse: venta y efectos asociados exactamente una vez; caja y stock conciliados; recuperación tras terminación abrupta; backup restaurable; roles correctos; API soportada y ruta fiscal argentina viable.
 
 **Comprobación fiscal argentina adicional (si Odoo entra en la composición):** el código público de Odoo Community incluye `l10n_ar` en ramas 19.0 y 20.0 (manifiesto 3.7, LGPL-3), que aporta localización contable, impuestos, tipos documentales y datos ARCA. La documentación oficial enumera separadamente `l10n_ar_edi` para emitir comprobantes por web service, pero esa ruta no aparece en el repositorio Community público inspeccionado. El addon comunitario `leonobitech/l10n_ar_arca_edi` sí contiene código WSAA/WSFEv1 y tests, aunque su manifiesto lo declara Beta (AGPL-3, Odoo 19.0.1.0.0; último push observado 17/03/2026). La rama OCA `l10n-argentina` 19.0 consultada no contiene addons instalables. Ninguno de estos hallazgos constituye una prueba de homologación ni habilita producción; ver [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
 
