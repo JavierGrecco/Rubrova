@@ -182,3 +182,54 @@ test("rechaza una transferencia interna convertida en factura externa ficticia",
   assert.equal(result.valid, false);
   assert.ok(result.errors.some(message => message.includes("createsFiscalInvoice")));
 });
+
+
+test("valida datos comparables de primera y segunda marca y separa trimestre de estación", () => {
+  const fixture = readFixture();
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, true, result.errors.join("\\n"));
+  const intelligence = fixture.scenarios.commercialIntelligence;
+  assert.equal(intelligence.brandProducts[0].expectedComparablePricePerKgMinor, 800000);
+  assert.equal(intelligence.brandProducts[1].expectedComparablePricePerKgMinor, 700000);
+  assert.notEqual(intelligence.brandSalesPeriods[0].periodType, intelligence.brandSalesPeriods[2].periodType);
+});
+
+test("rechaza precio comparable por kilogramo incorrecto", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.commercialIntelligence.brandProducts[1].expectedComparablePricePerKgMinor += 1;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("expectedComparablePricePerKgMinor")));
+});
+
+test("impide inferir preferencia de marca cuando hubo quiebre de stock", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.commercialIntelligence.brandSalesPeriods[1].preferenceConclusionAllowed = true;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("preferenceConclusionAllowed")));
+});
+
+test("rechaza días de disponibilidad que no concilian con el período", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.commercialIntelligence.brandSalesPeriods[1].sales[0].availableDays = 80;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("días disponibles")));
+});
+
+test("valida costo vendido FIFO y valor final del inventario", () => {
+  const result = validateFixture(readFixture());
+  assert.equal(result.valid, true, result.errors.join("\\n"));
+  const costing = readFixture().scenarios.commercialIntelligence.costing;
+  assert.equal(costing.expectedCogsMinor, 4800000);
+  assert.equal(costing.expectedEndingInventoryValueMinor, 1800000);
+});
+
+test("rechaza una ganancia bruta o contribución que no concilia", () => {
+  const fixture = structuredClone(readFixture());
+  fixture.scenarios.commercialIntelligence.costing.expectedContributionMinor += 1;
+  const result = validateFixture(fixture);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some(message => message.includes("expectedContributionMinor")));
+});

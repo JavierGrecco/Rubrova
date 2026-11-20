@@ -695,6 +695,181 @@ export function validateFixture(data) {
     }
   }
 
+
+  const commercial = scenarios.commercialIntelligence;
+  if (!isRecord(commercial)) {
+    errors.push("scenarios.commercialIntelligence debe existir.");
+  } else {
+    const allowedSegments = new Set(["first-brand", "second-brand", "economy", "own-brand", "alternative", "generic"]);
+    const brandBySku = new Map();
+    const categorySegments = new Map();
+
+    if (!Array.isArray(commercial.brandProducts) || commercial.brandProducts.length < 2) {
+      errors.push("commercialIntelligence.brandProducts debe contener al menos dos marcas comparables.");
+    } else {
+      for (const [index, product] of commercial.brandProducts.entries()) {
+        const path = "commercialIntelligence.brandProducts[" + index + "]";
+        if (!isRecord(product)) { errors.push(path + " debe ser un objeto."); continue; }
+        if (!catalogBySku.has(product.sku)) errors.push(path + ".sku no existe en catalog.");
+        if (brandBySku.has(product.sku)) errors.push(path + " duplica el SKU.");
+        brandBySku.set(product.sku, product);
+        if (typeof product.categoryCode !== "string" || !product.categoryCode) errors.push(path + ".categoryCode es obligatorio.");
+        if (typeof product.brandCode !== "string" || !product.brandCode) errors.push(path + ".brandCode es obligatorio.");
+        if (typeof product.brandName !== "string" || !product.brandName) errors.push(path + ".brandName es obligatorio.");
+        if (!allowedSegments.has(product.segment)) errors.push(path + ".segment no es un segmento comercial permitido.");
+        if (typeof product.segmentEffectiveFrom !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(product.segmentEffectiveFrom) || !Number.isFinite(Date.parse(product.segmentEffectiveFrom + "T00:00:00Z"))) {
+          errors.push(path + ".segmentEffectiveFrom debe ser una fecha ISO válida.");
+        }
+        if (product.baseUnit !== "g") errors.push(path + ".baseUnit debe ser g en este fixture comparable por kilogramo.");
+        const content = integer(product.packageContentBaseMilli, path + ".packageContentBaseMilli", errors, 1);
+        const price = integer(product.packagePriceMinor, path + ".packagePriceMinor", errors, 1);
+        const expectedComparable = integer(product.expectedComparablePricePerKgMinor, path + ".expectedComparablePricePerKgMinor", errors, 1);
+        if (content !== null && price !== null && expectedComparable !== null) {
+          const calculated = Number(roundDiv(BigInt(price) * 1000000n, BigInt(content)));
+          compare(expectedComparable, calculated, path + ".expectedComparablePricePerKgMinor", errors);
+        }
+        if (typeof product.categoryCode === "string") {
+          if (!categorySegments.has(product.categoryCode)) categorySegments.set(product.categoryCode, new Set());
+          categorySegments.get(product.categoryCode).add(product.segment);
+        }
+      }
+      for (const [category, segments] of categorySegments) {
+        if (!segments.has("first-brand") || !segments.has("second-brand")) {
+          errors.push("La categoría " + category + " debe permitir comparar primera y segunda marca.");
+        }
+      }
+    }
+
+    const periods = commercial.brandSalesPeriods;
+    if (!Array.isArray(periods) || periods.length === 0) {
+      errors.push("commercialIntelligence.brandSalesPeriods debe contener períodos.");
+    } else {
+      const seenPeriods = new Set();
+      for (const [periodIndex, period] of periods.entries()) {
+        const periodPath = "commercialIntelligence.brandSalesPeriods[" + periodIndex + "]";
+        if (!isRecord(period)) { errors.push(periodPath + " debe ser un objeto."); continue; }
+        if (!["calendar-quarter", "southern-season"].includes(period.periodType)) {
+          errors.push(periodPath + ".periodType debe distinguir trimestre calendario de estación del hemisferio sur.");
+        }
+        if (typeof period.periodKey !== "string" || !period.periodKey) errors.push(periodPath + ".periodKey es obligatorio.");
+        const periodIdentity = period.periodType + ":" + period.periodKey;
+        if (seenPeriods.has(periodIdentity)) errors.push(periodPath + " duplica el período.");
+        seenPeriods.add(periodIdentity);
+        const days = integer(period.observationDays, periodPath + ".observationDays", errors, 1);
+        const sales = period.sales;
+        if (!Array.isArray(sales) || sales.length !== brandBySku.size) {
+          errors.push(periodPath + ".sales debe contener una fila para cada producto de marca.");
+          continue;
+        }
+        const seenSkus = new Set();
+        let fullAvailability = true;
+        for (const [rowIndex, row] of sales.entries()) {
+          const rowPath = periodPath + ".sales[" + rowIndex + "]";
+          if (!isRecord(row)) { errors.push(rowPath + " debe ser un objeto."); continue; }
+          const product = brandBySku.get(row.sku);
+          if (!product) { errors.push(rowPath + ".sku no está definido en brandProducts."); continue; }
+          if (seenSkus.has(row.sku)) errors.push(rowPath + " repite un SKU en el período.");
+          seenSkus.add(row.sku);
+          const packages = integer(row.soldPackages, rowPath + ".soldPackages", errors);
+          const averagePrice = integer(row.averageSellingPriceMinor, rowPath + ".averageSellingPriceMinor", errors, 1);
+          const revenue = integer(row.netRevenueMinor, rowPath + ".netRevenueMinor", errors);
+          const quantity = integer(row.baseQuantityMilli, rowPath + ".baseQuantityMilli", errors);
+          const available = integer(row.availableDays, rowPath + ".availableDays", errors);
+          const stockout = integer(row.stockoutDays, rowPath + ".stockoutDays", errors);
+          const promotions = integer(row.promotionDays, rowPath + ".promotionDays", errors);
+          if (days !== null && available !== null && stockout !== null) {
+            if (available > days || stockout > days || available + stockout !== days) errors.push(rowPath + " debe conciliar días disponibles y días sin stock con observationDays.");
+            if (available < days) fullAvailability = false;
+          }
+          if (days !== null && promotions !== null && promotions > days) errors.push(rowPath + ".promotionDays no puede superar observationDays.");
+          if (packages !== null && averagePrice !== null && revenue !== null) {
+            compare(revenue, packages * averagePrice, rowPath + ".netRevenueMinor", errors);
+          }
+          if (packages !== null && product.packageContentBaseMilli !== undefined && quantity !== null) {
+            compare(quantity, packages * product.packageContentBaseMilli, rowPath + ".baseQuantityMilli", errors);
+          }
+        }
+        for (const sku of brandBySku.keys()) if (!seenSkus.has(sku)) errors.push(periodPath + " omite el SKU " + sku + ".");
+        compare(period.preferenceConclusionAllowed, fullAvailability, periodPath + ".preferenceConclusionAllowed", errors);
+      }
+      const quarterKeys = new Set(periods.filter(p => p?.periodType === "calendar-quarter").map(p => p.periodKey));
+      const seasonKeys = new Set(periods.filter(p => p?.periodType === "southern-season").map(p => p.periodKey));
+      if (quarterKeys.size === 0 || seasonKeys.size === 0) errors.push("La serie debe mantener períodos trimestrales y estaciones del hemisferio sur por separado.");
+      for (const key of quarterKeys) if (seasonKeys.has(key)) errors.push("Un mismo período no puede clasificarse como trimestre y estación: " + key + ".");
+    }
+    
+    const costing = commercial.costing;
+    if (!isRecord(costing)) {
+      errors.push("commercialIntelligence.costing debe existir.");
+    } else {
+      compare(costing.method, "FIFO", "commercialIntelligence.costing.method", errors);
+      const receipts = costing.receipts;
+      if (!Array.isArray(receipts) || receipts.length === 0) {
+        errors.push("commercialIntelligence.costing.receipts debe contener capas de costo.");
+      } else {
+        let previousDate = "";
+        let totalReceived = 0;
+        const layers = [];
+        for (const [index, receipt] of receipts.entries()) {
+          const path = "commercialIntelligence.costing.receipts[" + index + "]";
+          if (!isRecord(receipt)) { errors.push(path + " debe ser un objeto."); continue; }
+          if (typeof receipt.receiptDate !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(receipt.receiptDate) || (previousDate && receipt.receiptDate <= previousDate)) {
+            errors.push(path + ".receiptDate debe ser ISO y estar ordenada cronológicamente.");
+          }
+          previousDate = receipt.receiptDate || previousDate;
+          const quantity = integer(receipt.quantityMilli, path + ".quantityMilli", errors, 1);
+          const unitCost = integer(receipt.unitCostMinor, path + ".unitCostMinor", errors, 1);
+          if (quantity !== null && unitCost !== null) {
+            totalReceived += quantity;
+            layers.push({remaining: quantity, unitCost});
+          }
+        }
+        const issued = integer(costing.issuedQuantityMilli, "commercialIntelligence.costing.issuedQuantityMilli", errors, 1);
+        const expectedCogs = integer(costing.expectedCogsMinor, "commercialIntelligence.costing.expectedCogsMinor", errors);
+        const expectedEndingQty = integer(costing.expectedEndingQuantityMilli, "commercialIntelligence.costing.expectedEndingQuantityMilli", errors);
+        const expectedEndingValue = integer(costing.expectedEndingInventoryValueMinor, "commercialIntelligence.costing.expectedEndingInventoryValueMinor", errors);
+        if (issued !== null) {
+          if (issued > totalReceived) errors.push("commercialIntelligence.costing.issuedQuantityMilli supera las recepciones.");
+          let remainingToIssue = issued;
+          let cogs = 0n;
+          let endingValue = 0n;
+          let endingQty = 0;
+          for (const layer of layers) {
+            const consumed = Math.min(layer.remaining, remainingToIssue);
+            if (consumed > 0) {
+              cogs += roundDiv(BigInt(consumed) * BigInt(layer.unitCost), 1000n);
+              remainingToIssue -= consumed;
+            }
+            const remaining = layer.remaining - consumed;
+            endingQty += remaining;
+            endingValue += roundDiv(BigInt(remaining) * BigInt(layer.unitCost), 1000n);
+          }
+          if (expectedCogs !== null) compare(expectedCogs, Number(cogs), "commercialIntelligence.costing.expectedCogsMinor", errors);
+          if (expectedEndingQty !== null) compare(expectedEndingQty, endingQty, "commercialIntelligence.costing.expectedEndingQuantityMilli", errors);
+          if (expectedEndingValue !== null) compare(expectedEndingValue, Number(endingValue), "commercialIntelligence.costing.expectedEndingInventoryValueMinor", errors);
+        }
+      }
+      const revenue = integer(costing.netRevenueMinor, "commercialIntelligence.costing.netRevenueMinor", errors);
+      const cogs = integer(costing.expectedCogsMinor, "commercialIntelligence.costing.expectedCogsMinor", errors);
+      const variable = integer(costing.variableCostsMinor, "commercialIntelligence.costing.variableCostsMinor", errors);
+      const gross = integer(costing.expectedGrossProfitMinor, "commercialIntelligence.costing.expectedGrossProfitMinor", errors);
+      const contribution = integer(costing.expectedContributionMinor, "commercialIntelligence.costing.expectedContributionMinor", errors);
+      const replacementCost = integer(costing.replacementUnitCostMinor, "commercialIntelligence.costing.replacementUnitCostMinor", errors, 1);
+      const issued = integer(costing.issuedQuantityMilli, "commercialIntelligence.costing.issuedQuantityMilli", errors, 1);
+      const replacementGross = integer(costing.expectedReplacementGrossProfitMinor, "commercialIntelligence.costing.expectedReplacementGrossProfitMinor", errors);
+      const replacementContribution = integer(costing.expectedReplacementContributionMinor, "commercialIntelligence.costing.expectedReplacementContributionMinor", errors);
+      if (revenue !== null && cogs !== null && gross !== null) compare(gross, revenue - cogs, "commercialIntelligence.costing.expectedGrossProfitMinor", errors);
+      if (gross !== null && variable !== null && contribution !== null) compare(contribution, gross - variable, "commercialIntelligence.costing.expectedContributionMinor", errors);
+      if (revenue !== null && replacementCost !== null && issued !== null && replacementGross !== null) {
+        const replacementCogs = Number(roundDiv(BigInt(issued) * BigInt(replacementCost), 1000n));
+        compare(replacementGross, revenue - replacementCogs, "commercialIntelligence.costing.expectedReplacementGrossProfitMinor", errors);
+      }
+      if (replacementGross !== null && variable !== null && replacementContribution !== null) {
+        compare(replacementContribution, replacementGross - variable, "commercialIntelligence.costing.expectedReplacementContributionMinor", errors);
+      }
+    }
+  }
+
   const resilience = data.resilience;
   if (!isRecord(resilience)) {
     errors.push("resilience debe ser un objeto.");

@@ -459,6 +459,176 @@
       "createsExternalCashMovement": false,
       "expectedConsolidatedExternalRevenueImpactMinor": 0,
       "expectedConsolidatedCostMinor": 320000
+    },
+    "commercialIntelligence": {
+      "reference": "COMMERCIAL-INTELLIGENCE-TEST-001",
+      "description": "Synthetic scenarios for demand availability, first/second brand comparison, unit normalization and FIFO profitability.",
+      "brandProducts": [
+        {
+          "sku": "SKU-UNIT-001",
+          "categoryCode": "YERBA",
+          "brandCode": "MARCA-LIDER",
+          "brandName": "Marca líder ficticia",
+          "segment": "first-brand",
+          "segmentEffectiveFrom": "2026-01-01",
+          "baseUnit": "g",
+          "packageContentBaseMilli": 1000000,
+          "packagePriceMinor": 800000,
+          "expectedComparablePricePerKgMinor": 800000
+        },
+        {
+          "sku": "SKU-VAR-001",
+          "categoryCode": "YERBA",
+          "brandCode": "MARCA-ALTERNATIVA",
+          "brandName": "Segunda marca ficticia",
+          "segment": "second-brand",
+          "segmentEffectiveFrom": "2026-01-01",
+          "baseUnit": "g",
+          "packageContentBaseMilli": 500000,
+          "packagePriceMinor": 350000,
+          "expectedComparablePricePerKgMinor": 700000
+        }
+      ],
+      "brandSalesPeriods": [
+        {
+          "periodType": "calendar-quarter",
+          "periodKey": "2026-Q2",
+          "observationDays": 90,
+          "preferenceConclusionAllowed": true,
+          "sales": [
+            {
+              "sku": "SKU-UNIT-001",
+              "soldPackages": 60,
+              "averageSellingPriceMinor": 800000,
+              "netRevenueMinor": 48000000,
+              "baseQuantityMilli": 60000000,
+              "availableDays": 90,
+              "stockoutDays": 0,
+              "promotionDays": 0
+            },
+            {
+              "sku": "SKU-VAR-001",
+              "soldPackages": 80,
+              "averageSellingPriceMinor": 350000,
+              "netRevenueMinor": 28000000,
+              "baseQuantityMilli": 40000000,
+              "availableDays": 90,
+              "stockoutDays": 0,
+              "promotionDays": 0
+            }
+          ]
+        },
+        {
+          "periodType": "calendar-quarter",
+          "periodKey": "2026-Q3",
+          "observationDays": 90,
+          "preferenceConclusionAllowed": false,
+          "sales": [
+            {
+              "sku": "SKU-UNIT-001",
+              "soldPackages": 30,
+              "averageSellingPriceMinor": 800000,
+              "netRevenueMinor": 24000000,
+              "baseQuantityMilli": 30000000,
+              "availableDays": 65,
+              "stockoutDays": 25,
+              "promotionDays": 0
+            },
+            {
+              "sku": "SKU-VAR-001",
+              "soldPackages": 100,
+              "averageSellingPriceMinor": 350000,
+              "netRevenueMinor": 35000000,
+              "baseQuantityMilli": 50000000,
+              "availableDays": 90,
+              "stockoutDays": 0,
+              "promotionDays": 10
+            }
+          ]
+        },
+        {
+          "periodType": "southern-season",
+          "periodKey": "2026-autumn",
+          "observationDays": 90,
+          "preferenceConclusionAllowed": true,
+          "sales": [
+            {
+              "sku": "SKU-UNIT-001",
+              "soldPackages": 55,
+              "averageSellingPriceMinor": 800000,
+              "netRevenueMinor": 44000000,
+              "baseQuantityMilli": 55000000,
+              "availableDays": 90,
+              "stockoutDays": 0,
+              "promotionDays": 0
+            },
+            {
+              "sku": "SKU-VAR-001",
+              "soldPackages": 75,
+              "averageSellingPriceMinor": 350000,
+              "netRevenueMinor": 26250000,
+              "baseQuantityMilli": 37500000,
+              "availableDays": 90,
+              "stockoutDays": 0,
+              "promotionDays": 5
+            }
+          ]
+        },
+        {
+          "periodType": "southern-season",
+          "periodKey": "2026-winter",
+          "observationDays": 90,
+          "preferenceConclusionAllowed": false,
+          "sales": [
+            {
+              "sku": "SKU-UNIT-001",
+              "soldPackages": 40,
+              "averageSellingPriceMinor": 800000,
+              "netRevenueMinor": 32000000,
+              "baseQuantityMilli": 40000000,
+              "availableDays": 70,
+              "stockoutDays": 20,
+              "promotionDays": 0
+            },
+            {
+              "sku": "SKU-VAR-001",
+              "soldPackages": 95,
+              "averageSellingPriceMinor": 350000,
+              "netRevenueMinor": 33250000,
+              "baseQuantityMilli": 47500000,
+              "availableDays": 90,
+              "stockoutDays": 0,
+              "promotionDays": 15
+            }
+          ]
+        }
+      ],
+      "costing": {
+        "method": "FIFO",
+        "receipts": [
+          {
+            "receiptDate": "2026-10-01",
+            "quantityMilli": 10000,
+            "unitCostMinor": 300000
+          },
+          {
+            "receiptDate": "2026-10-15",
+            "quantityMilli": 10000,
+            "unitCostMinor": 360000
+          }
+        ],
+        "issuedQuantityMilli": 15000,
+        "expectedCogsMinor": 4800000,
+        "expectedEndingQuantityMilli": 5000,
+        "expectedEndingInventoryValueMinor": 1800000,
+        "replacementUnitCostMinor": 390000,
+        "netRevenueMinor": 6750000,
+        "variableCostsMinor": 202500,
+        "expectedGrossProfitMinor": 1950000,
+        "expectedContributionMinor": 1747500,
+        "expectedReplacementGrossProfitMinor": 900000,
+        "expectedReplacementContributionMinor": 697500
+      }
     }
   },
   "expectedInventory": {
