@@ -207,7 +207,9 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Revisión de la localización argentina Odoo y de tryton-ar; se encontraron ocho ramas coordinadas 8.0 con manifiestos y tests; instalación y homologación pendientes.
 - [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
 - [x] Requisitos de reportes, métricas y rentabilidad por área.
-- [x] Diseño detallado de demanda, pronósticos, rentabilidad y análisis de primeras/segundas marcas con herramientas y licencias candidatas registradas.\n- [x] Especificación de captura temporal para canales, formatos, compras, recepción, disponibilidad, pagos, caja, cajeros, promociones, reclamos y devoluciones.\n- [x] Matriz de exportación portable e investigación de DuckDB, Parquet/Arrow, Polars, dbt Core, Evidence, Superset y Metabase.
+- [x] Diseño detallado de demanda, pronósticos, rentabilidad y análisis de primeras/segundas marcas con herramientas y licencias candidatas registradas.
+- [x] Especificación de captura temporal para canales, formatos, compras, recepción, disponibilidad, pagos, caja, cajeros, promociones, reclamos y devoluciones.
+- [x] Matriz de exportación portable e investigación de DuckDB, Parquet/Arrow, Polars, dbt Core, Evidence, Superset y Metabase.
 
 ## Próximos pasos concretos
 
