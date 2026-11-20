@@ -46,14 +46,14 @@ El lock de versión, la extensión modular, los scripts de preparación y el det
 - [x] Fijar MyCompany 6.2 por tag y commit; registrar los hashes oficiales del instalador Windows y del JAR.
 - [x] Inspeccionar el código fuente de POS, sesiones, pagos mixtos, efectivo, devoluciones, inventario, costos y compras.
 - [x] Crear el punto de entrada RubrovaCustom y el módulo separado RubrovaPOSLocalization, con el glosario es_AR.
-- [x] Agregar captions localizados para el primer flujo POS en RubrovaCustom; validar que los 36 identificadores propios tienen traducción.
+- [x] Agregar captions localizados para el primer flujo POS en RubrovaPOSLocalization; validar que los 36 identificadores propios tienen traducción.
 - [ ] Cargar los dos módulos Rubrova en MyCompany 6.2 real, confirmar los captions y traducir filtros/mensajes de error heredados.
-- [x] Incorporar validación automática del lock, módulo y traducciones; workflow correcto en CI.
+- [x] Incorporar validación automática del lock, composición de módulos y traducciones; workflow correcto en CI.
+- [x] Probar el staging de despliegue Docker en un directorio temporal: copia de los tres archivos, conservación de settings y backups, sin invocar Docker.
 - [x] Preparar scripts de despliegue de RubrovaCustom + RubrovaPOSLocalization para Docker, Linux nativo y Windows nativo, con copia previa de settings y módulos existentes.
 - [x] Registrar limitación de arquitectura de imagen Docker MyCompany 6.2 en ARM64.
 - [ ] Ejecutar la instalación y carga en el equipo anfitrión; la CI no puede sustituir esta prueba.
 - [ ] Descargar los artefactos, verificar hashes en la máquina de ejecución e instalar en entorno local aislado.
-- [ ] Cargar la extensión en el servidor, completar ResourceBundle es_AR y verificar pantallas críticas.
 - [ ] Ejecutar apertura → escaneo → carrito → pagos mixtos/vuelto → venta → stock → devolución → cierre.
 - [ ] Probar dos cajas, pagos pendientes/repetidos, caída/reinicio, exportación, backup y restauración.
 - [ ] Contrastar con Tryton 8.0 fiscalidad y comprobantes; homologar ARCA antes de producción.

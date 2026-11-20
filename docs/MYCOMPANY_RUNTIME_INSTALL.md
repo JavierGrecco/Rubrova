@@ -105,7 +105,7 @@ El bloque sólo se declara completado después de guardar evidencia de:
 1. Instalación MyCompany 6.2 iniciada desde el artefacto verificado.
 2. Versión de plataforma, PostgreSQL, imágenes y arquitectura registradas.
 3. Contraseña inicial modificada y firewall configurado.
-4. Módulo superior RubrovaCustom cargado con éxito sin parchear upstream.
+4. Módulo superior RubrovaCustom y dependencia RubrovaPOSLocalization cargados con éxito sin parchear upstream.
 5. ResourceBundle es_AR detectado; los captions del POS y circuito crítico están traducidos y revisados, incluidos mensajes y filtros que se hayan identificado en la prueba.
 6. Backup y restauración en una instancia limpia comprobados.
 7. Reinicio de proceso y retorno a servicio documentados.
