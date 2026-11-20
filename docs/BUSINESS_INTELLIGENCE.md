@@ -6,6 +6,8 @@ Transformar operaciones confiables en información útil. El módulo debe respon
 
 Los informes globales, por sucursal y canal usan definiciones comunes y permiten rastrear cada indicador hasta sus datos fuente.
 
+La selección técnica, los contratos de datos, el orden de implementación y los criterios de aceptación de pronósticos, rentabilidad y marcas se mantienen en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
+
 ## Niveles de análisis
 
 Global; sucursal y ubicación; canal; rubro y categoría; marca y proveedor; producto y variante; cliente, empleado, caja y turno, siempre bajo permisos adecuados. Los filtros nunca deben duplicar un pedido que pasó por varios sistemas.
@@ -156,6 +158,8 @@ Cada predicción conserva:
 - resultados de backtesting y error por horizonte/segmento;
 - fecha de próxima revisión y señal de drift.
 
-Skforecast es un candidato de biblioteca para backtesting, modelos estadísticos/ML, intervalos y explicabilidad. DuckDB y Polars pueden preparar datasets; no sustituyen el ledger ni la base transaccional. Para series cortas/intermitentes o productos nuevos, mostrar reglas simples, intervalos amplios o ausencia de pronóstico, no una precisión ficticia.
+La primera biblioteca a evaluar es StatsForecast para modelos estadísticos y econométricos, siempre comparada con baselines propios. MLForecast queda como segunda capa cuando las variables externas (precio, promociones, calendario, canal) tengan calidad e historial suficientes. HierarchicalForecast se evalúa después para reconciliar pronósticos agregados. DemandSense es una referencia MIT pequeña para demanda intermitente, backtesting y escenarios, no una dependencia productiva aprobada. Skforecast se conserva como alternativa para comparar sólo si una prueba concreta demuestra una ventaja. DuckDB y Polars preparan datasets; no sustituyen el ledger ni la base transaccional. Para series cortas/intermitentes o productos nuevos, mostrar reglas simples, intervalos amplios o ausencia de pronóstico, no una precisión ficticia.
 
 Toda sugerencia de reposición debe explicar stock disponible/reservado/en tránsito, lead time, múltiplos, mínimo, proveedor, demanda prevista y costo de compra. El sistema propone; la orden de compra solo nace con aprobación y controles de crédito/presupuesto.
+
+La comparación de marcas no se delega a un paquete genérico: Rubrova conserva la clasificación comercial efectiva por categoría, la unidad comparable y los datos históricos de disponibilidad/precio/promoción. ABC y XYZ complementan el análisis, pero no representan primera/segunda marca. La rentabilidad usa el ledger de costo del ERP y no una fórmula calculada sobre el último precio de compra.
