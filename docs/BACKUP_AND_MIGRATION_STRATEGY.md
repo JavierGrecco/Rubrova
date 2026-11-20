@@ -97,6 +97,14 @@ El asistente debe hacer una prueba de recuperación antes de habilitar el backup
 
 Una contraseña incorrecta, una clave ausente, una autenticación fallida o un stream truncado deben detener la restauración sin modificar el destino. Ningún fabricante ni soporte debe poder saltarse el cifrado con una puerta trasera. Si el usuario pierde todas las claves válidas, no existe recuperación criptográfica garantizada.
 
+### 4.2 Compatibilidad de formato y recuperación sin la PC anterior
+
+El paquete debe declarar versiones separadas de formato de backup, esquema de negocio, versión de Rubrova, biblioteca/algoritmo criptográfico y compresión. El encabezado permite reconocer el paquete antes de desbloquearlo, pero no revela claves ni datos sensibles.
+
+La herramienta de recuperación de una versión soportada debe poder leer los formatos retenidos aunque la aplicación original ya no esté instalada. No se debe depender de la red, del usuario anterior de Windows, DPAPI, Keychain, un TPM, el nombre del equipo ni un servicio cloud. Una vez autenticado y descifrado, el asistente valida compatibilidad y aplica sólo migraciones de esquema explícitas.
+
+Antes de retirar soporte para una versión antigua del formato, Rubrova debe migrar y verificar los respaldos retenidos o conservar una herramienta de recuperación compatible. Nunca actualizar ni sobrescribir la única copia antigua durante una migración. La prueba de compatibilidad debe abrir paquetes creados por versiones anteriores del software en una instalación limpia posterior, tanto en Windows como en macOS cuando ambos estén soportados.
+
 ## 5. Recuperar en una PC nueva o después de reinstalar Windows
 
 El flujo debe ser guiado:
