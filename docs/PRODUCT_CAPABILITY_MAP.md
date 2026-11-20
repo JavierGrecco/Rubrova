@@ -1,6 +1,6 @@
 # Mapa integral de capacidades del producto
 
-**Revisión:** 19 de noviembre de 2026  
+**Revisión:** 20 de noviembre de 2026  
 **Estado:** alcance funcional consolidado; no implica que las capacidades estén implementadas.
 
 ## Qué estamos construyendo
@@ -32,7 +32,7 @@ No queremos una colección de aplicaciones inconexas ni un ERP rígido que oblig
 | Administración y finanzas | Gastos, cuentas a cobrar/pagar, flujo de fondos, conciliación de liquidaciones y activos; contabilidad general profesional/liquidación impositiva como módulos posteriores |
 | Personal y operaciones | Empleados, asistencia, horarios, tareas, responsables, centros de trabajo, proyectos y tiempos |
 | Logística y flota | Transportistas, expediciones, rutas/vehículos, seguimiento, entregas fallidas, devoluciones al depósito, comprobantes y costos logísticos |
-| Inteligencia del negocio | Ventas netas, margen, contribución, GMROI, ABC/XYZ, rotación, cobertura, demanda, faltantes, compras, precios, elasticidad, estacionalidad, pronósticos, promociones y escenarios |
+| Inteligencia del negocio | Ventas netas, margen, contribución, GMROI, ABC/XYZ, rotación, cobertura, demanda regular/intermitente, faltantes, compras, precios, elasticidad, estacionalidad trimestral y por estación, pronósticos con backtesting, primeras/segundas marcas, preferencia y sustitución, promociones, rentabilidad por SKU/marca/canal/área y escenarios |
 | Automatización e integración | APIs, webhooks, eventos, conectores, reglas, workflows, tareas programadas, notificaciones, import/export y aprobaciones |
 | Plataforma y continuidad | Uso local, sincronización, recuperación, backups/restauración, observabilidad, privacidad, dispositivos y adaptadores por sistema operativo |
 
@@ -65,7 +65,7 @@ Que algo sea posterior en el roadmap no significa que se haya perdido del diseñ
 
 ## Documentos fuente
 
-[Visión](PRODUCT_VISION.md) · [Alcance funcional](FUNCTIONAL_SCOPE.md) · [Modelo de dominio](DOMAIN_MODEL.md) · [POS](POS_REQUIREMENTS.md) · [Perfiles](SECTOR_PROFILES.md) · [Canales](CHANNELS_AND_INTEGRATIONS.md) · [Inteligencia](BUSINESS_INTELLIGENCE.md) · [Seguridad](SECURITY_AND_AUDIT.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](ROADMAP.md).
+[Visión](PRODUCT_VISION.md) · [Alcance funcional](FUNCTIONAL_SCOPE.md) · [Modelo de dominio](DOMAIN_MODEL.md) · [POS](POS_REQUIREMENTS.md) · [Perfiles](SECTOR_PROFILES.md) · [Canales](CHANNELS_AND_INTEGRATIONS.md) · [Inteligencia](BUSINESS_INTELLIGENCE.md) · [Implementación de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) · [Seguridad](SECURITY_AND_AUDIT.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](ROADMAP.md).
 
 Este mapa es la referencia de cobertura: una investigación o comparación de POS no debe reducir el proyecto a una caja registradora.
 
