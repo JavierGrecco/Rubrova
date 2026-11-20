@@ -23,6 +23,7 @@ if (fixture !== undefined) {
       result.summary.articleCount + " artículos; " +
       result.summary.mixedPaymentLines + " líneas; " +
       result.summary.scenarioCount + " escenarios; " +
+      result.summary.paymentTransactionCount + " intentos de pago sintéticos; " +
       result.summary.currency + "; " + result.summary.locale + "."
     );
   }
