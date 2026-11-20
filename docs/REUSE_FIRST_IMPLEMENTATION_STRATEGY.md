@@ -34,7 +34,7 @@ Reglas que no cambian:
 - No se agrega un gateway, broker, base de datos o framework por anticipado. Primero se prueba lo que ofrece el componente seleccionado y se incorpora infraestructura sólo cuando exista una necesidad concreta.
 - Un ERP/POS externo puede resolver varias funciones dentro de su propio límite, pero Rubrova no ejecutará dos motores paralelos que mantengan el mismo stock, venta o pago.
 
-La diferencia entre aplicación modular, servicio independiente y biblioteca está documentada en [Composición de módulos](MODULE_COMPOSITION.md) y [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
+La diferencia entre aplicación modular, servicio independiente y biblioteca está documentada en [Composición de módulos](MODULE_COMPOSITION.md) y [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md). Los componentes técnicos están en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
 
 ## Orden de reutilización
 
@@ -62,7 +62,7 @@ La selección se divide por tipo de responsabilidad. Las versiones siguientes so
 | [Dolibarr](https://www.dolibarr.org/) 24.0.3 | CRM, pedidos, compras, inventario, envíos, fabricación, facturación, pagos, POS y contabilidad | API REST, hooks y triggers facilitan extensión e integración. Es una aplicación modular integrada; no equivale a servicios independientes por módulo. | Primera prueba |
 | [ERPNext + Frappe](https://github.com/frappe/erpnext) 16.60.0 / Frappe 16 | Compras, abastecimiento, inventario, producción, costos, contabilidad, administración y POS | Frappe aporta framework y apps, pero una instalación/site comparte runtime y persistencia. ERPNext es GPL-3.0 y Frappe Framework MIT: se revisan por separado. | Comparación ampliada |
 
-MyCompany merece comenzar el laboratorio por su mecanismo explícito de módulos de extensión y su cobertura. Eso no lo convierte en ganador: el uso de una base compartida entre módulos es un límite que hay que comparar con Tryton, Dolibarr y la arquitectura deseada. Tryton entra en la misma primera ronda porque aporta un diseño cliente-servidor de tres capas y clientes de escritorio para ambos sistemas operativos principales. Dolibarr se reincorpora como candidato real por la amplitud de sus módulos y sus interfaces REST/hooks. ERPNext permanece como alternativa amplia y se somete al filtro inicial para no descartarlo por intuición.
+MyCompany merece una prueba temprana por su mecanismo de módulos de extensión, pero la base compartida es un límite que debe medirse. Tryton también merece prueba temprana: además de la arquitectura de tres capas, cuenta con el módulo oficial `sale_point`, que incluye ventas, devoluciones, pagos, sesiones de caja y efectos en stock/contabilidad. La interfaz y velocidad de caja deben comprobarse en funcionamiento; la documentación del módulo no demuestra por sí sola una UX lista para nuestro uso. Dolibarr se reincorpora por su API REST y sus hooks/triggers; ERPNext sigue en el filtro por su cobertura administrativa. Ninguno se aprueba como suite integrada sin superar la puerta de independencia descrita arriba.
 
 ### POS y operación de caja
 
@@ -164,7 +164,7 @@ No se empieza por escribir un motor de stock, contabilidad, CRM o compras si un 
 
 ## Primer paso y criterio de salida
 
-**Primera prueba:** MyCompany/lsFusion 6.2, en comparación con Tryton 7.8.4 y Dolibarr 24.0.3. ERPNext 16.60.0 se mantiene en el filtro comparativo. Posnic 1.9.2 se evalúa como candidato POS, no como ERP paralelo. No hay un ganador documental.
+**Primera prueba:** MyCompany/lsFusion 6.2, Tryton serie 7.8 (incluido `sale_point`) y Dolibarr 24.0.3; ERPNext 16.60.0/Frappe 16 permanece en el filtro comparativo. Posnic se compara como POS dedicado. Posnic 1.9.2 se evalúa como candidato POS, no como ERP paralelo. No hay un ganador documental.
 
 La primera entrega de software se elegirá después de esa comparación: será un flujo vertical que use las capacidades reutilizadas y agregue sólo los adaptadores o reglas faltantes. No se aprueba aún una implementación propia de Gateway, Ventas e Inventario.
 
