@@ -43,6 +43,9 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^MODULE RubrovaCustom;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.equal(lock.extension.topModule, "RubrovaCustom");
+  assert.match(moduleSource, /^NAMESPACE Retail;/m);
+  assert.match(moduleSource, /DESIGN posDashboard/);
+  assert.match(moduleSource, /DESIGN posPayment/);
 });
 
 test("el glosario inicial tiene claves únicas, no vacías y necesarias para el POS", () => {
@@ -52,10 +55,15 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
     "Payment_method", "Payments", "To_pay", "Change", "Customer",
     "Barcode", "Product", "Quantity", "Price", "Total", "Inventory",
     "On_hand", "Purchase", "Purchase_order", "Invoice", "Return",
-    "Sales", "Vendor", "Date", "Search", "Cancel", "Confirm"
+    "Sales", "Vendor", "Date", "Search", "Cancel", "Confirm",
+    "rubrova.pos.title", "rubrova.pos.cash_register", "rubrova.pos.to_pay",
+    "rubrova.pos.payment_title", "rubrova.pos.amount_due", "rubrova.pos.refunds",
+    "rubrova.payment.method_title"
   ];
   for (const key of required) assert.ok(entries.has(key), "Falta traducción obligatoria: " + key);
   assert.ok(entries.size >= 70, "Glosario inicial demasiado pequeño: " + entries.size);
+  const customIds = [...moduleSource.matchAll(/\{(rubrova\.[^}]+)\}/g)].map((match) => match[1]);
+  for (const id of customIds) assert.ok(entries.has(id), "Falta traducción del caption Rubrova: " + id);
   assert.equal(lock.extension.locale, "es_AR");
   assert.match(lock.extension.translationStatus, /partial/);
 });

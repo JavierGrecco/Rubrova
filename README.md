@@ -95,7 +95,7 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
 - Preparar los scripts para desplegar esa extensión en Windows, Linux o Docker; la carga efectiva sigue pendiente de la primera instalación.
-- Completar la localización española de las pantallas críticas; el glosario inicial es parcial.
+- Completar la localización española de las pantallas críticas; ya existe una primera capa de captions propios y el resto debe verificarse en ejecución.
 - Probar catálogo → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre.
 - Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.
 
@@ -127,4 +127,4 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 ---
 
 **Estado del producto:** arranque del piloto de integración POS + ERP.  
-**Estado del software:** módulo superior inicial y glosario español parcial; instalación y aceptación funcional pendientes.
+**Estado del software:** módulo RubrovaCustom con primera capa de captions es_AR y scripts de despliegue; instalación y aceptación funcional pendientes.

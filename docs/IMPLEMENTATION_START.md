@@ -49,9 +49,12 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Registrar las arquitecturas Docker: MyCompany 6.2 publica `linux/amd64`; las imágenes de servidor y cliente 6.2 publican `amd64` y `arm64`.
 - [x] Preparar scripts de descarga y verificación para Windows y macOS/Linux.
 - [x] Preparar scripts de despliegue de la extensión para Windows nativo, Linux nativo y Docker, con backup de settings antes de modificar `logics.topModule`.
+- [x] Incorporar la primera capa de captions `es_AR` en RubrovaCustom para caja, cliente, carrito, turno, búsqueda, cobro, movimientos de efectivo y devoluciones.
+- [x] Validar por CI que cada identificador `rubrova.*` utilizado en el módulo tiene traducción.
 - [x] Definir comprobaciones de CI para lock, glosario, extensión y scripts.
 - [ ] Descargar y ejecutar el instalador en Windows x64 o levantar el Compose en un equipo anfitrión compatible.
-- [ ] Confirmar que RubrovaCustom carga en el proceso real y que el idioma es_AR se reconoce.
+- [ ] Confirmar que RubrovaCustom carga en el proceso real, que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
+- [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 

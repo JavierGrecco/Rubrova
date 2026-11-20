@@ -1,2 +1,66 @@
 MODULE RubrovaCustom;
 REQUIRE MyCompany;
+
+NAMESPACE Retail;
+
+// Rubrova-owned captions for the first operational POS flow.
+// The upstream modules remain untouched; all strings use ResourceBundle IDs.
+DESIGN posDashboard '{rubrova.pos.title}' {
+    posHeader {
+        PROPERTY(name(p)) { caption = '{rubrova.pos.cash_register}'; }
+        PROPERTY(cashBalance(p)) { caption = '{rubrova.pos.cash_balance}'; }
+    }
+    sessionHeader {
+        PROPERTY(number(s)) { caption = '{rubrova.pos.session_number}'; }
+        PROPERTY(openSession(p)) { caption = '{rubrova.pos.open_session}'; }
+        PROPERTY(openingDateTime(s)) { caption = '{rubrova.pos.opened}'; }
+        PROPERTY(close(s)) { caption = '{rubrova.pos.close_session}'; }
+    }
+    invoice {
+        PROPERTY(nameCustomer(i)) { caption = '{rubrova.pos.customer}'; }
+        PROPERTY(phoneCustomer(i)) { caption = '{rubrova.pos.phone}'; }
+        PROPERTY(emailCustomer(i)) { caption = '{rubrova.pos.email}'; }
+    }
+    GRID(l) {
+        PROPERTY(index(l)) { caption = '{rubrova.pos.line}'; }
+        PROPERTY(nameItem(l)) { caption = '{rubrova.pos.item}'; }
+        PROPERTY(quantity(l)) { caption = '{rubrova.pos.quantity}'; }
+        PROPERTY(price(l)) { caption = '{rubrova.pos.price}'; }
+        PROPERTY(nameSalesDiscount(l)) { caption = '{rubrova.pos.discount}'; }
+        PROPERTY(discountPrice(l)) { caption = '{rubrova.pos.discount_price}'; }
+    }
+    total {
+        PROPERTY(fullAmount(i)) { caption = '{rubrova.pos.subtotal}'; }
+        PROPERTY(discountAmount(i)) { caption = '{rubrova.pos.discount_total}'; }
+        PROPERTY(amount(i)) { caption = '{rubrova.pos.to_pay}'; }
+    }
+    sessionDetails {
+        BOX(si) { caption = '{rubrova.pos.cash_receipts}'; }
+        BOX(sb) { caption = '{rubrova.pos.refunds}'; }
+        BOX(ip) { caption = '{rubrova.pos.cash_deposits}'; }
+        BOX(op) { caption = '{rubrova.pos.cash_withdrawals}'; }
+    }
+    tabPane {
+        search { caption = '{rubrova.pos.search}'; }
+        touch { caption = '{rubrova.pos.touch}'; }
+    }
+    actions {
+        PROPERTY(newReceipt(s)) { caption = '{rubrova.pos.new_receipt}'; }
+        PROPERTY(posPayment(s, i)) { caption = '{rubrova.pos.payment}'; }
+        PROPERTY(return(s, si)) { caption = '{rubrova.pos.return}'; }
+    }
+}
+
+DESIGN posPayment '{rubrova.pos.payment_title}' {
+    PROPERTY(nameCustomer(i)) { caption = '{rubrova.pos.customer}'; }
+    PROPERTY(amount(i)) { caption = '{rubrova.pos.amount_due}'; }
+    PROPERTY(change) { caption = '{rubrova.pos.change}'; }
+}
+
+DESIGN inputMoney '{rubrova.pos.cash_adjustment}' {
+    PROPERTY(keyboardDecimalInput()) { caption = '{rubrova.pos.amount}'; }
+}
+
+DESIGN paymentMethod '{rubrova.payment.method_title}' {
+    PROPERTY(name(pm)) { caption = '{rubrova.payment.method_name}'; }
+}
