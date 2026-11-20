@@ -34,17 +34,54 @@ Conservar costo de cada recepción, proveedor, fecha, descuento y gasto atribuib
 
 Porcentaje de ventas y ganancia por rubro; margen y ganancia absoluta por marca y producto; concentración de los principales artículos; amplitud del crecimiento; cambios de composición; comparación de marcas y segmentos. Un rubro puede crecer por uno o dos productos: el informe debe mostrar qué explica la variación.
 
+## Segmentación de marcas y preferencias de compra
+
+Cada producto puede asociarse a una marca y a un segmento comercial configurable por rubro: primera marca/líder, segunda marca, marca económica, marca propia, alternativa o genérico. La clasificación no se infiere automáticamente solo por precio: debe poder definirse y auditarse por categoría.
+
+El análisis debe mostrar:
+- Participación por segmento en unidades, ventas netas, tickets y ganancia/contribución.
+- Evolución de participación y cambios entre primeras marcas y segundas/económicas.
+- Sustitución dentro de una categoría: qué productos capturan las unidades cuando otro pierde participación.
+- Precio comparable por unidad de medida, tamaño y presentación.
+- Diferencias entre preferencia por unidades y facturación: una marca cara puede liderar ingresos sin liderar cantidades.
+- Cambios por sucursal, canal, área, estación y tipo de cliente cuando haya datos válidos.
+- Efecto de faltantes: no interpretar ausencia de ventas por falta de stock como pérdida de preferencia.
+- Concentración y dependencia de marcas/proveedores.
+
 ## Demanda y tendencias
 
 Unidades por día, semana y mes; tickets con cada producto; ticket promedio; unidades por ticket; frecuencia si existe identidad válida; precio promedio; crecimiento y desaceleración; productos emergentes y estancados; demanda no satisfecha registrada; sustitución de marcas; afinidad de compra.
 
 Una subida nominal de facturación no equivale a mayor demanda si las unidades no crecieron.
 
-## Estacionalidad
+## Estacionalidad y seguimiento inteligente por períodos
 
-Mes, estación, semana, día y franja horaria; feriados, vacaciones, eventos y calendario local; comparaciones equivalentes; temperatura y precipitaciones cuando la fuente y la geografía sean válidas; patrones por rubro, producto, marca, sucursal y canal; planificación de stock y producción.
+El sistema ofrece seguimiento diario, semanal, mensual, trimestral y por estación del año (verano, otoño, invierno y primavera), además de períodos comerciales configurables. Trimestres calendario y estaciones no son equivalentes y se analizan por separado; en Argentina se utiliza el calendario del hemisferio sur y se puede configurar la región.
 
-Menos de 12 meses es preliminar; 12 a 24 meses permite hipótesis; 24 a 36 meses ayuda a reconocer recurrencias si los datos son comparables. No garantiza precisión.
+Para cada producto, familia, marca, categoría, sucursal, canal y área:
+- Comparar unidades, tickets, ventas netas, margen y contribución con el período anterior y el mismo período del año anterior.
+- Detectar aceleración, crecimiento sostenido, desaceleración, caída, estancamiento y productos emergentes.
+- Anticipar qué productos probablemente aumenten o reduzcan su demanda en el próximo trimestre/estación.
+- Considerar calendario escolar, feriados, vacaciones, fechas comerciales, eventos locales y clima solo con fuentes y geografía válidas.
+- Separar crecimiento real de unidades de subas nominales por inflación, cambios de precio, mix o presentación.
+- Ajustar por días sin stock, horarios cerrados, cambios de surtido, promociones y cambios de canal.
+- Mostrar señales tempranas, horizonte, intervalo, evidencia histórica, confianza y factores explicativos.
+- Proponer anticipar compras, reducir reposición, revisar precios, promover, sustituir o liquidar excedentes; ninguna acción económica se ejecuta sin aprobación.
+
+Menos de 12 meses es preliminar y no permite afirmar estacionalidad anual recurrente. Entre 12 y 24 meses permite hipótesis iniciales; 24 a 36 meses comparables mejoran la detección de recurrencias, pero no garantizan precisión. El sistema declara insuficiencia de historial y utiliza baselines conservadores cuando corresponda.
+
+## Rentabilidad accionable por producto y marca
+
+El tablero no ordena solo por facturación. Para cada SKU, variante, marca, categoría y área muestra:
+- Unidades vendidas, ventas netas y participación.
+- Costo de mercadería vendida y costo de reposición.
+- Ganancia bruta absoluta y margen porcentual.
+- Contribución después de descuentos, comisiones, medios de pago, embalaje y otros costos variables atribuibles.
+- Rentabilidad después de costos directos y, separadamente, después de asignaciones compartidas.
+- Inventario promedio, capital inmovilizado, rotación y GMROI.
+- Evolución de precio, costo, margen y volumen.
+
+Debe identificar alta venta/alta rentabilidad; alta venta/baja rentabilidad; baja venta/alta rentabilidad; baja venta/baja rentabilidad; pérdida de margen; productos rentables que aceleran; y productos que inmovilizan capital. Las recomendaciones explican el cálculo y no confunden margen porcentual con ganancia absoluta.
 
 ## Inventario y abastecimiento
 
