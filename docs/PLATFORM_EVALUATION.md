@@ -40,7 +40,7 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 | Proyecto | Referencia para laboratorio | Licencia declarada / dato relevante | Precaución |
 |---|---|---|---|
 | MyCompany | Tag 6.2, commit `d21ca6978717b98b6300d90267f9767db7414008` | Aplicación Apache-2.0; lsFusion LGPL-3.0 | La documentación online puede referirse a otra versión. Los módulos comparten una base de datos. |
-| Tryton | Serie 8.2; fijar servidor, cliente y cada módulo por paquete | GPL-3.0 en módulos tryton-ar revisados; verificar cada paquete | `sale_point` 8.2.0 es versión del módulo. Los addons argentinos consultados mezclan 7.1 y 8.1 y necesitan port/verificación antes de usarse con 8.2. |
+| Tryton | Serie 8.2; fijar servidor, cliente y cada módulo por paquete | GPL-3.0 en módulos tryton-ar revisados; verificar cada paquete | `sale_point` 8.2.0 es versión del módulo. Las ramas principales de los addons argentinos consultados muestran versiones 7.1/8.1; verificar tags y compatibilidad real antes de portarlos o instalarlos con 8.2. |
 | Dolibarr | 24.0.3, release estable consultada | Proyecto GPL-3.0; verificar módulos externos individualmente | API REST y hooks/triggers; probar autenticación y límites de API. |
 | ERPNext | Release 16.60.0, tag/commit fijados en el laboratorio existente | ERPNext GPL-3.0; Frappe Framework MIT | Registrar la versión efectiva del framework y no mezclar tags. |
 | Posnic | Tag `v1.9.2`, commit `4096126edb1ff4fd337069697776254215dc2680` | Código AGPL-3.0-only | Verificar MongoDB SSPL-1.0, amCharts comercial y todas las dependencias del instalador. |
@@ -117,7 +117,7 @@ La documentación oficial describe una arquitectura cliente-servidor de tres cap
 
 **Ventaja de reutilización:** existe código oficial real de POS, con reglas de caja, pagos y efectos transaccionales, no sólo una pantalla o demo.
 
-**Riesgos:** sale_point integra ventas, stock y asiento contable dentro del servidor/base Tryton; no es un microservicio. Además, los addons argentinos inspeccionados no están alineados con la serie actual: account_invoice_ar, bank_ar, account_voucher_ar, account_check_ar, account_report_ar y sale_pos_ar declaran 7.1; account_ar y party_ar declaran 8.1. Hay que resolver el port completo antes de probar fiscalidad y no mezclar módulos de versiones distintas.
+**Riesgos:** sale_point integra ventas, stock y asiento contable dentro del servidor/base Tryton; no es un microservicio. Las ramas principales de los addons argentinos inspeccionados declaran 7.1 o 8.1. Hay que revisar tags y dependencias para encontrar un conjunto realmente compatible con Tryton 8.2; sólo si no existe se estima el port. No mezclar ramas principales de series distintas.
 
 **Prueba específica:** venta al contado y pago mixto, vuelto, devolución, sesión de caja, asiento, movimientos de stock, lector simulado, API, exportación y restauración. Añadir cierre abrupto del servidor y recuperación después de reiniciarlo.
 
