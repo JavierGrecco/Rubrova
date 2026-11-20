@@ -27,8 +27,8 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Media-alta | [PowerSync](https://github.com/powersync-ja/powersync-service) | Motor self-hosted para sincronizar SQLite local con backend y clientes web/móvil/escritorio | Evaluar lectura offline; no resuelve por sí solo concurrencia de stock |
 | Media | [Dexie.js](https://github.com/dexie/Dexie.js) | Persistencia IndexedDB y consultas reactivas | Candidato PWA |
 | Media | [TastyIgniter](https://github.com/tastyigniter/TastyIgniter) | Pedidos online, reservas y gestión gastronómica | Reutilización sectorial |
-| Exploratoria | [OCA/l10n-argentina](https://github.com/OCA/l10n-argentina) | Localización argentina para Odoo | Revisar módulos individuales |
-| Exploratoria | [l10n_ar_arca_edi](https://github.com/leonobitech/l10n_ar_arca_edi) | Integración Odoo 19 con WSAA/WSFE | Referencia; beta declarada |
+| Alta | [Odoo `l10n_ar`](https://github.com/odoo/odoo/tree/19.0/addons/l10n_ar) | Localización contable base argentina, plan de cuentas, impuestos, documentos y datos ARCA | Código público LGPL-3, v19/v20; no emite CAE por sí solo |
+| Exploratoria | [leonobitech/l10n_ar_arca_edi](https://github.com/leonobitech/l10n_ar_arca_edi) | Addon comunitario Odoo 19 para WSAA/WSFEv1 y CAE | AGPL-3.0, versión 19.0.1.0.0; Beta, último push 17/03/2026 |
 | Exploratoria | [DearPOS](https://github.com/engindearing-projects/dearpos) | Perfiles, terminal local, SQLite y cola de sincronización | Proyecto temprano |
 | Exploratoria | [ElitaleRestro](https://github.com/tirforge/restro) | KDS, mesas, recetas, modificadores, stock por receta y PIN | AGPL; evaluar partes |
 | Alta | [QZ Tray](https://github.com/qzind/tray) | Puente local para impresoras, ESC/POS, USB, serie, HID y sockets | Comparar con pos-toolkit; impresión silenciosa exige firma |
@@ -213,12 +213,35 @@ Licencia: MIT.
 
 Biblioteca Python para Web Services de ARCA/AFIP. Puede servir si elegimos ERPNext/Frappe o una capa de integración Python. No elegir dos SDK fiscales en producción sin necesidad: seleccionar uno según la plataforma principal y usar el otro, como máximo, para contrastar respuestas en pruebas.
 
-### OCA y módulo externo Odoo
+### Odoo Community — localización argentina
 
-- https://github.com/OCA/l10n-argentina — licencia raíz AGPL-3.0; la licencia de cada addon se toma del __manifest__.py.
-- https://github.com/leonobitech/l10n_ar_arca_edi — addon Odoo 19 para WSAA/WSFE; el manifiesto revisado declara AGPL-3 y el proyecto se describe como Beta.
+Código público: https://github.com/odoo/odoo/tree/19.0/addons/l10n_ar y https://github.com/odoo/odoo/tree/20.0/addons/l10n_ar  
+Licencia del addon `l10n_ar`: LGPL-3.  
+Versión de manifiesto observada: `3.7`.
 
-**Recomendación:** reutilización potencial si gana Odoo; validar cada addon, rama, manifiesto, pruebas y mantenimiento. No usar una localización beta como única garantía fiscal.
+El addon oficial público proporciona la base contable argentina: plan de cuentas por responsabilidad fiscal, IVA e impuestos, posiciones fiscales, tipos documentales, identificaciones, códigos ARCA, monedas, unidades y campos de CBU. Hay árboles de código y tests para ramas Odoo 19.0 y 20.0.
+
+**Importante:** el addon base `l10n_ar` no es por sí solo el conector de emisión electrónica. La [documentación oficial de Odoo 19](https://www.odoo.com/documentation/19.0/es/applications/finance/fiscal_localizations/argentina.html) enumera por separado `l10n_ar_edi` para facturación electrónica WS de ARCA, `l10n_ar_reports`, `l10n_ar_website_sale` y `l10n_ar_withholding`.
+
+En las ramas públicas Community 19.0 y 20.0 consultadas no existe la ruta `addons/l10n_ar_edi`. Por eso la documentación funcional oficial no basta para afirmar que se pueda reutilizar el código EDI desde el repositorio Community. Antes de elegir Odoo, hay que obtener el módulo EDI exacto para la edición/cuenta correspondiente y revisar licencia, dependencias y acceso.
+
+### Addon comunitario EDI para Odoo 19
+
+Repositorio: https://github.com/leonobitech/l10n_ar_arca_edi  
+Manifiesto: `19.0.1.0.0`; licencia AGPL-3.0; desarrollo declarado **Beta**. Último push observado: 17/03/2026.
+
+El código incluye WSAA, WSFEv1/CAE, certificados, homologación/producción, facturas A/B/C/E y notas de crédito/débito; tiene tests para facturas y WSFE. Depende de `l10n_ar`, `account_edi`, `cryptography`, `zeep` y `lxml`.
+
+**Recomendación:** candidato para laboratorio Odoo 19 Community, no módulo aprobado para producción. Validar el código, los tests, mantenimiento, reglas ARCA/RG vigentes, certificados, numeración, errores, timeout y conciliación.
+
+### OCA Argentina
+
+Repositorio: https://github.com/OCA/l10n-argentina  
+Rama revisada: `19.0`; raíz AGPL-3.0.
+
+El árbol inspeccionado al 20/11/2026 contiene sólo configuración, workflows, README y licencia; no muestra carpetas de addons ni manifiestos instalables. La rama debe considerarse scaffolding, no localización operativa. El repositorio `leonobitech/l10n-argentina` rama `18.0` también estaba sin addons en el árbol inspeccionado.
+
+No se debe decir que OCA ya resuelve localización argentina en Odoo 19 hasta que se publiquen módulos concretos, con manifiestos, pruebas y licencias individuales verificables.
 
 ## 4. Offline y sincronización
 
