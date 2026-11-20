@@ -99,6 +99,10 @@ La guía completa y las licencias de los candidatos están en [Estrategia de reu
 La aprobación legal de una licencia no reemplaza la revisión técnica; una biblioteca permisiva también puede ser insegura, estar abandonada o no cumplir nuestras invariantes.
 
 
+## Continuidad y recuperación
+
+Además de las pruebas funcionales P01–P26, la aceptación de confiabilidad debe ejecutar P27–P36, que cubren corte de energía, pagos inciertos, webhooks repetidos, restauración, migraciones fallidas, cajas offline, caídas de integraciones, disco/secretos y aislamiento de datos. El guion completo está en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
+
 ## Contratos entre módulos externos
 
 - Prueba de contrato de cada puerto/API con ejemplos válidos, inválidos y esquemas versionados.
