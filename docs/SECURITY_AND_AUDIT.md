@@ -50,7 +50,7 @@ Registrar:
 
 Cada evento incluye id, fecha, actor, negocio, sucursal, dispositivo, turno, acción, entidad afectada, valores relevantes, motivo, autorización y resultado.
 
-Los logs no almacenan contraseñas, tokens, CVV ni datos personales innecesarios.
+Los logs no almacenan contraseñas, tokens, PAN completo, CVV, PIN, track ni datos personales innecesarios.\n- Los datos de pagador recibidos para conciliación permanecen separados del CustomerAccount y no se exponen a CRM, RFM ni campañas.\n- Marca y últimos cuatro dígitos de tarjeta son referencias de conciliación, no identidad.\n- CBU/CVU/alias, tokens e IDs de instrumentos no se utilizan como claves universales de persona.
 
 ## Protección de registros
 
@@ -109,7 +109,7 @@ El tratamiento documental y fiscal de cada salida debe configurarse con asesoram
 
 Usar OWASP ASVS 5.0 como catálogo verificable de controles. La adopción se registra con requisitos, pruebas y evidencias; no se declara certificación por el solo hecho de consultar el estándar.
 
-Para pagos con tarjeta se priorizan terminales y proveedores externos, minimizando el alcance de datos de tarjeta. El alcance PCI aplicable debe ser revisado por especialistas antes de procesar o almacenar datos.
+Para pagos con tarjeta se priorizan terminales, tokenización y formularios hospedados por proveedores, minimizando el alcance de datos de tarjeta. Rubrova no almacena PAN completo, CVV/CVC, PIN/PIN block ni datos de banda/track. El alcance PCI aplicable debe ser revisado por especialistas antes de procesar o almacenar datos.\n\nLa identidad de comprador, pagador y titular del instrumento son conceptos distintos. Los datos de pagador limitados por el proveedor a conciliación no pueden usarse para identificar o perfilar clientes.
 
 
 ## Referencias y normativa a validar
