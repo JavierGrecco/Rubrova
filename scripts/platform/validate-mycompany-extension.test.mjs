@@ -73,8 +73,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /page[.]goto[(]url/);
   assert.match(uiSmokeSource, /RUBROVA_UI_TEST_LOGIN/);
   assert.match(uiSmokeSource, /input\[type="submit"\]/);
+  assert.match(uiSmokeSource, /UI_LOGIN_SUBMIT_CLICKED=true/);
+  assert.match(uiSmokeSource, /submit_field[.]click[(]no_wait_after=True[)]/);
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
-  assert.match(uiSmokeSource, /click_exact_link\(page, "Retail"\)/);
+  assert.match(uiSmokeSource, /click_exact_link\(page, "Comercio"\)/);
   assert.match(uiSmokeSource, /click_exact_link\(page, "Punto de venta"\)/);
   assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN/);
@@ -183,6 +185,7 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.ok(entries.size >= 70, "Glosario inicial demasiado pequeño: " + entries.size);
   const customIds = [...moduleSource.matchAll(/\{(rubrova\.[^}]+)\}/g)].map((match) => match[1]);
   for (const id of customIds) assert.ok(entries.has(id), "Falta traducción del caption Rubrova: " + id);
+  assert.equal(entries.get("Retail"), "Comercio");
   for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {
     assert.ok(entries.get(key), "Falta traducción de navegación: " + key);
   }

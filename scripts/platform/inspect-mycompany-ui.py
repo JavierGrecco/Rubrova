@@ -114,9 +114,12 @@ def login_to_ephemeral_instance(page: Any) -> str:
 
     username_field.fill(username)
     password_field.fill(password)
-    submit_field.click()
+    # lsFusion completes authentication through an asynchronous GWT flow.
+    # Do not make Playwright wait for a full-page navigation after the click.
+    submit_field.click(no_wait_after=True)
+    print("UI_LOGIN_SUBMIT_CLICKED=true")
 
-    deadline = time.monotonic() + 45
+    deadline = time.monotonic() + 60
     last_text = ""
     while time.monotonic() < deadline:
         page.wait_for_timeout(1_000)
@@ -155,7 +158,7 @@ def click_exact_link(page: Any, label: str) -> bool:
     if not matches:
         print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
         return False
-    page.locator("a").nth(matches[0]["index"]).click()
+    page.locator("a").nth(matches[0]["index"]).click(no_wait_after=True)
     page.wait_for_timeout(1_000)
     print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
     return True
@@ -221,7 +224,7 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
                 # Explore navigation only. Do not open a cash session or create business data.
-                if click_exact_link(page, "Retail"):
+                if click_exact_link(page, "Comercio"):
                     retail_text = visible_snapshot(page, "UI_RETAIL_NAVIGATION")
                     page.screenshot(path=str(retail_screenshot), full_page=True)
                     print(f"UI_RETAIL_SCREENSHOT={retail_screenshot}")
