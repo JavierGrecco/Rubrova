@@ -65,13 +65,18 @@ jobs:
           RUBROVA_STARTUP_TIMEOUT_SECONDS: 900
           RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-playwright/bin/python
           RUBROVA_UI_SCREENSHOT: ${{ runner.temp }}/rubrova-mycompany-ui.png
+          RUBROVA_UI_TEST_LOGIN: "true"
+          RUBROVA_UI_TEST_USERNAME: "admin"
+          RUBROVA_RMI_TIMEOUT_SECONDS: 180
         run: bash scripts/platform/test-runtime-smoke.sh
-      - name: Conservar captura de la primera pantalla
+      - name: Conservar capturas de acceso y pantalla autenticada
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: rubrova-mycompany-ui
-          path: ${{ runner.temp }}/rubrova-mycompany-ui.png
+          path: |
+            ${{ runner.temp }}/rubrova-mycompany-ui.png
+            ${{ runner.temp }}/rubrova-mycompany-ui-after-login.png
           if-no-files-found: warn
   validate-windows:
     runs-on: windows-latest

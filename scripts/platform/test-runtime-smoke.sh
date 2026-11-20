@@ -271,19 +271,49 @@ if [[ "$MODULES_READY" != "true" ]]; then
 fi
 echo "Cliente web disponible: HTTP $HTTP_STATUS; carga de al menos $EXPECTED_TOTAL_MODULES módulos finalizada después de ${SECONDS}s."
 
+echo "6/8 Esperando que el servidor de aplicación escuche en TCP 7652"
+RMI_TIMEOUT_SECONDS="${RUBROVA_RMI_TIMEOUT_SECONDS:-180}"
+SECONDS=0
+RMI_READY=false
+while (( SECONDS < RMI_TIMEOUT_SECONDS )); do
+  if docker exec "$SERVER_CONTAINER_ID" sh -c '
+    for table in /proc/net/tcp /proc/net/tcp6; do
+      test -r "$table" || continue
+      awk '''toupper($2) ~ /:1DE4$/ && $4 == "0A" { found = 1 } END { exit !found }''' "$table" && exit 0
+    done
+    exit 1
+  ' >/dev/null 2>&1; then
+    RMI_READY=true
+    break
+  fi
+  if (( SECONDS % 20 < 2 )); then
+    echo "El servidor todavía no escucha en 7652; transcurridos=${SECONDS}s."
+  fi
+  sleep 2
+done
+if [[ "$RMI_READY" != "true" ]]; then
+  echo "El servidor no abrió el puerto RMI 7652 en ${RMI_TIMEOUT_SECONDS}s." >&2
+  compose logs --no-color --tail=180 server >&2 || true
+  exit 1
+fi
+echo "Puerto RMI 7652 en escucha después de ${SECONDS}s."
+
 if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
   [[ -x "$RUBROVA_PLAYWRIGHT_PYTHON" ]] || {
     echo "No se encuentra el intérprete Playwright configurado: $RUBROVA_PLAYWRIGHT_PYTHON" >&2
     exit 1
   }
-  echo "6/7 Inspeccionando la primera pantalla con Chromium, sin modificar datos"
+  echo "7/8 Inspeccionando el login y la pantalla autenticada con Chromium"
   RUBROVA_UI_SCREENSHOT="${RUBROVA_UI_SCREENSHOT:-$WORK_DIR/mycompany-ui.png}" \
+    RUBROVA_UI_TEST_LOGIN="${RUBROVA_UI_TEST_LOGIN:-false}" \
+    RUBROVA_UI_TEST_USERNAME="${RUBROVA_UI_TEST_USERNAME:-admin}" \
+    RUBROVA_UI_TEST_PASSWORD="${RUBROVA_UI_TEST_PASSWORD:-}" \
     "$RUBROVA_PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
 else
   echo "AVISO: se omitió la inspección de Chromium porque RUBROVA_PLAYWRIGHT_PYTHON no está configurado."
 fi
 
-echo "7/7 Recopilando evidencia del runtime, la extensión y las imágenes"
+echo "8/8 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
 
 echo "Configuración efectiva de los cuatro servicios (sin valores de entorno):"

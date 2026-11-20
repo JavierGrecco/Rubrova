@@ -38,7 +38,7 @@ No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2
 3. Mantener el firewall activo y limitar los puertos 8080 y 7652 a localhost durante la primera validación.
 4. Abrir http://localhost:8080.
 5. Iniciar sesión con el usuario inicial indicado por la documentación del producto.
-6. Cambiar inmediatamente la contraseña de admin. La instalación documentada puede venir sin contraseña inicial; no habilitar acceso LAN hasta asegurarla.
+6. Cambiar inmediatamente la contraseña de admin. La guía oficial permite el acceso inicial con `admin` sin contraseña; esa condición se utiliza sólo en la base efímera de CI y nunca debe conservarse en una instalación real. No habilitar acceso LAN hasta cambiarla.
 
 ### Docker en macOS/Linux/Windows
 
@@ -116,10 +116,11 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 5. Añade un segundo override temporal que fija por digest las cuatro imágenes del runtime Linux x86_64, y compara cada imagen descargada contra el lock.
 6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada, el idioma y el país, y que `JAVA_OPTS` del overlay compartido llegó al proceso Java.
 7. Espera la respuesta web y el final de la inicialización de la lógica. La imagen MyCompany 6.2 inicializa 712 módulos base; la prueba exige al menos 714 al incorporar los dos módulos propios.
-8. Abre la aplicación con Chromium en locale `es-AR`, registra título, texto visible, campos, botones y enlaces, y conserva una captura de la primera pantalla como artefacto de CI. La inspección es de sólo lectura: no inicia sesión ni registra ventas.
-9. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
+8. Espera a que el servidor de aplicación escuche realmente en TCP `7652`; la respuesta HTTP del cliente web no se considera suficiente por sí sola.
+9. Abre la aplicación con Chromium en locale `es-AR`, registra la pantalla de acceso y, sólo en la base efímera de CI, inicia sesión con el usuario inicial `admin` sin contraseña para inspeccionar la navegación y los controles. Guarda capturas antes y después del acceso. No registra ventas ni modifica datos comerciales.
+10. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 
-La ejecución de referencia del 20/11/2026 finalizó correctamente: HTTP 200, ambos módulos propios en la secuencia de inicialización (713/714 y 714/714), imágenes verificadas por digest y limpieza completa del entorno efímero. El resultado confirma el arranque y la carga de módulos. La inspección visual con Chromium conserva la primera pantalla y los controles visibles para revisión; todavía no inicia sesión ni confirma el POS funcional, pagos, devoluciones, idioma aplicado a cada pantalla o backup/restore. En macOS Apple Silicon no se ejecuta el servidor MyCompany 6.2 mediante emulación; esa plataforma está cubierta por las pruebas estáticas y el uso previsto como cliente web.
+La ejecución base del 20/11/2026 confirmó HTTP 200, ambos módulos Rubrova en la secuencia de inicialización, los cuatro digests y la limpieza completa. La primera inspección de Chromium encontró el login, pero también un error de conexión a `server:7652`: el cliente web respondió antes de que el servidor de aplicación estuviera listo. El smoke test ahora espera el puerto RMI y prueba el acceso inicial en la base efímera. El menú, la pantalla POS y los flujos operativos siguen pendientes de aceptación funcional. En macOS Apple Silicon no se ejecuta el servidor MyCompany 6.2 mediante emulación; esa plataforma está cubierta por las pruebas estáticas y el uso previsto como cliente web.
 
 ## 6. Criterio de finalización del Bloque 0
 

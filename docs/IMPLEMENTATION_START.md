@@ -61,7 +61,8 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [ ] Descargar y ejecutar el instalador en Windows x64 o levantar el Compose en un equipo anfitrión compatible.
 - [x] Ejecutar en CI el smoke test de runtime MyCompany 6.2 en Linux x86_64: cuatro servicios, cuatro digests fijados, HTTP 200 y carga de RubrovaPOSLocalization + RubrovaCustom (714/714 módulos) en unos 30 segundos.
 - [x] Configurar los tres parámetros de instalación: `logics.topModule=RubrovaCustom`, `user.setLanguage=es` y `user.setCountry=AR`; el override Docker entrega los valores al proceso Java.
-- [ ] Revisar la captura y los controles de la primera pantalla que genera Chromium; identificar el formulario de acceso y la navegación disponible.
+- [x] Identificar con Chromium el formulario inicial de acceso: campos `username`, `password` y botón `submit`; la primera captura mostró un error RMI `server:7652` antes de que el servidor estuviera listo.
+- [ ] Comprobar que RMI 7652 está escuchando y acceder al menú desde la instancia efímera de CI.
 - [ ] Confirmar visualmente en el navegador que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
 - [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
@@ -79,7 +80,7 @@ La guía específica está en [Instalación y carga de la extensión MyCompany 6
 
 1. Descargar artefactos oficiales de MyCompany 6.2 y validar SHA-256.
 2. Instalar en entorno local aislado; no publicar puertos a Internet.
-3. Cambiar la contraseña inicial del administrador antes de habilitar acceso desde otros equipos. La guía oficial advierte que el usuario inicial puede venir sin contraseña.
+3. Cambiar la contraseña inicial del administrador antes de habilitar acceso desde otros equipos. La guía oficial documenta que el acceso inicial utiliza `admin` sin contraseña; sólo se usará así en la base efímera de CI.
 4. Fijar las versiones de lsFusion, Java, base de datos e imágenes de contenedor; revisar arquitectura de imagen especialmente en Apple Silicon.
 5. Cargar RubrovaCustom sin tocar módulos upstream.
 6. Completar la traducción española de los flujos críticos.
