@@ -70,26 +70,48 @@ Las notificaciones incluyen procesamiento, cancelación, reembolso, acción requ
 
 Para nuevas integraciones se sigue Orders API, no la API heredada Payment Intents si la documentación vigente indica migración.
 
-## Tres documentos diferentes
+## Documentos y política de impresión
 
-1. **Ticket de venta de Rubrova:** artículos, cantidades, descuentos, impuestos y medios de pago.
-2. **Voucher de la terminal:** comprobante del adquirente con resultado de la transacción.
-3. **Comprobante fiscal:** factura, ticket fiscal o nota emitida por ARCA o por el emisor autorizado del canal.
+Rubrova distingue tres documentos:
 
-Mercado Pago documenta acciones de impresión de contenido personalizado en terminales compatibles y permite consultar el estado de la acción. La función, el papel y el formato exacto deben confirmarse en el modelo/firmware disponible. Payway informa que ciertos comprobantes de tarjeta pueden enviarse por email y no imprimirse en papel. Esto no significa que cualquier Point, Posnet, Getnet o Payway imprima el ticket detallado de Rubrova o una factura fiscal.
+1. **Ticket comercial:** detalle de artículos, cantidades, precios, descuentos, impuestos, total y medios de pago.
+2. **Voucher de pago:** comprobante de la operación de tarjeta/QR emitido por el adquirente o proveedor.
+3. **Comprobante fiscal:** factura, ticket fiscal o nota emitida por ARCA o emisor autorizado.
 
-## Requisito de impresión desde la propia terminal
+La impresión depende del medio y del hardware:
 
-Para el modelo de terminal que elijamos como principal, la aceptación de Rubrova exige que pueda imprimir desde el propio dispositivo el ticket detallado de la venta con contenido generado por Rubrova: artículos, cantidades, precios, descuentos, total y referencia de la operación.
+| Medio | Dispositivo principal para el ticket comercial | Comprobante adicional |
+|---|---|---|
+| Efectivo | Impresora térmica conectada a la caja | No requiere voucher bancario |
+| Transferencia bancaria convencional | Impresora térmica de caja, una vez verificado el ingreso | Referencia/constancia; no inventar confirmación |
+| QR integrado | Terminal inteligente si imprime el ticket completo generado por Rubrova; impresora de caja como respaldo | Voucher/constancia del proveedor según configuración |
+| Débito/crédito integrado | Terminal inteligente si imprime el ticket completo generado por Rubrova; impresora de caja como respaldo | Voucher de tarjeta según reglas del adquirente |
 
-No alcanza con que la terminal muestre el importe y emita un voucher bancario reducido. Tampoco equivale a enviar el comprobante por email ni a imprimir el ticket de Rubrova en una impresora térmica conectada al PC.
+**Preferencia de producto:** para QR y tarjeta queremos que la terminal inteligente vinculada a Rubrova imprima el ticket comercial completo generado por el sistema, además del voucher cuando corresponda. La impresión personalizada desde Rubrova será una puerta de selección del modelo principal, no una capacidad que se presuma en todos los equipos.
 
-- Mercado Pago Point documenta acciones de impresión personalizadas en terminales compatibles; hay que comprobar el modelo, firmware y estado de la acción.
-- Para Fiserv/Posnet y Getnet se debe solicitar confirmación técnica de impresión de contenido del sistema de gestión y el protocolo/modelos que lo soportan.
-- Payway informa que determinados comprobantes pueden enviarse digitalmente y no imprimirse en papel; ese comportamiento debe contrastarse con el flujo de impresión del ticket de Rubrova.
-- Mobbex solo se considerará apto para este requisito si su API y el modelo terminal permiten imprimir el contenido detallado que Rubrova envía.
+Si un modelo solo imprime un voucher bancario reducido, Rubrova no lo considera equivalente al ticket comercial. En ese caso la impresora térmica de caja imprime el ticket detallado y la terminal emite su voucher. No se duplica el ticket completo en ambos dispositivos salvo que se soliciten copias.
 
-**Puerta de aceptación:** al menos un modelo homologado para nuestro uso debe imprimir el ticket detallado desde la terminal. Si un proveedor solo confirma el pago y emite su voucher estándar, no pasa esta puerta como solución única de caja. Una impresora local puede servir como respaldo, pero no se registra como cumplimiento de impresión desde la terminal.
+Para efectivo y transferencia, el flujo universal es la impresora térmica conectada a la caja (USB, red o Bluetooth según compatibilidad). La terminal bancaria no participa. En transferencias convencionales, el ticket se imprime cuando el pago está verificado o la operación queda claramente identificada como pendiente, sin presentarla como cobrada.
+
+La impresión fiscal es independiente: el ticket comercial no reemplaza la factura ni el ticket fiscal.
+
+### Reglas de impresión y recuperación
+
+- Política configurable por caja, sucursal, medio de pago y tipo de documento.
+- Impresión automática después de confirmar venta y pago, según el estado de confirmación requerido.
+- Reimpresión sin crear otra venta, pago ni comprobante fiscal.
+- Registro de dispositivo, plantilla, fecha, resultado y copias.
+- Detección de impresora desconectada, falta de papel, error y cola pendiente cuando el dispositivo lo permita.
+- Ticket digital por QR, correo o WhatsApp como alternativa complementaria.
+- Copias diferenciadas para cliente y comercio.
+- Devoluciones y notas vinculadas a la operación original.
+- Evitar duplicar el ticket comercial cuando terminal y caja estén disponibles.
+- Probar acentos, QR, largos de ticket, logos y corte de papel.
+- Un fallo de impresión no revierte una venta o pago confirmado: la impresión queda pendiente y recuperable.
+
+### Puerta de aceptación de la terminal principal
+
+El modelo/firmware elegido para QR y tarjeta debe demostrar que recibe desde Rubrova e imprime el ticket comercial detallado. Se valida contenido, formato, estado de impresión y recuperación de fallos. Si el modelo no lo permite, debe quedar explícito que el ticket lo imprime la impresora de caja; no se declara cumplida la preferencia de impresión desde terminal.
 
 ## Desconexión y fallos
 
