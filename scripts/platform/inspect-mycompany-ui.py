@@ -119,11 +119,24 @@ def login_to_ephemeral_instance(page: Any) -> str:
     submit_field.click(no_wait_after=True)
     print("UI_LOGIN_SUBMIT_CLICKED=true")
 
+    # The browser navigates to /main after the asynchronous lsFusion login.
+    # Wait for that transition explicitly, but keep polling if it takes longer.
+    try:
+        page.wait_for_url("**/main", timeout=30_000)
+        print("UI_LOGIN_NAVIGATION_STATUS=main")
+    except PlaywrightTimeoutError:
+        print("UI_LOGIN_NAVIGATION_STATUS=still-waiting")
+
     deadline = time.monotonic() + 60
     last_text = ""
     while time.monotonic() < deadline:
         page.wait_for_timeout(1_000)
-        last_text = page.locator("body").inner_text(timeout=10_000)
+        try:
+            last_text = page.locator("body").inner_text(timeout=5_000)
+        except PlaywrightError:
+            # The body can be temporarily unavailable while GWT replaces the page.
+            continue
+
         try:
             login_visible = username_field.is_visible()
         except PlaywrightError:
@@ -132,12 +145,17 @@ def login_to_ephemeral_instance(page: Any) -> str:
         if not login_visible and not has_server_error(last_text) and last_text.strip():
             # Require the authenticated page to remain stable for another second.
             page.wait_for_timeout(1_000)
-            stable_text = page.locator("body").inner_text(timeout=10_000)
+            try:
+                stable_text = page.locator("body").inner_text(timeout=5_000)
+                login_still_visible = page.locator("#username").is_visible()
+            except PlaywrightError:
+                continue
             if (
-                not page.locator("#username").is_visible()
+                not login_still_visible
                 and not has_server_error(stable_text)
                 and stable_text.strip()
             ):
+                print("UI_LOGIN_BODY_STABLE=true")
                 return stable_text
 
     raise RuntimeError(
@@ -152,7 +170,12 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 30) -> 
     last_text = ""
 
     while time.monotonic() < deadline:
-        last_text = page.locator("body").inner_text(timeout=10_000)
+        try:
+            last_text = page.locator("body").inner_text(timeout=5_000)
+        except PlaywrightError:
+            stable_reads = 0
+            page.wait_for_timeout(1_000)
+            continue
         normalized = last_text.casefold()
         is_loading = "loading" in normalized or "cargando" in normalized
         if last_text.strip() and not is_loading:
