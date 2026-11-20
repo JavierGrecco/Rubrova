@@ -65,7 +65,7 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 Documentación: https://docs.tryton.org/8.0/modules-sale-point/design.html  
 Release notes: https://docs.tryton.org/8.0/modules-sale-point/releases.html
 
-Tryton 8.0 incluye el módulo oficial sale_point 8.0.0 para venta minorista, métodos de pago, vuelto y sesiones; al contabilizar genera efectos en stock y contabilidad. Fijar servidor, cliente y módulo por versión.
+Tryton 8.0 incluye el módulo oficial sale_point 8.0.0 para venta minorista, métodos de pago, vuelto y sesiones; al contabilizar genera efectos en stock y contabilidad. Fijar servidor, cliente y módulo por versión. El [lock de Tryton Argentina 8.0](TRYTON_ARGENTINA_8_0_LOCK.md) fija los ocho módulos locales y los auxiliares por commit.
 
 El conjunto de localización argentina en ramas 8.0 incluye ocho módulos coordinados: account_invoice_ar 8.0.1; account_ar, party_ar, bank_ar, account_voucher_ar, account_check_ar y sale_pos_ar 8.0.0; account_report_ar 8.0.1. Los repositorios tienen tests; account_invoice_ar incluye escenarios WSFE, FCE, WSFEX y recuperación.
 
