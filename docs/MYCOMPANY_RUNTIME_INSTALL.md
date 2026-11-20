@@ -109,7 +109,8 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 2. Copia `RubrovaCustom`, `RubrovaPOSLocalization` y el ResourceBundle a `docker-server` sin editar el código upstream.
 3. Valida la configuración con `docker compose config` y confirma al menos cuatro servicios.
 4. Inicia el stack con un nombre de proyecto efímero y espera hasta 15 minutos la respuesta HTTP 2xx/3xx del cliente web en `127.0.0.1:8080`.
-5. En caso de error, muestra estado y registros; siempre detiene los contenedores y elimina los volúmenes de prueba.
+5. Registra los digests de las imágenes resueltas e inspecciona los logs del servidor en busca de evidencia del módulo Rubrova y errores de carga.
+6. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 
 La prueba no carga datos de negocio ni confirma el POS, pagos, devoluciones, idioma o backup/restore. En macOS Apple Silicon no se ejecuta el stack mediante emulación; esa plataforma continúa cubierta por las pruebas estáticas y el uso previsto como cliente web.
 

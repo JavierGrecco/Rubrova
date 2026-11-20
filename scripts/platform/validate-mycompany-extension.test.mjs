@@ -57,6 +57,11 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
   assert.match(runtimeSmokeSource, /compose down --volumes --remove-orphans/);
   assert.match(runtimeSmokeSource, /trap cleanup EXIT/);
+  assert.match(runtimeSmokeSource, /mktemp -d.*rubrova-runtime/);
+  assert.match(runtimeSmokeSource, /sudo -n rm -rf/);
+  assert.match(runtimeSmokeSource, /docker image inspect/);
+  assert.match(runtimeSmokeSource, /docker-server\/logs/);
+  assert.match(runtimeSmokeSource, /RubrovaPOSLocalization/);
 });
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {

@@ -19,7 +19,9 @@ if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
   exit 2
 fi
 
-WORK_DIR="${RUBROVA_RUNTIME_WORK_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/rubrova-runtime.XXXXXX")}"
+WORK_PARENT="${RUBROVA_RUNTIME_WORK_DIR:-${TMPDIR:-/tmp}}"
+mkdir -p "$WORK_PARENT"
+WORK_DIR="$(mktemp -d "$WORK_PARENT/rubrova-runtime.XXXXXX")"
 CACHE_DIR="${RUBROVA_CACHE_DIR:-$WORK_DIR/cache}"
 COMPOSE_DIR="$WORK_DIR/mycompany-6.2"
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-rubrova-smoke-${GITHUB_RUN_ID:-local}}"
@@ -48,7 +50,18 @@ cleanup() {
     compose down --volumes --remove-orphans
   fi
   if [[ "$KEEP_WORK_DIR" != "true" ]]; then
-    rm -rf "$WORK_DIR"
+    cleanup_failed=0
+    if ! rm -rf "$WORK_DIR" 2>/dev/null; then
+      if command -v sudo >/dev/null 2>&1 && sudo -n rm -rf "$WORK_DIR"; then
+        echo "Directorio temporal limpiado con permisos elevados (archivos creados por contenedores)."
+      else
+        echo "No se pudo eliminar por completo el directorio temporal: $WORK_DIR" >&2
+        cleanup_failed=1
+      fi
+    fi
+    if [[ "$exit_code" -eq 0 && "$cleanup_failed" -ne 0 ]]; then
+      exit_code=1
+    fi
   else
     echo "Directorio de diagnóstico conservado: $WORK_DIR"
   fi
@@ -113,12 +126,41 @@ fi
 }
 echo "Cliente web disponible: HTTP $HTTP_STATUS después de ${SECONDS}s."
 
-echo "6/6 Recopilando evidencia de la configuración Rubrova"
+echo "6/6 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
-if compose logs --no-color 2>&1 | grep -Fq 'RubrovaCustom'; then
+
+echo "Imágenes resueltas por el Compose:"
+IMAGES="$(compose config --images)"
+printf '%s\n' "$IMAGES"
+while IFS= read -r image_name; do
+  [[ -n "$image_name" ]] || continue
+  image_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$image_name" 2>/dev/null || true)"
+  if [[ -n "$image_digest" && "$image_digest" != "<no value>" ]]; then
+    printf 'DIGEST %s -> %s\n' "$image_name" "$image_digest"
+  else
+    printf 'AVISO: no se obtuvo RepoDigest para %s\n' "$image_name"
+  fi
+done <<< "$IMAGES"
+
+LOG_DIR="$COMPOSE_DIR/docker-server/logs"
+RUBROVA_LOG_EVIDENCE=false
+if [[ -d "$LOG_DIR" ]]; then
+  echo "Coincidencias relevantes en los registros del servidor:"
+  for log_file in "$LOG_DIR"/*.log; do
+    [[ -f "$log_file" ]] || continue
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|topModule|Exception|ERROR|Failed|not found|syntax|module' "$log_file" | tail -n 40 || true)"
+    if [[ -n "$matches" ]]; then
+      printf '%s\n%s\n' "--- $(basename "$log_file") ---" "$matches"
+      if grep -Fq 'RubrovaCustom' <<< "$matches"; then
+        RUBROVA_LOG_EVIDENCE=true
+      fi
+    fi
+  done
+fi
+if [[ "$RUBROVA_LOG_EVIDENCE" == "true" ]]; then
   echo "Los registros del servidor mencionan RubrovaCustom."
 else
-  echo "AVISO: el cliente web respondió, pero los registros no exponen el nombre RubrovaCustom; la carga efectiva del módulo requiere verificación adicional."
+  echo "AVISO: el cliente web respondió, pero los registros inspeccionados no exponen RubrovaCustom. La carga efectiva del módulo aún requiere una comprobación funcional del POS."
 fi
 
 echo "OK: MyCompany 6.2 arrancó y el cliente web respondió. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."

@@ -65,7 +65,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación estática pasó en Linux, Windows y macOS Apple Silicon, incluidos los hashes fijados y el staging BSD. Se añadió un segundo job Linux x86_64 que descarga los artefactos verificados, prepara la extensión, valida el Compose, inicia el stack y espera una respuesta HTTP del cliente web; sus resultados se registran en el workflow. Ese smoke test es una primera prueba de arranque, no una aceptación de los flujos POS ni de la restauración. La carga real del módulo, el idioma, la seguridad, los periféricos y backup/restore continúan como puertas independientes.
+La validación estática pasó en Linux, Windows y macOS Apple Silicon, incluidos los hashes fijados y el staging BSD. Se añadió un segundo job Linux x86_64 que descarga los artefactos verificados, prepara la extensión, valida el Compose, inicia el stack y espera una respuesta HTTP del cliente web. El test registra los digests de las imágenes, inspecciona los logs del servidor y limpia los directorios temporales incluso cuando los contenedores crean archivos root-owned. El primer resultado fue HTTP 200 en 29 segundos; sin evidencia explícita del nombre del módulo en los logs, la carga efectiva sigue sin aprobarse. Los flujos POS, idioma, seguridad, periféricos y backup/restore continúan como puertas independientes.
 
 ## Guía operativa del primer arranque
 
