@@ -79,7 +79,8 @@ Una plataforma que reúne en un solo lugar:
 | [Investigación de módulos ampliados](docs/MODULAR_COMPONENT_RESEARCH.md) | WMS, ERP, conectores, promociones, BI y automatización |
 | [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) | Prueba reproducible de las plataformas integrales con escenarios comunes |
 | [Laboratorio de evaluación](docs/PLATFORM_LAB_SETUP.md) | Instalación aislada, versiones fijadas y registro de evidencias |
-| [Revisión competitiva](docs/COMPETITIVE_MARKET_REVIEW.md) | Comparación con POS/ERP/CRM disponibles en Argentina e internacionales |\n| [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
+| [Revisión competitiva](docs/COMPETITIVE_MARKET_REVIEW.md) | Comparación con POS/ERP/CRM disponibles en Argentina e internacionales |
+| [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
 ## Etapa actual y próximos resultados
 
