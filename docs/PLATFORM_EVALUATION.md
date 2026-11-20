@@ -31,7 +31,7 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 
 **Regla de arquitectura:** hay dos resultados válidos. (A) Una suite POS+ERP se adopta como núcleo operativo integrado y autoridad única para los dominios que cubra; sus módulos comparten base/runtime y no se llaman microservicios. (B) Los dominios se resuelven con servicios independientes cuando exista una ventaja comprobable y contratos soportados. La base compartida se registra como coste de acoplamiento, actualización y salida, pero no descarta automáticamente una suite. En ambos casos, los componentes externos acceden mediante APIs/eventos/exportaciones soportadas; no por SQL cruzado ni replicando ventas, pagos, stock o costos.
 
-**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P57. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup cifrado y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
+**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P60. Se debe demostrar instalación local, caja rápida, integridad transaccional, permisos, exportación completa, backup portable verificable y restauración en equipo distinto, interfaces soportadas, extensibilidad, operación en español y camino fiscal argentino. Una demo o un README no cuentan como aprobación. La arquitectura se puntúa por el control real de datos y la posibilidad de evolución/salida, no por cantidad de procesos separados.
 
 **Estado actual:** ninguna plataforma está aprobada, instalada y aceptada para producción. El repositorio todavía no contiene la aplicación funcional de Rubrova ni código externo incorporado. La validación de fixtures no prueba un POS ni un ERP.
 
@@ -204,6 +204,16 @@ En P17 no se emitirán comprobantes reales. Una respuesta incierta de ARCA debe 
 
 P49 se evalúa dentro del circuito POS+ERP, aunque el motor de forecasting no se instale en la plataforma candidata. El objetivo es probar que los hechos comerciales necesarios quedan guardados desde el día uno y se pueden extraer mediante una interfaz soportada. El fixture ampliado está en [inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) y [historial mensual sintético](fixtures/demand-monthly-history.json).
 
+### P58–P60 — perfil 360, preferencias y privacidad
+
+| ID | Escenario | Evidencia exigida | Falla crítica |
+|---|---|---|---|
+| P58 | Cliente 360 multicanal | Una identidad válida reúne operaciones de local, online, WhatsApp, mayorista y servicios; contactos/sedes B2B diferenciados; ventas anónimas siguen anónimas; duplicados no se fusionan automáticamente | Cliente duplicado, atribución falsa de compras o identificación forzada |
+| P59 | Preferencias, RFM y rentabilidad del cliente | Reproducir productos, categorías, marcas y segmentos más comprados; frecuencia, recencia, retención y contribución neta; ajustar devoluciones, descuentos y disponibilidad/quiebres de stock | Perfil basado en facturación bruta, stockouts o datos incompletos sin advertencia |
+| P60 | Privacidad y gobierno del perfil | Permisos por rol, finalidad/consentimiento y preferencias por canal, baja de marketing, acceso/exportación y rectificación; no inferir datos sensibles ni permitir SQL o exportación irrestricta | Uso promocional sin permiso, exposición de datos o perfil sensible inferido |
+
+La ficha, métricas y pruebas detalladas están en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md). P58–P60 deben ejecutarse con datos de prueba que incluyan una venta anónima, un cliente minorista recurrente y una cuenta B2B con varias sedes/contactos.
+
 ## Medición y decisión
 
 Cada criterio se califica de 0 a 5 únicamente después de ejecutar la prueba:
@@ -268,7 +278,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
 | Ejecución P01–P26 (POS/ERP) | Pendiente |
-| Ejecución P27–P48 (resiliencia/arquitectura) | Pendiente |
+| Ejecución P27–P48 (resiliencia/arquitectura) | Pendiente |\n| Ejecución P49–P57 (historial, trazabilidad y exportación) | Pendiente |\n| Ejecución P58–P60 (perfil 360, RFM y privacidad) | Pendiente |
 | Ejecución P49–P56 (fundación de datos e historial) | Pendiente |
 | Ejecución P57 (exportación analítica portable) | Pendiente |
 | Pruebas físicas de terminales y hardware | Pendiente |
@@ -276,7 +286,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P57. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
+**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P60. En la comparación documental Odoo 19 queda como referencia CRM/marketing y posible filtro breve; no desplaza automáticamente a los finalistas existentes. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
 
 
 ## Extensión del protocolo: varias áreas y operación B2B (P20–P25)
