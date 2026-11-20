@@ -1,7 +1,7 @@
 # Evaluación comparativa de plataformas
 
 **Revisión:** 20 de noviembre de 2026  
-**Estado:** laboratorio preparado; validación automática del dataset aprobada; ejecución local de plataformas pendiente.  
+**Estado:** laboratorio preparado; dataset de evaluación 27/27 y benchmark mensual de demanda aprobados en CI; ejecución local de plataformas pendiente.  
 **Alcance:** uso interno, personal y privado. No se prevé distribuir, revender ni ofrecer el sistema como servicio a terceros.
 
 Este documento convierte la investigación en una prueba repetible. No elige una plataforma por su README, una demo o la cantidad de módulos anunciados. La elección depende de ejecutar los mismos flujos, con datos sintéticos, y comprobar integridad, recuperación, esfuerzo de adaptación y mantenimiento.
@@ -31,7 +31,7 @@ No se amplía la lista sin una razón funcional. uniCenta queda fuera de la prim
 
 **Regla de arquitectura:** un producto existente puede funcionar como aplicación externa de un dominio acotado, con API y persistencia propias. Si comparte servidor/base para POS, ventas, inventario y contabilidad, no se describen sus módulos como microservicios. Si no puede ser encapsulado sin absorber o duplicar autoridades de otros dominios, se reutilizan componentes realmente separables o se descarta.
 
-**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P44. Se debe demostrar instalación local, permisos, exportación, backup/restore, API, arquitectura, operación en español, integridad y camino fiscal argentino. Una demo o un README no cuentan como aprobación.
+**Regla de selección:** filtro documental/código para todos; prueba corta POS+ERP de los candidatos iniciales; como máximo dos finalistas a P01–P48. Se debe demostrar instalación local, permisos, exportación, backup/restore, API, arquitectura, operación en español, integridad y camino fiscal argentino. Una demo o un README no cuentan como aprobación.
 
 **Estado actual:** ninguna plataforma está aprobada, instalada y aceptada para producción. El repositorio todavía no contiene la aplicación funcional de Rubrova ni código externo incorporado. La validación de fixtures no prueba un POS ni un ERP.
 
@@ -232,7 +232,7 @@ Estos componentes no convierten por sí solos a una plataforma en la base del pr
 
 La revisión de licencias se hace para la versión y los archivos que realmente se incorporen. El uso privado permite considerar código GPL/AGPL, pero no elimina las licencias separadas de dependencias, fuentes, imágenes, servicios o componentes comerciales.
 
-El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 19/11/2026 terminó correctamente: 21 pruebas aprobadas y dataset canónico válido. Esto valida las reglas aritméticas y las invariantes modeladas de multiárea, mayorista, envíos, servicios, costos internos y rentabilidad; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
+El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inventario, devoluciones, recepción parcial, retiro de líneas, vuelto e invariantes de la secuencia de estados de una terminal. La ejecución de CI del 20/11/2026 terminó correctamente: 27 pruebas aprobadas y dataset canónico válido. El benchmark mensual de demanda (48 meses por serie, modelos regulares e intermitentes) también pasó su workflow; es una prueba matemática con datos sintéticos, no valida una plataforma. Esto valida las reglas aritméticas y las invariantes modeladas de multiárea, mayorista, envíos, servicios, costos internos y rentabilidad; no valida todavía el comportamiento funcional de MyCompany, Posnic o ERPNext.
 
 ## Estado de ejecución
 
@@ -245,7 +245,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Inspección documental de ERPNext/Frappe v16 | Hecha parcialmente |
 | Protocolo común y dataset sintético | Preparados |
 | Laboratorio de instalación para los tres candidatos | Preparado |
-| Validador y CI del dataset | Aprobados: 21/21 tests y dataset válido (19/11/2026) |
+| Validador y CI del dataset | Aprobados: 27/27 tests y dataset válido (20/11/2026) |
 | Instalación/evaluación de MyCompany 6.2 y módulo custom | Pendiente |
 | Instalación local de Posnic en VM compatible | Pendiente |
 | Instalación local de ERPNext/Frappe con Docker | Pendiente |
@@ -255,7 +255,7 @@ El validador del dataset comprueba importes, descuentos, pagos mixtos, caja, inv
 | Decisión de plataforma | Pendiente |
 | Incorporación de código externo | No iniciada |
 
-**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P44. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
+**Próximo paso técnico:** comparar ERPNext 16, MyCompany 6.2 y Tryton 8.0 + módulos argentinos 8.0 con el mismo circuito POS+ERP; filtrar Dolibarr 24.0.3 y usar Posnic sólo como referencia POS. Sólo dos candidatos pasan a P01–P48. En Tryton, instalar las ocho ramas 8.0 juntas, ejecutar las suites y probar WSFE/WSFEX en homologación. Tryton 8.2 se evalúa después como upgrade, con port y homologación. La frontera de servicio, actualización, exportación y restauración debe demostrarse antes de aprobar una adopción. En MyCompany, comprobar además un módulo de extensión mediante REQUIRE; en ERPNext, registrar `bench version`; en las pruebas de terminal, usar sandbox y terminal física habilitada. No marcar offline, impresiones ni compatibilidad como aprobadas sin evidencia por modelo y sistema operativo. La CI cubre el validador y las reglas aritméticas, no simula una instalación real de las plataformas. Después de medir, definiremos qué servicios se construyen y qué componente existente puede cubrir uno o varios dominios detrás de APIs/eventos, conservando almacenamiento, despliegue y rollback independientes.
 
 
 ## Extensión del protocolo: varias áreas y operación B2B (P20–P25)

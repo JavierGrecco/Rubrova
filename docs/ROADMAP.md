@@ -7,7 +7,7 @@
 
 Rubrova se encuentra en **Fase 0: selección del núcleo operativo**. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
 
-El workflow existente validó 21 pruebas del dataset y reglas aritméticas en su última ejecución registrada del 19/11/2026. Esa validación no instala ni prueba un POS, ERP, API, integración, backup o flujo real de Rubrova. Las nuevas modificaciones documentales tampoco se deben presentar como pruebas funcionales.
+El validador del dataset tiene 27 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026). El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente (20/11/2026). Estas ejecuciones validan fixtures y cálculos sintéticos; no instalan ni prueban un POS, ERP, API, integración, backup o flujo real de Rubrova. Esa validación no instala ni prueba un POS, ERP, API, integración, backup o flujo real de Rubrova. Las nuevas modificaciones documentales tampoco se deben presentar como pruebas funcionales.
 
 La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
@@ -198,7 +198,8 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Requisitos POS, checkout, efectivo, vuelto, pagos mixtos y terminales.
 - [x] Modelo de dominio que separa venta, pago, stock, comprobante y envío.
 - [x] Arquitectura de servicios de dominio, APIs/eventos, ownership, idempotencia, CAS, Outbox/Inbox y recuperación.
-- [x] Dataset sintético y validador automático; última ejecución registrada: 21/21 pruebas de fixture aprobadas.
+- [x] Dataset de evaluación y validador automático: 27/27 pruebas de fixture aprobadas en CI (20/11/2026).
+- [x] Benchmark mensual de demanda regular e intermitente con StatsForecast 2.1.1 y baselines; CI aprobado sobre 48 meses sintéticos por serie (20/11/2026).
 - [x] Investigación de ERPNext, MyCompany/lsFusion, Tryton, Dolibarr y Posnic.
 - [x] Revisión de la localización argentina Odoo y de tryton-ar; se encontraron ocho ramas coordinadas 8.0 con manifiestos y tests; instalación y homologación pendientes.
 - [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
@@ -212,7 +213,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P44.
 4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
-6. Revisar el resultado del benchmark mensual de demanda regular/intermitente y ampliar el fixture con promociones, cambios de precio, stockouts censurados, presentaciones comparables y sustitución entre segmentos de marca; después evaluar variables exógenas y métodos jerárquicos sin bloquear la selección POS/ERP.
+6. Ampliar el benchmark con quiebres de stock censurados, promociones, cambios de precio, productos nuevos y más horizontes; preparar una entrada de datos reales una vez elegida la plataforma POS/ERP. Evaluar MLForecast y HierarchicalForecast sólo después de medir la mejora frente a baselines.
 
 El requisito de copia portable y recuperación en PC nueva está en [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md).
 
