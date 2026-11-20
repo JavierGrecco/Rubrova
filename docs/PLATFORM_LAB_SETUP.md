@@ -309,7 +309,7 @@ No marcar una prueba como aprobada por ver una pantalla o completar una demo. Pa
 1. Validar el dataset y confirmar que todos los importes, cantidades y resultados esperados sean coherentes.
 2. Levantar ERPNext 16.60.0 y recorrer el circuito de catálogo, POS, caja, inventario, devolución y reportes básicos.
 3. Preparar MyCompany/lsFusion 6.2 y repetir exactamente el mismo circuito.
-4. Preparar Tryton 8.0 y las ocho ramas tryton-ar 8.0 en un entorno limpio; fijar commits y dependencias, instalar el conjunto completo, ejecutar suites de pruebas y probar WSFE/WSFEX en homologación. Mantener Tryton 8.2 como comparación de actualización posterior.
+4. Preparar Tryton 8.0 y las ocho ramas tryton-ar 8.0 según el [lock de módulos](TRYTON_ARGENTINA_8_0_LOCK.md); instalar el conjunto completo, ejecutar suites de pruebas y probar WSFE/WSFEX en homologación. Mantener Tryton 8.2 como comparación de actualización posterior.
 5. Ejecutar un filtro corto de Dolibarr 24.0.3; ampliar sólo si pasa los mínimos de caja y gestión.
 6. Preparar Posnic 1.9.2 como referencia de POS secundario, no como sustituto del ERP.
 7. En los dos mejores candidatos, ejecutar escenarios P01–P26, y los P27–P44 que correspondan a sus límites de dominio y arquitectura.
