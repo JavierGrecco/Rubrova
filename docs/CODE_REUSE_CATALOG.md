@@ -23,7 +23,7 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Muy alta | [arca-sdks](https://github.com/ramiidv/arca-sdks) | WSAA, WSFEv1, WSFEX, CAEA, padrón, QR y otros servicios ARCA | Candidato fiscal principal |
 | Alta | [emupos](https://github.com/ahmedalrifai/emupos) | Simulación de impresoras, cajón, balanzas y lectores | Herramienta de pruebas |
 | Alta | [ESCPost](https://github.com/receiptful/escpost) | Renderizado, perfiles, diagnóstico y pruebas ESC/POS | Herramienta de pruebas |
-| Media-alta | [PowerSync](https://github.com/powersync-ja/powersync-js) | SQLite local sincronizado con backend, cliente web y servicio self-hosted | Evaluar offline |
+| Media-alta | [PowerSync](https://github.com/powersync-ja/powersync-service) | Motor self-hosted para sincronizar SQLite local con backend y clientes web/móvil/escritorio | Evaluar lectura offline; no resuelve por sí solo concurrencia de stock |
 | Media | [Dexie.js](https://github.com/dexie/Dexie.js) | Persistencia IndexedDB y consultas reactivas | Candidato PWA |
 | Media | [TastyIgniter](https://github.com/tastyigniter/TastyIgniter) | Pedidos online, reservas y gestión gastronómica | Reutilización sectorial |
 | Exploratoria | [OCA/l10n-argentina](https://github.com/OCA/l10n-argentina) | Localización argentina para Odoo | Revisar módulos individuales |
@@ -41,6 +41,16 @@ Este catálogo no declara componentes aprobados para producción. Distingue evid
 | Media-alta | [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) | Archivo documental OCR local con API | GPL-3.0; no es libro contable |
 | Media | [Node-RED](https://github.com/node-red/node-red) | Automatización de eventos, webhooks y dispositivos | Apache-2.0; sólo flujos periféricos |
 | Exploratoria | [Simple WMS](https://github.com/q7-technology/simple-wms) | Ledger append-only, scanner PWA y tareas de depósito | MIT; sin release estable, referencia en vigilancia |
+| Alta | [Spree](https://github.com/spree/spree) | Ecommerce headless, B2B/mayorista, listas de precios, canales y marketplace | BSD-3-Clause; evaluar como canal externo, no autoridad de stock |
+| Media-alta | [Saleor](https://github.com/saleor/saleor) | Comercio headless GraphQL, canales, monedas, precios y stock | BSD-3-Clause; alternativa a Spree, no evaluar ambos en profundidad |
+| Media-alta | [InvenTree](https://github.com/inventree/InvenTree) | Inventario técnico, trazabilidad de partes, ubicaciones, BOM, API y plugins | MIT; evaluar para fabricación/repuestos, no como POS minorista |
+| Condicionada | [OCA/manufacture](https://github.com/OCA/manufacture) | Addons Odoo para BOM, planificación multinivel y fabricación | Revisar licencia y dependencias por addon; sólo si se elige Odoo |
+| Alta | [DuckDB](https://github.com/duckdb/duckdb) | Motor analítico local para CSV, Parquet, JSON, Excel y cálculos | MIT; analítica/read models, no OLTP |
+| Media | [Apache Superset](https://github.com/apache/superset) | Dashboards y exploración BI sobre fuentes SQL | Apache-2.0; requiere servicio/operación propia y modelo analítico de sólo lectura |
+| Media-alta | [pgBackRest](https://github.com/pgbackrest/pgbackrest) | Backup PostgreSQL, WAL, retención, verificación y restauración | MIT; sólo si la plataforma usa PostgreSQL |
+| Alta | [restic](https://github.com/restic/restic) | Backup cifrado y multiplataforma de documentos y archivos | BSD-2-Clause; complementa, no reemplaza backup consistente de DB |
+| Condicionada | [Keycloak](https://github.com/keycloak/keycloak) | Identidad y SSO central para múltiples aplicaciones | Apache-2.0; diferir si la plataforma elegida ya cubre autenticación |
+| Condicionada | [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector) | Recolección/exportación unificada de logs, métricas y trazas | Apache-2.0; incorporar cuando varias aplicaciones lo justifiquen |
 
 ## 1. Plataformas integrales
 
@@ -393,6 +403,6 @@ Investigación de detalle y límites: [Investigación ampliada de módulos](MODU
 
 ## 14. Componentes transversales investigados (20/11/2026)
 
-El detalle de licencias, versiones, límites y priorización de OpenRefine, Frictionless, RapidFuzz, python-stdnum, Pint, libpostal, OCRmyPDF, Docling, invoice2data, Paperless-ngx, QZ Tray, Mercado Pago SDK, Karrio, Node-RED y Temporal está en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
+La [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md) reúne calidad/importación de datos, documentos, hardware, ARCA, logística multi-carrier, sincronización offline, ecommerce, inventario/fabricación, BI, identidad, observabilidad y backups. Incluye licencias, versiones observadas, límites y orden de prueba.
 
-Ninguno está aprobado ni incorporado. La shortlist distingue componentes candidatos a prueba controlada, proyectos de referencia y piezas que conviene diferir por complejidad o madurez.
+Ninguno está aprobado ni incorporado. La shortlist distingue componentes candidatos a prueba controlada, proyectos de referencia y piezas que conviene diferir por complejidad, licencias o madurez.
