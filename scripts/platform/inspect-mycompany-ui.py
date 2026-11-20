@@ -32,11 +32,27 @@ def visible_snapshot(page: Any, label: str) -> str:
             name: element.name || "",
             id: element.id || "",
             placeholder: element.placeholder || "",
+            value: element.value || "",
+            title: element.getAttribute("title") || "",
             ariaLabel: element.getAttribute("aria-label") || "",
             visible: !!(element.offsetWidth || element.offsetHeight)
         }))"""
     )
-    buttons = page.locator("button, input[type=submit]").evaluate_all(
+    selectors = page.locator("select, [role=combobox], [role=listbox]").evaluate_all(
+        """elements => elements.slice(0, 40).map(element => ({
+            tag: element.tagName.toLowerCase(),
+            value: "value" in element ? element.value || "" : "",
+            text: (element.innerText || element.textContent || "").trim(),
+            title: element.getAttribute("title") || "",
+            ariaLabel: element.getAttribute("aria-label") || "",
+            selectedText: element.tagName === "SELECT" && element.selectedOptions.length
+                ? element.selectedOptions[0].textContent.trim()
+                : "",
+            options: Array.from(element.options || []).map(option => (option.textContent || "").trim()),
+            visible: !!(element.offsetWidth || element.offsetHeight)
+        }))"""
+    )
+    buttons = page.locator("button, input[type=submit], [role=button]").evaluate_all(
         """elements => elements.slice(0, 60).map(element => ({
             text: (element.innerText || element.value || element.textContent || "").trim(),
             type: element.type || "",
@@ -70,6 +86,7 @@ def visible_snapshot(page: Any, label: str) -> str:
     print(body_text.strip()[:4500])
     print(f"{label}_VISIBLE_TEXT_END")
     print(f"{label}_INPUTS=" + json.dumps(input_data, ensure_ascii=False))
+    print(f"{label}_SELECTORS=" + json.dumps(selectors, ensure_ascii=False))
     print(f"{label}_BUTTONS=" + json.dumps(buttons, ensure_ascii=False))
     print(f"{label}_LINKS=" + json.dumps(links, ensure_ascii=False))
     print(f"{label}_ALERTS=" + json.dumps(alerts, ensure_ascii=False))
@@ -177,32 +194,82 @@ def login_to_ephemeral_instance(page: Any) -> str:
     )
 
 
-def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 30) -> str:
+def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> str:
     deadline = time.monotonic() + timeout_seconds
     stable_reads = 0
-    last_text = ""
+    last_state: dict[str, Any] = {"text": "", "searchable": "", "selectors": [], "actions": []}
 
     while time.monotonic() < deadline:
         try:
-            last_text = page.locator("body").inner_text(timeout=5_000)
+            last_state = page.evaluate(
+                """() => {
+                    const visible = element => {
+                        const style = getComputedStyle(element);
+                        return style.display !== "none" && style.visibility !== "hidden" &&
+                            !!(element.offsetWidth || element.offsetHeight);
+                    };
+                    const selectors = [...document.querySelectorAll(
+                        'input, select, [role="combobox"], [role="listbox"], [role="option"]'
+                    )].map(element => ({
+                        tag: element.tagName.toLowerCase(),
+                        value: "value" in element ? element.value || "" : "",
+                        text: (element.innerText || element.textContent || "").trim(),
+                        title: element.getAttribute("title") || "",
+                        ariaLabel: element.getAttribute("aria-label") || "",
+                        selectedText: element.tagName === "SELECT" && element.selectedOptions.length
+                            ? element.selectedOptions[0].textContent.trim()
+                            : "",
+                        visible: visible(element)
+                    }));
+                    const actions = [...document.querySelectorAll(
+                        'button, input[type="submit"], [role="button"], a'
+                    )].filter(visible).map(element => ({
+                        text: (element.innerText || element.value || element.textContent || "").trim(),
+                        title: element.getAttribute("title") || "",
+                        ariaLabel: element.getAttribute("aria-label") || ""
+                    }));
+                    const text = (document.body && document.body.innerText) || "";
+                    const searchable = [
+                        text,
+                        ...selectors.filter(item => item.visible).flatMap(item => [
+                            item.value, item.text, item.title, item.ariaLabel, item.selectedText
+                        ]),
+                        ...actions.flatMap(item => [item.text, item.title, item.ariaLabel])
+                    ].filter(Boolean).join("\\n");
+                    return { text, searchable, selectors, actions };
+                }"""
+            )
         except PlaywrightError:
             stable_reads = 0
             page.wait_for_timeout(1_000)
             continue
-        normalized = last_text.casefold()
+
+        last_text = str(last_state.get("text", ""))
+        searchable = str(last_state.get("searchable", ""))
+        normalized = searchable.casefold()
         is_loading = "loading" in normalized or "cargando" in normalized
-        if last_text.strip() and not is_loading:
+        register_selected = "Caja de prueba Rubrova" in searchable
+        open_session_available = "Abrir turno" in searchable
+
+        if not is_loading and register_selected and open_session_available:
             stable_reads += 1
             if stable_reads >= 2:
+                print(f"{label}_POS_REGISTER_FOUND=true")
+                print(f"{label}_OPEN_SESSION_ACTION_FOUND=true")
                 print(f"{label}_RENDER_STATUS=ready")
                 return last_text
         else:
             stable_reads = 0
+
         page.wait_for_timeout(1_000)
 
+    print(f"{label}_POS_REGISTER_FOUND=false")
+    print(f"{label}_OPEN_SESSION_ACTION_FOUND=false")
+    print(f"{label}_LAST_SELECTORS=" + json.dumps(last_state.get("selectors", []), ensure_ascii=False))
+    print(f"{label}_LAST_ACTIONS=" + json.dumps(last_state.get("actions", []), ensure_ascii=False))
     raise RuntimeError(
-        f"{label} no terminó de cargar en {timeout_seconds}s. "
-        f"Último texto visible: {last_text.strip()[:1600]}"
+        f"{label} no mostró el puesto 'Caja de prueba Rubrova' y la acción 'Abrir turno' "
+        f"en {timeout_seconds}s. Último texto visible: {last_text.strip()[:1600]}"
     )
 
 
