@@ -84,7 +84,7 @@ Posnic se evalúa como candidato específico para la responsabilidad POS. No se 
 | [OpenBoxes](https://github.com/openboxes/openboxes) | WMS, recepción, picking, lotes, vencimientos, conteos y despacho | Evaluar sólo si la profundidad logística justifica la instalación y puede asumir una autoridad de stock claramente delimitada. |
 | [Apache OFBiz](https://ofbiz.apache.org/) 24.09.08 | Referencia de servicios de negocio, ERP, pedidos y contabilidad | Posee un Service Engine orientado a SOA, pero la serie 24.09 está congelada en funciones y recibe correcciones. Mantener como referencia y candidato de segunda etapa por su complejidad. |
 
-PowerSync, Dexie, NATS, RabbitMQ, Node-RED, DuckDB y Superset siguen siendo componentes posibles, no decisiones de tecnología. Primero se elige el sistema que poseerá cada dato y se comprueba si su mecanismo nativo alcanza. Después se incorpora la pieza de infraestructura mínima que resuelva una brecha demostrada.
+PowerSync, Dexie, Spree/Saleor, InvenTree, DuckDB/Superset, Keycloak, OpenTelemetry, Prometheus/Grafana, pgBackRest y restic/Kopia siguen siendo candidatos, no decisiones de tecnología. Spree/Saleor sólo se evaluarían como canales online conectados a la autoridad comercial elegida; PowerSync como capa offline para lecturas/tareas no conflictivas; InvenTree sólo si la trazabilidad técnica y BOM justifican un dueño acotado; DuckDB/Superset para datos analíticos de sólo lectura; y pgBackRest/restic para respaldos según el motor y tipo de datos. Primero se elige quién posee cada dato y se comprueba si su mecanismo nativo alcanza. Después se incorpora la pieza mínima que resuelva una brecha demostrada.
 
 ## Cómo se decide
 
