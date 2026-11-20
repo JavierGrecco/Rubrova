@@ -35,13 +35,41 @@ Las capacidades de esta tabla están documentadas por sus proveedores o document
 | **MyCompany 6.2 / lsFusion** | Suite integrada con Retail POS y amplitud de CRM, ventas, compras, inventario, fabricación y facturación; extensiones mediante módulos. | Candidato importante para evitar construir un ERP propio desde cero. | Profundidad argentina/ARCA, informes cliente y exportación, backup/restore, experiencia POS, licencias y costo de mantener extensiones. |
 | **Dolibarr 24 / Posnic 1.9.2** | Dolibarr aporta ERP/CRM modular y API; Posnic sirve como referencia de POS local. | Alternativas de filtro, no la apuesta principal de plataforma. | Flujo completo de caja, integración argentina, robustez offline, datos de cliente y recuperación. |
 
+## 2.1 Proveedores de pagos, terminales y autoservicio
+
+Estos actores no son sustitutos del ERP, pero determinan qué tan bien puede Rubrova conectar su POS con cobros reales, conciliación y equipos físicos.
+
+| Proveedor | Capacidades públicas verificadas | Qué significa para Rubrova |
+|---|---|---|
+| **Mercado Pago** | API Orders para QR estático/dinámico/híbrido, estados, notificaciones y reintegros; Point y reportes con referencias de pago, dispositivo, billetera, banco, marca/últimos cuatro y datos de pagador para ciertos QR/transferencias | Primer adaptador útil para laboratorio. El SDK oficial Node.js es MIT. Los datos de pagador limitados a conciliación no pueden usarse para perfil 360 |
+| **Payway / Decidir** | SDK JavaScript de tokenización web; SDKs de backend anunciados para Java/PHP/.NET/Node; portal API con pagos de terminal, anulaciones, devoluciones, liquidaciones y servicios QR | Buen candidato para tarjeta presencial y ecommerce. El repositorio público del SDK JS no declara licencia; no copiar el código sin permiso |
+| **Getnet** | Get POS Integrado comunica sistema de gestión y terminal mediante API cloud-to-cloud o SDK local USB/Wi-Fi; el resultado vuelve al POS. La terminal puede continuar cobrando aunque se desconecte del sistema de gestión | Alternativa relevante para un POS local con terminal integrada. Solicitar SDK/sandbox y probar conciliación al reconectar |
+| **MODO Conexiones** | API PCT Online para merchants; requiere consentimiento previo del PSP/proveedor de cuenta y autenticación mutua TLS | Posible canal de pago con transferencia, sujeto a habilitación comercial e integración |
+| **Fiserv / PosNet / Clover** | QR interoperable; la documentación pública explica que cuando el QR se paga con tarjeta, el cliente no entrega datos al comercio y recibe aprobación/rechazo en terminal | Confirma que no se puede identificar al cliente a partir de todos los pagos QR |
+| **S-Tech** | Terminales transaccionales, efectivo con vuelto, kioscos/terminales de autoservicio, cash recycling y software especializado de gestión de efectivo | Proveedor tecnológico complementario a evaluar, no ERP ni CRM integral demostrado |
+
+### S-Tech: proveedor complementario, no ERP competidor directo
+
+[S-Tech](https://s-tech.com.ar/) publica:
+- terminales transaccionales y soluciones de transformación de comercios para cobros con tarjeta y efectivo, con posibilidad de entregar vuelto;
+- marketing interactivo e inteligencia de clientes, sin detalles públicos suficientes sobre fuentes de identidad, APIs, consentimiento o exportación;
+- gestión inteligente de efectivo con terminales de depósito/recicladores, Smart Safes y clasificadoras;
+- **CashFore**, pronóstico de demanda/reposición de efectivo con más de 150 factores declarados;
+- **CashSchedule**, planificación de tareas y rutas de flotas para transporte de efectivo mediante AI/GIS y una aplicación para personal de campo.
+
+Es interesante como posible socio de hardware, autoservicio y caja automatizada. No hay evidencia pública suficiente para atribuirle catálogo, compras, stock, contabilidad, ERP multiárea o Customer 360 transversal. La web anuncia tres módulos de software de efectivo, pero la página pública consultada detalla sólo CashFore y CashSchedule.
+
+Para una compra o integración necesitamos ficha técnica, API/SDK, protocolos locales, referencias de transacción, idempotencia, consulta/reverso, conciliación, funcionamiento sin internet, política de datos, licencia, SLA y precio. También hay que comprobar qué significa en su solución "inteligencia de clientes": qué recoge, quién es titular de los datos y si se exportan para relacionarlos con el CustomerAccount de Rubrova.
+
+La evaluación detallada y las pruebas sugeridas están en [S-Tech para Rubrova](S_TECH_EVALUATION.md).
+
 ## 3. Qué significa la comparación
 
 ### Donde los sistemas existentes ya son fuertes
 
 1. **Operación comercial probada:** ventas, stock, caja, turnos, compras, clientes y comprobantes ya están resueltos en muchos productos.
 2. **Argentina:** Tango, Contabilium, Dux y Alegra parten de una realidad fiscal y comercial local; intentar replicar todo eso desde cero sería caro.
-3. **Verticales:** Fudo y Maxirest son ejemplos de que gastronomía necesita mesas, comandas, cocina, recetas, merma y delivery integrados; una pantalla genérica de venta no alcanza.
+3. **Verticales:** Fudo y Maxirest son ejemplos de que gastronomía necesita mesas, comandas, cocina, recetas, merma y delivery integrados; una pantalla genérica de venta no alcanza. S-Tech aporta otra capa: dispositivos de cobro/autoservicio y efectivo, no la autoridad de ventas/stock del ERP.
 4. **Reportes básicos:** exportar Excel, ranking de productos, ventas por cliente, rentabilidad por producto y stock son capacidades existentes.
 5. **CRM:** Odoo y ERPNext demuestran que segmentación, grupos de clientes, fidelización y marketing pueden integrarse al ERP.
 
@@ -106,6 +134,12 @@ No se selecciona plataforma por puntuación de una tabla documental. Una funció
 - [Commercy — gestión y CRM](https://commercy.com.ar/).
 - [Odoo 19 — CRM](https://www.odoo.com/documentation/19.0/es/applications/sales/crm.html), [automatización de marketing](https://www.odoo.com/documentation/19.0/es_419/applications/marketing/marketing_automation.html), [multiempresa](https://www.odoo.com/documentation/19.0/applications/general/multi_company.html) y [planes](https://www.odoo.com/pricing).
 - [ERPNext — grupos de clientes](https://docs.frappe.io/erpnext/customer-group), [reportes de ventas](https://docs.frappe.io/erpnext/sales-analytics), [fidelización](https://docs.frappe.io/erpnext/loyalty-program), [ventas](https://docs.frappe.io/erpnext/selling).
+- [Mercado Pago — API QR](https://www.mercadopago.com.ar/developers/es/docs/qr-code/payment-processing), [campos de reportes](https://www.mercadopago.com.ar/developers/es/docs/reports/released-money/report-fields), [SDK Node.js MIT](https://github.com/mercadopago/sdk-nodejs).
+- [Payway — API catalog](https://developers.payway.com.ar/catalog?category=Pagos) y [SDK JavaScript](https://github.com/payway-ar/sdk-javascript-ventaonline).
+- [Getnet — POS Integrado](https://www.getnet.net/ar/ayuda/terminales-getpos/get-pos-integrado).
+- [MODO Conexiones — Merchant PCT Online](https://docs.modo.com.ar/docs/2ea0d7a7-956d-4995-936e-84808f289002).
+- [Fiserv — Pagos QR](https://www.fiserv.com.ar/servicios/pagos-qr/).
+- [S-Tech — Transformación de comercios](https://s-tech.com.ar/transformacion-de-comercios/), [CashFore/CashSchedule](https://s-tech.com.ar/sistema-inteligente-de-operacion-y-transporte/).
 - [Ley 25.326 — texto actualizado](https://www.argentina.gob.ar/normativa/nacional/ley-25326-64790/actualizacion) y [AAIP — obligaciones de responsables](https://www.argentina.gob.ar/aaip/datospersonales/responsables/obligaciones).
 
 Fuentes consultadas el 20/11/2026. Versiones, planes, límites y licencias deben volver a verificarse al instalar. La descripción pública de una función no reemplaza una prueba en el laboratorio.
