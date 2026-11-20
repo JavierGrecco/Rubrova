@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 LOCK_FILE="$ROOT_DIR/platform/source-lock.json"
 VENDOR_DIR="$ROOT_DIR/vendor"
 
@@ -29,9 +29,9 @@ import_source() {
   local name="$1"
   local repo commit destination actual temp marker
   mapfile -t fields < <(read_lock "$name")
-  repo="\${fields[0]}"
-  commit="\${fields[1]}"
-  destination="$ROOT_DIR/\${fields[2]}"
+  repo="${fields[0]}"
+  commit="${fields[1]}"
+  destination="$ROOT_DIR/${fields[2]}"
   marker="$destination/.rubrova-source.json"
 
   if [[ -f "$marker" ]]; then
