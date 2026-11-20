@@ -24,6 +24,15 @@ resolved 'Resuelta' = DATA BOOLEAN (IntegrationIncident);
 resolutionNote 'Resolución' = DATA ISTRING[300] (IntegrationIncident);
 resolvedAt 'Fecha de resolución' = DATA DATETIME (IntegrationIncident);
 
+// Todo adaptador debe llamar este helper inmediatamente antes de cada EXTERNAL HTTP.
+// El límite máximo impide que una pantalla o tarea quede esperando de forma indefinida.
+rubrovaSetIntegrationTimeout 'Establecer tiempo máximo de integración' (LONG timeoutMilliseconds) {
+    IF timeoutMilliseconds < 1 OR timeoutMilliseconds > 30000 THEN
+        throwException('El timeout de integración debe estar entre 1 y 30000 milisegundos.')
+    ELSE
+        timeoutHttp() <- timeoutMilliseconds;
+}
+
 // Registrar la incidencia en una sesión independiente para que no dependa
 // de la transacción funcional que pudo fallar.
 rubrovaRecordIntegrationIncident 'Registrar incidencia Rubrova'
@@ -56,7 +65,7 @@ rubrovaRecordIntegrationIncident 'Registrar incidencia Rubrova'
         TRY {
             logToFile('rubrova-integration-emergency',
                 providerName + ' / ' + operationName + ' / ' + errorCategory +
-                ' / ' + correlation + ' / ' + (OVERRIDE messageCaughtException(), ''));
+                ' / ' + correlation + ' / ' + sanitizedTechnicalDetail);
         } CATCH { }
     }
 }

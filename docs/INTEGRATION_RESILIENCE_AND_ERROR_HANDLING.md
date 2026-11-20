@@ -19,7 +19,7 @@ Los límites de fallo se establecen por proveedor, cuenta, operación y módulo.
 
 ## 2. Política de tiempos de espera
 
-lsFusion 6.2 dispone de timeoutHttp() para configurar en milisegundos el tiempo de espera de llamadas HTTP. El motor usa ese límite para conexión y respuesta. TRY/CATCH permite capturar el error resultante. El valor predeterminado del motor es demasiado alto para una pantalla operativa: Rubrova debe establecer siempre un timeout explícito antes de cada solicitud externa.
+lsFusion 6.2 dispone de timeoutHttp() para configurar en milisegundos el tiempo de espera de llamadas HTTP. El motor usa ese límite para conexión y respuesta. TRY/CATCH permite capturar el error resultante. El valor predeterminado del motor es demasiado alto para una pantalla operativa: Rubrova debe establecer siempre un timeout explícito antes de cada solicitud externa mediante rubrovaSetIntegrationTimeout(), que rechaza valores menores a 1 ms o mayores a 30.000 ms. Cada adaptador debe llamar esta función inmediatamente antes de cada EXTERNAL HTTP.
 
 | Contexto | Timeout por intento | Tiempo total máximo | Tratamiento |
 |---|---:|---:|---|
@@ -30,6 +30,8 @@ lsFusion 6.2 dispone de timeoutHttp() para configurar en milisegundos el tiempo 
 | Operación crítica de pago/fiscal/alta externa | Según contrato del proveedor, con límite estricto | Presupuesto por operación | No repetir ciegamente; usar idempotencia y consulta de estado |
 
 Ninguna pantalla queda esperando un timeout ilimitado. Si una operación es larga, se ejecuta como tarea durable y el usuario puede seguir trabajando.
+
+Ejemplo de secuencia en un adaptador lsFusion: ejecutar rubrovaSetIntegrationTimeout(4000), realizar la solicitud HTTP dentro de TRY/CATCH y, dentro de CATCH, llamar rubrovaRecordIntegrationIncident con categoría, statusHttp(), intentos, clave de correlación, mensaje de operador y detalle técnico ya saneado. El helper registra la incidencia en una sesión independiente; si la base de incidencias no responde, intenta un log local de emergencia.
 
 El tiempo total incluye conexión, respuesta, reintentos y pausas. No alcanza con fijar un timeout por intento y permitir una cantidad ilimitada de reintentos.
 

@@ -200,7 +200,8 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
   assert.match(resilienceSource, /^REQUIRE MyCompany;/m);
-  assert.match(resilienceSource, /timeoutHttp/);
+  assert.match(resilienceSource, /timeoutHttp\(\) <- timeoutMilliseconds/);
+  assert.match(resilienceSource, /timeoutMilliseconds > 30000/);
   assert.match(resilienceSource, /NEWSESSION/);
   assert.match(resilienceSource, /rubrovaRecordIntegrationIncident/);
   assert.match(resilienceSource, /logToFile\('rubrova-integration-emergency'/);
