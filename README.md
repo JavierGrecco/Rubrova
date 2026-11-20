@@ -46,6 +46,7 @@ Una plataforma que reúne en un solo lugar:
 | [Arquitectura](docs/ARCHITECTURE.md) | Estructura técnica, módulos, datos y decisiones de plataforma |
 | [Arquitectura modular distribuida](docs/DISTRIBUTED_MODULAR_ARCHITECTURE.md) | Servicios independientes, APIs/eventos, idempotencia, CAS y operación local |
 | [Modelo de dominio](docs/DOMAIN_MODEL.md) | Entidades, movimientos, estados y relaciones |
+| [Captura de datos y base analítica](docs/DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md) | Fechas históricas, áreas/canales, compras, stock, pagos, cajeros, reclamos, exportaciones e IA de lectura |
 | [Inteligencia del negocio](docs/BUSINESS_INTELLIGENCE.md) | Métricas, rentabilidad, estacionalidad, tendencias y pronósticos |
 | [Implementación de demanda, rentabilidad y marcas](docs/DEMAND_AND_MARGIN_INTELLIGENCE.md) | Datos fuente, herramientas reutilizables, costos, pronósticos, primeras/segundas marcas y pruebas de aceptación |
 | [Benchmark de demanda](scripts/forecasting/benchmark.py) | Comparación reproducible de baselines y StatsForecast sobre datos mensuales sintéticos |
