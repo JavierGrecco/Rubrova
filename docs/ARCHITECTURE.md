@@ -8,7 +8,7 @@ La estrategia prioriza aprovechar proyectos completos y módulos maduros cuando 
 
 ## Dirección técnica
 
-La dirección sigue siendo un **monolito modular con límites claros**, una base transaccional central y capacidad local para operar durante interrupciones de conectividad. No se dividirá en microservicios sin una necesidad medida.
+La dirección es una **plataforma de servicios de dominio independientes**. Cada servicio tiene responsabilidad, almacenamiento, contrato, despliegue, pruebas, versión y rollback propios. Los servicios se comunican mediante APIs síncronas y eventos durables; no comparten tablas ni escriben en datos ajenos. Para la operación presencial se instala un nodo local de sucursal que aloja y coordina los servicios necesarios para las cajas, sin depender de Internet. La arquitectura objetivo y sus patrones obligatorios están en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 
 La estructura del negocio y las invariantes son propias. Los frameworks y módulos externos se evalúan como herramientas reemplazables: no deben decidir qué significa una venta, un pago, un movimiento de caja o un movimiento de inventario.
 
@@ -22,7 +22,9 @@ No hay framework ni base de datos aprobados todavía. La ronda de prueba compara
 
 Las referencias exactas y el protocolo común están en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Los pasos de instalación y las restricciones de sistema operativo están en [Laboratorio de evaluación](PLATFORM_LAB_SETUP.md). MyCompany se fija al tag 6.2 y a los hashes de su instalador/JAR; no mezclarlo con la documentación online 7.0. Posnic se prueba desde el tag `v1.9.2`; la rama `main` se revisa aparte porque contiene commits posteriores y `develop` estaba divergida. ERPNext se prueba mediante la imagen `frappe/erpnext:v16.60.0` desde `frappe_docker/pwd.yml` fijado al commit `ef24ebc0a411b6237694765f0b51d8f8f8dd13ce`; registrar la versión efectiva de Frappe con `bench version`.
 
-**Alternativa de salida:** si ninguna opción supera los controles de integridad, operación local, recuperación y costo de adaptación, construir un monolito modular propio. En ese caso TypeScript y PostgreSQL son candidatos, no decisiones irrevocables. Los componentes especializados se integrarán detrás de contratos explícitos y nunca mantendrán un segundo libro de ventas, pagos o stock.
+**Alternativa de salida:** si ninguna plataforma supera los controles, construir los servicios propios por dominio y reutilizar únicamente componentes que encajen detrás de contratos. TypeScript y PostgreSQL son candidatos, no decisiones irrevocables; la base de datos se elige y administra por servicio, no como una base compartida por toda la plataforma. Ninguna plataforma integral puede obligar a fusionar todos los dominios en un único despliegue o una única autoridad de datos.
+La dirección de servicios independientes tiene precedencia sobre cualquier candidato integral de la evaluación. Las plataformas ERP/POS se consideran candidatas para cubrir uno o varios dominios si respetan los límites, APIs, aislamiento de datos y despliegue/rollback definidos; no se adoptarán como núcleo único por mera amplitud funcional.
+
 ## Principios
 
 - Los módulos representan responsabilidades del negocio.
@@ -75,7 +77,7 @@ La tecnología de persistencia depende de la plataforma que supere la prueba:
 
 - Si se adopta Posnic, evaluar su MongoDB/Mongoose como base transaccional única y medir el costo de conservar o migrar sus modelos.
 - Si se adopta ERPNext, aceptar y probar su persistencia MariaDB como parte del framework; PostgreSQL no se considera equivalente ni se fuerza durante esta ronda.
-- Si construimos el monolito propio, PostgreSQL es el candidato para el registro central. La persistencia local se decidirá con pruebas, comparando SQLite y almacenamiento de navegador según el empaquetado elegido.
+- Cada servicio mantiene su almacenamiento privado, migraciones y credenciales. PostgreSQL es candidato para servicios transaccionales; SQLite puede ser útil para persistencia local de puestos/edge, según las pruebas. La decisión concreta se toma por servicio y no habilita consultas SQL cruzadas.
 - Historial de movimientos para caja, pagos, inventario y cuentas corrientes.
 - Fotografía de valores relevantes al momento de la venta.
 - Identificadores globales para operaciones originadas sin conexión.
@@ -99,7 +101,7 @@ Toda entidad operativa pertenece a un negocio y, cuando corresponde, a sucursal 
 - Reconciliación y estado fiscal separado.
 - Recuperación tras cierre, reinicio, pérdida de proceso y corte durante sincronización.
 
-Dos dispositivos desconectados no pueden conocer cambios mutuos. Para varias cajas offline se evaluará un servicio local de sucursal o concentrador LAN. No usar "último cambio gana" para conflictos financieros o de stock.
+Las cajas de una sucursal deben coordinar las reservas con el servicio local de Inventario por LAN. Si un puesto pierde esa conexión, sólo puede vender stock cubierto por cuotas exclusivas preasignadas o registrar la operación como pendiente de conciliación bajo una política explícita. Idempotencia evita repetir la misma venta; CAS/reservas evita que dos ventas distintas consuman la misma unidad. No usar "último cambio gana" para dinero, ventas o stock. Ver [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 
 No prometer offline total: ARCA, pagos externos y datos de otros dispositivos pueden requerir conexión. El offline POS debe ser probado incluso después de cerrar y volver a abrir la aplicación; mantener una pestaña abierta no alcanza.
 
@@ -111,7 +113,7 @@ La cola de sincronización no reemplaza el registro transaccional. Una venta, su
 
 Si se adopta una plataforma integral, primero se prueba su mecanismo de eventos y sincronización nativo. No se agrega PowerSync, Redis u otro servicio por anticipado: solo después de medir una necesidad concreta y demostrar que no crea una segunda autoridad de datos.
 
-Dos cajas aisladas no conocen los cambios mutuos. No usar "último cambio gana" para dinero, ventas, caja o stock. Si más adelante necesitamos varias cajas independientes sin internet, se evaluará un concentrador local de sucursal y un protocolo de conciliación explícito.
+Dos cajas aisladas no conocen los movimientos mutuos. El inventario local debe coordinarse desde un servicio de sucursal; las cuotas offline son exclusivas y acotadas. Sin comunicación ni preasignación no es posible garantizar que ambas no vendan la última unidad. Los detalles de CAS, ledger, reservas y contingencia están en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 ## Hardware
 
 La interfaz POS se comunica con una capa de dispositivos independiente. Los protocolos y controladores de impresoras, lectores, balanzas, cajones, pantallas y terminales se aíslan detrás de adaptadores. Se prioriza una pasarela local cuando sea necesaria para acceso USB, serie o red y para mantener la caja desacoplada de los servicios externos.
@@ -124,7 +126,7 @@ Logs estructurados, correlación por operación, métricas de latencia y sincron
 
 ## Decisiones y validaciones pendientes
 
-- [x] Dirección de monolito modular y propiedad de datos por módulo.
+- [x] Dirección de servicios independientes por dominio, contratos de comunicación y propiedad única del dato.
 - [x] Estrategia de reutilización compatible con uso interno privado, con control de licencias por componente.
 - [x] Ronda integral de tres candidatos: MyCompany/lsFusion 6.2, Posnic 1.9.2 y ERPNext 16.60.0/Frappe 16.
 - [x] Protocolo común de aceptación y datos sintéticos documentados.
@@ -132,7 +134,7 @@ Logs estructurados, correlación por operación, métricas de latencia y sincron
 - [ ] Instalar y ejecutar Posnic en entorno local aislado.
 - [ ] Instalar y ejecutar ERPNext/Frappe en entorno local aislado.
 - [ ] Completar P01–P26 del protocolo y registrar evidencia.
-- [ ] Elegir una plataforma o aprobar el monolito modular propio.
+- [ ] Validar límites y despliegue independiente de los servicios; decidir qué plataforma o componente externo puede cubrir cada dominio sin fusionar las autoridades de datos.
 - [ ] Confirmar una solución fiscal argentina con pruebas de homologación.
 - [ ] Cerrar interfaz, persistencia local y eventual servicio local según los resultados.
 - [ ] Validar hardware con modelos físicos concretos.
