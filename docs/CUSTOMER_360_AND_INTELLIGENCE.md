@@ -126,6 +126,14 @@ Aplicar minimización por finalidad, exactitud, plazos de retención, control de
 
 El tratamiento debe revisarse bajo la Ley 25.326 y las guías vigentes de AAIP. La aplicación debe facilitar el cumplimiento, pero no declarar por sí misma que el negocio está exento de inscripción u otras obligaciones.
 
+## 6.1 Identidad observada durante los pagos
+
+El método de pago no es un identificador del cliente. Un checkout puede involucrar comprador, pagador, titular del instrumento y receptor distintos. La ficha 360 se vincula a CustomerAccount mediante identificación voluntaria/confirmada (sesión, loyalty ID, código de cliente, teléfono/email verificados o relación B2B), nunca fusionando automáticamente por nombre de pagador, últimos cuatro dígitos, alias o cuenta.
+
+Los datos recibidos del PSP/adquirente se clasifican como observación de pagador o referencia del instrumento, con proveedor, canal, campo, fecha y finalidad permitida. En particular, ciertos reportes de Mercado Pago documentan nombre y documento del pagador para QR/transferencias, pero restringen expresamente su uso a conciliación. Esos campos quedan excluidos de RFM, búsquedas CRM, campañas y matching de identidad. En tarjetas presenciales pueden existir marca, últimos cuatro dígitos, emisor, cuotas y referencia, sin un nombre que identifique al comprador. No guardar PAN/CVV/PIN ni CBU/CVU/alias completo como identificador de cliente.
+
+El detalle de campos y la matriz de permisos se documentan en [Identidad del pagador, pagos y conciliación](PAYMENT_IDENTITY_AND_RECONCILIATION.md). No exigir identificación para ventas de mostrador; cuando el cliente decide asociar una compra, el identificador de fidelización o cuenta comercial se vincula a la venta antes de resolver los componentes de pago.
+
 ## 7. Datos de origen obligatorios
 
 El perfil depende de que las áreas operativas capturen:
@@ -138,7 +146,9 @@ El perfil depende de que las áreas operativas capturen:
 - disponibilidad y quiebres de stock;
 - pagos, intentos, reintegros, liquidaciones y deuda;
 - entregas, reclamos, satisfacción o resolución cuando se registren;
-- fuente, permiso y preferencia de comunicación.
+- fuente, permiso y preferencia de comunicación;
+- CustomerAccount explícito o estado anónimo, separado de observaciones de pagador y titular del instrumento;
+- origen/proveedor del pago y finalidad permitida de cada dato recibido; los campos restringidos a conciliación no forman parte del perfil comercial.
 
 La especificación completa de captura está en [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md).
 
@@ -162,4 +172,4 @@ Permitir exportar el perfil autorizado y sus datos fuente en CSV/XLSX/JSON/Parqu
 
 ## Estado
 
-La ficha 360 y las métricas propuestas amplían el alcance CRM/BI y deben evaluarse en el núcleo POS+ERP antes de desarrollarlas. No constituyen capacidades ya implementadas.
+La ficha 360 y las métricas propuestas amplían el alcance CRM/BI y deben evaluarse en el núcleo POS+ERP antes de desarrollarlas. La vinculación transversal entre medios de pago se hace mediante la cuenta de cliente confirmada, no mediante datos instrumentales. Ver P61–P67 en la evaluación de pagos. No constituyen capacidades ya implementadas.
