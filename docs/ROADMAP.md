@@ -212,7 +212,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P44.
 4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
-6. Ampliar el dataset sintético con quiebres de stock, promociones, cambios de costo, presentaciones comparables y sustitución entre segmentos de marca; preparar la prueba de baselines/StatsForecast y de fórmulas de rentabilidad sin bloquear la selección POS/ERP.
+6. Revisar el resultado del benchmark mensual de demanda regular/intermitente y ampliar el fixture con promociones, cambios de precio, stockouts censurados, presentaciones comparables y sustitución entre segmentos de marca; después evaluar variables exógenas y métodos jerárquicos sin bloquear la selección POS/ERP.
 
 El requisito de copia portable y recuperación en PC nueva está en [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md).
 

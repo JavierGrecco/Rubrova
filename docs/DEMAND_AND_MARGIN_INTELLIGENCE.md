@@ -53,6 +53,8 @@ La base debe distinguir costo histórico/contable, costo de mercadería vendida,
 
 ## 3. Inteligencia de demanda y pronósticos
 
+El fixture mensual y el comparador reproducible baselines/StatsForecast están en [historial sintético](fixtures/demand-monthly-history.json) y [benchmark](../scripts/forecasting/benchmark.py). La ejecución usa StatsForecast 2.1.1 fijado y backtesting walk-forward con horizonte de tres meses; sus resultados son evidencia técnica sobre datos sintéticos, no selección de producción.
+
 ### 3.1 Qué debe responder
 
 Para SKU, familia, marca, categoría, sucursal, canal y unidad de negocio:
@@ -206,7 +208,8 @@ La capacidad no se considera terminada hasta demostrar en dataset sintético y d
 - [ ] Revisar versiones fijadas, dependencias y compatibilidad del stack elegido.
 - [ ] Comparar los métodos de stock valuation y rentabilidad de los finalistas POS/ERP.
 - [ ] Ampliar el dataset sintético con escenarios de stockout, marcas, presentaciones, promociones y costos históricos.
-- [ ] Crear una prueba reproducible StatsForecast frente a baselines; registrar métrica, error, sesgo y costo de ejecución.
+- [x] Preparar benchmark reproducible StatsForecast frente a baselines sobre 48 meses sintéticos y demanda regular/intermitente; CI registra MAE, WAPE y sesgo en backtesting walk-forward.
+- [ ] Ejecutar y revisar el benchmark en CI; comparar estabilidad y coste antes de aprobar cualquier motor productivo.
 - [ ] Evaluar MLForecast y HierarchicalForecast sólo después de obtener una línea base útil.
 - [ ] Probar el modelo de datos de segmentos de marca y métricas de sustitución con casos controlados.
 - [ ] Aprobar dependencias, licencias, versiones y pruebas antes de incorporarlas.
