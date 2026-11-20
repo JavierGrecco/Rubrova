@@ -45,7 +45,9 @@ El lock de versión, la extensión inicial, los scripts de preparación y el det
 
 - [x] Fijar MyCompany 6.2 por tag y commit; registrar los hashes oficiales del instalador Windows y del JAR.
 - [x] Inspeccionar el código fuente de POS, sesiones, pagos mixtos, efectivo, devoluciones, inventario, costos y compras.
-- [x] Crear el módulo superior Rubrova separado del núcleo y un glosario español inicial.
+- [x] Crear el módulo superior Rubrova separado del núcleo y el glosario es_AR.
+- [x] Agregar captions localizados para el primer flujo POS en RubrovaCustom; validar que los 36 identificadores propios tienen traducción.
+- [ ] Cargar el módulo en MyCompany 6.2 real, confirmar los captions y traducir filtros/mensajes de error heredados.
 - [x] Incorporar validación automática del lock, módulo y traducciones; workflow correcto en CI.
 - [x] Preparar scripts de despliegue de RubrovaCustom para Docker, Linux nativo y Windows nativo, con copia previa de settings.
 - [x] Registrar limitación de arquitectura de imagen Docker MyCompany 6.2 en ARM64.

@@ -103,7 +103,7 @@ El detalle de módulos y bloques está en el [Inicio de implementación](docs/IM
 
 **Siguiente resultado:** una jornada de mostrador completa y repetible, conectada a los datos de gestión, con pagos y stock conciliados, devolución auditada, cierre de caja y recuperación probada.
 
-Todavía no hay una instalación ejecutada ni un POS/ERP funcional aceptado. La extensión Rubrova es un esqueleto inicial; la traducción es parcial y el código fuente upstream se consume como dependencia externa, no se ha copiado al repositorio.
+Todavía no hay una instalación ejecutada ni un POS/ERP funcional aceptado. La extensión Rubrova ya incluye captions propios para el primer flujo POS y un ResourceBundle es_AR parcial; su carga y renderizado todavía no se comprobaron en una instalación real. El código fuente upstream se consume como dependencia externa, no se ha copiado al repositorio.
 
 ## Forma de trabajo
 
