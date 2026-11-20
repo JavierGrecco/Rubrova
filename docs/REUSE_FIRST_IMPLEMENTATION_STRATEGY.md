@@ -59,11 +59,11 @@ La selección se divide por tipo de responsabilidad. Las versiones siguientes so
 |---|---|---|---|
 | [ERPNext + Frappe](https://github.com/frappe/erpnext) 16 / Frappe 16 | POS, ventas, compras, inventario, fabricación, costos, contabilidad, administración y reportes | POS Profile integra empresa, depósito, precios, impuestos, medios y cuentas. Sus apps comparten site/bench y persistencia: aplicación integrada, no microservicios independientes. ERPNext GPL-3.0; Frappe MIT. | Primera prueba |
 | [MyCompany / lsFusion](https://github.com/lsfusion-solutions/mycompany) 6.2 | CRM, ventas, compras, multi-depósito, facturación, fabricación, POS y RR. HH. | Módulos propios y API HTTP. Todos los módulos de la instalación comparten base de datos; evaluarlo como aplicación acotada, no como microservicios independientes. MyCompany Apache-2.0 y lsFusion LGPL-3.0. | Primera prueba |
-| [Tryton](https://www.tryton.org/) 8.2 | Ventas, compras, inventario, contabilidad, fabricación y POS oficial sale_point | Arquitectura cliente-servidor con PostgreSQL. sale_point 8.2 documenta ventas, devoluciones, pagos, vuelto, sesiones, movimientos de stock y asientos. Los módulos comparten servidor/base. Las ramas principales de tryton-ar inspeccionadas declaran versiones 7.1 y 8.1 en módulos distintos; verificar un conjunto compatible de tags para 8.2 antes de portarlo. | Primera ronda condicionada |
+| [Tryton](https://www.tryton.org/) 8.0 + tryton-ar 8.0 | POS retail, ventas, compras, inventario, contabilidad, ARCA/WSFE, bancos, pagos/cheques y reportes fiscales | Existe un conjunto de ocho ramas argentinas 8.0 con manifiestos 8.0.0/8.0.1 y pruebas; `sale_point` 8.0 cubre el POS minorista y `account_invoice_ar` 8.0.1 cubre WSFE/FCE/WSFEX/recuperación. Los módulos comparten servidor/base, no microservicios. Tryton 8.2 requiere port/homologación posterior. | Primera ronda condicionada a instalación y tests |
 | [Dolibarr](https://www.dolibarr.org/) 24.0.3 | CRM, pedidos, compras, inventario, envíos, fabricación, facturación, pagos, POS y contabilidad | API REST, hooks y triggers; módulos dentro de una aplicación integrada. Se evalúa como filtro corto de menor complejidad y se mide TakePOS. | Filtro corto |
 | [Posnic](https://github.com/Posnic/POS) 1.9.2 | POS retail/gastronómico, ventas, devoluciones, pagos, compras, catálogo e inventario | Aplicación POS dedicada, pero el paquete revisado combina AGPL-3.0-only con MongoDB SSPL-1.0 y componente comercial; reglas fiscales orientadas a India y soporte macOS limitado. | Referencia POS secundaria |
 
-ERPNext y MyCompany son las primeras pruebas de cobertura porque permiten medir un POS integrado con catálogo, pagos, stock y administración. Ninguno se aprueba por tener muchos módulos: ambos deben demostrar que su límite de datos y despliegue es compatible con Rubrova. Tryton 8.2 se evalúa en paralelo por su POS oficial y su base PostgreSQL. La localización argentina merece atención especial: las ramas principales inspeccionadas declaran series diferentes; hay que verificar tags/versiones alineados y, sólo si no existen, estimar el port a 8.2. Dolibarr pasa por un filtro corto para comprobar si su menor complejidad compensa sus límites funcionales. El ganador no está predeterminado.
+ERPNext y MyCompany son las primeras pruebas de cobertura porque permiten medir un POS integrado con catálogo, pagos, stock y administración. Tryton 8.0 merece una prueba prioritaria adicional: encontramos un conjunto de módulos argentinos 8.0 coordinados, con manifiestos y tests para contabilidad, CUIT/padrón, WSFE/WSFEX, pagos, cheques, reportes y POS en ventas. Hay que instalar el conjunto desde cero, no mezclarlo con `master`, verificar dependencias y homologar. Tryton 8.2 se conserva como actualización posterior porque exigiría adaptar y revalidar ese conjunto. Ninguno de los ERP integrados se aprueba por la cantidad de módulos: debe demostrar un límite de aplicación compatible con Rubrova. Dolibarr pasa por un filtro corto. El ganador no está predeterminado.
 
 ### POS y operación de caja
 
@@ -127,7 +127,7 @@ Para cada candidato: fijar tag/commit, identificar runtime y base de datos, leer
 
 ### Etapa B — laboratorio corto y comparable
 
-Usar el mismo conjunto de datos sintéticos y el mismo guion para las aplicaciones candidatas. Se empieza por ERPNext y MyCompany como candidatos de cobertura; Tryton 8.2 se evalúa en paralelo con la compatibilidad de la localización argentina; Dolibarr recibe un filtro corto. Posnic se prueba sólo como referencia POS secundaria. No se obliga a todos a ejecutar escenarios fuera de su responsabilidad.
+Usar el mismo conjunto de datos sintéticos y el mismo guion para las aplicaciones candidatas. Se empieza por ERPNext, MyCompany y Tryton 8.0 + tryton-ar 8.0 como candidatos de cobertura; Dolibarr recibe un filtro corto. Posnic se prueba sólo como referencia POS secundaria. No se obliga a todos a ejecutar escenarios fuera de su responsabilidad.
 
 La prueba mínima cubre:
 
@@ -167,7 +167,7 @@ No se empieza por escribir un motor de stock, contabilidad, CRM o compras si un 
 
 ## Primer paso y criterio de salida
 
-**Primera prueba:** ERPNext 16/Frappe 16 y MyCompany/lsFusion 6.2; Tryton 8.2 entra condicionado por el conjunto de módulos argentinos; Dolibarr 24.0.3 recibe un filtro corto. Posnic 1.9.2 se compara como referencia POS, no como ERP paralelo. No hay un ganador documental.
+**Primera prueba:** ERPNext 16/Frappe 16, MyCompany/lsFusion 6.2 y Tryton 8.0 + ocho ramas tryton-ar 8.0; Dolibarr 24.0.3 recibe un filtro corto. Posnic 1.9.2 se compara como referencia POS, no como ERP paralelo. No hay un ganador documental.
 
 La primera entrega de software se elegirá después de esa comparación: será un flujo vertical que use las capacidades reutilizadas y agregue sólo los adaptadores o reglas faltantes. No se aprueba aún una implementación propia de Gateway, Ventas e Inventario.
 
