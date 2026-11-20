@@ -29,6 +29,12 @@ DESIGN posDashboard '{rubrova.pos.title}' {
         PROPERTY(nameSalesDiscount(l)) { caption = '{rubrova.pos.discount}'; }
         PROPERTY(discountPrice(l)) { caption = '{rubrova.pos.discount_price}'; }
     }
+    bill {
+        PROPERTY(nameVendor(b)) { caption = '{rubrova.pos.return_customer}'; }
+    }
+    billInfo {
+        PROPERTY(amount(b)) { caption = '{rubrova.pos.return_amount}'; }
+    }
     total {
         PROPERTY(fullAmount(i)) { caption = '{rubrova.pos.subtotal}'; }
         PROPERTY(discountAmount(i)) { caption = '{rubrova.pos.discount_total}'; }
@@ -63,4 +69,15 @@ DESIGN inputMoney '{rubrova.pos.cash_adjustment}' {
 
 DESIGN paymentMethod '{rubrova.payment.method_title}' {
     PROPERTY(name(pm)) { caption = '{rubrova.payment.method_name}'; }
+    PROPERTY(id(pm)) { caption = '{rubrova.payment.code}'; }
+    PROPERTY(isCash(pm)) { caption = '{rubrova.payment.is_cash}'; }
+    PROPERTY(nameIncomingPaymentType(pm)) { caption = '{rubrova.payment.incoming_type}'; }
+    PROPERTY(nameOutgoingPaymentType(pm)) { caption = '{rubrova.payment.outgoing_type}'; }
+}
+
+DESIGN options {
+    commons {
+        PROPERTY(nameDepositPaymentType()) { caption = '{rubrova.cash.deposit_type}'; }
+        PROPERTY(nameWithdrawPaymentType()) { caption = '{rubrova.cash.withdrawal_type}'; }
+    }
 }

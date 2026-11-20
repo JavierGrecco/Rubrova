@@ -145,7 +145,7 @@ Ecommerce, marketplaces, WhatsApp, delivery y, al final, integraciones de transp
 
 ## Estado honesto al iniciar
 
-La lectura de código, la selección de candidato y el diseño de bloques están realizados. El repositorio contiene el lock de versión, el punto de entrada RubrovaCustom, el módulo RubrovaPOSLocalization y el ResourceBundle es_AR. **Todavía no instalamos MyCompany, no compilamos/cargamos el módulo en un servidor, no tenemos un POS ejecutable de Rubrova y no probamos ARCA, hardware, modo offline ni restauración real.** Los tests de CI de este primer bloque sólo validan los archivos de integración, hashes declarados y glosario; no prueban la plataforma upstream.
+La lectura de código, la selección de candidato y el diseño de bloques están realizados. La extensión `RubrovaPOSLocalization` amplía ahora la localización del circuito de devolución, la configuración de medios de pago y los tipos de ingreso/retiro de efectivo; su compilación y visualización en el runtime siguen pendientes de comprobar. El repositorio contiene el lock de versión, el punto de entrada RubrovaCustom, el módulo RubrovaPOSLocalization y el ResourceBundle es_AR. **Todavía no instalamos MyCompany, no compilamos/cargamos el módulo en un servidor, no tenemos un POS ejecutable de Rubrova y no probamos ARCA, hardware, modo offline ni restauración real.** Los tests de CI de este primer bloque sólo validan los archivos de integración, hashes declarados y glosario; no prueban la plataforma upstream.
 
 ## Fuentes técnicas
 

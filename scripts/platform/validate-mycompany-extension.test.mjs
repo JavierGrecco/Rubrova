@@ -87,6 +87,12 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
   assert.match(moduleSource, /DESIGN posPayment/);
+  assert.match(moduleSource, /PROPERTY\(nameVendor\(b\)\)/);
+  assert.match(moduleSource, /PROPERTY\(amount\(b\)\).*rubrova\.pos\.return_amount/);
+  assert.match(moduleSource, /nameDepositPaymentType/);
+  assert.match(moduleSource, /nameWithdrawPaymentType/);
+  assert.match(moduleSource, /nameIncomingPaymentType/);
+  assert.match(moduleSource, /nameOutgoingPaymentType/);
 });
 
 test("el glosario inicial tiene claves únicas, no vacías y necesarias para el POS", () => {
