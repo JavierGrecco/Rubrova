@@ -63,6 +63,8 @@ Alcance:
 
 - Organización, sucursal, usuarios, roles, dispositivos, caja y depósito básicos.
 - Catálogo, variantes, códigos de barras, unidades, productos pesables, precios y clientes.
+- Capturar desde el inicio marca y segmento configurable (primera/líder, segunda, económica, propia/alternativa), unidad comparable, historial de precios/costos y vigencias.
+- Registrar disponibilidad diaria, quiebres, cambios de surtido y promociones para que la inteligencia futura no confunda falta de stock con falta de demanda.
 - Carrito editable antes del cobro; descuentos, promociones e impuestos recalculables.
 - Efectivo, vuelto, medios mixtos y registro del resultado de cada pago.
 - Apertura, movimientos, arqueo y cierre de caja.
