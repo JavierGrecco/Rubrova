@@ -1025,7 +1025,7 @@ export function validateFixture(data) {
             errors.push(path + ".instrumentReference debe ser objeto o null.");
           } else {
             compare(instrument.useForIdentity, false, path + ".instrumentReference.useForIdentity", errors);
-            if (instrument.lastFour !== undefined && !/^\\d{4}$/.test(instrument.lastFour)) {
+            if (instrument.lastFour !== undefined && !/^[0-9]{4}$/.test(instrument.lastFour)) {
               errors.push(path + ".instrumentReference.lastFour debe contener cuatro dígitos.");
             }
           }
