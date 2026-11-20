@@ -59,6 +59,13 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
   assert.match(runtimeSmokeSource, /RUBROVA_PLAYWRIGHT_PYTHON/);
+  assert.match(runtimeSmokeSource, /rubrova-ci/);
+  assert.match(runtimeSmokeSource, /Cuenta central CI/);
+  assert.match(runtimeSmokeSource, /Efectivo CI/);
+  assert.match(runtimeSmokeSource, /Tarjeta CI/);
+  assert.match(runtimeSmokeSource, /defaultCurrency\(\)/);
+  assert.match(runtimeSmokeSource, /CashAccount/);
+  assert.match(runtimeSmokeSource, /account\(cashRegisterCI, PaymentMethod pm\)/);
   assert.match(runtimeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(runtimeSmokeSource, /Inspeccionando el login y la pantalla autenticada con Chromium/);
   assert.match(runtimeSmokeSource, /RUBROVA_RMI_TIMEOUT_SECONDS/);
@@ -100,6 +107,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /_INPUTS=/);
   assert.match(uiSmokeSource, /_BUTTONS=/);
   assert.match(uiSmokeSource, /_LINKS=/);
+  assert.match(uiSmokeSource, /_ALERTS=/);
+  assert.match(uiSmokeSource, /className: typeof element.className/);
   assert.match(uiSmokeSource, /UI_INITIAL/);
   assert.match(uiSmokeSource, /UI_AFTER_LOGIN/);
   assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);

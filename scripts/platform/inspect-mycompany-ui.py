@@ -50,6 +50,18 @@ def visible_snapshot(page: Any, label: str) -> str:
             href: element.getAttribute("href") || ""
         }))"""
     )
+    alerts = page.locator(
+        '[role="alert"], [role="status"], [class*="alert"], [class*="notification"], [class*="error"]'
+    ).evaluate_all(
+        """elements => elements.slice(0, 40).map(element => ({
+            text: (element.innerText || element.textContent || "").trim(),
+            className: typeof element.className === "string" ? element.className : "",
+            role: element.getAttribute("role") || "",
+            title: element.getAttribute("title") || "",
+            ariaLabel: element.getAttribute("aria-label") || "",
+            visible: !!(element.offsetWidth || element.offsetHeight)
+        }))"""
+    )
 
     print(f"{label}_TITLE={title}")
     print(f"{label}_URL={page.url}")
@@ -60,6 +72,7 @@ def visible_snapshot(page: Any, label: str) -> str:
     print(f"{label}_INPUTS=" + json.dumps(input_data, ensure_ascii=False))
     print(f"{label}_BUTTONS=" + json.dumps(buttons, ensure_ascii=False))
     print(f"{label}_LINKS=" + json.dumps(links, ensure_ascii=False))
+    print(f"{label}_ALERTS=" + json.dumps(alerts, ensure_ascii=False))
     return body_text
 
 

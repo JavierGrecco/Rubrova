@@ -104,6 +104,51 @@ for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf MyCompanyResourc
   }
 done
 
+echo "Preparando un puesto de caja y cuentas de prueba sólo en la copia efímera de CI."
+cat >> "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" <<'LSF'
+
+// Datos descartables para la aceptación visual del POS en CI.
+// Este bloque se agrega sólo al archivo temporal de docker-server; no está en el despliegue.
+loadDefaultData () + {
+    IF NOT defaultCurrency() THEN
+        NEW currencyCI = Currency {
+            id(currencyCI) <- 'ARS';
+            name(currencyCI) <- 'Peso argentino';
+            defaultCurrency() <- currencyCI;
+        }
+
+    IF NOT pos('rubrova-ci') THEN {
+        NEW centralAccountCI = CashAccount {
+            name(centralAccountCI) <- 'Cuenta central CI';
+            holder(centralAccountCI) <- defaultCompany();
+            currency(centralAccountCI) <- defaultCurrency();
+        }
+        NEW cashAccountCI = CashAccount {
+            name(cashAccountCI) <- 'Efectivo CI';
+            holder(cashAccountCI) <- defaultCompany();
+            currency(cashAccountCI) <- defaultCurrency();
+        }
+        NEW cardAccountCI = CashAccount {
+            name(cardAccountCI) <- 'Tarjeta CI';
+            holder(cardAccountCI) <- defaultCompany();
+            currency(cardAccountCI) <- defaultCurrency();
+        }
+        NEW cashRegisterCI = Pos {
+            id(cashRegisterCI) <- 'rubrova-ci';
+            name(cashRegisterCI) <- 'Caja de prueba Rubrova';
+            company(cashRegisterCI) <- defaultCompany();
+            account(cashRegisterCI) <- centralAccountCI;
+        }
+        account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
+        account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
+    }
+}
+LSF
+grep -q "rubrova-ci" "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" || {
+  echo "No se agregó el puesto POS efímero para CI." >&2
+  exit 1
+}
+
 echo "3/6 Validando la configuración efectiva de Docker Compose"
 compose config --quiet
 SERVICES="$(compose config --services)"
