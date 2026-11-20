@@ -904,6 +904,162 @@ export function validateFixture(data) {
     );
   }
 
+  const paymentIdentity = data.paymentIdentity;
+  if (!isRecord(paymentIdentity)) {
+    errors.push("paymentIdentity debe existir y ser un objeto.");
+  } else {
+    compare(
+      paymentIdentity.purpose,
+      "synthetic-payment-identity-and-reconciliation",
+      "paymentIdentity.purpose",
+      errors
+    );
+    compare(
+      paymentIdentity.customerLinkingRule,
+      "explicit-customer-or-loyalty-identity-only",
+      "paymentIdentity.customerLinkingRule",
+      errors
+    );
+    compare(
+      paymentIdentity.anonymousCounterSalesAllowed,
+      true,
+      "paymentIdentity.anonymousCounterSalesAllowed",
+      errors
+    );
+
+    const prohibitedSources = new Set([
+      "payer-name",
+      "payer-document",
+      "card-last-four",
+      "card-token",
+      "bank-account",
+      "cbu",
+      "cvu",
+      "alias",
+      "provider-payment-reference"
+    ]);
+    const configuredProhibited = paymentIdentity.prohibitedIdentitySources;
+    if (!Array.isArray(configuredProhibited)) {
+      errors.push("paymentIdentity.prohibitedIdentitySources debe ser un array.");
+    } else {
+      for (const source of prohibitedSources) {
+        if (!configuredProhibited.includes(source)) {
+          errors.push("Falta prohibir la identidad inferida desde: " + source + ".");
+        }
+      }
+    }
+
+    const restrictedFields = paymentIdentity.restrictedPayerFields;
+    if (!Array.isArray(restrictedFields) || restrictedFields.length === 0) {
+      errors.push("paymentIdentity.restrictedPayerFields debe declarar campos con finalidad restringida.");
+    } else {
+      for (const [index, field] of restrictedFields.entries()) {
+        const path = "paymentIdentity.restrictedPayerFields[" + index + "]";
+        if (!isRecord(field)) { errors.push(path + " debe ser un objeto."); continue; }
+        if (!["payerName", "payerIdType", "payerIdNumber"].includes(field.field)) {
+          errors.push(path + ".field no es un campo de pagador esperado.");
+        }
+        compare(field.purpose, "reconciliation-only", path + ".purpose", errors);
+        compare(field.allowedInCustomerProfile, false, path + ".allowedInCustomerProfile", errors);
+      }
+    }
+
+    const transactions = paymentIdentity.transactions;
+    if (!Array.isArray(transactions) || transactions.length < 4) {
+      errors.push("paymentIdentity.transactions debe cubrir varios medios de pago.");
+    } else {
+      const paymentReferences = new Set();
+      const supportedMethods = new Set(["cash", "card-present", "card-online", "qr-transfer", "qr-card", "bank-transfer"]);
+      const allowedIdentityMethods = new Set([
+        "verified-loyalty-id",
+        "authenticated-customer-session",
+        "verified-contact",
+        "b2b-account"
+      ]);
+      for (const [index, transaction] of transactions.entries()) {
+        const path = "paymentIdentity.transactions[" + index + "]";
+        if (!isRecord(transaction)) { errors.push(path + " debe ser un objeto."); continue; }
+        if (typeof transaction.paymentReference !== "string" || !transaction.paymentReference.trim()) {
+          errors.push(path + ".paymentReference es obligatorio.");
+        } else if (paymentReferences.has(transaction.paymentReference)) {
+          errors.push(path + ".paymentReference está duplicado.");
+        } else {
+          paymentReferences.add(transaction.paymentReference);
+        }
+        if (!supportedMethods.has(transaction.method)) {
+          errors.push(path + ".method no es un medio soportado en el fixture.");
+        }
+
+        if (transaction.identityLinkStatus === "confirmed") {
+          if (typeof transaction.customerAccountCode !== "string" || !transaction.customerAccountCode.trim()) {
+            errors.push(path + " confirma identidad sin customerAccountCode.");
+          }
+          if (!allowedIdentityMethods.has(transaction.identityLinkMethod)) {
+            errors.push(path + " vincula CustomerAccount mediante un origen no permitido.");
+          }
+        } else if (transaction.identityLinkStatus === "unlinked") {
+          if (transaction.customerAccountCode !== null || transaction.identityLinkMethod !== null) {
+            errors.push(path + " no puede declarar cuenta o método de identidad cuando permanece unlinked.");
+          }
+        } else {
+          errors.push(path + ".identityLinkStatus debe ser confirmed o unlinked en este fixture.");
+        }
+
+        const payer = transaction.payerObservation;
+        if (payer !== null && payer !== undefined) {
+          if (!isRecord(payer)) {
+            errors.push(path + ".payerObservation debe ser objeto o null.");
+          } else {
+            if (payer.purpose === "reconciliation-only") {
+              compare(payer.useForCustomerMatching, false, path + ".payerObservation.useForCustomerMatching", errors);
+              compare(payer.useInCrm, false, path + ".payerObservation.useInCrm", errors);
+            } else {
+              errors.push(path + ".payerObservation debe declarar su finalidad; los datos de prueba recibidos son sólo de conciliación.");
+            }
+          }
+        }
+
+        const instrument = transaction.instrumentReference;
+        if (instrument !== null && instrument !== undefined) {
+          if (!isRecord(instrument)) {
+            errors.push(path + ".instrumentReference debe ser objeto o null.");
+          } else {
+            compare(instrument.useForIdentity, false, path + ".instrumentReference.useForIdentity", errors);
+            if (instrument.lastFour !== undefined && !/^\\d{4}$/.test(instrument.lastFour)) {
+              errors.push(path + ".instrumentReference.lastFour debe contener cuatro dígitos.");
+            }
+          }
+        }
+        if (prohibitedSources.has(transaction.identityLinkMethod)) {
+          errors.push(path + " usa una fuente prohibida para identificar clientes.");
+        }
+      }
+
+      const linkedMethods = new Set(
+        transactions.filter(item => item?.identityLinkStatus === "confirmed").map(item => item.method)
+      );
+      for (const method of ["cash", "card-present", "qr-transfer"]) {
+        if (!linkedMethods.has(method)) {
+          errors.push("Debe existir un cliente confirmado que utilice el medio " + method + ".");
+        }
+      }
+      if (!transactions.some(item => item?.method === "qr-card" && item.identityLinkStatus === "unlinked")) {
+        errors.push("Debe existir un pago QR con tarjeta que no presuponga identidad del pagador.");
+      }
+    }
+
+    const cardPolicy = paymentIdentity.sensitiveCardDataPolicy;
+    if (!isRecord(cardPolicy)) {
+      errors.push("paymentIdentity.sensitiveCardDataPolicy debe existir.");
+    } else {
+      compare(cardPolicy.storesPan, false, "paymentIdentity.sensitiveCardDataPolicy.storesPan", errors);
+      compare(cardPolicy.storesCvv, false, "paymentIdentity.sensitiveCardDataPolicy.storesCvv", errors);
+      compare(cardPolicy.storesPin, false, "paymentIdentity.sensitiveCardDataPolicy.storesPin", errors);
+      compare(cardPolicy.storesTrackData, false, "paymentIdentity.sensitiveCardDataPolicy.storesTrackData", errors);
+      compare(cardPolicy.usesProviderTokenization, true, "paymentIdentity.sensitiveCardDataPolicy.usesProviderTokenization", errors);
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -911,6 +1067,7 @@ export function validateFixture(data) {
       articleCount: data.catalog.length,
       mixedPaymentLines: sale.lines.length,
       scenarioCount: Object.keys(scenarios).length,
+      paymentTransactionCount: Array.isArray(paymentIdentity?.transactions) ? paymentIdentity.transactions.length : 0,
       currency: data.currency,
       locale: data.locale
     }
