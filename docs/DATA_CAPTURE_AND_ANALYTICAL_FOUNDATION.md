@@ -193,3 +193,10 @@ La especificación amplía el modelo y el protocolo de selección. Los candidato
 - [JupyterLab: repositorio y licencia BSD-3-Clause](https://github.com/jupyterlab/jupyterlab).
 
 Las licencias y capacidades deben volver a verificarse para cada versión/archivo que se fije en el laboratorio. Esta lista respalda una selección de candidatos; no es una autorización para ignorar licencias de dependencias ni una decisión de adopción.
+
+
+## 11. Captura para perfil 360 de clientes
+
+Cada operación debe conservar el CustomerAccount o el estado explícito de venta anónima, fuente/canal, área, sucursal, vendedor/cajero y líneas históricas. Para la ficha del cliente se derivan RFM, cohortes, marcas/categorías, frecuencia y contribución; no se guardan como hechos los pronósticos o segmentos calculados. Cada ejecución analítica conserva periodo, regla/modelo, entradas, versión, cobertura y confianza.
+
+Registrar preferencias declaradas y permisos de contacto por canal (correo, WhatsApp, SMS u otros) con origen, fecha y versión del aviso. No inferir atributos sensibles ni identificar compradores anónimos por coincidencias débiles. La ficha y los límites de uso se detallan en [Perfil 360 e inteligencia por cliente](CUSTOMER_360_AND_INTELLIGENCE.md).
