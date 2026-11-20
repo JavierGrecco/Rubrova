@@ -35,7 +35,7 @@ Las dimensiones que afectan costos y reportes (unidad de negocio, canal, sucursa
 
 1. **ERPNext 16 / Frappe 16:** prueba inicial por la cobertura de POS, inventario, compras, contabilidad, dimensiones y reportes.
 2. **MyCompany 6.2 / lsFusion:** prueba inicial por su Retail POS integrado y amplitud de CRM, ventas, compras, inventario, fabricación y facturación.
-3. **Tryton 8.0 + tryton-ar 8.0:** candidato prioritario porque existe un conjunto de ocho ramas argentinas alineadas. Se debe probar instalación, tests y homologación antes de elegirlo. Tryton 8.0 + módulos tryton-ar 8.0 queda como actualización posterior con port/revalidación.
+3. **Tryton 8.0 + tryton-ar 8.0:** candidato prioritario porque existe un conjunto de ocho ramas argentinas alineadas. Se debe probar instalación, tests y homologación antes de elegirlo. Tryton 8.2 queda como actualización posterior con port/revalidación.
 4. **Dolibarr 24.0.3:** filtro de menor complejidad para POS/ERP y API.
 5. **Posnic 1.9.2:** referencia POS secundaria, no candidato a ERP principal. Revisar licencias y dependencias, localización india, límites offline y compatibilidad de escritorio.
 
@@ -43,10 +43,10 @@ No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circu
 
 ### Tareas pendientes
 
-- [ ] Fijar tags/commits y dependencias actuales de ERPNext 16, MyCompany 6.2, Tryton 8.2 y Dolibarr 24.0.3.
+- [ ] Fijar tags/commits y dependencias actuales de ERPNext 16, MyCompany 6.2, Tryton 8.0 + ocho módulos tryton-ar 8.0 y Dolibarr 24.0.3.
 - [ ] Ejecutar filtro documental, de licencia, instalación, API, exportación, backup y restauración.
 - [ ] Probar ERPNext y MyCompany con el flujo POS completo y jornada simulada.
-- [ ] Evaluar Tryton 8.2 y registrar el trabajo necesario para portar tryton-ar; verificar si existen tags compatibles; no mezclar las ramas principales de series distintas.
+- [ ] Instalar Tryton 8.0 con las ocho ramas tryton-ar 8.0, ejecutar sus tests y homologar WSFE/WSFEX; dejar Tryton 8.2 como upgrade posterior sujeto a port y revalidación.
 - [ ] Ejecutar filtro corto de Dolibarr y decidir si entra en la comparación profunda.
 - [ ] Mantener Posnic como comparador POS sólo si aporta una ventaja medible frente al POS incluido en los ERP.
 - [ ] Llevar como máximo dos candidatos a la prueba profunda P01–P44.
