@@ -145,7 +145,7 @@ Ecommerce, marketplaces, WhatsApp, delivery y, al final, integraciones de transp
 
 ## Estado honesto al iniciar
 
-La lectura de código y la selección del candidato están realizadas. `RubrovaPOSLocalization` y `RubrovaCustom` ya compilaron y se inicializaron en el runtime MyCompany 6.2 de CI. La extensión incorpora ahora captions para la pantalla de reintegro por medio de pago, además del panel de devolución. Aún falta ingresar a la interfaz para comprobar que los captions `es_AR` se muestran correctamente y recorrer las operaciones reales del POS. **Todavía no instalamos el sistema en tu equipo, no tenemos un POS aceptado para uso diario y no probamos ARCA, hardware, modo offline ni restauración real.**
+La lectura de código y la selección del candidato están realizadas. `RubrovaPOSLocalization` y `RubrovaCustom` ya compilaron y se inicializaron en el runtime MyCompany 6.2 de CI. La extensión incorpora captions para ventas, devoluciones, reintegros por medio de pago y movimientos de caja. Los instaladores de Windows y Linux configuran el idioma y país predeterminados (`es`/`AR`) en `settings.properties`; Docker utiliza las variables documentadas por MyCompany. Aún falta ingresar a la interfaz para comprobar visualmente que los captions `es_AR` se resuelven y recorrer las operaciones reales del POS. **Todavía no instalamos el sistema en tu equipo, no tenemos un POS aceptado para uso diario y no probamos ARCA, hardware, modo offline ni restauración real.**
 
 ## Fuentes técnicas
 
