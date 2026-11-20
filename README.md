@@ -96,13 +96,12 @@ Una plataforma que reúne en un solo lugar:
 
 El proyecto y sus dominios están en [Mapa integral de capacidades](docs/PRODUCT_CAPABILITY_MAP.md). La estructura multiárea está en [Áreas de negocio y dimensiones](docs/BUSINESS_LINES_AND_SEGMENTS.md). Los procesos mayoristas están en [Mayorista y distribución](docs/WHOLESALE_AND_DISTRIBUTION.md), los servicios en [Servicios B2B y contratos](docs/B2B_SERVICES_AND_CONTRACTS.md) y la medición económica en [Rentabilidad por área](docs/BUSINESS_UNIT_PROFITABILITY.md). Ninguna plataforma o módulo está aprobado por aparecer en el catálogo.
 **Siguiente — Fase 1: núcleo transaccional**
-- Catálogo, precios y unidades de medida.
-- Carrito y venta POS.
-- Descuentos y promociones con trazabilidad.
-- Pagos mixtos y movimientos de caja.
-- Inventario basado en movimientos.
-- Usuarios, turnos y auditoría.
-- Pruebas automatizadas de los flujos críticos.
+- Gateway local y servicios independientes de Identidad/Organización, Ventas e Inventario.
+- Contratos versionados, almacenamiento aislado y comunicación por APIs/eventos.
+- Reservas de stock con CAS e idempotencia desde la primera venta.
+- Outbox/Inbox, correlación y recuperación tras reiniciar un proceso (sin apagar el equipo).
+- Luego incorporar Pagos/Caja como tercer dominio y continuar con Fiscal e Integraciones.
+- Pruebas de contratos, concurrencia, reintentos, recuperación y restauración.
 
 Las etapas posteriores incorporarán sincronización offline, compras, canales, fiscalidad, perfiles sectoriales e inteligencia avanzada según el orden documentado en el roadmap.
 
