@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "purpose": "synthetic-monthly-demand-benchmark",
+  "dataClassification": "synthetic-no-personal-data",
+  "locale": "es-AR",
+  "timeZone": "America/Argentina/Cordoba",
+  "currency": "ARS",
+  "frequency": "MS",
+  "startMonth": "2022-01",
+  "endMonth": "2025-12",
+  "evaluation": {
+    "horizonMonths": 3,
+    "rollingOriginsMonths": [
+      24,
+      30,
+      36,
+      42
+    ],
+    "seasonalPeriodMonths": 12,
+    "metrics": [
+      "MAE",
+      "WAPE",
+      "bias"
+    ],
+    "policy": "Expanding-window walk-forward backtesting; each fold forecasts only months strictly after its training cutoff."
+  },
+  "series": [
+    {
+      "id": "regular-seasonal-growing",
+      "demandType": "regular",
+      "description": "Demanda mensual regular, creciente y con patrón anual del hemisferio sur.",
+      "observations": [
+        {
+          "month": "2022-01-01",
+          "units": 33,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-02-01",
+          "units": 37,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-03-01",
+          "units": 40,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-04-01",
+          "units": 46,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-05-01",
+          "units": 46,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-06-01",
+          "units": 56,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-07-01",
+          "units": 58,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-08-01",
+          "units": 58,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-09-01",
+          "units": 54,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-10-01",
+          "units": 48,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-11-01",
+          "units": 47,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-12-01",
+          "units": 41,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-01-01",
+          "units": 39,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-02-01",
+          "units": 44,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-03-01",
+          "units": 48,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-04-01",
+          "units": 55,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-05-01",
+          "units": 56,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-06-01",
+          "units": 66,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-07-01",
+          "units": 69,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-08-01",
+          "units": 68,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-09-01",
+          "units": 64,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-10-01",
+          "units": 57,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-11-01",
+          "units": 55,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-12-01",
+          "units": 48,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-01-01",
+          "units": 46,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-02-01",
+          "units": 51,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-03-01",
+          "units": 57,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-04-01",
+          "units": 64,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-05-01",
+          "units": 65,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-06-01",
+          "units": 76,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-07-01",
+          "units": 80,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-08-01",
+          "units": 79,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-09-01",
+          "units": 74,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-10-01",
+          "units": 66,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-11-01",
+          "units": 63,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-12-01",
+          "units": 56,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-01-01",
+          "units": 53,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-02-01",
+          "units": 58,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-03-01",
+          "units": 65,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-04-01",
+          "units": 72,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-05-01",
+          "units": 74,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-06-01",
+          "units": 86,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-07-01",
+          "units": 91,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-08-01",
+          "units": 90,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-09-01",
+          "units": 84,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-10-01",
+          "units": 75,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-11-01",
+          "units": 71,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-12-01",
+          "units": 63,
+          "stockoutDays": 0
+        }
+      ]
+    },
+    {
+      "id": "intermittent-low-volume",
+      "demandType": "intermittent",
+      "description": "Demanda esporádica con muchos meses de cero y tamaños positivos variables.",
+      "observations": [
+        {
+          "month": "2022-01-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-02-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-03-01",
+          "units": 4,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-04-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-05-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-06-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-07-01",
+          "units": 2,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-08-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-09-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-10-01",
+          "units": 6,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-11-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2022-12-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-01-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-02-01",
+          "units": 3,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-03-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-04-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-05-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-06-01",
+          "units": 8,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-07-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-08-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-09-01",
+          "units": 5,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-10-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-11-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2023-12-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-01-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-02-01",
+          "units": 8,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-03-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-04-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-05-01",
+          "units": 4,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-06-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-07-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-08-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-09-01",
+          "units": 10,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-10-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-11-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2024-12-01",
+          "units": 6,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-01-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-02-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-03-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-04-01",
+          "units": 10,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-05-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-06-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-07-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-08-01",
+          "units": 6,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-09-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-10-01",
+          "units": 0,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-11-01",
+          "units": 13,
+          "stockoutDays": 0
+        },
+        {
+          "month": "2025-12-01",
+          "units": 0,
+          "stockoutDays": 0
+        }
+      ]
+    }
+  ]
+}
