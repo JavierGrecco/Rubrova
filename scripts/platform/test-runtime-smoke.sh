@@ -156,12 +156,14 @@ echo "Diagnóstico de rutas de configuración y parámetros superiores dentro de
 docker exec "$SERVER_CONTAINER_ID" sh -ec '
   for root in "$1" /etc/lsfusion6-server /etc/lsfusion-server /opt/lsfusion /app; do
     test -d "$root" || continue
-    find "$root" -maxdepth 4 -type f \\( -name "lsfusion.properties" -o -name "settings.properties" \\) -print 2>/dev/null |
-    while IFS= read -r file; do
+    for file in "$root/lsfusion.properties" "$root/settings.properties" "$root/conf/settings.properties"; do
+      test -f "$file" || continue
       echo "CONFIG_FILE=$file"
       grep -HnE "^[[:space:]]*logics\\\\.topModule[[:space:]]*=" "$file" || true
       grep -HnE "^[[:space:]]*logics\\\\.(includePaths|excludePaths)[[:space:]]*=" "$file" || true
     done
+    find "$root" -maxdepth 4 -type f -name "lsfusion.properties" -print 2>/dev/null || true
+    find "$root" -maxdepth 4 -type f -name "settings.properties" -print 2>/dev/null || true
   done
   echo "JAVA_TOP_MODULE_ARGUMENTS:"
   grep -aoE -- "-Dlogics\\\\.topModule=[^[:cntrl:]]+" /proc/1/cmdline || true
