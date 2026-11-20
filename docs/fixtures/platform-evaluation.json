@@ -706,5 +706,116 @@
         "SITE-DELIVERY-001"
       ]
     }
-  ]
+  ],
+  "paymentIdentity": {
+    "purpose": "synthetic-payment-identity-and-reconciliation",
+    "customerLinkingRule": "explicit-customer-or-loyalty-identity-only",
+    "anonymousCounterSalesAllowed": true,
+    "prohibitedIdentitySources": [
+      "payer-name",
+      "payer-document",
+      "card-last-four",
+      "card-token",
+      "bank-account",
+      "cbu",
+      "cvu",
+      "alias",
+      "provider-payment-reference"
+    ],
+    "restrictedPayerFields": [
+      {
+        "field": "payerName",
+        "purpose": "reconciliation-only",
+        "allowedInCustomerProfile": false
+      },
+      {
+        "field": "payerIdType",
+        "purpose": "reconciliation-only",
+        "allowedInCustomerProfile": false
+      },
+      {
+        "field": "payerIdNumber",
+        "purpose": "reconciliation-only",
+        "allowedInCustomerProfile": false
+      }
+    ],
+    "transactions": [
+      {
+        "paymentReference": "PAY-CASH-001",
+        "saleReference": "SALE-IDENTIFIED-001",
+        "method": "cash",
+        "customerAccountCode": "CLI-IDENTIFIED-001",
+        "identityLinkMethod": "verified-loyalty-id",
+        "identityLinkStatus": "confirmed",
+        "payerObservation": null,
+        "instrumentReference": null
+      },
+      {
+        "paymentReference": "PAY-CARD-001",
+        "saleReference": "SALE-IDENTIFIED-002",
+        "method": "card-present",
+        "customerAccountCode": "CLI-IDENTIFIED-001",
+        "identityLinkMethod": "authenticated-customer-session",
+        "identityLinkStatus": "confirmed",
+        "payerObservation": null,
+        "instrumentReference": {
+          "brand": "visa",
+          "lastFour": "4242",
+          "useForIdentity": false
+        }
+      },
+      {
+        "paymentReference": "PAY-QR-TRANSFER-001",
+        "saleReference": "SALE-IDENTIFIED-003",
+        "method": "qr-transfer",
+        "customerAccountCode": "CLI-IDENTIFIED-001",
+        "identityLinkMethod": "verified-loyalty-id",
+        "identityLinkStatus": "confirmed",
+        "payerObservation": {
+          "payerName": "Pagador ficticio",
+          "payerIdType": "DNI",
+          "payerIdNumber": "00000000",
+          "purpose": "reconciliation-only",
+          "useForCustomerMatching": false,
+          "useInCrm": false
+        },
+        "instrumentReference": null
+      },
+      {
+        "paymentReference": "PAY-QR-CARD-001",
+        "saleReference": "SALE-ANONYMOUS-001",
+        "method": "qr-card",
+        "customerAccountCode": null,
+        "identityLinkMethod": null,
+        "identityLinkStatus": "unlinked",
+        "payerObservation": null,
+        "instrumentReference": {
+          "brand": "mastercard",
+          "lastFour": "1234",
+          "useForIdentity": false
+        }
+      },
+      {
+        "paymentReference": "PAY-TRANSFER-001",
+        "saleReference": "SALE-ANONYMOUS-002",
+        "method": "bank-transfer",
+        "customerAccountCode": null,
+        "identityLinkMethod": null,
+        "identityLinkStatus": "unlinked",
+        "payerObservation": {
+          "purpose": "reconciliation-only",
+          "useForCustomerMatching": false,
+          "useInCrm": false
+        },
+        "instrumentReference": null
+      }
+    ],
+    "sensitiveCardDataPolicy": {
+      "storesPan": false,
+      "storesCvv": false,
+      "storesPin": false,
+      "storesTrackData": false,
+      "usesProviderTokenization": true
+    }
+  }
 }
