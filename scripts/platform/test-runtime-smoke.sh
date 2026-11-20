@@ -276,13 +276,7 @@ RMI_TIMEOUT_SECONDS="${RUBROVA_RMI_TIMEOUT_SECONDS:-180}"
 SECONDS=0
 RMI_READY=false
 while (( SECONDS < RMI_TIMEOUT_SECONDS )); do
-  if docker exec "$SERVER_CONTAINER_ID" sh -c '
-    for table in /proc/net/tcp /proc/net/tcp6; do
-      test -r "$table" || continue
-      awk '''toupper($2) ~ /:1DE4$/ && $4 == "0A" { found = 1 } END { exit !found }''' "$table" && exit 0
-    done
-    exit 1
-  ' >/dev/null 2>&1; then
+  if docker exec "$SERVER_CONTAINER_ID" sh -c 'grep -iqE ":1DE4[[:space:]]+[[:xdigit:]]+:[[:xdigit:]]+[[:space:]]+0A" /proc/net/tcp /proc/net/tcp6' >/dev/null 2>&1; then
     RMI_READY=true
     break
   fi
