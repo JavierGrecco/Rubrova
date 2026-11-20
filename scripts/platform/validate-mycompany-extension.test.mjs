@@ -59,13 +59,13 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
   assert.match(runtimeSmokeSource, /RUBROVA_PLAYWRIGHT_PYTHON/);
-  assert.match(runtimeSmokeSource, /inspect-mycompany-ui\\.py/);
+  assert.match(runtimeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(runtimeSmokeSource, /Inspeccionando la primera pantalla con Chromium/);
   assert.match(uiSmokeSource, /locale="es-AR"/);
-  assert.match(uiSmokeSource, /page\\.goto\\(url/);
-  assert.match(uiSmokeSource, /page\\.screenshot/);
+  assert.match(uiSmokeSource, /page[.]goto[(]url/);
+  assert.match(uiSmokeSource, /page[.]screenshot/);
   assert.match(uiSmokeSource, /UI_INPUTS=/);
-  assert.match(runtimeWorkflowSource, /playwright==1\\.65\\.2/);
+  assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);
   assert.match(runtimeWorkflowSource, /playwright install --with-deps chromium/);
   assert.match(runtimeSmokeSource, /EXTENSION_OVERRIDE_FILE/);
   assert.match(runtimeSmokeSource, /IMAGE_OVERRIDE_FILE/);
