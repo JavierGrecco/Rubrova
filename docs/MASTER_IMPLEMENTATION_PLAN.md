@@ -82,6 +82,36 @@ Los servicios se comunican por API/eventos versionados, tienen datos y credencia
 
 Un ERP existente puede evaluarse como aplicación externa acotada, pero sus módulos internos no se describen como microservicios si comparten servidor, base o migraciones. Sólo se adopta si el límite que administra es deliberado, tiene API, datos propios, backup/restore, actualizaciones controlables y no absorbe autoridades que deban ser independientes. Si no pasa esa puerta, se reutilizan piezas realmente separables o se descarta.
 
+### Primera composición desplegable
+
+El primer conjunto de procesos de Rubrova debe ser pequeño, pero mantener límites reales:
+
+| Unidad desplegable | Autoridad | Incluye al inicio |
+|---|---|---|
+| Gateway local | Entrada y enrutamiento, sin ser dueño de ventas/stock/dinero | Autenticación de dispositivo, routing, permisos de acceso, rate limits y correlation ID |
+| Identidad y organización | Usuarios, roles, entidad, sucursal, caja, depósito y dispositivos | Administración básica de usuarios y contexto operativo |
+| Catálogo y precios | Artículos, variantes, códigos, unidades, listas y reglas vigentes | Importación básica, búsqueda y snapshot de precios |
+| POS / Ventas | Carrito, pedido, venta, líneas, descuentos y devoluciones | Interfaz de caja y estados comerciales |
+| Inventario | Ledger, reservas, disponibilidad, movimientos y conteos | Reserva atómica, salida de venta y devolución |
+| Pagos y Caja | Intentos de pago, medios, efectivo, vuelto, turnos, arqueos y reembolsos | Efectivo, medios manuales y un adaptador de terminal sólo cuando esté probado |
+| Fiscal | Numeración fiscal, comprobantes, ARCA, notas y estados inciertos | Contrato y homologación; no se considera productivo hasta superar las pruebas fiscales |
+
+Clientes/proveedores pueden comenzar dentro de una unidad de Maestros/Relaciones si la plataforma elegida lo exige; deben conservar identificadores y contratos propios para separarlos después sin migración destructiva. Compras, contabilidad general y BI se incorporan en las siguientes entregas, sin crear procesos vacíos sólo para completar un diagrama.
+
+**Flujo coordinado de una venta:**
+
+1. El POS consulta Catálogo/Precios y conserva la fotografía de artículo, precio, impuesto y promoción aplicada.
+2. Ventas registra un carrito/operación con clave idempotente y solicita a Inventario una reserva con cantidad y versión esperada.
+3. Si la reserva no se confirma, el checkout ofrece alternativas; no inicia el cobro por una unidad no reservada según la política.
+4. Pagos procesa cada medio. Una respuesta incierta queda pendiente de consulta/conciliación y no permite enviar otro cobro a ciegas.
+5. Cuando se cumplen las reglas comerciales y de pago, Ventas confirma la operación; Inventario transforma la reserva en movimiento definitivo mediante una operación idempotente.
+6. Fiscal recibe el evento y emite/consulta el comprobante según la obligación fiscal; un fallo de ARCA no borra la venta ni genera doble factura.
+7. Caja cierra el turno con cobros, vuelto, retiros, ajustes autorizados y diferencias conciliadas.
+
+Cada unidad tiene almacenamiento y migraciones propios. En instalaciones pequeñas se pueden co-alojar en una misma máquina/instancia física, pero con bases o esquemas, roles, credenciales y despliegues separados. La comunicación es por APIs versionadas y eventos Outbox/Inbox, no por SQL cruzado.
+
+
+
 ## 5. Selección de plataformas: qué probar y qué no asumir
 
 Las plataformas se comparan por el circuito POS + gestión que realmente necesitamos, no por la cantidad de módulos de su página de inicio. La prueba debe medir instalación, caja, inventario, reportes, localización argentina, APIs, extensión, portabilidad, recuperación, experiencia y costo de mantenimiento.
@@ -166,6 +196,8 @@ Los escenarios P01–P44 existentes siguen vigentes; la prioridad de ejecución 
 **Salida:** decisión sustentada sobre el primer núcleo operativo; no se construyen todavía más módulos sobre una plataforma no seleccionada.
 
 ### Entrega 1 — POS operativo con el mínimo de gestión real
+
+El primer despliegue implementa el flujo sobre las unidades del apartado anterior. Si un candidato externo cubre una parte completa, se encapsula detrás de su API y se mantiene su propia autoridad; no se convierte su base compartida en una base global de Rubrova.
 
 - Identidad, roles, organización, sucursal, caja y depósito básicos.
 - Catálogo, precios, variantes, códigos, unidades y clientes.
