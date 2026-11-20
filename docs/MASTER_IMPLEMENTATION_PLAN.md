@@ -55,6 +55,8 @@ Aunque se implementen progresivamente, estas dimensiones deben existir desde el 
 - Unidad de negocio, canal, sucursal, centro de costo y proyecto como dimensiones distintas.
 - Pedido, venta, pago, movimiento de stock, sesión de caja, comprobante fiscal y despacho como hechos distintos.
 - Identificador externo, correlation ID, clave de idempotencia, auditoría y estado de sincronización.
+- Tiempos de ocurrencia, registro y vigencia; historial de precio, marca/segmento, presentación, disponibilidad y costo; snapshots por línea; detalle de cajero/turno/caja, intentos y liquidaciones de pago, promociones, reclamos y devoluciones.
+- Una clasificación separada de área, canal, formato sectorial, sucursal, depósito y método de cumplimiento. La matriz detallada de captura está en [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md).
 - Política de respaldo desde el primer uso: copia completa portable, puntos incrementales, documentos/adjuntos, configuraciones y auditoría; secretos en almacén cifrado independiente y restauración a equipo limpio.
 - Fecha/hora, moneda, tipo de cambio, política de redondeo y fotografía de las condiciones aplicadas a la operación.
 
@@ -188,7 +190,7 @@ El puntaje es evidencia de una prueba, no una preferencia subjetiva. Una platafo
 - Robustez: proceso terminado abruptamente, red caída, reintento, webhook duplicado y restauración.
 - Gestión: ventas por día/caja/operador/producto/área, stock, costo, margen y conciliación.
 
-Los escenarios P01–P49 existentes siguen vigentes; la prioridad de ejecución se organiza por este circuito, no por el orden numérico ni por la facilidad de una integración.
+Los escenarios P01–P57 existentes siguen vigentes; la prioridad de ejecución se organiza por este circuito, no por el orden numérico ni por la facilidad de una integración.
 
 ## 7. Construcción e integración por entregas
 
@@ -369,6 +371,7 @@ La decisión no se tomará por cantidad de funciones ni por estrellas de GitHub.
 - [Requisitos del POS](POS_REQUIREMENTS.md)
 - [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md)
 - [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md)
+- [Captura de datos y base analítica](DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md)
 - [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md)
 - [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md)
 - [Continuidad y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md)
