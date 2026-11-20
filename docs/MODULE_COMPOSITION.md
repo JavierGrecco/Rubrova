@@ -5,7 +5,7 @@
 
 ## La regla central
 
-Podemos incorporar partes útiles de proyectos distintos como servicios independientes o bibliotecas encapsuladas. Un servicio tiene su propio almacenamiento y ciclo de despliegue; una biblioteca se integra dentro del servicio que la posee. En ambos casos, un componente no puede ser dueño del mismo dato que otro ni escribir directamente en sus tablas. Cada dominio tiene una autoridad, contratos estables y pruebas de integración.
+Podemos incorporar partes útiles de proyectos distintos como servicios independientes o bibliotecas encapsuladas. La prioridad es reutilizar módulos maduros antes de escribir su equivalente. Pero la palabra «modular» no demuestra independencia: si varios módulos de una suite comparten base de datos, runtime y despliegue, son partes de una aplicación integrada. Para adoptarlos como servicios separados debemos demostrar aislamiento real; de lo contrario sólo pueden servir como referencia o como fuente de extracción. Un servicio tiene su propio almacenamiento y ciclo de despliegue; una biblioteca se integra dentro del servicio que la posee. Ningún componente puede ser dueño del mismo dato que otro ni escribir en tablas ajenas.
 
 ## Formas de incorporación
 
@@ -16,7 +16,7 @@ Podemos incorporar partes útiles de proyectos distintos como servicios independ
 | Biblioteca/adaptador | Función técnica acotada, como ESC/POS, scanner o SDK fiscal | Puerto/capacidad implementada por el adaptador |
 | Servicio local (sidecar) | Driver nativo, hardware o componente con runtime independiente | HTTP/gRPC/IPC local autenticado y versionado |
 | Servicio externo | Adquirente, marketplace, ARCA o plataforma que no controlamos | API/webhooks con firma, idempotencia y conciliación |
-| Plataforma integral | Puede acelerar uno o varios dominios del negocio | Se evalúa como servicio de dominio encapsulado; nunca como autoridad paralela ni como obligación de fusionar todo Rubrova |
+| Plataforma integrada | Puede aportar procesos y código ya maduro | No se aprueba por ser modular o tener API: se comprueba si el módulo coincide con un límite de dominio, dispone de almacenamiento/ciclo de vida aislables y no absorbe dominios ajenos. Si comparte DB/runtime entre dominios, queda como referencia o fuente de extracción salvo excepción arquitectónica explícita |
 
 Los módulos de la interfaz y las bibliotecas pueden agruparse por función, pero las capacidades operativas se comunican mediante APIs/eventos entre procesos. La descripción completa de gateway, broker, datos por servicio, Outbox/Inbox, Sagas y nodo local está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 
