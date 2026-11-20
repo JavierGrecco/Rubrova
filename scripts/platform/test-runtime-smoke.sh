@@ -137,6 +137,8 @@ loadDefaultData () + {
             id(cashRegisterCI) <- 'rubrova-ci';
             name(cashRegisterCI) <- 'Caja de prueba Rubrova';
             company(cashRegisterCI) <- defaultCompany();
+            // MyCompany requires an invoice type before the POS can be used.
+            invoiceType(cashRegisterCI) <- invoiceType('retail');
             account(cashRegisterCI) <- centralAccountCI;
         }
         account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
