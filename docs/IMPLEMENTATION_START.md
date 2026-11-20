@@ -51,6 +51,7 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Confirmar hashes SHA-256 oficiales del instalador y JAR contra la release 6.2.
 - [x] Registrar las arquitecturas Docker: MyCompany 6.2 publica `linux/amd64`; las imágenes de servidor y cliente 6.2 publican `amd64` y `arm64`.
 - [x] Preparar scripts de descarga y verificación para Windows y macOS/Linux.
+- [ ] Verificar en CI el nuevo recorrido macOS Apple Silicon: sintaxis Bash, staging BSD y descarga/hash de artefactos (se actualizará al recibir el primer resultado).
 - [x] Preparar scripts de despliegue modular de RubrovaCustom + RubrovaPOSLocalization para Windows nativo, Linux nativo y Docker, con backup de settings y de los archivos existentes.
 - [x] Ejecutar un smoke test automatizado del staging Docker: confirma copia de los módulos y ResourceBundle, conservación de settings, backups y ausencia de invocaciones Docker.
 - [x] Incorporar la primera capa de captions `es_AR` en RubrovaCustom para caja, cliente, carrito, turno, búsqueda, cobro, movimientos de efectivo y devoluciones.
@@ -62,11 +63,11 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La instalación no se pudo ejecutar desde el entorno de automatización de esta sesión: no dispone de Docker y no puede resolver el dominio oficial de descargas. Esto no impide preparar los artefactos del repositorio, pero la validación de runtime requiere el equipo que alojará MyCompany. El estado no debe cambiar a completado hasta guardar esas evidencias.
+La validación automatizada del repositorio puede ejecutarse desde Linux, Windows y un runner macOS Apple Silicon; ésta comprueba scripts, staging y preparación de artefactos, pero no instala MyCompany ni inicia Docker. La instalación y el runtime siguen requiriendo un anfitrión real. Además, el SHA-256 del Compose oficial continúa sin fijarse en el lock, por lo que ese artefacto no se considera todavía verificado de extremo a extremo. El Bloque 0 no se declara completado hasta cerrar esas brechas.
 
 ## Guía operativa del primer arranque
 
-La guía específica está en [Instalación y carga de la extensión MyCompany 6.2](MYCOMPANY_RUNTIME_INSTALL.md). La ruta recomendada para el primer piloto es el instalador Windows x64. Para Docker, usar sólo el Compose de MyCompany 6.2 y revisar la limitación ARM64 documentada.
+La guía específica está en [Instalación y carga de la extensión MyCompany 6.2](MYCOMPANY_RUNTIME_INSTALL.md). La guía [Compatibilidad con macOS](MACOS_SUPPORT.md) explica cómo validar desde una MacBook y qué limitación afecta a Apple Silicon. Para el primer runtime aceptado sigue siendo preferible un anfitrión x64 compatible; Docker en Apple Silicon queda como alternativa experimental hasta completar una prueba real.
 
 ## Bloques de implementación
 

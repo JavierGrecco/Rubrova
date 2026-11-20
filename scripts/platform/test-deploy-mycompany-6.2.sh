@@ -61,4 +61,18 @@ settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.
   exit 1
 }
 
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  native_log="$TEMP_DIR/native-mode.log"
+  native_exit=0
+  bash "$DEPLOY_SCRIPT" native "$INSTALL_DIR" > "$native_log" 2>&1 || native_exit=$?
+  [[ "$native_exit" -eq 2 ]] || {
+    echo "El modo native debía rechazarse en macOS con código 2." >&2
+    exit 1
+  }
+  grep -q "El modo native sólo está disponible en Linux" "$native_log" || {
+    echo "No se explicó cómo desplegar desde macOS." >&2
+    exit 1
+  }
+fi
+
 echo "OK: staging Docker simulado; 3 archivos copiados, settings preservado y backups generados. Docker no fue invocado."

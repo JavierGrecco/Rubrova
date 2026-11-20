@@ -61,6 +61,7 @@ Una plataforma que reúne en un solo lugar:
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
 | [Inicio de implementación por bloques](docs/IMPLEMENTATION_START.md) | MyCompany 6.2 como primer piloto, módulos reutilizados, extensión propia y etapas POS + ERP |
 | [Instalación del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md) | Preparación de artefactos, instalación aislada y despliegue de la extensión modular Rubrova |
+| [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Desarrollo desde MacBook, validación Apple Silicon y límites reales del runtime MyCompany |
 | [Conjunto Tryton 8.0 Argentina](docs/TRYTON_ARGENTINA_8_0_LOCK.md) | Ocho módulos locales fijados por commit, dependencias, licencias y plan de prueba |
 | [Plan de trabajo](docs/ROADMAP.md) | Etapas, prioridades y definición de terminado |
 | [Forma de trabajo](docs/WORKFLOW.md) | Regla de rama única, commits y documentación |
@@ -86,6 +87,10 @@ Una plataforma que reúne en un solo lugar:
 | [Evaluación de S-Tech](docs/S_TECH_EVALUATION.md) | Terminales, kioscos, efectivo inteligente, CashFore, CashSchedule y posible integración |
 | [Referencias de investigación](docs/RESEARCH.md) | Proyectos estudiados, aprendizajes y fuentes |
 
+## Compatibilidad con macOS
+
+Rubrova contempla macOS como entorno de desarrollo y como equipo cliente del POS web. La preparación de artefactos y el staging de la extensión se validan en CI sobre un runner Apple Silicon. Esto no equivale a certificar el servidor MyCompany en ARM: su imagen de lógica 6.2 está publicada para `linux/amd64`, por lo que el runtime local en Apple Silicon requiere emulación y una prueba real antes de aceptarse. La guía separa lo que ya se valida de lo que todavía falta comprobar: [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
+
 ## Etapa actual y próximos resultados
 
 **Ahora — Fase 0: piloto integrado MyCompany 6.2**
@@ -94,7 +99,7 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
-- Preparar los scripts para desplegar esa extensión en Windows, Linux o Docker; la carga efectiva sigue pendiente de la primera instalación.
+- Preparar y validar los artefactos desde Windows, Linux y macOS; desplegar la extensión en Windows/Linux nativo o Docker. La carga efectiva sigue pendiente de la primera instalación.
 - Completar la localización española de las pantallas críticas; ya existe una primera capa de captions propios y el resto debe verificarse en ejecución.
 - Probar catálogo → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre.
 - Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.

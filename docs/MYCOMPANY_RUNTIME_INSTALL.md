@@ -1,7 +1,9 @@
 # Instalación y carga de la extensión Rubrova — MyCompany 6.2
 
 **Versión objetivo:** MyCompany 6.2 / lsFusion 6.x  
-**Estado:** scripts y guía preparados; la instalación real queda pendiente de ejecutarse en un equipo anfitrión.
+**Estado:** preparación multiplataforma y staging automatizados; la instalación real y el runtime siguen pendientes de ejecutarse en un equipo anfitrión.
+
+Para el uso desde una MacBook, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
 ## Ruta recomendada para el primer piloto
 
@@ -17,7 +19,7 @@ En Windows, abrir PowerShell en el clon de Rubrova y ejecutar:
 
 El script descarga el instalador y el JAR oficial a %LOCALAPPDATA%\Rubrova\platforms\mycompany-6.2, valida ambos SHA-256 y no ejecuta archivos.
 
-En macOS/Linux se puede preparar el JAR y el Compose oficial:
+En macOS/Linux se puede preparar el JAR y el Compose oficial. En macOS la caché predeterminada queda en `~/Library/Caches/Rubrova/platforms/mycompany-6.2` (se puede cambiar con `RUBROVA_CACHE_DIR` o `XDG_CACHE_HOME`):
 
     bash scripts/platform/prepare-mycompany-6.2.sh
 
@@ -47,7 +49,7 @@ No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2
 5. Ejecutar docker compose config y revisar los puertos publicados antes de iniciar.
 6. Iniciar sólo en la máquina local para la primera prueba. Cambiar la contraseña inicial de admin antes de abrir acceso a otros equipos.
 
-**Arquitectura Apple Silicon:** Docker Hub publica lsfusion/mycompany:6.2 sólo para linux/amd64; las imágenes lsfusion/server:6.2 y lsfusion/client:6.2 publican amd64 y arm64. Por lo tanto, no está demostrada una instalación completa nativa ARM64. En equipos Apple Silicon habrá que validar la emulación x86-64 o utilizar el piloto inicial en Windows x64. No modificar el Compose a ciegas para forzar plataformas.
+**Arquitectura Apple Silicon:** Docker Hub publica `lsfusion/mycompany:6.2` sólo para `linux/amd64`; las imágenes `lsfusion/server:6.2` y `lsfusion/client:6.2` publican `amd64` y `arm64`. El stack no es nativo ARM64 de punta a punta. Docker Desktop puede ejecutar imágenes AMD64 mediante emulación, pero eso no convierte la combinación en una instalación soportada o aceptada por Rubrova: el rendimiento y la estabilidad deben medirse en el equipo real. No se debe forzar `platform: linux/amd64` ni cambiar imágenes del Compose sin comprobar el conjunto completo. En una MacBook Intel, `amd64` coincide con la arquitectura del host, aunque el runtime también sigue pendiente de aceptación.
 
 ## 3. Copiar el módulo Rubrova sin modificar el ERP
 

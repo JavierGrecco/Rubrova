@@ -35,6 +35,10 @@ Mantener cambios pequeños y enfocados; no mezclar grandes refactorizaciones con
 - Revisar compatibilidad entre versiones de servicios y rollback de aplicación y datos por separado.
 - Confirmar claridad de estados y mensajes.
 
+## Validación multiplataforma
+
+Los cambios de plataforma se validan en CI en Linux, Windows y macOS Apple Silicon. La tarea macOS ejecuta la suite estática, comprueba el staging con herramientas BSD y descarga/verifica los artefactos fijados; no instala MyCompany ni inicia Docker. La aceptación del runtime, periféricos y navegador sigue necesitando una prueba de extremo a extremo en equipos reales. No se toma un test de shell como evidencia de que el POS ya funciona.
+
 ## Commits
 
 Prefijos preferidos: `docs:`, `feat:`, `fix:`, `refactor:`, `test:`, `build:`, `security:`.

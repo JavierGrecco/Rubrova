@@ -14,6 +14,11 @@ if [[ "$MODE" != "docker" && "$MODE" != "native" ]]; then
   exit 2
 fi
 
+if [[ "$MODE" == "native" && "$(uname -s)" != "Linux" ]]; then
+  echo "El modo native sólo está disponible en Linux. En macOS usá docker; en Windows, el script PowerShell." >&2
+  exit 2
+fi
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
 MODULE_FILES=(
@@ -56,16 +61,16 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_SETTINGS=""
 if [[ -e "$SETTINGS_FILE" ]]; then
   BACKUP_SETTINGS="$SETTINGS_FILE.rubrova-backup.$STAMP"
-  cp -p -- "$SETTINGS_FILE" "$BACKUP_SETTINGS"
+  cp -p "$SETTINGS_FILE" "$BACKUP_SETTINGS"
   chmod 600 "$BACKUP_SETTINGS" 2>/dev/null || true
 fi
 
 TMP_SETTINGS="$(mktemp)"
-cleanup() { rm -f -- "$TMP_SETTINGS"; }
+cleanup() { rm -f "$TMP_SETTINGS"; }
 trap cleanup EXIT
 
 if [[ -f "$SETTINGS_FILE" ]]; then
-  cp -- "$SETTINGS_FILE" "$TMP_SETTINGS"
+  cp "$SETTINGS_FILE" "$TMP_SETTINGS"
 else
   : > "$TMP_SETTINGS"
 fi
@@ -95,7 +100,7 @@ fi
 for file in "${MODULE_FILES[@]}"; do
   destination="$MODULE_DIR/$file"
   if [[ -e "$destination" ]]; then
-    cp -p -- "$destination" "$destination.rubrova-backup.$STAMP"
+    cp -p "$destination" "$destination.rubrova-backup.$STAMP"
   fi
   install -m 0644 "$REPO_ROOT/extensions/lsfusion/$file" "$destination"
 done

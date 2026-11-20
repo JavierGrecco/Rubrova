@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CACHE_DIR="$HOME/.cache/rubrova/platforms/mycompany-6.2"
+if [[ -n "${RUBROVA_CACHE_DIR:-}" ]]; then
+  CACHE_DIR="$RUBROVA_CACHE_DIR"
+else
+  case "$(uname -s)" in
+    Darwin) CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/Library/Caches}" ;;
+    *) CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}" ;;
+  esac
+  CACHE_DIR="$CACHE_ROOT/Rubrova/platforms/mycompany-6.2"
+fi
 mkdir -p "$CACHE_DIR"
 
 JAR_URL="https://download.lsfusion.org/solutions/mycompany-6.2.jar"
@@ -40,7 +48,7 @@ echo "SHA-256 local del Compose: $compose_hash"
 echo "Revisá el contenido y fijá los digests de imagen antes de iniciar contenedores."
 case "$(uname -m)" in
   arm64|aarch64)
-    echo "AVISO: Apple Silicon: verificar arquitectura de cada imagen y medir emulación; no usar tags SNAPSHOT."
+    echo "AVISO: Apple Silicon: la imagen de lógica MyCompany 6.2 es linux/amd64; el runtime local requerirá emulación y una prueba real. No se fuerza ninguna plataforma ni se inicia Docker."
     ;;
 esac
 echo "Este script sólo prepara artefactos. No instala ni ejecuta la plataforma."
