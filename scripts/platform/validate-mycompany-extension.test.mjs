@@ -54,6 +54,9 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
+  assert.match(runtimeSmokeSource, /JAVA_OPTS: "-Dlogics\.topModule=RubrovaCustom"/);
+  assert.match(runtimeSmokeSource, /JAVA_OPTS=-Dlogics\.topModule=RubrovaCustom/);
+  assert.match(runtimeSmokeSource, /Argumento Java activo/);
   assert.match(runtimeSmokeSource, /docker inspect/);
   assert.match(runtimeSmokeSource, /docker exec/);
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);

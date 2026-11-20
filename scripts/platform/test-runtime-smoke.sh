@@ -79,6 +79,8 @@ services:
     image: lsfusion/mycompany:6.2@sha256:9dacff96577de49a56633a53801c7bcd78b5e7df501cd4ebd61098124276bd11
   server:
     image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
+    environment:
+      JAVA_OPTS: "-Dlogics.topModule=RubrovaCustom"
   client:
     image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
   db:
@@ -119,6 +121,12 @@ SERVER_CONTAINER_ID="$(compose ps -q server)"
   echo "No se encontró el contenedor del servicio server." >&2
   exit 1
 }
+SERVER_ENV="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$SERVER_CONTAINER_ID" | grep '^JAVA_OPTS=' || true)"
+if [[ "$SERVER_ENV" != "JAVA_OPTS=-Dlogics.topModule=RubrovaCustom" ]]; then
+  echo "El contenedor server no recibió JAVA_OPTS para RubrovaCustom: ${SERVER_ENV:-no definido}" >&2
+  exit 1
+fi
+echo "JAVA_OPTS del servidor: $SERVER_ENV"
 SERVER_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$SERVER_CONTAINER_ID")"
 printf 'Montajes del servidor:\n%s\n' "$SERVER_MOUNTS"
 SERVER_MOUNT_DESTINATION="$(docker inspect "$SERVER_CONTAINER_ID" | python3 -c '
@@ -151,6 +159,25 @@ docker exec "$SERVER_CONTAINER_ID" sh -ec '
   echo "Configuración activa visible en el contenedor:"
   grep -E "^[[:space:]]*logics\\.(topModule|includePaths|excludePaths)[[:space:]]*=" "$mount_dir/settings.properties" || true
 ' sh "$SERVER_MOUNT_DESTINATION"
+
+echo "Verificando que JAVA_OPTS llegue al proceso Java del servidor:"
+docker exec "$SERVER_CONTAINER_ID" sh -ec '
+  found=false
+  for process_cmdline in /proc/[0-9]*/cmdline; do
+    test -r "$process_cmdline" || continue
+    args="$(tr "\000" " " < "$process_cmdline" 2>/dev/null || true)"
+    case "$args" in
+      *-Dlogics.topModule=RubrovaCustom*)
+        echo "Argumento Java activo: -Dlogics.topModule=RubrovaCustom"
+        found=true
+        ;;
+    esac
+  done
+  if [ "$found" != true ]; then
+    echo "JAVA_OPTS no llegó como argumento al proceso Java del servidor." >&2
+    exit 1
+  fi
+'
 
 echo "Diagnóstico de rutas de configuración y parámetros superiores dentro del contenedor:"
 docker exec "$SERVER_CONTAINER_ID" sh -ec '
