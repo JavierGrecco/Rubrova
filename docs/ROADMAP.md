@@ -20,7 +20,7 @@ El seguimiento de envíos **no es una prioridad de inicio**. Se conserva en el m
 | 1 | POS y venta | Carrito, catálogo, clientes, precios, descuentos, cobro, vuelto, pagos mixtos, caja, devoluciones y ticket |
 | 2 | ERP de gestión | Stock, depósitos, compras, proveedores, recepción, costo, clientes, cuentas corrientes y sucursales |
 | 3 | Contabilidad y fiscalidad argentina | Libro mayor, cuentas, bancos, impuestos, ARCA, facturas, notas y conciliación |
-| 4 | Reportes y control de gestión | Ventas, caja, compras, inventario, margen, rentabilidad por producto/marca/canal/área y resultados |
+| 4 | Reportes, control de gestión e inteligencia comercial | Ventas, caja, compras, inventario, rentabilidad por producto/marca/canal/área, preferencias de marcas, tendencias y pronósticos trimestrales/estacionales |
 | 5 | Capacidades sectoriales | Recetas, producción, mermas, lotes, vencimientos, mayorista, distribución y servicios B2B |
 | 6 | Canales externos | Ecommerce, Mercado Libre, WhatsApp, delivery y pedidos de otras plataformas |
 | 7 | Logística avanzada | Transportistas, tarifas, etiquetas, retiro, entrega, tracking y reclamos |
@@ -110,6 +110,19 @@ Bigcapital sólo se prueba si la contabilidad de la plataforma elegida no alcanz
 
 **Criterio de salida:** débitos/créditos, saldos, impuestos, ventas y documentos conciliados; ARCA homologado antes de cualquier habilitación productiva.
 
+### Capacidades obligatorias de inteligencia comercial
+
+- Seguimiento diario, semanal, mensual, trimestral y por estación del hemisferio sur.
+- Detección temprana de productos emergentes, acelerados, desacelerados, estancados y en caída.
+- Pronóstico por SKU/familia, marca, categoría, sucursal, canal y área, con horizonte explícito.
+- Comparación interanual equivalente y ajuste por días sin stock, promociones, cambios de precio y surtido.
+- Alertas y recomendaciones de compra/reposición antes de cada trimestre y estación, considerando lead time, stock de seguridad y presupuesto.
+- Rentabilidad absoluta y porcentual por producto/marca/categoría; distinguir facturación de contribución real.
+- Segmentación configurable de primeras marcas, segundas, económicas, propias y alternativas; medir participación por unidades, tickets, facturación y ganancia.
+- Detección de sustitución y cambios de preferencia entre marcas, controlando faltantes y diferencias de presentación/precio por unidad.
+- Simulación de precio, promoción, surtido y compra; toda ejecución requiere aprobación.
+- Medición posterior del pronóstico frente al resultado real, con error y sesgo por horizonte/segmento.
+
 ## Fase 4 — reportes y control de gestión
 
 **Objetivo:** transformar datos correctos en decisiones sin inventar costos o conclusiones.
@@ -126,7 +139,7 @@ Orden de construcción:
 
 Primero usar reportes nativos del núcleo. Para análisis local, probar DuckDB sobre datasets/exports canónicos. Metabase o Superset sólo se agregan si necesitamos BI multiusuario; sus consultas son de lectura y no reemplazan ledgers.
 
-**Criterio de salida:** las métricas cuadran con los movimientos originales, muestran fórmula/fuente/filtros/actualización y declaran costos o datos faltantes. Los reportes no bloquean la caja.
+**Criterio de salida:** las métricas cuadran con los movimientos originales, muestran fórmula/fuente/filtros/actualización y declaran costos o datos faltantes. Los reportes no bloquean la caja. La inteligencia comercial demuestra backtesting, análisis ajustado por disponibilidad, tableros de rentabilidad y participación de marcas; las recomendaciones declaran confianza y no ejecutan compras/precios automáticamente.
 
 ## Fase 5 — perfiles sectoriales y capacidades de expansión
 
