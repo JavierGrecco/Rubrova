@@ -9,7 +9,7 @@ Rubrova se encuentra en **Fase 0: selección del núcleo operativo**. Hay visió
 
 El workflow existente validó 21 pruebas del dataset y reglas aritméticas en su última ejecución registrada del 19/11/2026. Esa validación no instala ni prueba un POS, ERP, API, integración, backup o flujo real de Rubrova. Las nuevas modificaciones documentales tampoco se deben presentar como pruebas funcionales.
 
-La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
+La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
 ## Prioridad del producto
 
@@ -63,8 +63,9 @@ Alcance:
 
 - Organización, sucursal, usuarios, roles, dispositivos, caja y depósito básicos.
 - Catálogo, variantes, códigos de barras, unidades, productos pesables, precios y clientes.
-- Capturar desde el inicio marca y segmento configurable (primera/líder, segunda, económica, propia/alternativa), unidad comparable, historial de precios/costos y vigencias.
-- Registrar disponibilidad diaria, quiebres, cambios de surtido y promociones para que la inteligencia futura no confunda falta de stock con falta de demanda.
+- Capturar desde el inicio marca, fabricante y segmento comercial configurable por categoría (primera/líder, segunda, económica, propia, alternativa/genérica), con vigencia desde/hasta, motivo, responsable e historial; no inferir el segmento sólo por precio.
+- Capturar unidad base y comparable, contenido neto, equivalencias de pack/caja/bulto y precios/costos históricos con vigencias. La venta conserva el precio, costo de referencia, marca, segmento y presentación aplicados en ese momento.
+- Registrar disponibilidad y existencia por producto/ubicación, reservas, tránsito, períodos sin stock, productos no vendibles, horarios, cambios de surtido, promociones y demanda no satisfecha cuando se pueda observar; son datos obligatorios para corregir la demanda censurada.
 - Carrito editable antes del cobro; descuentos, promociones e impuestos recalculables.
 - Efectivo, vuelto, medios mixtos y registro del resultado de cada pago.
 - Apertura, movimientos, arqueo y cierre de caja.
@@ -87,7 +88,8 @@ Alcance:
 - Cuenta corriente, crédito, vencimientos, saldos y límites con aprobación.
 - Compras, órdenes, recepción parcial/total, devoluciones a proveedor y costos accesorios.
 - Depósitos, transferencias, conteos, ajustes autorizados, reservas, lotes y vencimientos según el rubro.
-- Valuación de stock y costo histórico/reposición con método documentado.
+- Ledger de inventario valorizado con método documentado (FIFO/promedio móvil u otro soportado por el núcleo elegido), costo de cada recepción, descuentos/bonificaciones, flete y costos puestos; distinguir costo histórico, costo vendido y costo de reposición.
+- Costos variables atribuibles (comisiones de medios de pago/canales, embalaje, preparación y entrega) y gastos directos/compartidos con reglas de asignación versionadas; nunca publicar rentabilidad firme con costos ausentes.
 - Importación masiva, normalización y validación de datos.
 - Sucursales y varias áreas de negocio; captura de unidad de negocio y centro de costo por línea cuando corresponda.
 - Documentos, adjuntos, historial y auditoría.
@@ -140,7 +142,7 @@ Orden de construcción:
 6. Finanzas: cuentas por cobrar/pagar, mora, caja, bancos, flujo y estados contables.
 7. Rentabilidad por área y consolidado: minorista, ecommerce, mayorista/distribución y servicios.
 
-Primero usar reportes nativos del núcleo. Para análisis local, probar DuckDB sobre datasets/exports canónicos. Metabase o Superset sólo se agregan si necesitamos BI multiusuario; sus consultas son de lectura y no reemplazan ledgers.
+Primero usar los reportes nativos del ERP y validar su costo/ledger contra movimientos. Para proyecciones, probar StatsForecast como primera biblioteca de modelos estadísticos; MLForecast queda condicionado a datos exógenos e historial suficientes, y HierarchicalForecast para una etapa posterior cuando haya que reconciliar SKU/familia/marca/categoría/sucursal/canal. DemandSense se inspecciona como referencia MIT de demanda intermitente, backtesting y escenarios, pero su madurez es baja; DemandOS queda sólo como referencia de diseño porque no declara licencia. Para el análisis local, probar DuckDB sobre snapshots/Parquet canónicos y elegir como máximo una herramienta BI posterior (Metabase o Superset) si existe una necesidad multiusuario. La comparación de primera/segunda marca se implementa con reglas y métricas propias de Rubrova: no se sustituye por ABC ni por notebooks exploratorios. Ninguna herramienta analítica escribe en ventas, pagos, inventario o contabilidad. El detalle de licencias, decisiones y pruebas está en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
 **Criterio de salida:** las métricas cuadran con los movimientos originales, muestran fórmula/fuente/filtros/actualización y declaran costos o datos faltantes. Los reportes no bloquean la caja. La inteligencia comercial demuestra backtesting, análisis ajustado por disponibilidad, tableros de rentabilidad y participación de marcas; las recomendaciones declaran confianza y no ejecutan compras/precios automáticamente.
 
@@ -201,6 +203,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Revisión de la localización argentina Odoo y de tryton-ar; se encontraron ocho ramas coordinadas 8.0 con manifiestos y tests; instalación y homologación pendientes.
 - [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
 - [x] Requisitos de reportes, métricas y rentabilidad por área.
+- [x] Diseño detallado de demanda, pronósticos, rentabilidad y análisis de primeras/segundas marcas con herramientas y licencias candidatas registradas.
 
 ## Próximos pasos concretos
 
@@ -209,5 +212,6 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P44.
 4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
+6. Ampliar el dataset sintético con quiebres de stock, promociones, cambios de costo, presentaciones comparables y sustitución entre segmentos de marca; preparar la prueba de baselines/StatsForecast y de fórmulas de rentabilidad sin bloquear la selección POS/ERP.
 
 La [investigación logística argentina](ARGENTINA_LOGISTICS_INTEGRATION.md) se conserva, pero no desplaza estos pasos ni condiciona el inicio del producto.
