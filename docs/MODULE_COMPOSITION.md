@@ -1,21 +1,23 @@
 # Composición de módulos y contratos de integración
 
 **Revisión:** 19 de noviembre de 2026  
-**Dirección:** monolito modular como primera opción; adaptadores y servicios laterales cuando un componente externo o un dispositivo lo justifique.
+**Dirección:** servicios de dominio independientes, cada uno con datos, contrato, despliegue y rollback propios. Las bibliotecas compartidas son componentes técnicos, no sustitutos de los límites de servicio.
 
 ## La regla central
 
-Podemos incorporar partes útiles de proyectos distintos como módulos independientes. Pero “independiente” no significa que cada componente pueda ser dueño del mismo dato ni que los módulos escriban directamente en las tablas de los demás. Cada dominio tiene una autoridad, contratos estables y pruebas de integración.
+Podemos incorporar partes útiles de proyectos distintos como servicios independientes o bibliotecas encapsuladas. Un servicio tiene su propio almacenamiento y ciclo de despliegue; una biblioteca se integra dentro del servicio que la posee. En ambos casos, un componente no puede ser dueño del mismo dato que otro ni escribir directamente en sus tablas. Cada dominio tiene una autoridad, contratos estables y pruebas de integración.
 
 ## Formas de incorporación
 
 | Forma | Cuándo conviene | Cómo se conecta |
 |---|---|---|
-| Módulo interno | Código fuente que encaja en nuestro runtime y puede mantenerse aislado | API pública de aplicación y dominio |
+| Servicio de dominio | Capacidad de negocio que necesita aislamiento, ciclo de vida o despliegue propio | API versionada y eventos durables; almacenamiento propio |\n| Biblioteca compartida | Código técnico reutilizable que no necesita proceso o almacenamiento propio | Dependencia versionada, interfaz pequeña y tests del servicio consumidor |
 | Biblioteca/adaptador | Función técnica acotada, como ESC/POS, scanner o SDK fiscal | Puerto/capacidad implementada por el adaptador |
 | Servicio local (sidecar) | Driver nativo, hardware o componente con runtime independiente | HTTP/gRPC/IPC local autenticado y versionado |
 | Servicio externo | Adquirente, marketplace, ARCA o plataforma que no controlamos | API/webhooks con firma, idempotencia y conciliación |
 | Plataforma integral | Resuelve gran parte del negocio con menor costo de adaptación | Se evalúa como base única, no en paralelo como otra fuente de verdad |
+
+Los módulos de la interfaz y las bibliotecas pueden agruparse por función, pero las capacidades operativas se comunican mediante APIs/eventos entre procesos. La descripción completa de gateway, broker, datos por servicio, Outbox/Inbox, Sagas y nodo local está en [Arquitectura modular distribuida](DISTRIBUTED_MODULAR_ARCHITECTURE.md).
 
 ## Propiedad de datos
 
