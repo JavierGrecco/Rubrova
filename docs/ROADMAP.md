@@ -1,115 +1,197 @@
 # Plan de trabajo
 
-## Estado actual
+**Revisión:** 20 de noviembre de 2026  
+**Dirección prioritaria:** POS y operación comercial → ERP de gestión → contabilidad/fiscalidad → análisis y reportes → perfiles sectoriales y canales → logística avanzada.
 
-**Fase 0 — selección técnica basada primero en reutilización.** Rubrova tiene definición funcional, modelos de dominio, arquitectura y un laboratorio de fixtures sintéticos; todavía no tiene una aplicación funcional ni código externo incorporado. La prioridad no es comenzar con servicios propios: es encontrar la mejor combinación de aplicaciones, módulos, plugins y bibliotecas existentes que podamos mantener y adaptar.
+## Estado real
 
-La decisión vigente y las puertas de selección están en [Estrategia de implementación basada primero en reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md). La comparación reproducible está en [Evaluación de plataformas](PLATFORM_EVALUATION.md). Los módulos y SDKs que pueden acelerar las integraciones están en [Shortlist de componentes reutilizables](REUSE_COMPONENTS_SHORTLIST.md).
+Rubrova se encuentra en **Fase 0: selección del núcleo operativo**. Hay visión, alcance, requisitos POS, modelo de dominio, arquitectura, investigación de plataformas, shortlist de código reutilizable y un dataset sintético. Todavía no hay aplicación funcional ni se incorporó código externo.
 
-## Fase 0 — evaluar antes de construir
+El workflow existente validó 21 pruebas del dataset y reglas aritméticas en su última ejecución registrada del 19/11/2026. Esa validación no instala ni prueba un POS, ERP, API, integración, backup o flujo real de Rubrova. Las nuevas modificaciones documentales tampoco se deben presentar como pruebas funcionales.
 
-1. **Base ERP/gestión:** comparar MyCompany/lsFusion 6.2, Tryton serie 7.8 y Dolibarr 24.0.3. Mantener ERPNext 16.60.0 en el filtro comparativo.
-2. **POS:** probar el POS incluido en cada plataforma, incluido Tryton `sale_point`; comparar Posnic 1.9.2 como candidato dedicado. No aprobar uniCenta 5.5.2 hasta verificar acceso a fuente, release y licencias.
-3. **Componentes especializados:** revisar hardware/tickets, ARCA, WMS, tracking, contabilidad, importación, BI y automatización sólo cuando haya una necesidad concreta y un contrato compatible.
-4. Fijar tag/commit, licencias, dependencias, instalación, APIs, extensiones, exportación, respaldo y restauración de cada candidato.
-5. Probar los mismos datos sintéticos y flujos esenciales para evitar decidir por demos o promesas.
-6. Elegir como máximo dos finalistas para el protocolo completo P01–P44; la prueba de cada producto se limita a los dominios que podría asumir.
-7. Medir costo de adaptación y de actualización: módulos propios externos, cantidad de parches al core, dependencias, pasos manuales, conflictos y tiempo de recuperación.
-8. Definir autoridad por dominio antes de conectar aplicaciones. No duplicar ventas, pagos, caja, inventario, comprobantes o contabilidad en sistemas paralelos.
-9. Recién entonces elegir runtime, almacenamiento, broker, gateway y método de despliegue para las piezas propias que hagan falta.
+La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md).
 
-**Criterio de salida:** una solución o composición aprobada con evidencia de cobertura, licencias, integridad, API, extensión, portabilidad, backup/restore y esfuerzo de mantenimiento. Si ninguna plataforma cubre un dominio, se reutilizan sus componentes compatibles y se implementa sólo esa brecha como servicio independiente. No se cambia automáticamente a un monolito propio.
+## Prioridad del producto
 
-## Fase 1 — primera entrega funcional basada en la selección
+El seguimiento de envíos **no es una prioridad de inicio**. Se conserva en el modelo de dominio para que una venta pueda despacharse después y tenga uno o varios envíos, pero los conectores de transportistas se dejan para la última etapa.
 
-La primera entrega será un flujo vertical completo sobre la plataforma o combinación que supere la Fase 0. Su alcance exacto depende de los resultados, pero debe demostrar:
+| Orden | Resultado | Qué tiene que resolver |
+|---:|---|---|
+| 1 | POS y venta | Carrito, catálogo, clientes, precios, descuentos, cobro, vuelto, pagos mixtos, caja, devoluciones y ticket |
+| 2 | ERP de gestión | Stock, depósitos, compras, proveedores, recepción, costo, clientes, cuentas corrientes y sucursales |
+| 3 | Contabilidad y fiscalidad argentina | Libro mayor, cuentas, bancos, impuestos, ARCA, facturas, notas y conciliación |
+| 4 | Reportes y control de gestión | Ventas, caja, compras, inventario, margen, rentabilidad por producto/marca/canal/área y resultados |
+| 5 | Capacidades sectoriales | Recetas, producción, mermas, lotes, vencimientos, mayorista, distribución y servicios B2B |
+| 6 | Canales externos | Ecommerce, Mercado Libre, WhatsApp, delivery y pedidos de otras plataformas |
+| 7 | Logística avanzada | Transportistas, tarifas, etiquetas, retiro, entrega, tracking y reclamos |
 
-- Un recorrido operativo de extremo a extremo con datos persistentes y autoridad única.
-- Extensiones propias separadas del núcleo cuando el producto lo permita.
-- Integración mediante API/eventos versionados y adaptadores, sin acceso SQL cruzado.
-- Idempotencia, concurrencia, permisos, auditoría y estados inciertos.
-- Backup/restauración y actualización reproducibles.
-- Pruebas de uso real y una ruta clara para reemplazar un componente sin perder datos.
+Las dimensiones que afectan costos y reportes (unidad de negocio, canal, sucursal, centro de costo, depósito y proyecto) se incorporan desde el primer modelo. Se posterga el desarrollo sofisticado de BI, no la captura correcta de sus datos.
 
-Sólo si las plataformas candidatas fallan las puertas obligatorias se diseña el conjunto mínimo de servicios Rubrova para cubrir la brecha. En ese escenario se mantiene la arquitectura distribuida por dominio, se reutilizan SDK/bibliotecas y no se decide por anticipado un lenguaje, base o broker.
+## Fase 0 — seleccionar la base del POS y la gestión
 
-La secuencia anterior de construir directamente Gateway + Ventas + Inventario queda **condicionada**, no aprobada como inicio. Si finalmente hace falta, será una implementación propia justificada por evidencia y usará idempotencia, reservas/CAS, Outbox/Inbox y recuperación desde el primer flujo.
+**Objetivo:** decidir qué aplicación o composición puede resolver el circuito POS + ERP sin comprometer propiedad de datos, operación local, recuperación ni arquitectura.
 
-## Fase 2 — continuidad y gestión
+### Orden de evaluación
 
-Persistencia local; Outbox/Inbox; idempotencia; sincronización y conciliación; recuperación tras cierre/reinicio; compras y proveedores; clientes y cuentas corrientes; devoluciones y reembolsos; importación masiva y calidad de datos; hardware inicial validado.
+1. **ERPNext 16 / Frappe 16:** prueba inicial por la cobertura de POS, inventario, compras, contabilidad, dimensiones y reportes.
+2. **MyCompany 6.2 / lsFusion:** prueba inicial por su Retail POS integrado y amplitud de CRM, ventas, compras, inventario, fabricación y facturación.
+3. **Tryton 8.2:** evaluación prioritaria condicionada. Su POS oficial y sus módulos de ERP son interesantes; antes de considerarlo finalista fiscal hay que comprobar el port de los módulos argentinos, hoy desalineados entre 7.1 y 8.1.
+4. **Dolibarr 24.0.3:** filtro de menor complejidad para POS/ERP y API.
+5. **Posnic 1.9.2:** referencia POS secundaria, no candidato a ERP principal. Revisar licencias y dependencias, localización india, límites offline y compatibilidad de escritorio.
 
-**Criterio de salida:** los flujos definidos sobreviven cortes y reintentos sin pérdida, corrupción ni duplicación.
+No se comparan por folleto ni por número de módulos. Se ejecuta el mismo circuito: catálogo → carrito editable → venta → pago y vuelto → caja → stock → devolución → reportes → recuperación.
 
-## Fase 3 — canales e integraciones
+### Tareas pendientes
 
-Tienda online y pedidos; WhatsApp y pedidos asistidos; Mercado Libre; pagos; ARCA en homologación; conciliación fiscal y de liquidaciones; envíos, retiros y reservas de stock.
+- [ ] Fijar tags/commits y dependencias actuales de ERPNext 16, MyCompany 6.2, Tryton 8.2 y Dolibarr 24.0.3.
+- [ ] Ejecutar filtro documental, de licencia, instalación, API, exportación, backup y restauración.
+- [ ] Probar ERPNext y MyCompany con el flujo POS completo y jornada simulada.
+- [ ] Evaluar Tryton 8.2 y registrar el trabajo necesario para portar tryton-ar; no instalar módulos 7.1/8.1 mezclados.
+- [ ] Ejecutar filtro corto de Dolibarr y decidir si entra en la comparación profunda.
+- [ ] Mantener Posnic como comparador POS sólo si aporta una ventaja medible frente al POS incluido en los ERP.
+- [ ] Llevar como máximo dos candidatos a la prueba profunda P01–P44.
+- [ ] Decidir qué responsabilidades pueden quedar en una aplicación de dominio externa y qué dominios requieren servicios Rubrova independientes.
+- [ ] Documentar decisión, evidencia, riesgos, licencias, costo de adaptación y camino de actualización.
 
-**Criterio de salida:** pedidos y documentos externos se integran sin duplicar venta, pago o factura. Los servicios externos que requieren conexión mantienen estados explícitos cuando están caídos.
+**Criterio de salida:** candidato/composición elegida con pruebas reproducibles; autoridades de venta, pago, caja, stock, contabilidad y fiscalidad definidas; no se construyen módulos propios sobre una plataforma aún no seleccionada.
 
-## Fase 4 — perfiles sectoriales
+## Fase 1 — primera entrega: POS con gestión mínima real
 
-Supermercado y autoservicio; panadería y pastelería; rotisería y comidas preparadas; gastronomía y cafetería; recetas, producción, mermas, lotes, vencimientos, balanzas, comandas y cocina.
+**Objetivo:** tener un circuito comercial que se pueda usar y auditar, no una pantalla de demostración.
 
-**Criterio de salida:** cada perfil completa sus flujos usando el núcleo común y conserva trazabilidad.
+Alcance:
 
-## Fase 5 — inteligencia del negocio
+- Organización, sucursal, usuarios, roles, dispositivos, caja y depósito básicos.
+- Catálogo, variantes, códigos de barras, unidades, productos pesables, precios y clientes.
+- Carrito editable antes del cobro; descuentos, promociones e impuestos recalculables.
+- Efectivo, vuelto, medios mixtos y registro del resultado de cada pago.
+- Apertura, movimientos, arqueo y cierre de caja.
+- Venta, ticket propio, cancelación y devolución parcial/total.
+- Reservas y movimientos de stock con una autoridad única y ledger trazable.
+- Documento fiscal separado del ticket, con estados visibles.
+- Lector e impresora mediante adaptadores; terminal de pago real sólo tras pruebas de sandbox/homologación.
+- Panel operativo con ventas netas, devoluciones, medios de pago, diferencia de caja y productos vendidos.
+- Persistencia local, idempotencia, audit trail, backup/restore y reinicio del proceso.
 
-Definiciones financieras y analíticas; tableros globales, por sucursal y canal; rentabilidad por categoría/marca/producto; rotación, ABC-XYZ, GMROI y reposición; estacionalidad y pronósticos; radar de cambios de demanda y precios; promociones y medición incremental; contexto externo; asistente y escenarios.
+**Criterio de salida:** una jornada repetible sin pérdida ni duplicación; ventas, pagos, caja, stock y documento fiscal conciliados; recuperación demostrada.
 
-**Criterio de salida:** informes conciliados con operaciones y pronósticos evaluados contra resultados reales. La inteligencia explica fuentes, supuestos y confianza.
+## Fase 2 — ERP administrativo
 
-## Fase 6 — madurez
+**Objetivo:** administrar el negocio de punta a punta detrás de la caja.
 
-Multi-sucursal avanzada; servicio local si las pruebas lo justifican; automatizaciones; observabilidad; recuperación; revisión de seguridad independiente; backup/restauración verificados y operación estable.
+Alcance:
 
-## Reglas de priorización
+- Clientes/empresas, proveedores, contactos, condiciones y listas de precios.
+- Cuenta corriente, crédito, vencimientos, saldos y límites con aprobación.
+- Compras, órdenes, recepción parcial/total, devoluciones a proveedor y costos accesorios.
+- Depósitos, transferencias, conteos, ajustes autorizados, reservas, lotes y vencimientos según el rubro.
+- Valuación de stock y costo histórico/reposición con método documentado.
+- Importación masiva, normalización y validación de datos.
+- Sucursales y varias áreas de negocio; captura de unidad de negocio y centro de costo por línea cuando corresponda.
+- Documentos, adjuntos, historial y auditoría.
 
-Integridad antes que cantidad de funciones; POS y caja antes que tableros sofisticados; datos correctos antes que IA; sincronización probada antes de prometer offline; homologación fiscal antes de producción; una sola fuente de verdad; y cada dependencia externa debe ahorrar más trabajo del que agrega en actualización y mantenimiento.
+**Criterio de salida:** ventas, recepciones, compras, costo y disponibilidad coinciden; toda diferencia tiene origen, responsable y tratamiento.
 
-## Entregables actuales de Fase 0
+## Fase 3 — contabilidad, fiscalidad y administración argentina
 
-- [x] Catálogo de código reutilizable.
-- [x] Estrategia de uso interno privado y revisión de licencias.
-- [x] Posnic fijado en tag v1.9.2 para una prueba reproducible.
-- [x] ERPNext v16.60.0 y Frappe Framework 16 identificados como alternativa integral.
-- [x] Protocolo común P01–P26 con datos sintéticos y puertas críticas.
-- [x] Laboratorio de instalación para MyCompany 6.2, Posnic 1.9.2 y ERPNext 16.60.0.
-- [x] Validador automático del dataset y workflow de GitHub Actions; última ejecución confirmada: 21/21 pruebas aprobadas y dataset válido.
-- [x] Auditoría de cobertura y mapa integral de capacidades recuperado/documentado.
-- [x] Investigación nacional de adopción digital y testimonios de necesidades PyME con límites de representatividad documentados.
-- [x] Evaluación documental adicional de Dolibarr 24.0.3, InvenTree 1.7.3, OpenBoxes, OpenWMS y localización argentina Odoo/OCA.
-- [x] Verificación de localización argentina Odoo 19/20: addon `l10n_ar` público LGPL-3, `l10n_ar_edi` documentado pero no localizado en Community, addon comunitario WSAA/WSFE Beta y rama OCA 19 sin módulos instalables.
-- [x] Especificación de continuidad operativa, recuperación, backups, estados inciertos y pruebas P27–P44.
-- [x] Decisión de arquitectura distribuida: servicios de dominio independientes, contrato/API/eventos, propiedad de datos, gateway local y coordinación de stock por CAS/cuotas offline.
-- [x] Especificación detallada de checkout, vuelto, terminales y documentos separados.
-- [x] Contratos de composición modular y estrategia de adaptadores por OS documentados.
-- [x] Nueva investigación de MyCompany/lsFusion, Simple WMS, OpenLinker, OfferKit, DuckDB, Superset y Node-RED.
-- [x] Shortlist transversal ampliada: PowerSync, Spree, Saleor, InvenTree, addons OCA, Bigcapital, DuckDB, Metabase, Superset, Keycloak, OpenTelemetry, Prometheus, Grafana, pgBackRest, restic y Kopia; versiones y licencias registradas.
-- [x] Alcance multiárea, mayorista/distribución, servicios B2B y rentabilidad por unidad documentados.
-- [x] Investigación de Dolibarr, OCA Field Service, OpenFieldPro y Open TMS para los nuevos dominios.
-- [ ] Instalar/evaluar Dolibarr 24.0.3 de forma comparable o documentar por qué no supera el costo de evaluación.
-- [ ] Instalar/evaluar InvenTree 1.7.3 para ubicaciones, código, trazabilidad, BOM y API.
-- [ ] Instalar/evaluar MyCompany 6.2 en entorno aislado.
-- [ ] Instalar/evaluar MyCompany/lsFusion 6.2, Tryton serie 7.8 (incluido `sale_point`), Dolibarr 24.0.3, ERPNext/Frappe 16 y Posnic 1.9.2 en entornos aislados y según la responsabilidad que cada uno pueda asumir.
-- [ ] Inspección dirigida de InvenTree, OpenBoxes y componentes públicos de OpenWMS; fijar módulos/commits y límites de licencia.
-- [ ] Solicitar credenciales de QA a Andreani, PAQ.AR y OCA; comparar Envíopack, AfterShip y 17TRACK para tracking multioperador.
-- [ ] Confirmar si existe una API/operativa Kangu aplicable a Argentina; no asumir disponibilidad.
-- [ ] Solicitar layouts de importación/exportación de Catedral y licencias/versiones de Tango, Bejerman, Xubio y Colppy.
-- [ ] Probar importación/migración, exportación contable balanceada, conciliación y recuperación de lotes.
-- [ ] Solicitar/obtener documentación y terminales de prueba para Mercado Pago Point, Getnet, Fiserv Posnet y Payway.
-- [ ] Si Odoo supera la evaluación de plataforma, probar el addon oficial `l10n_ar` y obtener/verificar el código/licencia de `l10n_ar_edi`; comparar con `leonobitech/l10n_ar_arca_edi` Beta en homologación. No asumir que OCA/l10n-argentina 19.0 contiene módulos instalables.
-- [ ] Ejecutar escenarios P20–P26: multiárea, mínimos/tier pricing, despacho posterior, contratos/servicios, rentabilidad y transferencias internas.
-- [ ] Inspección dirigida de Dolibarr 24.0.3 y decidir si entra a la comparación integral.
-- [ ] Ejecutar P27–P44 y validar backup/restauración, idempotencia concurrente, CAS, cuotas offline y rollback individual de servicios.
-- [ ] Ejecución y evidencia de todos los escenarios.
-- [ ] Probar PowerSync como caché offline de catálogo y tareas de dispositivo; comprobar desconexión, reinicio, reintentos y dos terminales en conflicto sin delegarle la autoridad del stock.
-- [ ] Comparar Spree v6.0.5 y Saleor 3.23.50 como canal online/B2B; seleccionar como máximo uno y probar pedidos, cancelaciones, reservas, webhooks duplicados y conciliación con la autoridad comercial central.
-- [ ] Evaluar InvenTree para componentes/BOM y addons OCA Manufacturing sólo si Odoo entra en la composición; revisar cada addon por licencia y dependencias.
-- [ ] Probar DuckDB con exports Parquet/CSV canónicos y conciliar los resultados analíticos contra los reportes transaccionales; evaluar Superset sólo si se necesita un servicio BI multiusuario.
-- [ ] Comparar Bigcapital v0.25.46 con la contabilidad nativa de los ERP finalistas; medir API, balance de comprobación, estados financieros, bancos, multimoneda, impuestos, ARCA, licencias, dependencias y backup/restore antes de decidir si puede ser la única autoridad financiera.
-- [ ] Probar pgBackRest (si PostgreSQL forma parte de la solución) con recuperación PITR a instancia alternativa; probar restic/Kopia para documentos/archivos y restauración verificada.
-- [ ] Diferir Keycloak y la pila OpenTelemetry/Prometheus/Grafana hasta que haya varias aplicaciones/servicios o una necesidad de SSO/observabilidad que el sistema elegido no cubra.
-- [ ] Decisión de tecnología y almacenamiento por servicio, despliegue local y plan de adaptación de plataformas reutilizadas.
+**Objetivo:** convertir los hechos comerciales en resultados contables/fiscales confiables.
 
-No se marca una prueba como aprobada por haber leído documentación, ejecutar una demo o completar un formulario. Se necesita evidencia reproducible.
+Alcance:
+
+- Libro mayor, plan de cuentas, diarios, períodos, cierres y asientos.
+- Cuentas por cobrar/pagar, bancos, conciliación, medios de pago, liquidaciones y comisiones.
+- Impuestos, tipos documentales, puntos de venta, numeración y reglas argentinas.
+- ARCA en homologación; emisión, consulta, estados inciertos, nota de crédito/débito y recuperación.
+- CUIT, condición fiscal, retenciones/percepciones aplicables.
+- Exportación e importación idempotente para el estudio o sistema contable usado (Tango, Catedral, Bejerman, Xubio, Colppy u otro).
+- Conciliación desde la venta hasta el pago, el movimiento de stock, el comprobante y el asiento.
+
+Bigcapital sólo se prueba si la contabilidad de la plataforma elegida no alcanza. No se mantienen libros mayores paralelos.
+
+**Criterio de salida:** débitos/créditos, saldos, impuestos, ventas y documentos conciliados; ARCA homologado antes de cualquier habilitación productiva.
+
+## Fase 4 — reportes y control de gestión
+
+**Objetivo:** transformar datos correctos en decisiones sin inventar costos o conclusiones.
+
+Orden de construcción:
+
+1. Cierre diario: ventas netas, tickets, ticket promedio, descuentos, devoluciones, pagos y caja.
+2. Ventas: artículo, variante, marca, categoría, cajero, cliente, sucursal, canal y área.
+3. Inventario: disponible, reservado, en tránsito, rotación, cobertura, quiebres, excedentes, antigüedad y vencimientos.
+4. Costos y margen: costo vendido, margen bruto, contribución neta de comisiones, embalaje y logística, precio de reposición y GMROI.
+5. Compras y proveedores: cumplimiento, plazos, costos, diferencias y propuesta de reposición.
+6. Finanzas: cuentas por cobrar/pagar, mora, caja, bancos, flujo y estados contables.
+7. Rentabilidad por área y consolidado: minorista, ecommerce, mayorista/distribución y servicios.
+
+Primero usar reportes nativos del núcleo. Para análisis local, probar DuckDB sobre datasets/exports canónicos. Metabase o Superset sólo se agregan si necesitamos BI multiusuario; sus consultas son de lectura y no reemplazan ledgers.
+
+**Criterio de salida:** las métricas cuadran con los movimientos originales, muestran fórmula/fuente/filtros/actualización y declaran costos o datos faltantes. Los reportes no bloquean la caja.
+
+## Fase 5 — perfiles sectoriales y capacidades de expansión
+
+- Gastronomía, panadería y rotisería: recetas, BOM, rendimiento, merma, tandas de producción, comandas, cocina, pesables y vencimientos.
+- Mayorista/distribución: mínimos, múltiplos, escalas, listas por cliente, crédito, entregas parciales y costo de servir.
+- Servicios B2B: contratos, recurrencias, agenda, SLA, órdenes de trabajo, técnicos, horas, materiales, viáticos y rentabilidad.
+- Varias áreas: permisos, recursos y resultados separados; consolidado sin ingresos internos ficticios.
+
+**Criterio de salida:** perfiles que reutilizan los mismos maestros y servicios, sin duplicar clientes, ventas, inventario ni reglas contables.
+
+## Fase 6 — canales e integraciones comerciales
+
+- Ecommerce, pedidos por WhatsApp, Mercado Libre, delivery y otros canales reales.
+- Integrar un canal por vez; probar pedidos, cancelaciones, pagos, comisiones y devoluciones.
+- Webhooks firmados, idempotencia, estados externos, conciliación y prevención de doble factura/sobreventa.
+- Spree o Saleor sólo como posible canal ecommerce, nunca como ERP/POS paralelo.
+- PowerSync sólo si una prueba demuestra valor para lecturas/tareas offline; no coordina la última unidad de stock.
+
+**Criterio de salida:** cada pedido externo se reconcilia con venta, pago, inventario y fiscalidad sin duplicados.
+
+## Fase 7 — logística avanzada
+
+El modelo de fulfillment y la posibilidad de agregar una guía después de vender existen desde el diseño inicial. La construcción de integraciones se posterga:
+
+1. Retiro por cliente y entrega/reparto propio.
+2. Carga manual de operador, guía, paquete y eventos.
+3. Andreani, Correo Argentino PAQ.AR y OCA con credenciales de QA.
+4. Vía Cargo como tracking externo mientras no haya API de booking verificada.
+5. Agregadores, cotización, etiquetas, manifiestos, reclamos y analítica logística.
+6. Kangu sólo si se confirma operación argentina.
+
+**Criterio de salida:** los transportistas no controlan venta, pago ni stock maestro; cada envío conserva su vínculo con el pedido y su trazabilidad.
+
+## Calidad transversal y definición de terminado
+
+Todas las fases deben pasar las pruebas que correspondan:
+
+- POS: rapidez, accesibilidad, teclado, lector, pantalla táctil, carrito editable, devoluciones y permisos.
+- Integridad: idempotencia, CAS para stock, caja reconciliada y ausencia de doble emisión.
+- Resiliencia: corte de red, terminación abrupta del proceso, reintentos, broker caído, restore y rollback.
+- Seguridad: permisos en servidor, aislamiento por negocio/sucursal, gestión de secretos y auditoría.
+- Datos: importación validada, fórmulas trazables, moneda/redondeos y costo explícito.
+- Operación: instalación local, actualización, documentación en español y recuperación por una persona autorizada.
+- Reutilización: versión/commit, licencia por archivo/dependencia, avisos, pruebas y costo de mantenimiento.
+
+Ninguna capacidad se marca terminada porque exista una pantalla, documentación o demo. Se requiere evidencia reproducible.
+
+## Entregables de investigación ya completados
+
+- [x] Catálogo de código reutilizable y estrategia reuse-first.
+- [x] Requisitos POS, checkout, efectivo, vuelto, pagos mixtos y terminales.
+- [x] Modelo de dominio que separa venta, pago, stock, comprobante y envío.
+- [x] Arquitectura de servicios de dominio, APIs/eventos, ownership, idempotencia, CAS, Outbox/Inbox y recuperación.
+- [x] Dataset sintético y validador automático; última ejecución registrada: 21/21 pruebas de fixture aprobadas.
+- [x] Investigación de ERPNext, MyCompany/lsFusion, Tryton, Dolibarr y Posnic.
+- [x] Revisión de la localización argentina Odoo y de los módulos tryton-ar; incompatibilidades registradas.
+- [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
+- [x] Requisitos de reportes, métricas y rentabilidad por área.
+
+## Próximos pasos concretos
+
+1. Ejecutar el filtro comparativo POS + ERPNext 16 y MyCompany 6.2 con el mismo dataset y circuito.
+2. Ejecutar Tryton 8.2 en paralelo sólo para valorar POS/ERP base y medir el port requerido de tryton-ar; no mezclar paquetes de series distintas.
+3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P44.
+4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio.
+5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
+
+La [investigación logística argentina](ARGENTINA_LOGISTICS_INTEGRATION.md) se conserva, pero no desplaza estos pasos ni condiciona el inicio del producto.
