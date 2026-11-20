@@ -36,7 +36,27 @@ jobs:
         run: |
           bash -n scripts/platform/prepare-mycompany-6.2.sh
           bash -n scripts/platform/deploy-mycompany-6.2.sh
+          bash -n scripts/platform/test-deploy-mycompany-6.2.sh
+          bash -n scripts/platform/test-runtime-smoke.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
+  runtime-smoke:
+    name: Arranque real MyCompany 6.2 (Linux x86_64)
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 30
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v7
+      - name: Confirmar Docker Engine y Compose
+        run: |
+          docker version
+          docker compose version
+      - name: Validar sintaxis del smoke test
+        run: bash -n scripts/platform/test-runtime-smoke.sh
+      - name: Levantar MyCompany, probar cliente web y limpiar datos efímeros
+        env:
+          RUBROVA_STARTUP_TIMEOUT_SECONDS: 900
+        run: bash scripts/platform/test-runtime-smoke.sh
   validate-windows:
     runs-on: windows-latest
     steps:

@@ -12,6 +12,7 @@ const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
 const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
+const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 
 function parseProperties(source) {
   const entries = new Map();
@@ -44,6 +45,18 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(preparerSource, new RegExp("^COMPOSE_SHA256=\"" + lock.artifacts.dockerCompose.sha256 + "\"$", "m"));
   assert.match(preparerSource, /El Compose existente no coincide con el SHA-256 fijado/);
   assert.match(preparerSource, /Hash SHA-256 incorrecto para el Compose/);
+});
+
+test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y limpia el stack", () => {
+  assert.match(runtimeSmokeSource, /uname -s/);
+  assert.match(runtimeSmokeSource, /uname -m/);
+  assert.match(runtimeSmokeSource, /Linux.*x86_64/);
+  assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
+  assert.match(runtimeSmokeSource, /compose config --quiet/);
+  assert.match(runtimeSmokeSource, /compose up -d/);
+  assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
+  assert.match(runtimeSmokeSource, /compose down --volumes --remove-orphans/);
+  assert.match(runtimeSmokeSource, /trap cleanup EXIT/);
 });
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {

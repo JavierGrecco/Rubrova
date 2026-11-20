@@ -100,6 +100,7 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
 - Preparar y validar los artefactos desde Windows, Linux y macOS; desplegar la extensión en Windows/Linux nativo o Docker. La carga efectiva sigue pendiente de la primera instalación.
+- Ejecutar un smoke test de arranque de la suite en Linux x86_64 y verificar que el cliente web responda antes de avanzar con las pruebas del POS.
 - Completar la localización española de las pantallas críticas; ya existe una primera capa de captions propios y el resto debe verificarse en ejecución.
 - Probar catálogo → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre.
 - Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.

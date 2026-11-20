@@ -101,7 +101,19 @@ No basta con que el servicio figure como activo. Confirmar:
 
 La traducción actual es parcial. No habilitar el uso diario mientras falten textos críticos o los errores estén en inglés.
 
-## 5. Criterio de finalización del Bloque 0
+## 5. Smoke test automatizado del runtime
+
+El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_64 con Docker Engine y Compose disponibles:
+
+1. Descarga el JAR y el Compose oficiales y compara ambos SHA-256 con el lock.
+2. Copia `RubrovaCustom`, `RubrovaPOSLocalization` y el ResourceBundle a `docker-server` sin editar el código upstream.
+3. Valida la configuración con `docker compose config` y confirma al menos cuatro servicios.
+4. Inicia el stack con un nombre de proyecto efímero y espera hasta 15 minutos la respuesta HTTP 2xx/3xx del cliente web en `127.0.0.1:8080`.
+5. En caso de error, muestra estado y registros; siempre detiene los contenedores y elimina los volúmenes de prueba.
+
+La prueba no carga datos de negocio ni confirma el POS, pagos, devoluciones, idioma o backup/restore. En macOS Apple Silicon no se ejecuta el stack mediante emulación; esa plataforma continúa cubierta por las pruebas estáticas y el uso previsto como cliente web.
+
+## 6. Criterio de finalización del Bloque 0
 
 El bloque sólo se declara completado después de guardar evidencia de:
 

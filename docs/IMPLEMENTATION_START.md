@@ -59,12 +59,13 @@ No agregamos un gateway, broker, una segunda base, microservicios ni un framewor
 - [x] Validar por CI que cada identificador `rubrova.*` utilizado en el módulo tiene traducción.
 - [x] Definir comprobaciones de CI para lock, glosario, extensión y scripts.
 - [ ] Descargar y ejecutar el instalador en Windows x64 o levantar el Compose en un equipo anfitrión compatible.
+- [ ] Ejecutar en CI el nuevo smoke test de runtime MyCompany 6.2 en Linux x86_64; comprobar cuatro servicios, respuesta HTTP del cliente web y evidencia de carga del módulo personalizado.
 - [ ] Confirmar que RubrovaCustom carga en el proceso real, que los captions `rubrova.*` se resuelven y que el idioma es_AR se reconoce.
 - [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación automatizada del repositorio pasó en Linux, Windows y macOS Apple Silicon. El job macOS descargó el JAR y el Compose desde sus URLs oficiales, verificó el SHA-256 fijado de ambos artefactos y volvió a comprobar la caché en una segunda ejecución. Esto no instala MyCompany ni inicia Docker: la instalación, carga de módulos, traducción en runtime, seguridad y backup/restore siguen requiriendo un anfitrión real. El Bloque 0 no se declara completado hasta guardar esas evidencias.
+La validación estática pasó en Linux, Windows y macOS Apple Silicon, incluidos los hashes fijados y el staging BSD. Se añadió un segundo job Linux x86_64 que descarga los artefactos verificados, prepara la extensión, valida el Compose, inicia el stack y espera una respuesta HTTP del cliente web; sus resultados se registran en el workflow. Ese smoke test es una primera prueba de arranque, no una aceptación de los flujos POS ni de la restauración. La carga real del módulo, el idioma, la seguridad, los periféricos y backup/restore continúan como puertas independientes.
 
 ## Guía operativa del primer arranque
 
