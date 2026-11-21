@@ -219,6 +219,7 @@ rubrovaTestHttpTimeout () {
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'failure-captured',
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
+        retryAfter = rubrovaHttpRetryAfter(),
         httpStatus = statusHttp();
 } @@api;
 

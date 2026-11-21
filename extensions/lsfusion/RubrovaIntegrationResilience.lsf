@@ -28,7 +28,7 @@ resolvedAt 'Fecha de resolución' = DATA DATETIME (IntegrationIncident);
 // El límite máximo impide que una pantalla o tarea quede esperando de forma indefinida.
 rubrovaSetIntegrationTimeout 'Establecer tiempo máximo de integración' (LONG timeoutMilliseconds) {
     IF timeoutMilliseconds < 1 OR timeoutMilliseconds > 30000 THEN
-        throwException('El timeout de integración debe estar entre 1 y 30000 milisegundos.')
+        throwException('El timeout de integración debe estar entre 1 y 30000 milisegundos.');
     ELSE
         timeoutHttp() <- timeoutMilliseconds;
 }
@@ -97,6 +97,7 @@ rubrovaHttpResponse = DATA LOCAL FILE();
 rubrovaHttpSucceeded = DATA LOCAL BOOLEAN();
 rubrovaHttpFailureCategory = DATA LOCAL STRING[40]();
 rubrovaHttpCanRetry = DATA LOCAL BOOLEAN();
+rubrovaHttpRetryAfter = DATA LOCAL STRING[100]();
 rubrovaHttpFailureMessage = DATA LOCAL ISTRING[300]();
 
 // GET se considera lectura idempotente. Este helper no reintenta por sí mismo:
@@ -107,8 +108,11 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
     rubrovaHttpSucceeded() <- FALSE;
     rubrovaHttpFailureCategory() <- NULL;
     rubrovaHttpCanRetry() <- FALSE;
+    rubrovaHttpRetryAfter() <- NULL;
     rubrovaHttpFailureMessage() <- NULL;
     statusHttp() <- NULL;
+    LOCAL responseHeaders = TEXT(STRING[100]);
+    responseHeaders(TEXT h) <- NULL WHERE responseHeaders(h);
 
     IF timeoutMilliseconds < 1 OR timeoutMilliseconds > 30000 THEN {
         rubrovaHttpFailureCategory() <- 'CONFIGURATION_ERROR';
@@ -119,15 +123,12 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
     } ELSE {
         TRY {
             rubrovaSetIntegrationTimeout(timeoutMilliseconds);
-            EXTERNAL HTTP GET url TO rubrovaHttpResponse;
-
-            IF failedHttp() THEN
-                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp())
-            ELSE
-                rubrovaHttpSucceeded() <- TRUE;
+            EXTERNAL HTTP GET url HEADERSTO responseHeaders TO rubrovaHttpResponse;
+            rubrovaHttpSucceeded() <- TRUE;
         } CATCH {
+            rubrovaHttpRetryAfter() <- GROUP MAX responseHeaders(TEXT h) IF lower(h) = 'retry-after';
             IF statusHttp() THEN
-                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp())
+                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp());
             ELSE {
                 rubrovaHttpFailureCategory() <- 'TIMEOUT_OR_NETWORK';
                 rubrovaHttpCanRetry() <- TRUE;

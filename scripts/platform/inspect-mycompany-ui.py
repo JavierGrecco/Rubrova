@@ -635,8 +635,8 @@ def inspect_page(url: str) -> int:
                 if isinstance(rate_limit_payload, list):
                     rate_limit_payload = rate_limit_payload[0] if rate_limit_payload else {}
                 print("UI_INTEGRATION_429_RESPONSE=" + json.dumps(rate_limit_payload, ensure_ascii=False))
-                if rate_limit_payload.get("category") != "RATE_LIMITED" or int(rate_limit_payload.get("httpStatus") or 0) != 429 or not rate_limit_payload.get("retryable"):
-                    raise RuntimeError("El HTTP 429 no se clasificó correctamente.")
+                if rate_limit_payload.get("category") != "RATE_LIMITED" or int(rate_limit_payload.get("httpStatus") or 0) != 429 or not rate_limit_payload.get("retryable") or str(rate_limit_payload.get("retryAfter") or "") != "2":
+                    raise RuntimeError("El HTTP 429 no se clasificó correctamente o se perdió Retry-After.")
                 print("UI_INTEGRATION_429_CLASSIFIED=true")
 
                 server_error_response = context.request.get(
