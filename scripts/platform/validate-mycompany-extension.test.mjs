@@ -359,6 +359,11 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
   assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
+  assert.match(runtimeSmokeSource, /rubrovaTestPosConfigurationApi/);
+  assert.match(runtimeSmokeSource, /priceType\\(Invoicing[.]invoiceType\\('retail'\\)\\) <- priceType\\('retail'\\)/);
+  assert.match(runtimeSmokeSource, /Invoicing[.]currency\\(Invoicing[.]invoiceType\\('retail'\\)\\) <- defaultCurrency\\(\\)/);
+  assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
+  assert.match(uiSmokeSource, /rubrovaTestPosConfigurationApi/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_MESSAGE=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_408_CLASSIFIED=true/);

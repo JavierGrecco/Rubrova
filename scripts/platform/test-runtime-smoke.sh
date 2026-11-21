@@ -149,7 +149,10 @@ NAMESPACE Sales;
 // El POS convierte el precio de lista usando la moneda del tipo de precio.
 // En CI asociamos el tipo minorista a la moneda ARS sintética del fixture.
 loadDefaultData () + {
+    // Ensure invoice type, invoice price type and price type share the organization currency.
     currency(priceType('retail')) <- defaultCurrency();
+    priceType(Invoicing.invoiceType('retail')) <- priceType('retail');
+    Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency();
 }
 LSF
 
@@ -312,6 +315,21 @@ rubrovaMockIncidentCount () = GROUP SUM 1
 
 rubrovaTestIncidentCountApi () {
     EXPORT JSON FROM incidentCount = rubrovaMockIncidentCount();
+} @@api;
+
+rubrovaTestPosConfigurationApi () {
+    EXPORT JSON FROM
+        defaultCurrencyName = name(defaultCurrency()),
+        retailInvoiceCurrencyName = Invoicing.nameCurrency(Invoicing.invoiceType('retail')),
+        retailInvoicePriceTypeName = Sales.namePriceType(Invoicing.invoiceType('retail')),
+        retailPriceTypeCurrencyName = Sales.nameCurrency(Sales.priceType('retail')),
+        cashMethodName = name(Retail.cashPaymentMethod()),
+        cardMethodName = name(Retail.paymentMethod('card')),
+        cashAccountName = Retail.nameAccount(Retail.pos('rubrova-ci'), Retail.cashPaymentMethod()),
+        cardAccountName = Retail.nameAccount(Retail.pos('rubrova-ci'), Retail.paymentMethod('card')),
+        cashDisabled = Retail.disabled(Retail.pos('rubrova-ci'), Retail.cashPaymentMethod()),
+        cardDisabled = Retail.disabled(Retail.pos('rubrova-ci'), Retail.paymentMethod('card')),
+        openSessionNumber = Retail.number(Retail.openedSession(Retail.pos('rubrova-ci')));
 } @@api;
 LSF
 

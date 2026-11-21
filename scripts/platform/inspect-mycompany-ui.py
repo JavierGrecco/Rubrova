@@ -599,6 +599,21 @@ def inspect_page(url: str) -> int:
                     ensure_ascii=False
                 ))
 
+                # Leer la configuración efectiva del POS desde el servidor antes de comprobar el cobro.
+                api_base = url.rstrip("/") + "/exec/Rubrova."
+                pos_config_response = context.request.get(
+                    api_base + "rubrovaTestPosConfigurationApi", timeout=12_000
+                )
+                if pos_config_response.status != 200:
+                    raise RuntimeError(
+                        "El diagnóstico de configuración POS respondió HTTP "
+                        f"{pos_config_response.status}: {pos_config_response.text()[:1200]}"
+                    )
+                pos_config_payload = pos_config_response.json()
+                if isinstance(pos_config_payload, list):
+                    pos_config_payload = pos_config_payload[0] if pos_config_payload else {}
+                print("UI_POS_EFFECTIVE_CONFIGURATION=" + json.dumps(pos_config_payload, ensure_ascii=False))
+
                 # Abrir la pantalla de cobro y verificar medios disponibles sin confirmar.
                 if not click_exact_action(page, "Cobrar (ctrl ENTER)"):
                     raise RuntimeError("No se encontró la acción Cobrar después de agregar el artículo.")
