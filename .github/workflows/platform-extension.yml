@@ -18,6 +18,12 @@ on:
       - 'scripts/platform/**'
       - '.github/workflows/platform-extension.yml'
   workflow_dispatch:
+    inputs:
+      validate_macos:
+        description: "Ejecutar la validación completa de macOS ARM64 (consumo mayor de Actions)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -147,6 +153,7 @@ jobs:
             }
           }
   validate-macos-arm64:
+    if: github.event_name == 'workflow_dispatch' && inputs.validate_macos
     name: Validación macOS Apple Silicon
     runs-on: macos-26
     steps:
