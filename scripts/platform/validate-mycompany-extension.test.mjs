@@ -165,7 +165,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /Argumento Java activo/);
   assert.match(runtimeSmokeSource, /RUBROVA_CUSTOM_LOG_EVIDENCE/);
   assert.match(runtimeSmokeSource, /RUBROVA_LOCALIZATION_LOG_EVIDENCE/);
-  assert.match(runtimeSmokeSource, /Los registros confirman los tres módulos Rubrova/);
+  assert.match(runtimeSmokeSource, /Los registros confirman los módulos Rubrova y el fixture de precios CI/);
+  assert.match(runtimeSmokeSource, /RUBROVA_CI_SALES_LOG_EVIDENCE/);
+  assert.match(uiSmokeSource, /UI_CART_PRODUCT_DOM/);
+  assert.match(uiSmokeSource, /UI_CART_AMOUNT_LABELS/);
   assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience=\$RUBROVA_RESILIENCE_LOG_EVIDENCE/);
   assert.match(runtimeSmokeSource, /docker inspect/);
   assert.match(runtimeSmokeSource, /docker exec/);
