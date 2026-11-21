@@ -382,69 +382,112 @@ def wait_for_session_open(page: Any, timeout_seconds: int = 45) -> str:
     )
 
 
+NAVIGATOR_CONTAINER_BY_LABEL = {
+    # Stable lsFusion navigator IDs observed in the successful MyCompany 6.2 runtime.
+    "Comercio": "Retail.retail",
+    "Punto de venta": "Retail.posDashboard",
+}
+
+
+def navigator_item(page: Any, label: str) -> Any:
+    container = NAVIGATOR_CONTAINER_BY_LABEL.get(label)
+    if container:
+        return page.locator(f'a[lsfusion-container="{container}"]')
+    # Fallback for labels without a known lsFusion container ID.
+    return page.locator(f'a:text-is({json.dumps(label, ensure_ascii=False)})')
+
+
+def describe_navigator_item(locator: Any) -> dict[str, Any]:
+    return locator.evaluate(
+        """element => ({
+            text: (element.innerText || element.textContent || "").trim(),
+            container: element.getAttribute("lsfusion-container") || "",
+            visible: getComputedStyle(element).display !== "none" &&
+                getComputedStyle(element).visibility !== "hidden" &&
+                !!(element.offsetWidth || element.offsetHeight),
+            expanded: element.getAttribute("aria-expanded") || "",
+            className: typeof element.className === "string" ? element.className : "",
+            outerHTML: element.outerHTML.slice(0, 900)
+        })"""
+    )
+
+
+def navigator_diagnostics(page: Any) -> list[dict[str, Any]]:
+    return page.locator("a").evaluate_all(
+        """elements => elements.map((element, index) => ({
+            index,
+            text: (element.innerText || element.textContent || "").trim(),
+            container: element.getAttribute("lsfusion-container") || "",
+            visible: getComputedStyle(element).display !== "none" &&
+                getComputedStyle(element).visibility !== "hidden" &&
+                !!(element.offsetWidth || element.offsetHeight),
+            expanded: element.getAttribute("aria-expanded") || "",
+            className: typeof element.className === "string" ? element.className : "",
+            outerHTML: element.outerHTML.slice(0, 700)
+        }))"""
+    )
+
+
 def click_exact_link(
     page: Any, label: str, submenu_label: str | None = None
 ) -> bool:
-    # MyCompany renders navigator entries as <a> elements without href.
-    # Such anchors are not exposed as role=link by Playwright, despite being
-    # visible and clickable. Match the real anchor by its exact rendered text.
-    link = page.locator(f'a:text-is({json.dumps(label, ensure_ascii=False)})')
+    # MyCompany navigator anchors intentionally have no href and no ARIA role.
+    # Use lsFusion's stable container IDs instead of role=link or DOM indexes.
+    link = navigator_item(page, label)
+    match_count = link.count()
+    if match_count != 1:
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_MATCH_COUNT={match_count}")
+        print(
+            f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CANDIDATES="
+            + json.dumps(navigator_diagnostics(page), ensure_ascii=False)
+        )
+        return False
+
     try:
         link.wait_for(state="visible", timeout=12_000)
     except PlaywrightTimeoutError:
         print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
+        print(
+            f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CANDIDATES="
+            + json.dumps(navigator_diagnostics(page), ensure_ascii=False)
+        )
         return False
 
-    if submenu_label is None:
-        link.scroll_into_view_if_needed()
-        link.click(no_wait_after=True)
-        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CLICKED=true")
-        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
+    target = describe_navigator_item(link)
+    print(
+        f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_TARGET="
+        + json.dumps(target, ensure_ascii=False)
+    )
+
+    submenu = navigator_item(page, submenu_label) if submenu_label else None
+    if submenu is not None and submenu.count() == 1 and submenu.is_visible():
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
         return True
 
-    submenu = page.locator(f'a:text-is({json.dumps(submenu_label, ensure_ascii=False)})')
-    for attempt in range(1, 4):
-        if submenu.is_visible():
-            print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
-            return True
+    link.scroll_into_view_if_needed()
+    link.click(no_wait_after=True)
+    print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CLICKED=true")
 
-        state = link.evaluate(
-            "element => ({expanded: element.getAttribute('aria-expanded'), active: element.classList.contains('active')})"
+    if submenu is None:
+        return True
+
+    try:
+        submenu.wait_for(state="visible", timeout=20_000)
+    except PlaywrightTimeoutError:
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=false")
+        print(
+            f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_STATE="
+            + json.dumps(describe_navigator_item(link), ensure_ascii=False)
         )
-        if state.get("expanded") == "true" or state.get("active"):
-            try:
-                submenu.wait_for(state="visible", timeout=15_000)
-                print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
-                return True
-            except PlaywrightTimeoutError:
-                print(
-                    f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_STATE="
-                    + json.dumps(state, ensure_ascii=False)
-                )
-                break
+        print(
+            f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CANDIDATES="
+            + json.dumps(navigator_diagnostics(page), ensure_ascii=False)
+        )
+        visible_snapshot(page, f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FAILED")
+        return False
 
-        link.scroll_into_view_if_needed()
-        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CLICK_ATTEMPT={attempt}")
-        link.click(no_wait_after=True)
-        try:
-            submenu.wait_for(state="visible", timeout=10_000)
-            print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
-            return True
-        except PlaywrightTimeoutError:
-            state = link.evaluate(
-                "element => ({expanded: element.getAttribute('aria-expanded'), active: element.classList.contains('active')})"
-            )
-            print(
-                f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_STATE="
-                + json.dumps(state, ensure_ascii=False)
-            )
-            # Retry only while the parent still looks closed. Never click an
-            # already-expanded menu again, as that could close it.
-            if state.get("expanded") == "true" or state.get("active"):
-                break
-
-    visible_snapshot(page, f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FAILED")
-    return False
+    print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
+    return True
 
 
 def inspect_page(url: str) -> int:
