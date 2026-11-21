@@ -440,7 +440,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
     if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
       ALL_MODULES_READY=true
     elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
-      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + tres módulos Rubrova)." >&2
+      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 3 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
       exit 1
     fi
   fi
@@ -467,7 +467,7 @@ fi
 }
 if [[ "$MODULES_READY" != "true" ]]; then
   echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
-  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 3 de Rubrova)." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 3 módulos Rubrova + 1 fixture temporal de CI)." >&2
   echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
   exit 1
 fi
