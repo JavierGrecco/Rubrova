@@ -128,6 +128,8 @@ services:
   # Test-only network fault injector; its control API is bound to loopback on the CI host.
   toxiproxy:
     image: ghcr.io/shopify/toxiproxy:2.13.0@sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc
+    environment:
+      TOXIPROXY_AUTH_TOKEN: "${TOXIPROXY_AUTH_TOKEN:?}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -318,6 +320,10 @@ rubrovaTestIncidentCountApi () {
 } @@api;
 LSF
 
+# Token efímero para la API de control de Toxiproxy: la red de contenedores también puede alcanzarla.
+TOXIPROXY_AUTH_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export TOXIPROXY_AUTH_TOKEN
+
 echo "3/6 Validando la configuración efectiva de Docker Compose"
 compose config --quiet
 SERVICES="$(compose config --services)"
@@ -336,7 +342,9 @@ echo "4.1/7 Preparando los proxies de fallos de red en Toxiproxy"
 TOXIPROXY_API_URL="http://127.0.0.1:18474"
 TOXIPROXY_READY=false
 for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-  if curl --silent --fail --connect-timeout 1 --max-time 2 "$TOXIPROXY_API_URL/version" >/dev/null; then
+  if curl --silent --fail --connect-timeout 1 --max-time 2 \
+      --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
+      "$TOXIPROXY_API_URL/version" >/dev/null; then
     TOXIPROXY_READY=true
     break
   fi
@@ -349,13 +357,16 @@ if [[ "$TOXIPROXY_READY" != "true" ]]; then
 fi
 curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
   --request POST --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
   --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true},{"name":"rubrova_ci_timeout","listen":"0.0.0.0:8667","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
   "$TOXIPROXY_API_URL/populate" >/dev/null
 curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
   --request POST --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
   --data-binary '{"name":"drop-response","type":"timeout","stream":"downstream","toxicity":1.0,"attributes":{"timeout":0}}' \
   "$TOXIPROXY_API_URL/proxies/rubrova_ci_timeout/toxics" >/dev/null
-PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 "$TOXIPROXY_API_URL/proxies")"
+PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" "$TOXIPROXY_API_URL/proxies")"
 python3 - "$PROXY_CONFIG" <<'PY'
 import json
 import sys

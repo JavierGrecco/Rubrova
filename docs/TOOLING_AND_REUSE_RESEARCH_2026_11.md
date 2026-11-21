@@ -20,7 +20,7 @@ El smoke test ahora usa dos caminos aislados hacia el simulador local:
 - **Camino normal:** verifica respuestas HTTP 408, 429 y 503 y luego una recuperación exitosa.
 - **Camino con respuesta retenida:** Toxiproxy descarta las respuestas sin cerrar inmediatamente la conexión. Rubrova debe salir por su timeout de 1 segundo, capturar el error y registrar la incidencia, sin derribar el servidor.
 
-La API de administración sólo se publica en `127.0.0.1:18474` durante CI. El contenedor se elimina junto con la base temporal al finalizar la prueba. El digest de la imagen AMD64 está fijado para que el test no cambie silenciosamente al actualizarse la etiqueta.
+La API de administración sólo se publica en `127.0.0.1:18474` durante CI. Además, CI genera un token bearer aleatorio para la ejecución, lo entrega al contenedor y lo utiliza en cada llamada a la API: el puerto limitado a loopback no sustituye la autenticación, porque otros contenedores de la red de pruebas podrían alcanzar el servicio. El token no se guarda en el repositorio ni en los registros. El contenedor se elimina junto con la base temporal al finalizar la prueba. El digest de la imagen AMD64 está fijado para que el test no cambie silenciosamente al actualizarse la etiqueta.
 
 Esta mejora fortalece las pruebas de errores de red; no demuestra por sí sola el funcionamiento de todos los proveedores ni sustituye las pruebas de idempotencia, Outbox o conciliación.
 
@@ -58,7 +58,7 @@ No se habilita una integración real hasta validar homologación, seguridad de c
 
 ## Fuentes verificadas
 
-- [Toxiproxy: repositorio, licencia y documentación de fallos TCP](https://github.com/Shopify/toxiproxy)
+- [Toxiproxy: repositorio, licencia, autenticación bearer y documentación de fallos TCP](https://github.com/Shopify/toxiproxy)
 - [Toxiproxy: contenedor 2.13.0 y digests publicados](https://github.com/Shopify/toxiproxy/pkgs/container/toxiproxy)
 - [Resilience4j: patrones de tolerancia a fallos y licencia Apache-2.0](https://github.com/resilience4j/resilience4j)
 - [Testcontainers Java: pruebas con PostgreSQL y otros servicios desechables](https://github.com/testcontainers/testcontainers-java)

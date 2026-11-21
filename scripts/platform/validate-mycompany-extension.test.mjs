@@ -347,6 +347,9 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /MOCK_PROVIDER_TIMEOUT_URL="http:\/\/toxiproxy:8667"/);
   assert.match(runtimeSmokeSource, /drop-response/);
   assert.match(runtimeSmokeSource, /Toxiproxy listo/);
+  assert.match(runtimeSmokeSource, /TOXIPROXY_AUTH_TOKEN/);
+  assert.match(runtimeSmokeSource, /secrets[.]token_urlsafe\(32\)/);
+  assert.match(runtimeSmokeSource, /Authorization: Bearer \\$TOXIPROXY_AUTH_TOKEN/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
