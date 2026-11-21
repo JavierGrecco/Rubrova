@@ -48,6 +48,8 @@ En el run `44852351887`, la captura se tomó mientras seguía visible el formula
 
 La corrección es esperar una condición visible y estable —título «Cobro» y los dos medios de pago en dos lecturas consecutivas— con un límite máximo, no una pausa fija. El test sigue sin confirmar el pago ni crear una venta.
 
+La comparación del historial de CI reveló una segunda carrera de la misma familia: las funciones de navegación y botones guardaban índices calculados de listas DOM y luego hacían clic con `locator(...).nth(index)`. GWT vuelve a renderizar el navegador y sus controles de forma asíncrona, por lo que el índice puede apuntar a otro elemento o a un control que ya fue sustituido. La corrección final usa locators accesibles por nombre exacto, re-resueltos al momento del clic; para «Comercio» espera que «Punto de venta» aparezca antes de seguir. Se eliminó el helper antiguo que devolvía índices y las pausas fijas de 750/1.000 ms que no comprobaban ningún estado.
+
 ## Diferencia entre el runtime probado y el fork que queremos distribuir
 
 El workflow `.github/workflows/platform-extension.yml` hace lo siguiente:
@@ -84,6 +86,19 @@ El commit `4bb52b2bd61a3bcabae4b3be33a25f5ec7dd370c` añade el campo `timeout` a
 
 La solución mantiene `XMLHttpRequest` para no perder las respuestas binarias `arraybuffer`. GWT documenta `RequestBuilder.setTimeoutMillis`, pero el cliente existente depende del acceso directo a `ArrayBuffer`, así que el cambio conserva el transporte actual y añade el límite a su alrededor. La compilación de GWT es ahora una condición explícita del job `build-fork`.
 
+## Primera compilación completa del fork
+
+El job `build-fork` terminó con éxito en el run [44854238946](https://github.com/JavierGrecco/Rubrova/actions/runs/44854238946), commit `4039f48696211b7eba88f0e74768ed9eaab613f9`:
+
+- 13 módulos del reactor terminaron en `BUILD SUCCESS` en 9 min 13 s.
+- Compiló 421 fuentes del API, 1.734 del servidor, 791 del cliente web y 5 fuentes Java de MyCompany.
+- El compilador GWT compiló el módulo `lsfusion.gwt.main` en 8 permutaciones.
+- Generó `vendor/platform/web-client/target/lsfusion-client-6.2.war`, `vendor/platform/server/target/server-6.2.jar` y `vendor/mycompany/target/mycompany-6.2.jar`; la verificación de artefactos terminó correctamente.
+
+Esta primera aprobación incluye el cambio que propaga el timeout al cliente GWT. **No incluye todavía** el refinamiento posterior que devuelve cuerpo `null` para timeout/error de red (commit `5ef1606b421beeefef9b47aa8b3f571f527e19c4`), ni los últimos cambios del test visual. Ese commit posterior está en proceso de recompilación. Tampoco significa que el smoke visual haya usado esos artefactos: sigue ejecutando las imágenes oficiales de MyCompany/lsFusion.
+
+La compilación fue online (descarga inicial de dependencias Maven); el rebuild offline con repositorio Maven verificado sigue sin aceptarse.
+
 ## Errores PostgreSQL observados
 
 En el mismo arranque se registraron dos errores sobre la tabla interna `dumb`, una escritura concurrente sobre `_auto.Time_currentDate` con error de serialización y varias consultas canceladas. El código upstream confirma que `dumb` es una tabla interna del motor usada para consultas sin columnas y que `TableFactory` debe crearla durante el bootstrap.
@@ -92,11 +107,13 @@ Estos eventos ocurrieron durante `onStarted`, antes de finalizar el arranque. No
 
 ## Plan de corrección priorizado
 
-1. **Hecho en esta revisión:** hacer determinista la espera del diálogo de cobro y declarar explícita la dependencia del fixture de precio respecto del módulo POS.
-2. Separar la aceptación visual POS de la batería de HTTP/Toxiproxy, para que un fallo del DOM no oculte los resultados de resiliencia.
-3. **Implementado en código; compilación pendiente:** propagar timeout desde `HttpClientAction` hasta `GHttpClientAction`, abortar el XHR del navegador al vencer y completar el callback una sola vez. El job de compilación debe aprobar antes de considerar validado el cambio.
-4. Terminar el build del fork y empaquetar imágenes propias para que el runtime de aceptación pruebe el mismo JAR/WAR que se distribuirá en la instalación privada.
-5. Añadir pruebas de contrato específicas del camino GWT: timeout de conexión/respuesta, error de red, abort y respuesta rápida; conservar además la batería de Toxiproxy del camino servidor. Mantener la política de no reintentar cobros/emisiones sin idempotencia o conciliación.
+1. **Corregido en la automatización:** esperar el formulario de cobro renderizado, usar locators accesibles estables para navegación y botones, retirar índices DOM guardados y quitar esperas fijas sin condición de éxito.
+2. **Compilación inicial aprobada:** el reactor de Rubrova ya compiló lsFusion, GWT y MyCompany; la revisión posterior del cuerpo nulo está en recompilación.
+3. Ejecutar el smoke visual sobre el último commit después de la compilación. El smoke actual sigue usando el runtime oficial; no validar todavía los parches Java/GWT como desplegados.
+4. Construir imágenes propias: servidor con el perfil `embed-server` e imagen cliente Tomcat con el WAR GWT construido. Sustituir ambas imágenes en el Compose de aceptación y ejecutar el mismo flujo POS.
+5. Añadir prueba de contrato de `EXTERNAL HTTP CLIENT` en el navegador, con endpoint de timeout CORS; probar timeout, error de red, abort y recuperación, además del smoke Toxiproxy del camino servidor.
+6. Investigar por separado los errores de creación de la tabla interna `dumb` y la serialización concurrente de `_auto.Time_currentDate`; no marcar el bootstrap como limpio hasta explicar los registros.
+7. Aceptar rebuild offline y runtime aislado de Internet; siguen pendientes en `platform/source-lock.json`.
 
 ## Referencias upstream
 
