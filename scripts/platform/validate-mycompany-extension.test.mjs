@@ -412,7 +412,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(uiSmokeSource, /navigator_diagnostics\(page\)/);
   assert.doesNotMatch(uiSmokeSource, /page[.]get_by_role\("link", name=label, exact=True\)/);
   assert.match(uiSmokeSource, /submenu_label: str \| None = None/);
-  assert.match(uiSmokeSource, /UI_NAV_LINK_.*_CLICK_ATTEMPT/);
+  assert.match(uiSmokeSource, /UI_NAV_LINK_.*_CLICKED=true/);
   assert.ok(uiSmokeSource.includes('click_exact_link(page, "Comercio", submenu_label="Punto de venta")'));
   assert.match(uiSmokeSource, /UI_PAYMENT_FORM_RENDERED=true/);
   assert.match(uiSmokeSource, /wait_for_payment_dialog\(page, timeout_seconds=20\)/);
