@@ -407,7 +407,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(uiSmokeSource, /NAVIGATOR_CONTAINER_BY_LABEL = \{/);
   assert.match(uiSmokeSource, /"Comercio": "Retail[.]retail"/);
   assert.match(uiSmokeSource, /"Punto de venta": "Retail[.]posDashboard"/);
-  assert.match(uiSmokeSource, /page[.]locator\(f'a\\[lsfusion-container="\{container\}"\\]'\)/);
+  assert.ok(uiSmokeSource.includes("page.locator(f'a[lsfusion-container=\"{container}\"]')"));
   assert.match(uiSmokeSource, /UI_NAV_LINK_.*_MATCH_COUNT/);
   assert.match(uiSmokeSource, /navigator_diagnostics\(page\)/);
   assert.doesNotMatch(uiSmokeSource, /page[.]get_by_role\("link", name=label, exact=True\)/);
