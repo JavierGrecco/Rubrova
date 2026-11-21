@@ -179,3 +179,6 @@ El piloto MyCompany 6.2 ya arranca en CI Linux x86_64 con los dos módulos Rubro
 - [Tryton 8.0 POS](https://docs.tryton.org/8.0/modules-sale-point/design.html)
 - [Conjunto argentino Tryton 8.0 fijado](TRYTON_ARGENTINA_8_0_LOCK.md)
 - [Decisión sobre identidad y conciliación de pagos](PAYMENT_IDENTITY_AND_RECONCILIATION.md)
+
+
+La extensión POS de Rubrova fija la moneda minorista del tipo de precio y del comprobante a `defaultCurrency()` para que el importe de la factura pueda calcularse desde el comienzo, y traduce los métodos iniciales de pago a `Efectivo` y `Tarjeta`.

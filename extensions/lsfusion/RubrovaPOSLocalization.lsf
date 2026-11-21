@@ -89,3 +89,17 @@ DESIGN options {
         PROPERTY(nameWithdrawPaymentType()) { caption = '{rubrova.cash.withdrawal_type}'; }
     }
 }
+
+// Defaults for the private Rubrova installation: keep retail prices and receivables
+// in the organization currency, and show payment methods in Spanish.
+loadDefaultData () + {
+    IF defaultCurrency() THEN {
+        Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency();
+        Sales.currency(Sales.priceType('retail')) <- defaultCurrency();
+    }
+
+    IF cashPaymentMethod() THEN
+        name(cashPaymentMethod()) <- 'Efectivo';
+    IF paymentMethod('card') THEN
+        name(paymentMethod('card')) <- 'Tarjeta';
+}

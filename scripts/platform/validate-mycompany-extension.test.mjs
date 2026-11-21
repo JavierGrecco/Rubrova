@@ -255,6 +255,10 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
   assert.match(moduleSource, /DESIGN posPayment/);
+  assert.match(moduleSource, /Invoicing[.]currency\(Invoicing[.]invoiceType\('retail'\)\) <- defaultCurrency\(\)/);
+  assert.match(moduleSource, /Sales[.]currency\(Sales[.]priceType\('retail'\)\) <- defaultCurrency\(\)/);
+  assert.match(moduleSource, /name\(cashPaymentMethod\(\)\) <- 'Efectivo'/);
+  assert.match(moduleSource, /name\(paymentMethod\('card'\)\) <- 'Tarjeta'/);
   assert.match(moduleSource, /DESIGN posPaymentReturn/);
   assert.match(moduleSource, /PROPERTY\(invoicePaid\(b, pm\)\)/);
   assert.match(moduleSource, /PROPERTY\(overFormOk\)/);
