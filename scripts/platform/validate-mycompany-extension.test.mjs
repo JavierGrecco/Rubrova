@@ -19,6 +19,7 @@ const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
 const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
+const sourcePatch = read("scripts/platform/apply-rubrova-source-patches.py");
 
 function parseProperties(source) {
   const entries = new Map();
@@ -340,6 +341,10 @@ test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () =
   assert.match(callHttpSource, /RUBROVA_MAX_EXTERNAL_HTTP_TIMEOUT_MS = 60_000L/);
   assert.match(callHttpSource, /Math\.min\(configuredTimeout, RUBROVA_MAX_EXTERNAL_HTTP_TIMEOUT_MS\)/);
   assert.match(callHttpSource, /return RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS/);
+  assert.match(sourcePatch, /10_000L/);
+  assert.match(sourcePatch, /60_000L/);
+  assert.match(sourcePatch, /REPLACEMENTS/);
+  assert.match(sourcePatch, /No se aplicó el parche/);
 
   const sourceRoots = [
     path.join(root, "vendor/mycompany/src/main/lsfusion"),

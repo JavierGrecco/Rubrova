@@ -7,6 +7,7 @@ on:
       - 'platform/source-lock.json'
       - 'scripts/platform/vendor-upstream-sources.sh'
       - 'scripts/platform/validate-vendored-sources.sh'
+      - 'scripts/platform/apply-rubrova-source-patches.py'
       - 'build/rubrova/pom.xml'
       - '.github/workflows/vendor-upstream-sources.yml'
   workflow_dispatch:
@@ -47,6 +48,10 @@ jobs:
       - name: Validar integridad de los árboles, licencias y rutas Maven
         id: validate
         run: bash scripts/platform/validate-vendored-sources.sh
+
+
+      - name: Aplicar protecciones Rubrova sobre las fuentes del motor
+        run: python3 scripts/platform/apply-rubrova-source-patches.py
 
       - name: Integrar las fuentes completas en main
         if: steps.import.outcome == 'success' && steps.validate.outcome == 'success'
