@@ -652,60 +652,65 @@ def inspect_page(url: str) -> int:
                 search_match_count = product_result.count()
                 print(f"UI_TEST_PRODUCT_FOUND=true")
                 print(f"UI_TEST_PRODUCT_SEARCH_MATCHES={search_match_count}")
-                product_result.first.dblclick(no_wait_after=True)
+                if search_match_count != 1:
+                    raise RuntimeError(
+                        "La búsqueda debe devolver exactamente un artículo de prueba; "
+                        f"devolvió {search_match_count}."
+                    )
+
+                # MyCompany implementa la selección mediante selectPosSearch, expuesta
+                # como acción de toolbar "Select (DBLCLK)". Ver el artículo en searchItems
+                # no demuestra que se haya creado una línea en el recibo.
+                product_result.first.click(no_wait_after=True)
+                print("UI_TEST_PRODUCT_ROW_SELECTED=true")
+                if not click_exact_action(page, "Select (DBLCLK)"):
+                    raise RuntimeError(
+                        "El artículo quedó seleccionado en la búsqueda, pero no se pudo "
+                        "ejecutar la acción nativa Select (DBLCLK) de MyCompany."
+                    )
+                print("UI_TEST_PRODUCT_SELECTION_ACTION_CLICKED=true")
+
+                receipt_grid = page.locator('[lsfusion-container="GRID(l)"]')
+                try:
+                    receipt_grid.wait_for(state="visible", timeout=15_000)
+                except PlaywrightTimeoutError as error:
+                    print(f"UI_RECEIPT_GRID_MATCH_COUNT={receipt_grid.count()}")
+                    visible_snapshot(page, "UI_RECEIPT_GRID_NOT_AVAILABLE")
+                    raise RuntimeError(
+                        "No apareció el grid de líneas del recibo (GRID(l)); "
+                        "el resultado de búsqueda no demuestra una venta."
+                    ) from error
 
                 cart_deadline = time.monotonic() + 20
-                cart_matches = 0
-                cart_text = ""
+                receipt_rows: list[str] = []
+                product_rows: list[str] = []
+                receipt_digits = ""
                 while time.monotonic() < cart_deadline:
-                    cart_text = page.locator("body").inner_text(timeout=5_000)
-                    cart_matches = page.get_by_text(product_name, exact=True).count()
-                    digits = "".join(character for character in cart_text if character.isdigit())
-                    if cart_matches >= 2 and "1250" in digits:
+                    receipt_rows = receipt_grid.locator(
+                        "tr.data-grid-row:not(.data-grid-column-row)"
+                    ).all_inner_texts()
+                    product_rows = [row for row in receipt_rows if product_name in row]
+                    receipt_digits = "".join(
+                        character for row in product_rows for character in row
+                        if character.isdigit()
+                    )
+                    if len(product_rows) == 1 and "1250" in receipt_digits:
                         break
                     page.wait_for_timeout(500)
 
-                print(f"UI_TEST_PRODUCT_CART_MATCHES={cart_matches}")
-                if cart_matches < 2 or "1250" not in "".join(
-                    character for character in cart_text if character.isdigit()
-                ):
+                print(f"UI_RECEIPT_GRID_MATCH_COUNT={receipt_grid.count()}")
+                print(f"UI_RECEIPT_LINE_COUNT={len(receipt_rows)}")
+                print(f"UI_RECEIPT_PRODUCT_LINE_COUNT={len(product_rows)}")
+                print("UI_RECEIPT_PRODUCT_LINES=" + json.dumps(receipt_rows, ensure_ascii=False))
+                if len(product_rows) != 1 or "1250" not in receipt_digits:
                     raise RuntimeError(
-                        "El producto se encontró en la búsqueda, pero no se confirmó "
-                        "su incorporación al recibo con precio 1250. "
-                        f"Coincidencias visibles: {cart_matches}. "
-                        f"Texto: {cart_text.strip()[:3000]}"
+                        "El producto no quedó confirmado como una única línea del recibo "
+                        "con precio 1250. No se acepta como prueba que siga visible en "
+                        "la tabla de búsqueda. "
+                        f"Líneas del recibo: {json.dumps(receipt_rows, ensure_ascii=False)}"
                     )
 
                 print("UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true")
-                cart_dom = page.evaluate("""productName => {
-                    const visible = element => {
-                        const style = getComputedStyle(element);
-                        return style.display !== "none" && style.visibility !== "hidden" &&
-                            !!(element.offsetWidth || element.offsetHeight);
-                    };
-                    const leaves = [...document.querySelectorAll("*")].filter(element =>
-                        visible(element) && element.children.length === 0 &&
-                        (element.innerText || element.textContent || "").trim() === productName
-                    );
-                    return leaves.slice(0, 8).map(element => {
-                        const chain = [];
-                        let node = element;
-                        for (let level = 0; node && level < 6; level++, node = node.parentElement) {
-                            chain.push({
-                                tag: node.tagName.toLowerCase(),
-                                className: typeof node.className === "string" ? node.className : "",
-                                text: (node.innerText || node.textContent || "").trim().slice(0, 450),
-                                html: node.outerHTML.slice(0, 900)
-                            });
-                        }
-                        return chain;
-                    });
-                }""", product_name)
-                print("UI_CART_PRODUCT_DOM=" + json.dumps(cart_dom, ensure_ascii=False))
-                print("UI_CART_AMOUNT_LABELS=" + json.dumps(
-                    page.locator("body").inner_text(timeout=5_000).splitlines()[-22:],
-                    ensure_ascii=False
-                ))
 
                 # Leer la configuración efectiva del POS desde el servidor antes de comprobar el cobro.
                 api_base = url.rstrip("/") + "/exec/Rubrova."
