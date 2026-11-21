@@ -75,6 +75,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /MyCompany exige un tipo de comprobante/);
   assert.match(runtimeSmokeSource, /CashAccount/);
   assert.match(runtimeSmokeSource, /account\(cashRegisterCI, PaymentMethod pm\)/);
+  assert.match(runtimeSmokeSource, /disabled\(pos\('rubrova-ci'\), pm\) <- FALSE/);
   assert.match(runtimeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(runtimeSmokeSource, /Inspeccionando el login y la pantalla autenticada con Chromium/);
   assert.match(runtimeSmokeSource, /RUBROVA_RMI_TIMEOUT_SECONDS/);

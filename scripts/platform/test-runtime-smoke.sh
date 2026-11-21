@@ -216,6 +216,11 @@ loadDefaultData () + {
         }
     }
 
+    // El puesto POS mantiene una habilitación explícita por medio de pago.
+    // Si queda NULL, el filtro del formulario puede ocultar el medio aunque exista su cuenta.
+    FOR PaymentMethod pm DO
+        disabled(pos('rubrova-ci'), pm) <- FALSE;
+
     // Producto unitario y código de barras sintéticos para la siguiente prueba del circuito de venta.
     IF NOT uom('1') THEN
         NEW unitCI = Uom {
