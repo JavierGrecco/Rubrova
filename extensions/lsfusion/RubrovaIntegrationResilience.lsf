@@ -55,7 +55,7 @@ rubrovaRecordIntegrationIncident 'Registrar incidencia Rubrova'
                 remoteReference(incident) <- remoteId;
                 userMessage(incident) <- operatorMessage;
                 technicalDetail(incident) <- sanitizedTechnicalDetail;
-                resolved(incident) <- FALSE;
+                resolved(incident) <- NULL;
             }
             APPLY;
         }
@@ -105,9 +105,9 @@ rubrovaHttpFailureMessage = DATA LOCAL ISTRING[300]();
 rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING operationName,
     STRING correlation, STRING url, LONG timeoutMilliseconds) {
     rubrovaHttpResponse() <- NULL;
-    rubrovaHttpSucceeded() <- FALSE;
+    rubrovaHttpSucceeded() <- NULL;
     rubrovaHttpFailureCategory() <- NULL;
-    rubrovaHttpCanRetry() <- FALSE;
+    rubrovaHttpCanRetry() <- NULL;
     rubrovaHttpRetryAfter() <- NULL;
     rubrovaHttpFailureMessage() <- NULL;
     statusHttp() <- NULL;
@@ -118,7 +118,7 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
         rubrovaHttpFailureCategory() <- 'CONFIGURATION_ERROR';
         rubrovaHttpFailureMessage() <- 'El tiempo de espera configurado no es válido.';
         rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
-            'CONFIGURATION_ERROR', NULL, 0, FALSE, NULL, NULL,
+            'CONFIGURATION_ERROR', NULL, 0, NULL, NULL, NULL,
             rubrovaHttpFailureMessage(), 'Timeout fuera del rango permitido: 1 a 30000 ms.');
     } ELSE {
         TRY {
