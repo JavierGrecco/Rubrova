@@ -385,9 +385,10 @@ def wait_for_session_open(page: Any, timeout_seconds: int = 45) -> str:
 def click_exact_link(
     page: Any, label: str, submenu_label: str | None = None
 ) -> bool:
-    # Locators are re-resolved at click time. A saved numeric index can point at
-    # a different GWT link after the navigator re-renders its anchor list.
-    link = page.get_by_role("link", name=label, exact=True)
+    # MyCompany renders navigator entries as <a> elements without href.
+    # Such anchors are not exposed as role=link by Playwright, despite being
+    # visible and clickable. Match the real anchor by its exact rendered text.
+    link = page.locator(f'a:text-is({json.dumps(label, ensure_ascii=False)})')
     try:
         link.wait_for(state="visible", timeout=12_000)
     except PlaywrightTimeoutError:
@@ -401,7 +402,7 @@ def click_exact_link(
         print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
         return True
 
-    submenu = page.get_by_role("link", name=submenu_label, exact=True)
+    submenu = page.locator(f'a:text-is({json.dumps(submenu_label, ensure_ascii=False)})')
     for attempt in range(1, 4):
         if submenu.is_visible():
             print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
