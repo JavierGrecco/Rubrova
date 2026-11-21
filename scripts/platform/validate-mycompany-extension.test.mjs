@@ -80,8 +80,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /RUBROVA_RMI_TIMEOUT_SECONDS/);
   assert.match(runtimeSmokeSource, /RUBROVA_ONSTARTED_TIMEOUT_SECONDS/);
   assert.match(runtimeSmokeSource, /DB_BOOTSTRAP_STATE=/);
-  assert.match(runtimeSmokeSource, /SELECT EXISTS \\(SELECT 1 FROM dumb\\)/);
-  assert.match(runtimeSmokeSource, /time_currentdate IS NOT NULL FROM _auto/);
+  assert.ok(runtimeSmokeSource.includes("SELECT EXISTS (SELECT 1 FROM dumb) AND EXISTS (SELECT 1 FROM _auto WHERE time_currentdate IS NOT NULL)"));
   assert.match(runtimeSmokeSource, /PostgreSQL verificado: dumb existe con su registro interno/);
   assert.match(runtimeSmokeSource, /Executing onStarted action finished/);
   assert.match(runtimeSmokeSource, /ONSTARTED_READY/);
