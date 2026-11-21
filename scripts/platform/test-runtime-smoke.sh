@@ -283,16 +283,21 @@ rubrovaTestHttpTimeout () {
 rubrovaHttp408IncidentCount() = GROUP SUM 1
     IF correlationId(IntegrationIncident i) = 'ci-http-408-001';
 
+rubrovaHttp408RetryableIncidentCount() = GROUP SUM 1
+    IF correlationId(IntegrationIncident i) = 'ci-http-408-001' AND safeToRetry(i);
+
 rubrovaTestHttpTransientStatus () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de respuesta transitoria 408', 'ci-http-408-001',
         '$MOCK_PROVIDER_URL/status/408', 4000);
+    // EXPORT JSON debe exponer un escalar: se cuenta el valor BOOLEAN persistido.
+    // Antes del cambio, incidentRetryable = safeToRetry(IntegrationIncident i) no agregaba las filas.
     EXPORT JSON FROM
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
         httpStatus = statusHttp(),
         incidentCount = rubrovaHttp408IncidentCount(),
-        incidentRetryable = safeToRetry(IntegrationIncident i) IF correlationId(i) = 'ci-http-408-001';
+        incidentRetryable = rubrovaHttp408RetryableIncidentCount() = 1;
 } @@api;
 
 rubrovaTestHttpRateLimit () {
