@@ -175,7 +175,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
   assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES=712/);
   assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
-  assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES \\+ 4/);
+  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 4'));
   assert.match(runtimeSmokeSource, /RubrovaCISalesFixture[.]lsf/);
   assert.match(runtimeSmokeSource, /currency\(priceType\('retail'\)\) <- defaultCurrency\(\)/);
   assert.match(runtimeSmokeSource, /RUBROVA_CI_SALES_LOG_EVIDENCE/);
