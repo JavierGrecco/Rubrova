@@ -406,7 +406,7 @@ compose up -d --remove-orphans
 
 echo "4.0/7 Comprobando la ubicación y persistencia de PostgreSQL 18"
 DB_CONTAINER_ID="$(compose ps -q db)"
-[[ -n "$DB_CONTAINER_ID" ]] || { echo "No se encontró el contenedor PostgreSQL."; exit 1; }
+[[ -n "$DB_CONTAINER_ID" ]] || { echo "No se encontró el contenedor PostgreSQL." >&2; exit 1; }
 DB_PGDATA="$(compose exec -T db sh -c 'printf "%s" "$PGDATA"' | tr -d "\r")"
 [[ "$DB_PGDATA" == "/var/lib/postgresql/18/docker" ]] || {
   echo "PostgreSQL 18 usa un PGDATA inesperado: $DB_PGDATA" >&2
@@ -414,7 +414,17 @@ DB_PGDATA="$(compose exec -T db sh -c 'printf "%s" "$PGDATA"' | tr -d "\r")"
 }
 DB_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$DB_CONTAINER_ID")"
 printf 'Montajes de PostgreSQL:\n%s\n' "$DB_MOUNTS"
-grep -E 'docker-db-pg18 -> /var/lib/postgresql de fallos de red en Toxiproxy"
+grep -Fq 'docker-db-pg18 -> /var/lib/postgresql' <<< "$DB_MOUNTS" || {
+  echo "PostgreSQL no está usando el bind mount persistente docker-db-pg18 en /var/lib/postgresql." >&2
+  exit 1
+}
+compose exec -T db sh -c 'test -s "$PGDATA/PG_VERSION"' || {
+  echo "PostgreSQL no creó PG_VERSION dentro del PGDATA persistente." >&2
+  exit 1
+}
+echo "PostgreSQL 18 verificado: PGDATA y bind mount persistente correctos."
+
+echo "4.1/7 Preparando los proxies de fallos de red en Toxiproxy"
 TOXIPROXY_API_URL="http://127.0.0.1:18474"
 TOXIPROXY_READY=false
 for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
