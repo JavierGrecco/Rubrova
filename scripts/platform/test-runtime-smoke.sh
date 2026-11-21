@@ -404,6 +404,391 @@ printf 'Servicios definidos (%s):\n%s\n' "$SERVICE_COUNT" "$SERVICES"
 echo "4/7 Iniciando MyCompany 6.2 en un proyecto efímero"
 compose up -d --remove-orphans
 
+echo "4.0/7 Comprobando la ubicación y persistencia de PostgreSQL 18"
+DB_CONTAINER_ID="$(compose ps -q db)"
+[[ -n "$DB_CONTAINER_ID" ]] || { echo "No se encontró el contenedor PostgreSQL."; exit 1; }
+DB_PGDATA="$(compose exec -T db sh -c 'printf "%s" "$PGDATA"' | tr -d "\r")"
+[[ "$DB_PGDATA" == "/var/lib/postgresql/18/docker" ]] || {
+  echo "PostgreSQL 18 usa un PGDATA inesperado: $DB_PGDATA" >&2
+  exit 1
+}
+DB_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$DB_CONTAINER_ID")"
+printf 'Montajes de PostgreSQL:\n%s\n' "$DB_MOUNTS"
+grep -E 'docker-db-pg18 -> /var/lib/postgresql de fallos de red en Toxiproxy"
+TOXIPROXY_API_URL="http://127.0.0.1:18474"
+TOXIPROXY_READY=false
+for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  if curl --silent --fail --connect-timeout 1 --max-time 2 \
+      --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
+      "$TOXIPROXY_API_URL/version" >/dev/null; then
+    TOXIPROXY_READY=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$TOXIPROXY_READY" != "true" ]]; then
+  echo "Toxiproxy no respondió en su API local durante el plazo esperado." >&2
+  compose logs --no-color --tail=120 toxiproxy >&2 || true
+  exit 1
+fi
+curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+  --request POST --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
+  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true},{"name":"rubrova_ci_timeout","listen":"0.0.0.0:8667","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
+  "$TOXIPROXY_API_URL/populate" >/dev/null
+curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+  --request POST --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
+  --data-binary '{"name":"drop-response","type":"timeout","stream":"downstream","toxicity":1.0,"attributes":{"timeout":0}}' \
+  "$TOXIPROXY_API_URL/proxies/rubrova_ci_timeout/toxics" >/dev/null
+PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" "$TOXIPROXY_API_URL/proxies")"
+python3 - "$PROXY_CONFIG" <<'PY'
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+required = {"rubrova_ci_normal", "rubrova_ci_timeout"}
+if not required.issubset(payload):
+    raise SystemExit("Toxiproxy no creó los dos proxies de aceptación requeridos.")
+toxics = payload["rubrova_ci_timeout"].get("toxics", [])
+if not any(item.get("name") == "drop-response" and item.get("type") == "timeout" for item in toxics):
+    raise SystemExit("No quedó activo el corte de respuesta TCP para el test de timeout.")
+PY
+echo "Toxiproxy listo: un proxy normal y otro que retiene respuestas hasta que el cliente agota su timeout."
+
+echo "5/7 Comprobando que la configuración y los módulos Rubrova estén montados en el servidor"
+SERVER_CONTAINER_ID="$(compose ps -q server)"
+[[ -n "$SERVER_CONTAINER_ID" ]] || {
+  echo "No se encontró el contenedor del servicio server." >&2
+  exit 1
+}
+SERVER_ENV="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$SERVER_CONTAINER_ID")"
+for expected_env in "JAVA_OPTS=-Dlogics.topModule=RubrovaCustom" "USER_SETLANGUAGE=es" "USER_SETCOUNTRY=AR"; do
+  if ! grep -Fxq "$expected_env" <<< "$SERVER_ENV"; then
+    echo "El contenedor server no recibió el parámetro esperado: $expected_env" >&2
+    exit 1
+  fi
+done
+echo "Configuración de inicio verificada: RubrovaCustom + español (Argentina)."
+SERVER_MOUNTS="$(docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$SERVER_CONTAINER_ID")"
+printf 'Montajes del servidor:\n%s\n' "$SERVER_MOUNTS"
+SERVER_MOUNT_DESTINATION="$(docker inspect "$SERVER_CONTAINER_ID" | python3 -c '
+import json, os, sys
+expected = os.path.realpath(sys.argv[1])
+container = json.load(sys.stdin)[0]
+matches = [
+    mount["Destination"]
+    for mount in container.get("Mounts", [])
+    if os.path.realpath(mount.get("Source", "")) == expected
+]
+if len(matches) != 1:
+    print("No se encontró un único montaje docker-server dentro del contenedor.", file=sys.stderr)
+    sys.exit(2)
+print(matches[0])
+' "$COMPOSE_DIR/docker-server")"
+echo "docker-server está montado en: $SERVER_MOUNT_DESTINATION"
+docker exec "$SERVER_CONTAINER_ID" sh -ec '
+  mount_dir="$1"
+  for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf MyCompanyResourceBundle_es_AR.properties; do
+    test -s "$mount_dir/$module_file" || {
+      echo "El contenedor server no ve $module_file en $mount_dir" >&2
+      exit 1
+    }
+  done
+  grep -qx "logics.topModule = RubrovaCustom" "$mount_dir/settings.properties" || {
+    echo "El contenedor server no ve logics.topModule=RubrovaCustom en settings.properties" >&2
+    exit 1
+  }
+  grep -qx "user.setLanguage = es" "$mount_dir/settings.properties" || {
+    echo "El contenedor server no ve user.setLanguage=es en settings.properties" >&2
+    exit 1
+  }
+  grep -qx "user.setCountry = AR" "$mount_dir/settings.properties" || {
+    echo "El contenedor server no ve user.setCountry=AR en settings.properties" >&2
+    exit 1
+  }
+  echo "Configuración activa visible en el contenedor:"
+  grep -E "^[[:space:]]*(logics\\.(topModule|includePaths|excludePaths)|user\\.set(Language|Country))[[:space:]]*=" "$mount_dir/settings.properties" || true
+' sh "$SERVER_MOUNT_DESTINATION"
+
+echo "Verificando que JAVA_OPTS llegue al proceso Java del servidor:"
+docker exec "$SERVER_CONTAINER_ID" sh -ec '
+  found=false
+  for process_cmdline in /proc/[0-9]*/cmdline; do
+    test -r "$process_cmdline" || continue
+    args="$(tr "\000" " " < "$process_cmdline" 2>/dev/null || true)"
+    case "$args" in
+      *-Dlogics.topModule=RubrovaCustom*)
+        echo "Argumento Java activo: -Dlogics.topModule=RubrovaCustom"
+        found=true
+        ;;
+    esac
+  done
+  if [ "$found" != true ]; then
+    echo "JAVA_OPTS no llegó como argumento al proceso Java del servidor." >&2
+    exit 1
+  fi
+'
+
+echo "Diagnóstico de rutas de configuración y parámetros superiores dentro del contenedor:"
+docker exec "$SERVER_CONTAINER_ID" sh -ec '
+  for root in "$1" /etc/lsfusion6-server /etc/lsfusion-server /opt/lsfusion /app; do
+    test -d "$root" || continue
+    for file in "$root/lsfusion.properties" "$root/settings.properties" "$root/conf/settings.properties"; do
+      test -f "$file" || continue
+      echo "CONFIG_FILE=$file"
+      grep -HnE "^[[:space:]]*logics\\\\.topModule[[:space:]]*=" "$file" || true
+      grep -HnE "^[[:space:]]*logics\\\\.(includePaths|excludePaths)[[:space:]]*=" "$file" || true
+    done
+    find "$root" -maxdepth 4 -type f -name "lsfusion.properties" -print 2>/dev/null || true
+    find "$root" -maxdepth 4 -type f -name "settings.properties" -print 2>/dev/null || true
+  done
+  echo "JAVA_TOP_MODULE_ARGUMENTS:"
+  grep -aoE -- "-Dlogics\\\\.topModule=[^[:cntrl:]]+" /proc/1/cmdline || true
+  echo "RELEVANT_ENVIRONMENT_KEYS:"
+  env | cut -d= -f1 | grep -Ei "JAVA_OPTS|LOGICS|SETTINGS|CONFIG" || true
+' sh "$SERVER_MOUNT_DESTINATION"
+
+echo "6/7 Esperando respuesta web y fin de la carga completa de la lógica Rubrova"
+SECONDS=0
+HTTP_STATUS="000"
+LOG_DIR="$COMPOSE_DIR/docker-server/logs"
+START_LOG="$LOG_DIR/start.log"
+STDOUT_LOG="$LOG_DIR/stdout.log"
+EXPECTED_UPSTREAM_MODULES=712
+EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 4))
+MODULES_READY=false
+LAST_MODULE_PROGRESS=""
+MODULE_PROGRESS_CHANGED_AT=0
+while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
+  if (( SECONDS % 10 < 5 )); then
+    STARTUP_LOGS="$(compose logs --no-color --tail=100 server 2>/dev/null || true)"
+    if grep -Eiq "Exception while starting logics instance|Error starting server|missing .+ at|no viable alternative|mismatched input|failed to compile|compilation failed" <<< "$STARTUP_LOGS"; then
+      echo "MyCompany informó un error fatal al compilar o inicializar la lógica; se cancela la espera de arranque." >&2
+      printf '%s\\n' "$STARTUP_LOGS" | grep -Ei "Exception while starting logics instance|Error starting server|missing .+ at|no viable alternative|mismatched input|failed to compile|compilation failed" | tail -n 40 >&2 || true
+      exit 1
+    fi
+  fi
+  HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
+  MODULE_PROGRESS="$(grep -hE 'Initializing main logic for module.*#[0-9]+ of [0-9]+' "$START_LOG" "$STDOUT_LOG" 2>/dev/null | tail -n 1 || true)"
+  if [[ "$MODULE_PROGRESS" != "$LAST_MODULE_PROGRESS" && -n "$MODULE_PROGRESS" ]]; then
+    LAST_MODULE_PROGRESS="$MODULE_PROGRESS"
+    MODULE_PROGRESS_CHANGED_AT="$SECONDS"
+    echo "Progreso de inicialización: $MODULE_PROGRESS"
+  fi
+
+  ALL_MODULES_READY=false
+  PROGRESS_NUMBERS="$(printf '%s\n' "$MODULE_PROGRESS" | sed -nE 's/.*#([0-9]+) of ([0-9]+).*/\1 \2/p')"
+  if [[ -n "$PROGRESS_NUMBERS" ]]; then
+    read -r current_module total_modules <<< "$PROGRESS_NUMBERS"
+    if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
+      ALL_MODULES_READY=true
+    elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
+      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 3 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
+      exit 1
+    fi
+  fi
+
+  if [[ "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ && "$ALL_MODULES_READY" == "true" ]]; then
+    MODULES_READY=true
+    break
+  fi
+
+  if (( SECONDS % 30 < 5 )); then
+    echo "Esperando inicio completo... HTTP=$HTTP_STATUS, lógica completa=$ALL_MODULES_READY, módulos esperados>=$EXPECTED_TOTAL_MODULES, transcurridos=${SECONDS}s"
+    compose ps --all
+  fi
+  sleep 5
+done
+
+if [[ ! "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
+  echo "El cliente web no respondió HTTP 2xx/3xx en ${STARTUP_TIMEOUT_SECONDS}s; último estado: $HTTP_STATUS." >&2
+  exit 1
+fi
+[[ -s "$WORK_DIR/web-response.html" ]] || {
+  echo "El cliente web respondió HTTP $HTTP_STATUS, pero el cuerpo está vacío." >&2
+  exit 1
+}
+if [[ "$MODULES_READY" != "true" ]]; then
+  echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 3 módulos Rubrova + 1 fixture temporal de CI)." >&2
+  echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
+  exit 1
+fi
+echo "Cliente web disponible: HTTP $HTTP_STATUS; carga de al menos $EXPECTED_TOTAL_MODULES módulos finalizada después de ${SECONDS}s."
+
+echo "6/8 Esperando que el servidor de aplicación escuche en TCP 7652"
+RMI_TIMEOUT_SECONDS="${RUBROVA_RMI_TIMEOUT_SECONDS:-180}"
+SECONDS=0
+RMI_READY=false
+while (( SECONDS < RMI_TIMEOUT_SECONDS )); do
+  if docker exec "$SERVER_CONTAINER_ID" sh -c 'grep -iqE ":1DE4[[:space:]]+[[:xdigit:]]+:[[:xdigit:]]+[[:space:]]+0A" /proc/net/tcp /proc/net/tcp6' >/dev/null 2>&1; then
+    RMI_READY=true
+    break
+  fi
+  if (( SECONDS % 20 < 2 )); then
+    echo "El servidor todavía no escucha en 7652; transcurridos=${SECONDS}s."
+  fi
+  sleep 2
+done
+if [[ "$RMI_READY" != "true" ]]; then
+  echo "El servidor no abrió el puerto RMI 7652 en ${RMI_TIMEOUT_SECONDS}s." >&2
+  compose logs --no-color --tail=180 server >&2 || true
+  exit 1
+fi
+echo "Puerto RMI 7652 en escucha después de ${SECONDS}s."
+
+echo "7/9 Esperando que finalice el arranque de la aplicación"
+ONSTARTED_TIMEOUT_SECONDS="${RUBROVA_ONSTARTED_TIMEOUT_SECONDS:-180}"
+SECONDS=0
+ONSTARTED_READY=false
+while (( SECONDS < ONSTARTED_TIMEOUT_SECONDS )); do
+  SERVER_STARTUP_LOGS="$(compose logs --no-color --tail=100 server 2>/dev/null || true)"
+  if grep -Fq 'Executing onStarted action finished' <<< "$SERVER_STARTUP_LOGS"; then
+    ONSTARTED_READY=true
+    break
+  fi
+  if (( SECONDS % 30 < 2 )); then
+    echo "El servidor todavía está ejecutando onStarted; transcurridos=${SECONDS}s."
+  fi
+  sleep 2
+done
+if [[ "$ONSTARTED_READY" != "true" ]]; then
+  echo "El servidor no confirmó el fin de onStarted en ${ONSTARTED_TIMEOUT_SECONDS}s." >&2
+  printf '%s\n' "$SERVER_STARTUP_LOGS" | tail -n 100 >&2
+  exit 1
+fi
+echo "Arranque completo: onStarted terminó después de ${SECONDS}s."
+
+if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
+  [[ -x "$RUBROVA_PLAYWRIGHT_PYTHON" ]] || {
+    echo "No se encuentra el intérprete Playwright configurado: $RUBROVA_PLAYWRIGHT_PYTHON" >&2
+    exit 1
+  }
+  echo "8/9 Inspeccionando el login y la pantalla autenticada con Chromium"
+  RUBROVA_UI_SCREENSHOT="${RUBROVA_UI_SCREENSHOT:-$WORK_DIR/mycompany-ui.png}" \
+    RUBROVA_UI_TEST_LOGIN="${RUBROVA_UI_TEST_LOGIN:-false}" \
+    RUBROVA_UI_TEST_USERNAME="${RUBROVA_UI_TEST_USERNAME:-admin}" \
+    RUBROVA_UI_TEST_PASSWORD="${RUBROVA_UI_TEST_PASSWORD:-}" \
+    "$RUBROVA_PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
+else
+  echo "AVISO: se omitió la inspección de Chromium porque RUBROVA_PLAYWRIGHT_PYTHON no está configurado."
+fi
+
+echo "9/9 Recopilando evidencia del runtime, la extensión y las imágenes"
+compose ps
+
+echo "Configuración efectiva de los cuatro servicios (sin valores de entorno):"
+for service_name in $SERVICES; do
+  service_container="$(compose ps -a -q "$service_name" | head -n 1)"
+  [[ -n "$service_container" ]] || continue
+  docker inspect --format 'SERVICE={{.Name}} IMAGE={{.Config.Image}} PATH={{.Path}} ARGS={{json .Args}} WORKDIR={{.Config.WorkingDir}}' "$service_container"
+  docker inspect --format '{{range .Mounts}}{{println "MOUNT" .Source "->" .Destination}}{{end}}' "$service_container"
+  docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$service_container" | sed 's/=.*$/=<oculto>/'
+done
+echo "Parámetros logics.* del settings.properties montado:"
+grep -nE '^[[:space:]]*logics\.' "$SETTINGS_FILE" || true
+echo "Últimos registros específicos del servicio logics:"
+compose logs --no-color --tail=120 logics || true
+
+echo "Imágenes resueltas por el Compose:"
+IMAGES="$(compose config --images)"
+printf '%s\n' "$IMAGES"
+while IFS= read -r image_name; do
+  [[ -n "$image_name" ]] || continue
+  image_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$image_name" 2>/dev/null || true)"
+  expected_digest="${image_name##*@}"
+  actual_digest="${image_digest##*@}"
+  if [[ -z "$expected_digest" || "$expected_digest" == "$image_name" ]]; then
+    echo "La imagen no tiene un digest fijado en el override: $image_name" >&2
+    exit 1
+  fi
+  if [[ -z "$image_digest" || "$image_digest" == "<no value>" || "$actual_digest" != "$expected_digest" ]]; then
+    echo "Digest de imagen distinto al fijado para $image_name: esperado $expected_digest, recibido ${actual_digest:-ninguno}" >&2
+    exit 1
+  fi
+  printf 'DIGEST VERIFICADO %s -> %s\n' "$image_name" "$image_digest"
+done <<< "$IMAGES"
+
+LOG_DIR="$COMPOSE_DIR/docker-server/logs"
+RUBROVA_CUSTOM_LOG_EVIDENCE=false
+RUBROVA_LOCALIZATION_LOG_EVIDENCE=false
+RUBROVA_RESILIENCE_LOG_EVIDENCE=false
+RUBROVA_CI_SALES_LOG_EVIDENCE=false
+echo "Archivos creados en docker-server (primeros 80):"
+find "$COMPOSE_DIR/docker-server" -maxdepth 3 -type f -print | sort | head -n 80 || true
+if [[ -d "$LOG_DIR" ]]; then
+  echo "Archivos de log del servidor:"
+  for log_file in "$LOG_DIR"/*.log; do
+    [[ -f "$log_file" ]] || continue
+    printf '%s (%s bytes)\n' "$(basename "$log_file")" "$(wc -c < "$log_file" | tr -d ' ')"
+    case "$(basename "$log_file")" in
+      start.log|stdout.log|stderr.log|server-remote.log)
+        echo "--- Últimas 80 líneas: $(basename "$log_file") ---"
+        tail -n 80 "$log_file"
+        ;;
+    esac
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|RubrovaCISalesFixture|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
+    if [[ -n "$matches" ]]; then
+      printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
+      if grep -Fq 'RubrovaCustom' <<< "$matches"; then
+        RUBROVA_CUSTOM_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaPOSLocalization' <<< "$matches"; then
+        RUBROVA_LOCALIZATION_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaIntegrationResilience' <<< "$matches"; then
+        RUBROVA_RESILIENCE_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaCISalesFixture' <<< "$matches"; then
+        RUBROVA_CI_SALES_LOG_EVIDENCE=true
+      fi
+    fi
+  done
+else
+  echo "No se encontró el directorio de logs esperado: $LOG_DIR"
+fi
+
+SERVER_LOGS="$(compose logs --no-color --tail=180 server 2>&1 || true)"
+SERVER_MATCHES="$(printf '%s\n' "$SERVER_LOGS" | grep -Ei 'Rubrova|topModule|module|logic|compile|ERROR|Exception|WARN|failed|successfully started' | tail -n 80 || true)"
+if [[ -n "$SERVER_MATCHES" ]]; then
+  echo "Mensajes relevantes del servicio server:"
+  printf '%s\n' "$SERVER_MATCHES"
+  if grep -Fq 'RubrovaCustom' <<< "$SERVER_MATCHES"; then
+    RUBROVA_CUSTOM_LOG_EVIDENCE=true
+  fi
+  if grep -Fq 'RubrovaPOSLocalization' <<< "$SERVER_MATCHES"; then
+    RUBROVA_LOCALIZATION_LOG_EVIDENCE=true
+  fi
+  if grep -Fq 'RubrovaIntegrationResilience' <<< "$SERVER_MATCHES"; then
+    RUBROVA_RESILIENCE_LOG_EVIDENCE=true
+  fi
+  if grep -Fq 'RubrovaCISalesFixture' <<< "$SERVER_MATCHES"; then
+    RUBROVA_CI_SALES_LOG_EVIDENCE=true
+  fi
+else
+  echo "Últimas líneas del servicio server:"
+  printf '%s\n' "$SERVER_LOGS" | tail -n 60
+fi
+
+if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" || "$RUBROVA_CI_SALES_LOG_EVIDENCE" != "true" ]]; then
+  echo "No se encontró evidencia de carga de los tres módulos Rubrova y el fixture de precios CI: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE, RubrovaCISalesFixture=$RUBROVA_CI_SALES_LOG_EVIDENCE." >&2
+  exit 1
+fi
+echo "Los registros confirman los módulos Rubrova y el fixture de precios CI."
+
+echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los módulos Rubrova y el fixture de precios CI. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."
+ <<< "$DB_MOUNTS" >/dev/null || {
+  echo "PostgreSQL no está usando el bind mount persistente docker-db-pg18 en /var/lib/postgresql." >&2
+  exit 1
+}
+compose exec -T db sh -c 'test -s "$PGDATA/PG_VERSION"' || {
+  echo "PostgreSQL no creó PG_VERSION dentro del PGDATA persistente." >&2
+  exit 1
+}
+echo "PostgreSQL 18 verificado: PGDATA y bind mount persistente correctos."
+
 echo "4.1/7 Preparando los proxies de fallos de red en Toxiproxy"
 TOXIPROXY_API_URL="http://127.0.0.1:18474"
 TOXIPROXY_READY=false

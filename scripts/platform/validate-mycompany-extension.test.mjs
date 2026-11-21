@@ -220,6 +220,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /\.\/docker-db-pg18:\/var\/lib\/postgresql/);
   assert.match(runtimeSmokeSource, /condition: service_healthy/);
   assert.match(runtimeSmokeSource, /pg_isready -U postgres -d postgres/);
+  assert.match(runtimeSmokeSource, /DB_PGDATA=.*PGDATA/);
+  assert.match(runtimeSmokeSource, /docker-db-pg18 -> \/var\/lib\/postgresql/);
+  assert.match(runtimeSmokeSource, /PG_VERSION/);
+  assert.match(runtimeSmokeSource, /DB_CONTAINER_ID/);
   assert.equal(lock.dockerImages.digestPlatform, "linux/amd64");
   assert.equal(lock.testTools.toxiproxy.scope, "ci-only");
   assert.equal(lock.testTools.toxiproxy.license, "MIT");
