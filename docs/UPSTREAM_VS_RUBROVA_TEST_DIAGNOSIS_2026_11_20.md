@@ -55,9 +55,11 @@ El workflow `.github/workflows/platform-extension.yml` hace lo siguiente:
 - `prepare-mycompany-6.2.sh` descarga y verifica el JAR oficial `mycompany-6.2.jar` y el Compose oficial.
 - El smoke fija imágenes oficiales `lsfusion/mycompany:6.2`, `lsfusion/server:6.2`, `lsfusion/client:6.2` y PostgreSQL.
 - `deploy-mycompany-6.2.sh` copia los cuatro archivos de `extensions/lsfusion` a `docker-server` y prepara el override.
-- No ejecuta `mvn -f build/rubrova/pom.xml -Passemble package`, no compila `vendor/platform` ni `vendor/mycompany`, y no incorpora al servidor la clase Java parchada de Rubrova.
+- El nuevo job `build-fork` ejecuta `mvn -f build/rubrova/pom.xml -Passemble -DskipTests package`, con Java 21, después de verificar las fuentes y aplicar idempotentemente el parche de timeout.
+- Ese job compila `vendor/platform`, el cliente GWT y `vendor/mycompany`; además verifica los artefactos JAR/WAR generados.
+- El job de smoke visual sigue descargando y ejecutando las imágenes oficiales `lsfusion/mycompany:6.2`, `lsfusion/server:6.2` y `lsfusion/client:6.2`. No instala todavía los JAR/WAR del reactor en una imagen de Rubrova.
 
-El reactor `build/rubrova/pom.xml` existe, pero el propio lock declara pendiente la aceptación del rebuild offline. Por eso el smoke actual valida que las extensiones lsFusion funcionen sobre el runtime oficial, no que el fork fuente de Rubrova compile ni que los cambios Java estén desplegados.
+Esto separa por fin dos garantías distintas: **compilación del fork** y **aceptación visual de las extensiones sobre el runtime oficial**. El build del fork debe aprobarse antes de ejecutar el smoke, pero aún falta empaquetar imágenes propias y ejecutar el mismo flujo POS contra esos artefactos compilados. El lock conserva pendiente la aceptación del rebuild offline y no se debe marcar completado hasta que la compilación CI también termine y sus artefactos se inspeccionen.
 
 ## Brecha de timeout confirmada en el upstream
 
@@ -74,6 +76,14 @@ Los tres archivos del camino GWT coinciden exactamente entre el snapshot Rubrova
 
 El test Toxiproxy actual invoca el helper propio `rubrovaHttpGet` desde servidor con timeout explícito de 1.000 ms. Comprueba ese helper, la clasificación y persistencia de incidencias; no comprueba el camino GWT ni el timeout por defecto del motor.
 
+
+
+## Corrección añadida después del diagnóstico: timeout GWT
+
+El commit `4bb52b2bd61a3bcabae4b3be33a25f5ec7dd370c` añade el campo `timeout` a `GHttpClientAction`, lo propaga desde el conversor y aplica en `GwtActionDispatcher` un temporizador con máximo de 60 segundos. Si vence, aborta XHR y completa el callback con estado 0; una bandera evita que la ruta de aborto y el evento de estado final completen dos veces la misma acción. El listener de estado se registra antes de `send()`.
+
+La solución mantiene `XMLHttpRequest` para no perder las respuestas binarias `arraybuffer`. GWT documenta `RequestBuilder.setTimeoutMillis`, pero el cliente existente depende del acceso directo a `ArrayBuffer`, así que el cambio conserva el transporte actual y añade el límite a su alrededor. La compilación de GWT es ahora una condición explícita del job `build-fork`.
+
 ## Errores PostgreSQL observados
 
 En el mismo arranque se registraron dos errores sobre la tabla interna `dumb`, una escritura concurrente sobre `_auto.Time_currentDate` con error de serialización y varias consultas canceladas. El código upstream confirma que `dumb` es una tabla interna del motor usada para consultas sin columnas y que `TableFactory` debe crearla durante el bootstrap.
@@ -84,9 +94,9 @@ Estos eventos ocurrieron durante `onStarted`, antes de finalizar el arranque. No
 
 1. **Hecho en esta revisión:** hacer determinista la espera del diálogo de cobro y declarar explícita la dependencia del fixture de precio respecto del módulo POS.
 2. Separar la aceptación visual POS de la batería de HTTP/Toxiproxy, para que un fallo del DOM no oculte los resultados de resiliencia.
-3. Incorporar un timeout y tratamiento de error/abort al camino GWT `clientAction`, propagándolo desde `HttpClientAction` hasta `GHttpClientAction`.
-4. Hacer que CI compile el reactor Maven de Rubrova y que el runtime de aceptación utilice las imágenes construidas por ese proceso; hasta entonces, marcar los parches Java como no probados en runtime.
-5. Añadir pruebas de contrato para timeout de conexión, timeout de respuesta, error de red, abort, 408/429/5xx, errores definitivos y recuperación. Mantener la política de no reintentar cobros/emisiones sin idempotencia o conciliación.
+3. **Implementado en código; compilación pendiente:** propagar timeout desde `HttpClientAction` hasta `GHttpClientAction`, abortar el XHR del navegador al vencer y completar el callback una sola vez. El job de compilación debe aprobar antes de considerar validado el cambio.
+4. Terminar el build del fork y empaquetar imágenes propias para que el runtime de aceptación pruebe el mismo JAR/WAR que se distribuirá en la instalación privada.
+5. Añadir pruebas de contrato específicas del camino GWT: timeout de conexión/respuesta, error de red, abort y respuesta rápida; conservar además la batería de Toxiproxy del camino servidor. Mantener la política de no reintentar cobros/emisiones sin idempotencia o conciliación.
 
 ## Referencias upstream
 
