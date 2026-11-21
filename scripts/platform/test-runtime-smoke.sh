@@ -123,7 +123,35 @@ grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
   echo "No se configuró el punto de entrada RubrovaCustom." >&2
   exit 1
 }
-for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf MyCompanyResourceBundle_es_AR.properties; do
+echo "Preparando tipo de precio minorista con moneda ARS en un módulo de prueba aislado."
+cat > "$COMPOSE_DIR/docker-server/RubrovaCISalesFixture.lsf" <<'LSF'
+MODULE RubrovaCISalesFixture;
+REQUIRE MyCompany;
+
+NAMESPACE Sales;
+
+// El POS convierte el precio de lista usando la moneda del tipo de precio.
+// En CI asociamos el tipo minorista a la moneda ARS sintética del fixture.
+loadDefaultData () + {
+    currency(priceType('retail')) <- defaultCurrency();
+}
+LSF
+
+ENTRYPOINT_FILE="$COMPOSE_DIR/docker-server/RubrovaCustom.lsf"
+python3 - "$ENTRYPOINT_FILE" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience;"
+new = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaCISalesFixture;"
+if source.count(old) != 1:
+    raise SystemExit("No se encontró una única lista de REQUIRE esperada en RubrovaCustom.lsf.")
+path.write_text(source.replace(old, new, 1), encoding="utf-8")
+PY
+
+for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf RubrovaCISalesFixture.lsf MyCompanyResourceBundle_es_AR.properties; do
   [[ -s "$COMPOSE_DIR/docker-server/$module_file" ]] || {
     echo "No se preparó el archivo de extensión: $module_file" >&2
     exit 1
@@ -384,7 +412,7 @@ LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 START_LOG="$LOG_DIR/start.log"
 STDOUT_LOG="$LOG_DIR/stdout.log"
 EXPECTED_UPSTREAM_MODULES=712
-EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 3))
+EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 4))
 MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
@@ -542,6 +570,7 @@ LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 RUBROVA_CUSTOM_LOG_EVIDENCE=false
 RUBROVA_LOCALIZATION_LOG_EVIDENCE=false
 RUBROVA_RESILIENCE_LOG_EVIDENCE=false
+RUBROVA_CI_SALES_LOG_EVIDENCE=false
 echo "Archivos creados en docker-server (primeros 80):"
 find "$COMPOSE_DIR/docker-server" -maxdepth 3 -type f -print | sort | head -n 80 || true
 if [[ -d "$LOG_DIR" ]]; then
@@ -555,7 +584,7 @@ if [[ -d "$LOG_DIR" ]]; then
         tail -n 80 "$log_file"
         ;;
     esac
-    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|RubrovaCISalesFixture|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
     if [[ -n "$matches" ]]; then
       printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
       if grep -Fq 'RubrovaCustom' <<< "$matches"; then
@@ -566,6 +595,9 @@ if [[ -d "$LOG_DIR" ]]; then
       fi
       if grep -Fq 'RubrovaIntegrationResilience' <<< "$matches"; then
         RUBROVA_RESILIENCE_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaCISalesFixture' <<< "$matches"; then
+        RUBROVA_CI_SALES_LOG_EVIDENCE=true
       fi
     fi
   done
@@ -587,15 +619,18 @@ if [[ -n "$SERVER_MATCHES" ]]; then
   if grep -Fq 'RubrovaIntegrationResilience' <<< "$SERVER_MATCHES"; then
     RUBROVA_RESILIENCE_LOG_EVIDENCE=true
   fi
+  if grep -Fq 'RubrovaCISalesFixture' <<< "$SERVER_MATCHES"; then
+    RUBROVA_CI_SALES_LOG_EVIDENCE=true
+  fi
 else
   echo "Últimas líneas del servicio server:"
   printf '%s\n' "$SERVER_LOGS" | tail -n 60
 fi
 
-if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" ]]; then
-  echo "No se encontró evidencia de carga de los tres módulos propios: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE." >&2
+if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" || "$RUBROVA_CI_SALES_LOG_EVIDENCE" != "true" ]]; then
+  echo "No se encontró evidencia de carga de los tres módulos Rubrova y el fixture de precios CI: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE, RubrovaCISalesFixture=$RUBROVA_CI_SALES_LOG_EVIDENCE." >&2
   exit 1
 fi
-echo "Los registros confirman los tres módulos Rubrova: RubrovaCustom, RubrovaPOSLocalization y RubrovaIntegrationResilience."
+echo "Los registros confirman los módulos Rubrova y el fixture de precios CI."
 
-echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los tres módulos Rubrova. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."
+echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los módulos Rubrova y el fixture de precios CI. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."

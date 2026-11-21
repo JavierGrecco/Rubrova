@@ -199,3 +199,8 @@ La aceptación final requiere demostrar que la caída de un proveedor no rompe e
 ## Prueba ejecutable de timeout y recuperación
 
 El smoke test efímero incorpora un proveedor HTTP simulado en la propia máquina de CI. El módulo de Rubrova ejecuta un GET con límite de 1 segundo contra un endpoint que demora 5 segundos, captura el resultado sin propagar la excepción a la API, registra una incidencia local y luego vuelve a consultar un endpoint saludable. La prueba verifica también que la incidencia quede persistida. No usa credenciales ni un servicio real y no crea ventas ni pagos. Esta prueba inicial cubre el patrón GET; los métodos de escritura, los circuit breakers y la Outbox requieren sus propias pruebas de idempotencia y recuperación.
+
+
+## Preparación de precios en la prueba de POS
+
+El fixture de CI no se limita a mostrar el precio del catálogo: asigna ARS al tipo de precio minorista en un módulo temporal separado (`RubrovaCISalesFixture`). La aceptación visual registra el DOM del renglón y los importes del recibo para diferenciar el precio de búsqueda del precio efectivamente calculado en la factura. Este módulo existe sólo dentro del stack descartable de CI.

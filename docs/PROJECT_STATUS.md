@@ -68,3 +68,6 @@ El proyecto no se declara listo por importar fuentes ni por tener CI verde. Se a
 ## Política transversal de errores
 
 Se añadió [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md). El motor lsFusion 6.2 ofrece timeoutHttp() y TRY/CATCH, pero eso no equivale a tener la política implementada. El registro común de incidentes y el helper GET ya están en el módulo Rubrova; el motor vendorizado ahora impone un timeout de 10 s por defecto y 60 s máximo a todo `EXTERNAL HTTP`; el cambio está reproducido como parche idempotente y validado en cada importación de fuentes. Faltan terminar la validación runtime de ese módulo, los estados Outbox/circuit breaker y ampliar las pruebas simuladas más allá de GET. Mercado Libre y los demás conectores no se habilitarán en producción sin esas puertas.
+
+
+La prueba de precios del POS utiliza `RubrovaCISalesFixture` sólo en CI para asignar ARS al tipo minorista; la venta no se valida con el importe de la búsqueda sino con el precio del renglón y el total del recibo.

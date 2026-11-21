@@ -569,6 +569,35 @@ def inspect_page(url: str) -> int:
                     )
 
                 print("UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true")
+                cart_dom = page.evaluate("""productName => {
+                    const visible = element => {
+                        const style = getComputedStyle(element);
+                        return style.display !== "none" && style.visibility !== "hidden" &&
+                            !!(element.offsetWidth || element.offsetHeight);
+                    };
+                    const leaves = [...document.querySelectorAll("*")].filter(element =>
+                        visible(element) && element.children.length === 0 &&
+                        (element.innerText || element.textContent || "").trim() === productName
+                    );
+                    return leaves.slice(0, 8).map(element => {
+                        const chain = [];
+                        let node = element;
+                        for (let level = 0; node && level < 6; level++, node = node.parentElement) {
+                            chain.push({
+                                tag: node.tagName.toLowerCase(),
+                                className: typeof node.className === "string" ? node.className : "",
+                                text: (node.innerText || node.textContent || "").trim().slice(0, 450),
+                                html: node.outerHTML.slice(0, 900)
+                            });
+                        }
+                        return chain;
+                    });
+                }""", product_name)
+                print("UI_CART_PRODUCT_DOM=" + json.dumps(cart_dom, ensure_ascii=False))
+                print("UI_CART_AMOUNT_LABELS=" + json.dumps(
+                    page.locator("body").inner_text(timeout=5_000).splitlines()[-22:],
+                    ensure_ascii=False
+                ))
 
                 # Abrir la pantalla de cobro y verificar medios disponibles sin confirmar.
                 if not click_exact_action(page, "Cobrar (ctrl ENTER)"):
