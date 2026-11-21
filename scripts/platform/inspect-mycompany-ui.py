@@ -274,34 +274,31 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
 
 
 def click_exact_action(page: Any, label: str) -> bool:
-    selector = 'button, input[type="submit"], [role="button"]'
-    controls = page.locator(selector).evaluate_all(
-        """elements => elements.map((element, index) => {
-            const style = getComputedStyle(element);
-            return {
-                index,
-                tag: element.tagName.toLowerCase(),
-                text: (element.innerText || element.value || element.textContent || "").trim(),
-                visible: style.display !== "none" && style.visibility !== "hidden" &&
-                    !!(element.offsetWidth || element.offsetHeight),
-                outerHTML: element.outerHTML.slice(0, 700)
-            };
-        })"""
-    )
-    matches = [control for control in controls if control["visible"] and control["text"] == label]
-    if not matches:
+    # Use a lazy accessible locator so a GWT re-render cannot invalidate a saved index.
+    button = page.get_by_role("button", name=label, exact=True)
+    try:
+        button.wait_for(state="visible", timeout=12_000)
+    except PlaywrightTimeoutError:
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
         print(
             f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
-            + json.dumps(controls, ensure_ascii=False)
+            + json.dumps(
+                page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
+                    """elements => elements.map(element => ({
+                        tag: element.tagName.toLowerCase(),
+                        text: (element.innerText || element.value || element.textContent || "").trim(),
+                        visible: getComputedStyle(element).display !== "none" &&
+                            getComputedStyle(element).visibility !== "hidden" &&
+                            !!(element.offsetWidth || element.offsetHeight),
+                        outerHTML: element.outerHTML.slice(0, 700)
+                    }))"""
+                ),
+                ensure_ascii=False,
+            )
         )
         return False
-    index = int(matches[0]["index"])
-    print(
-        f"UI_ACTION_{label.upper().replace(' ', '_')}_TARGET="
-        + json.dumps(matches[0], ensure_ascii=False)
-    )
-    page.locator(selector).nth(index).click(no_wait_after=True)
+
+    button.click(no_wait_after=True)
     print(f"UI_ACTION_{label.upper().replace(' ', '_')}_CLICKED=true")
     return True
 
