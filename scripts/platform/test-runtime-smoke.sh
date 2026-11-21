@@ -276,7 +276,6 @@ rubrovaTestHttpTimeout () {
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
         retryAfter = rubrovaHttpRetryAfter(),
-        incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1,
         httpStatus = statusHttp(),
         userMessage = rubrovaHttpFailureMessage();
 } @@api;
@@ -312,6 +311,7 @@ rubrovaTestHttpRateLimit () {
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
         retryAfter = rubrovaHttpRetryAfter(),
+        incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1,
         httpStatus = statusHttp(),
         userMessage = rubrovaHttpFailureMessage();
 } @@api;
