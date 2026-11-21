@@ -75,7 +75,7 @@ resolveIntegrationIncident 'Marcar incidencia resuelta' (IntegrationIncident inc
         TRY {
             NEWSESSION {
                 resolved(incident) <- TRUE;
-                resolutionNote(incident) <- note();
+                resolutionNote(incident) <- note;
                 resolvedAt(incident) <- currentDateTime();
                 APPLY;
             }
