@@ -381,6 +381,10 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency()"));
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
   assert.match(uiSmokeSource, /def wait_for_payment_dialog\(page: Any, timeout_seconds: int = 20\)/);
+  assert.match(uiSmokeSource, /page[.]get_by_role\("link", name=label, exact=True\)/);
+  assert.match(uiSmokeSource, /submenu_label: str \| None = None/);
+  assert.match(uiSmokeSource, /UI_NAV_LINK_.*_CLICK_ATTEMPT/);
+  assert.ok(uiSmokeSource.includes('click_exact_link(page, "Comercio", submenu_label="Punto de venta")'));
   assert.match(uiSmokeSource, /UI_PAYMENT_FORM_RENDERED=true/);
   assert.match(uiSmokeSource, /wait_for_payment_dialog\(page, timeout_seconds=20\)/);
   assert.doesNotMatch(uiSmokeSource, /page[.]wait_for_timeout\(1200\)\\s*\\n\\s*payment_text/);

@@ -426,16 +426,68 @@ def wait_for_exact_link(page: Any, label: str, timeout_seconds: int = 12) -> int
     return None
 
 
-def click_exact_link(page: Any, label: str) -> bool:
-    index = wait_for_exact_link(page, label)
-    if index is None:
+def click_exact_link(
+    page: Any, label: str, submenu_label: str | None = None
+) -> bool:
+    # Locators are re-resolved at click time. A saved numeric index can point at
+    # a different GWT link after the navigator re-renders its anchor list.
+    link = page.get_by_role("link", name=label, exact=True)
+    try:
+        link.wait_for(state="visible", timeout=12_000)
+    except PlaywrightTimeoutError:
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
         return False
-    link = page.locator("a").nth(index)
-    link.scroll_into_view_if_needed()
-    link.click(no_wait_after=True)
-    page.wait_for_timeout(1_000)
-    print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
-    return True
+
+    if submenu_label is None:
+        link.scroll_into_view_if_needed()
+        link.click(no_wait_after=True)
+        page.wait_for_timeout(1_000)
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
+        return True
+
+    submenu = page.get_by_role("link", name=submenu_label, exact=True)
+    for attempt in range(1, 4):
+        if submenu.is_visible():
+            print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
+            return True
+
+        state = link.evaluate(
+            "element => ({expanded: element.getAttribute('aria-expanded'), active: element.classList.contains('active')})"
+        )
+        if state.get("expanded") == "true" or state.get("active"):
+            try:
+                submenu.wait_for(state="visible", timeout=15_000)
+                print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
+                return True
+            except PlaywrightTimeoutError:
+                print(
+                    f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_STATE="
+                    + json.dumps(state, ensure_ascii=False)
+                )
+                break
+
+        link.scroll_into_view_if_needed()
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CLICK_ATTEMPT={attempt}")
+        link.click(no_wait_after=True)
+        try:
+            submenu.wait_for(state="visible", timeout=10_000)
+            print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_EXPANDED=true")
+            return True
+        except PlaywrightTimeoutError:
+            state = link.evaluate(
+                "element => ({expanded: element.getAttribute('aria-expanded'), active: element.classList.contains('active')})"
+            )
+            print(
+                f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_STATE="
+                + json.dumps(state, ensure_ascii=False)
+            )
+            # Retry only while the parent still looks closed. Never click an
+            # already-expanded menu again, as that could close it.
+            if state.get("expanded") == "true" or state.get("active"):
+                break
+
+    visible_snapshot(page, f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FAILED")
+    return False
 
 
 def inspect_page(url: str) -> int:
@@ -498,15 +550,10 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
                 # El servidor corre sobre PostgreSQL descartable de CI; el turno y sus datos se destruyen al finalizar.
-                if not click_exact_link(page, "Comercio"):
-                    raise RuntimeError("No se pudo seleccionar el módulo Comercio.")
-
-                # The submenu is loaded asynchronously by the lsFusion navigator.
-                if wait_for_exact_link(page, "Punto de venta", timeout_seconds=12) is None:
-                    visible_snapshot(page, "UI_RETAIL_NAVIGATION_FAILED")
+                if not click_exact_link(page, "Comercio", submenu_label="Punto de venta"):
                     page.screenshot(path=str(retail_screenshot), full_page=True)
                     print(f"UI_RETAIL_SCREENSHOT={retail_screenshot}")
-                    raise RuntimeError("El menú Comercio no mostró la opción 'Punto de venta'.")
+                    raise RuntimeError("El menú Comercio no se expandió para mostrar 'Punto de venta'.")
 
                 visible_snapshot(page, "UI_RETAIL_NAVIGATION")
                 page.screenshot(path=str(retail_screenshot), full_page=True)
