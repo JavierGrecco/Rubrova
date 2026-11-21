@@ -111,6 +111,13 @@ services:
   logics:
     image: lsfusion/mycompany:6.2@sha256:9dacff96577de49a56633a53801c7bcd78b5e7df501cd4ebd61098124276bd11
   server:
+    depends_on:
+      db:
+        condition: service_started
+      logics:
+        condition: service_completed_successfully
+      toxiproxy:
+        condition: service_started
     extra_hosts:
       - "host.docker.internal:host-gateway"
     image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
@@ -118,6 +125,13 @@ services:
     image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
   db:
     image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
+  # Test-only network fault injector; its control API is bound to loopback on the CI host.
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.13.0@sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:18474:8474"
 YAML
 grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
   echo "No se configuró el punto de entrada RubrovaCustom." >&2
@@ -236,13 +250,14 @@ grep -q "rubrova-ci" "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" || 
   exit 1
 }
 
-MOCK_PROVIDER_URL="http://host.docker.internal:$MOCK_PROVIDER_PORT"
+MOCK_PROVIDER_URL="http://toxiproxy:8666"
+MOCK_PROVIDER_TIMEOUT_URL="http://toxiproxy:8667"
 cat >> "$COMPOSE_DIR/docker-server/RubrovaIntegrationResilience.lsf" <<LSF
 
 // Endpoints exclusivos de la base efímera CI: nunca se instalan en Rubrova.
 rubrovaTestHttpTimeout () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de timeout', 'ci-timeout-001',
-        '$MOCK_PROVIDER_URL/slow?delay=5', 1000);
+        '$MOCK_PROVIDER_TIMEOUT_URL/ok', 1000);
     EXPORT JSON FROM
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'failure-captured',
         category = rubrovaHttpFailureCategory(),
@@ -311,6 +326,44 @@ printf 'Servicios definidos (%s):\n%s\n' "$SERVICE_COUNT" "$SERVICES"
 
 echo "4/7 Iniciando MyCompany 6.2 en un proyecto efímero"
 compose up -d --remove-orphans
+
+echo "4.1/7 Preparando los proxies de fallos de red en Toxiproxy"
+TOXIPROXY_API_URL="http://127.0.0.1:18474"
+TOXIPROXY_READY=false
+for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  if curl --silent --fail --connect-timeout 1 --max-time 2 "$TOXIPROXY_API_URL/version" >/dev/null; then
+    TOXIPROXY_READY=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$TOXIPROXY_READY" != "true" ]]; then
+  echo "Toxiproxy no respondió en su API local durante el plazo esperado." >&2
+  compose logs --no-color --tail=120 toxiproxy >&2 || true
+  exit 1
+fi
+curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+  --request POST --header "Content-Type: application/json" \
+  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true},{"name":"rubrova_ci_timeout","listen":"0.0.0.0:8667","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
+  "$TOXIPROXY_API_URL/populate" >/dev/null
+curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+  --request POST --header "Content-Type: application/json" \
+  --data-binary '{"name":"drop-response","type":"timeout","stream":"downstream","toxicity":1.0,"attributes":{"timeout":0}}' \
+  "$TOXIPROXY_API_URL/proxies/rubrova_ci_timeout/toxics" >/dev/null
+PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 "$TOXIPROXY_API_URL/proxies")"
+python3 - "$PROXY_CONFIG" <<'PY'
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+required = {"rubrova_ci_normal", "rubrova_ci_timeout"}
+if not required.issubset(payload):
+    raise SystemExit("Toxiproxy no creó los dos proxies de aceptación requeridos.")
+toxics = payload["rubrova_ci_timeout"].get("toxics", [])
+if not any(item.get("name") == "drop-response" and item.get("type") == "timeout" for item in toxics):
+    raise SystemExit("No quedó activo el corte de respuesta TCP para el test de timeout.")
+PY
+echo "Toxiproxy listo: un proxy normal y otro que retiene respuestas hasta que el cliente agota su timeout."
 
 echo "5/7 Comprobando que la configuración y los módulos Rubrova estén montados en el servidor"
 SERVER_CONTAINER_ID="$(compose ps -q server)"

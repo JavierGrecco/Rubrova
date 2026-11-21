@@ -59,6 +59,7 @@ Una plataforma que reúne en un solo lugar:
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P55 |
 | [Resiliencia de integraciones y errores](docs/INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) | Timeouts, reintentos seguros, circuit breaker, Outbox, mensajes en español y simulación de fallos para cada proveedor |
+| [Herramientas y componentes adicionales](docs/TOOLING_AND_REUSE_RESEARCH_2026_11.md) | Evaluación de librerías de resiliencia, pruebas de fallos, ARCA, conectores y módulos reutilizables |
 | [Copias de seguridad y recuperación](docs/BACKUP_AND_MIGRATION_STRATEGY.md) | Backup portable sin cifrado de aplicación, checksums, reinstalación de Windows y restauración guiada |
 | [Plan maestro de implementación](docs/MASTER_IMPLEMENTATION_PLAN.md) | Orden ejecutivo: POS, ERP, contabilidad, reportes, expansión y logística |
 | [Estado real del proyecto](docs/PROJECT_STATUS.md) | Qué funciona, qué falta y el siguiente bloque de trabajo |

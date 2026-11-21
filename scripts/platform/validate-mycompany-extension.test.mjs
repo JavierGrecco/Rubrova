@@ -198,7 +198,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
     mycompany: "lsfusion/mycompany:6.2",
     server: "lsfusion/server:6.2",
     client: "lsfusion/client:6.2",
-    postgres: "postgres:18"
+    postgres: "postgres:18",
+    toxiproxy: "ghcr.io/shopify/toxiproxy:2.13.0"
   })) {
     const digest = lock.dockerImages[service].digest;
     assert.match(digest, /^sha256:[0-9a-f]{64}$/);
@@ -331,6 +332,16 @@ test("el lock distingue la imagen MyCompany AMD64 de server/client multi-arquite
 test("la prueba de resiliencia inyecta timeout, verifica recuperación y persiste la incidencia", () => {
   assert.match(runtimeSmokeSource, /mock-integration-provider[.]py/);
   assert.match(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
+  assert.match(runtimeSmokeSource, /ghcr[.]io\/shopify\/toxiproxy:2[.]13[.]0/);
+  assert.match(runtimeSmokeSource, /9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc/);
+  assert.match(runtimeSmokeSource, /127[.]0[.]0[.]1:18474:8474/);
+  assert.match(runtimeSmokeSource, /rubrova_ci_normal/);
+  assert.match(runtimeSmokeSource, /rubrova_ci_timeout/);
+  assert.match(runtimeSmokeSource, /"type":"timeout"/);
+  assert.match(runtimeSmokeSource, /"timeout":0/);
+  assert.match(runtimeSmokeSource, /MOCK_PROVIDER_TIMEOUT_URL="http:\/\/toxiproxy:8667"/);
+  assert.match(runtimeSmokeSource, /drop-response/);
+  assert.match(runtimeSmokeSource, /Toxiproxy listo/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
