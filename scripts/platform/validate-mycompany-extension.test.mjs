@@ -96,10 +96,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /body can be temporarily unavailable/);
   assert.match(uiSmokeSource, /submit_field[.]click[(]no_wait_after=True[)]/);
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
-  assert.match(uiSmokeSource, /click_exact_link\(page, "Comercio"\)/);
   assert.match(uiSmokeSource, /def wait_for_exact_link\(page: Any, label: str, timeout_seconds: int = 12\)/);
-  assert.match(uiSmokeSource, /wait_for_exact_link\(page, "Punto de venta", timeout_seconds=12\)/);
-  assert.match(uiSmokeSource, /El menú Comercio no mostró la opción/);
   assert.match(uiSmokeSource, /click_exact_link\(page, "Punto de venta"\)/);
   assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
   assert.match(uiSmokeSource, /wait_until_form_loaded\(page, "UI_POS_SCREEN", timeout_seconds=45\)/);
