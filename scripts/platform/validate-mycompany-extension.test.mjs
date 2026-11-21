@@ -401,8 +401,12 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.doesNotMatch(uiSmokeSource, /search_tab[.]click\(no_wait_after=True\)\\s*\\n\\s*page[.]wait_for_timeout\(750\)/);
   assert.match(uiSmokeSource, /button[.]click\(no_wait_after=True\)/);
   assert.doesNotMatch(uiSmokeSource, /page[.]locator\(selector\)[.]nth\(index\)[.]click/);
-  assert.match(uiSmokeSource, /page[.]locator\(f'a:text-is\(/);
-  assert.match(uiSmokeSource, /MyCompany renders navigator entries as/);
+  assert.match(uiSmokeSource, /NAVIGATOR_CONTAINER_BY_LABEL = \{/);
+  assert.match(uiSmokeSource, /"Comercio": "Retail[.]retail"/);
+  assert.match(uiSmokeSource, /"Punto de venta": "Retail[.]posDashboard"/);
+  assert.match(uiSmokeSource, /page[.]locator\(f'a\\[lsfusion-container="\{container\}"\\]'\)/);
+  assert.match(uiSmokeSource, /UI_NAV_LINK_.*_MATCH_COUNT/);
+  assert.match(uiSmokeSource, /navigator_diagnostics\(page\)/);
   assert.doesNotMatch(uiSmokeSource, /page[.]get_by_role\("link", name=label, exact=True\)/);
   assert.match(uiSmokeSource, /submenu_label: str \| None = None/);
   assert.match(uiSmokeSource, /UI_NAV_LINK_.*_CLICK_ATTEMPT/);
