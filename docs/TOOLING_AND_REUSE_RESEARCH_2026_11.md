@@ -28,17 +28,19 @@ Esta mejora fortalece las pruebas de errores de red; no demuestra por sí sola e
 
 | Proyecto | Licencia / tecnología | Valor para Rubrova | Decisión |
 |---|---|---|---|
-| [Resilience4j](https://github.com/resilience4j/resilience4j) | Apache-2.0, Java | Circuit breaker, retry, rate limiter, bulkhead y time limiter; permite combinar sólo los patrones necesarios | **Candidato principal** para el futuro límite Java de integraciones. Probar compatibilidad, estado persistente y métricas antes de fijar una versión. No copiar una máquina de estados propia si una biblioteca probada cubre el caso |
-| [Testcontainers for Java](https://github.com/testcontainers/testcontainers-java) | MIT, Java/JUnit | Bases PostgreSQL desechables, servicios auxiliares y navegadores aislados para pruebas de integración | Incorporar cuando tengamos pruebas Java sobre persistencia, migraciones y ledgers. El smoke actual ya usa Compose; no sumar dos mecanismos para el mismo test |
-| [ARCA SDK](https://github.com/ralcorta/arcasdk) | MIT, TypeScript | Paquetes para WSAA, facturación WSFE, WSFEX, CAEA, padrón, FCE, QR y errores tipados | **Referencia de implementación fiscal argentina**. Auditar fuentes, dependencias, contratos, certificados y estados inciertos. Por estar escrito en TypeScript no se añade todavía como proceso residente al runtime Java de Rubrova |
-| [Apache Camel](https://github.com/apache/camel) | Apache-2.0, Java | Catálogo amplio de conectores y patrones de integración; la rama LTS 4.22 declara compatibilidad con Java 21 | Mantener en evaluación. Puede ahorrar trabajo si muchos conectores repiten lógica, pero es más infraestructura de la que necesitamos para empezar. Preferir primero una biblioteca pequeña y límites de módulo claros |
-| [Tryton 8.2](https://docs.tryton.org/8.2/) | GPL-3.0, Python | Fuente de comparación para ventas, stock, compras, contabilidad y flujos de devolución | Actualizar la investigación sobre el lock argentino 8.0 y comparar cambios concretos. No incorporar una segunda aplicación ni duplicar los ledgers |
-| [ERPNext 16.60](https://github.com/frappe/erpnext) | GPL-3.0, Python | Referencia viva de procesos comerciales, permisos y contabilización de devoluciones | Estudiar reglas y pruebas, no importar módulos completos: MyCompany ya cubre el núcleo. Revisar además las consecuencias de licencia antes de copiar código |
+| [Resilience4j 2.4.0](https://github.com/resilience4j/resilience4j) | Apache-2.0, Java 17+ | Circuit breaker, retry, rate limiter, bulkhead y time limiter; modular, permite sumar sólo los patrones necesarios | **Candidato principal** para el límite Java de integraciones. Probar compatibilidad con el runtime Java 21, estado del circuit breaker, métricas y comportamiento concurrente antes de fijar la versión. Los incidentes y la Outbox seguirán persistidos en Rubrova; no confiar en el estado en memoria de la biblioteca |
+| [Testcontainers for Java 2.0.5](https://github.com/testcontainers/testcontainers-java) | MIT, Java/JUnit | PostgreSQL, servicios auxiliares y navegadores efímeros para pruebas de integración reproducibles | Adoptarlo para pruebas acotadas de persistencia, migraciones, conciliación y ledgers desde Java. La rama 2.0 cambia coordenadas y paquetes (por ejemplo, el módulo PostgreSQL usa `testcontainers-postgresql`), por eso se fijará y probará en un módulo nuevo, no se mezclará con el smoke Compose actual |
+| [ARCA SDK `@arcasdk/core` 1.2.0](https://github.com/ralcorta/arcasdk) | MIT, TypeScript | SDK para Web Services de ARCA: autenticación, facturación electrónica, padrones, FCE y WSCT; paquete PDF separado `@arcasdk/pdf` | **Referencia fiscal prioritaria** para contrastar contratos, catálogos, errores SOAP, certificados y pruebas de homologación. El proyecto migró desde `afip.ts` al nombre `arcasdk`; no incorporar un proceso Node al runtime aún. Primero validar cobertura de servicios y casos argentinos reales, luego comparar un adaptador Java con el SDK |
+| [Apache Camel 4.22.2 LTS](https://camel.apache.org/download/) | Apache-2.0, Java 17/21/25 | Catálogo de conectores y patrones de integración; LTS de octubre de 2026 con soporte publicado hasta agosto de 2027 | Mantener en evaluación. Puede ahorrar trabajo si muchos conectores repiten lógica, pero añade superficie y configuración para una aplicación local. Preferir Resilience4j y adaptadores pequeños hasta que una necesidad concreta justifique Camel |
+| [Tryton 8.2](https://docs.tryton.org/8.2/) | GPL-3.0-or-later, Python | Referencia para ventas, stock, compras y contabilidad; 8.2 incorpora validaciones de tolerancia y variación de cantidad/costo en inventarios | **Referencia de reglas y pruebas**, no segunda aplicación. Comparar el inventario físico, las diferencias de costo y el cierre/apertura de períodos con los módulos MyCompany antes de diseñar extensiones propias |
+| [ERPNext 16.60.0](https://github.com/frappe/erpnext/releases) | GPL-3.0, Python | Referencia de procesos comerciales; su release del 17 de noviembre incluye una corrección de devolución POS para excluir el vuelto ya entregado del importe reintegrado | Estudiar reglas y pruebas, no importar módulos completos: MyCompany ya cubre el núcleo. Usar esa corrección como caso de aceptación de Rubrova y revisar licencias antes de copiar cualquier código |
 
 ## Patrones concretos que vamos a tomar como referencia
 
 - **Idempotencia fiscal:** consultar el estado de una emisión incierta antes de repetirla; reintentar consultas, no volver a emitir un comprobante a ciegas.
-- **Devoluciones:** excluir el vuelto ya entregado del importe a reintegrar, vincular la devolución con la venta original y controlar importes por medio de pago.
+- **Devoluciones POS (ERPNext 16.60.0):** una venta de $1.250 con $1.500 entregados y $250 de vuelto debe generar una devolución máxima de $1.250, nunca de $1.500. La devolución debe partir de la factura original, repartir el reintegro por los medios realmente cobrados y revertir stock una sola vez.
+- **Inventario (Tryton 8.2):** una toma física debe mostrar variación de cantidad y costo, permitir configurar tolerancias y exigir autorización cuando se excedan; el ajuste debe generar movimientos trazables y no modificar el historial de ventas.
+- **Cierre de períodos (Tryton 8.2):** contrastar calendario, conciliación y cierre/apertura automáticos con el ejercicio contable de Rubrova; ninguna tarea programada debe cerrar un período con operaciones sin conciliar.
 - **Permisos:** aplicar autorización tanto al documento como a sus relaciones (cuenta, depósito, artículo, cliente/proveedor y sucursal); no confiar sólo en que un formulario o selector oculte registros.
 - **Resiliencia:** separar circuit breaker, reintentos, límite de concurrencia y timeout. La política común no debe permitir que un fallo de Mercado Libre bloquee el POS local ni otros proveedores.
 
@@ -60,9 +62,16 @@ No se habilita una integración real hasta validar homologación, seguridad de c
 
 - [Toxiproxy: repositorio, licencia, autenticación bearer y documentación de fallos TCP](https://github.com/Shopify/toxiproxy)
 - [Toxiproxy: contenedor 2.13.0 y digests publicados](https://github.com/Shopify/toxiproxy/pkgs/container/toxiproxy)
-- [Resilience4j: patrones de tolerancia a fallos y licencia Apache-2.0](https://github.com/resilience4j/resilience4j)
-- [Testcontainers Java: pruebas con PostgreSQL y otros servicios desechables](https://github.com/testcontainers/testcontainers-java)
-- [ARCA SDK: documentación y paquetes TypeScript](https://arca-sdk.dev/)
+- [Resilience4j 2.4.0: patrones, licencia y soporte de Java](https://github.com/resilience4j/resilience4j/releases/tag/v2.4.0)
+- [Testcontainers Java 2.0.5: release y cambios de compatibilidad](https://github.com/testcontainers/testcontainers-java/releases/tag/2.0.5)
+- [Testcontainers: módulo PostgreSQL y coordenadas 2.x](https://github.com/testcontainers/testcontainers-java/blob/main/docs/modules/databases/postgres.md)
+- [Testcontainers: licencia MIT](https://github.com/testcontainers/testcontainers-java/blob/main/LICENSE)
+- [ARCA SDK: documentación actual, paquetes y migración de afip.ts](https://github.com/ralcorta/arcasdk)
+- [ARCA SDK: changelog, WSFEX y WSFECred](https://github.com/ralcorta/arcasdk/blob/main/CHANGELOG.md)
 - [Tryton 8.2: notas de versión de ventas](https://docs.tryton.org/8.2/modules-sale/releases.html)
-- [ERPNext: versión 16.60.0 y cambios de POS/devoluciones](https://github.com/frappe/erpnext/releases)
-- [Apache Camel: releases LTS y compatibilidad Java](https://camel.apache.org/download/)
+- [Tryton 8.2: notas de versión de inventario](https://docs.tryton.org/8.2/modules-stock/releases.html)
+- [Tryton: paquete 8.2.0 y licencia GPL-3.0-or-later](https://pypi.org/project/tryton/8.2.0/)
+- [ERPNext: versión 16.60.0 y cambio de devolución POS](https://github.com/frappe/erpnext/releases)
+- [ERPNext: licencia oficial GPLv3](https://docs.frappe.io/erpnext/open-source)
+- [Apache Camel: Camel 4.22.2 LTS, Java 17/21/25](https://camel.apache.org/download/)
+- [Apache Camel: calendario de releases y ciclo de soporte](https://camel.apache.org/releases/)
