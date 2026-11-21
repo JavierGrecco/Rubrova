@@ -229,6 +229,7 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /logToFile\('rubrova-integration-emergency'/);
   assert.match(resilienceSource, /resolveIntegrationIncident/);
   assert.match(resilienceSource, /rubrovaHttpGet/);
+  assert.ok(resilienceSource.indexOf("rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'") < resilienceSource.indexOf("rubrovaHttpGet 'Consultar servicio externo (GET)'"), "El clasificador HTTP debe declararse antes de su primera llamada en lsFusion.");
   assert.match(resilienceSource, /EXTERNAL HTTP GET url/);
   assert.match(resilienceSource, /TIMEOUT_OR_NETWORK/);
   assert.match(resilienceSource, /rubrovaHandleHttpStatusFailure/);
