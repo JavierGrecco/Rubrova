@@ -39,10 +39,41 @@ jobs:
           bash -n scripts/platform/test-deploy-mycompany-6.2.sh
           bash -n scripts/platform/test-runtime-smoke.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
-  runtime-smoke:
-    name: Arranque real MyCompany 6.2 (Linux x86_64)
+  build-fork:
+    name: Compilar el fork lsFusion + MyCompany de Rubrova
     runs-on: ubuntu-latest
     needs: validate
+    timeout-minutes: 45
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v7
+      - name: Preparar Java 21 y caché Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: |
+            build/rubrova/pom.xml
+            vendor/platform/**/pom.xml
+            vendor/mycompany/pom.xml
+      - name: Verificar snapshots y aplicar el parche global de timeout
+        run: |
+          bash scripts/platform/validate-vendored-sources.sh
+          python3 scripts/platform/apply-rubrova-source-patches.py
+          grep -q 'RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L' vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java
+      - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
+        run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
+      - name: Verificar los artefactos compilados
+        run: |
+          test -s vendor/mycompany/target/mycompany-6.2.jar
+          find vendor/platform/server/target -maxdepth 1 -type f -name '*.jar' -size +0c -print -quit | grep -q .
+          find vendor/platform/web-client/target -maxdepth 1 -type f -name '*.war' -size +0c -print -quit | grep -q .
+          echo "El reactor de Rubrova compiló el servidor, el cliente web y MyCompany."
+  runtime-smoke:
+    name: Smoke POS sobre runtime oficial MyCompany 6.2 (Linux x86_64)
+    runs-on: ubuntu-latest
+    needs: [validate, build-fork]
     timeout-minutes: 30
     concurrency:
       group: rubrova-runtime-smoke-${{ github.ref }}
