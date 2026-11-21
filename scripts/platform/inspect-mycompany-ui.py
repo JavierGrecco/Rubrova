@@ -797,9 +797,30 @@ def inspect_page(url: str) -> int:
                 if isinstance(transient_payload, list):
                     transient_payload = transient_payload[0] if transient_payload else {}
                 print("UI_INTEGRATION_408_RESPONSE=" + json.dumps(transient_payload, ensure_ascii=False))
-                if transient_payload.get("category") != "REMOTE_TRANSIENT" or int(transient_payload.get("httpStatus") or 0) != 408 or not transient_payload.get("retryable"):
-                    raise RuntimeError("El HTTP 408 no se clasificó como transitorio reintentable.")
+                if (
+                    transient_payload.get("category") != "REMOTE_TRANSIENT"
+                    or int(transient_payload.get("httpStatus") or 0) != 408
+                    or not transient_payload.get("retryable")
+                ):
+                    raise RuntimeError(
+                        "El HTTP 408 no se clasificó como transitorio reintentable: "
+                        + json.dumps(transient_payload, ensure_ascii=False)
+                    )
                 print("UI_INTEGRATION_408_CLASSIFIED=true")
+
+                incident_count = int(transient_payload.get("incidentCount") or 0)
+                if incident_count != 1:
+                    raise RuntimeError(
+                        "La incidencia HTTP 408 no quedó persistida exactamente una vez. "
+                        f"Cantidad observada: {incident_count}. "
+                        f"Respuesta: {json.dumps(transient_payload, ensure_ascii=False)}"
+                    )
+                if transient_payload.get("incidentRetryable") is not True:
+                    raise RuntimeError(
+                        "La incidencia HTTP 408 no conservó safeToRetry=true en PostgreSQL: "
+                        + json.dumps(transient_payload, ensure_ascii=False)
+                    )
+                print("UI_INTEGRATION_408_INCIDENT_PERSISTED=true")
 
                 rate_limit_response = context.request.get(
                     api_base + "rubrovaTestHttpRateLimit", timeout=12_000
