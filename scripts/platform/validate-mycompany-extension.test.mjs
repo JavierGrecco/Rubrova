@@ -256,7 +256,7 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /HEADERSTO responseHeaders/);
   assert.match(resilienceSource, /responseHeaders\(STRING\[100\] headerName\)/, "HEADERSTO debe consultar el nombre del encabezado con la clase STRING[100], no con la clase del valor TEXT.");
   assert.match(resilienceSource, /GROUP MAX responseHeaders\(STRING\[100\] headerName\)/);
-  assert.match(resilienceSource, /retryAfterHeader = DATA ISTRING\[100\] \(IntegrationIncident\)/);
+  assert.match(resilienceSource, /retryAfterHeader 'Reintentar después de' = DATA ISTRING\[100\] \(IntegrationIncident\)/);
   assert.match(resilienceSource, /retryAfterHeader\(incident\) <- retryAfterHeaderValue/);
   assert.match(resilienceSource, /timeoutMilliseconds > 30000/);
   assert.match(resilienceSource, /NEWSESSION/);
