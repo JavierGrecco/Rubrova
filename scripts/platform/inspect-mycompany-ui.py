@@ -306,6 +306,39 @@ def click_exact_action(page: Any, label: str) -> bool:
     return True
 
 
+def wait_for_payment_dialog(page: Any, timeout_seconds: int = 20) -> str:
+    """Wait for the asynchronous lsFusion payment dialog, not an arbitrary delay."""
+    deadline = time.monotonic() + timeout_seconds
+    stable_reads = 0
+    last_text = ""
+
+    while time.monotonic() < deadline:
+        try:
+            last_text = page.locator("body").inner_text(timeout=5_000)
+        except PlaywrightError:
+            stable_reads = 0
+            page.wait_for_timeout(500)
+            continue
+
+        normalized = last_text.casefold()
+        if all(marker in normalized for marker in ("cobro", "medio de pago", "efectivo", "tarjeta")):
+            stable_reads += 1
+            if stable_reads >= 2:
+                print("UI_PAYMENT_FORM_RENDERED=true")
+                return last_text
+        else:
+            stable_reads = 0
+
+        page.wait_for_timeout(500)
+
+    print("UI_PAYMENT_FORM_RENDERED=false")
+    visible_snapshot(page, "UI_PAYMENT_DIALOG_NOT_READY")
+    raise RuntimeError(
+        f"El diálogo de cobro no terminó de mostrar Efectivo y Tarjeta en {timeout_seconds}s. "
+        f"Último texto visible: {last_text.strip()[:2500]}"
+    )
+
+
 def wait_for_session_open(page: Any, timeout_seconds: int = 45) -> str:
     deadline = time.monotonic() + timeout_seconds
     stable_reads = 0
@@ -617,7 +650,7 @@ def inspect_page(url: str) -> int:
                 # Abrir la pantalla de cobro y verificar medios disponibles sin confirmar.
                 if not click_exact_action(page, "Cobrar (ctrl ENTER)"):
                     raise RuntimeError("No se encontró la acción Cobrar después de agregar el artículo.")
-                page.wait_for_timeout(1200)
+                payment_text = wait_for_payment_dialog(page, timeout_seconds=20)
                 payment_text = visible_snapshot(page, "UI_PAYMENT_DIALOG")
                 payment_snapshot = screenshot_path.with_name(
                     screenshot_path.stem + "-payment" + screenshot_path.suffix

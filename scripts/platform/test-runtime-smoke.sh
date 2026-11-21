@@ -142,7 +142,7 @@ grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
 echo "Preparando tipo de precio minorista con moneda ARS en un módulo de prueba aislado."
 cat > "$COMPOSE_DIR/docker-server/RubrovaCISalesFixture.lsf" <<'LSF'
 MODULE RubrovaCISalesFixture;
-REQUIRE MyCompany;
+REQUIRE MyCompany, RubrovaPOSLocalization;
 
 NAMESPACE Sales;
 

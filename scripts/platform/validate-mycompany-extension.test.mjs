@@ -374,6 +374,10 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("priceType(Invoicing.invoiceType('retail')) <- priceType('retail')"));
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency()"));
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
+  assert.match(uiSmokeSource, /def wait_for_payment_dialog\(page: Any, timeout_seconds: int = 20\)/);
+  assert.match(uiSmokeSource, /UI_PAYMENT_FORM_RENDERED=true/);
+  assert.match(uiSmokeSource, /wait_for_payment_dialog\(page, timeout_seconds=20\)/);
+  assert.doesNotMatch(uiSmokeSource, /page[.]wait_for_timeout\(1200\)\\s*\\n\\s*payment_text/);
   assert.ok(uiSmokeSource.includes('UI_INTEGRATION_{status_code}_CLASSIFIED=true'));
   assert.match(uiSmokeSource, /rubrovaTestPosConfigurationApi/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
