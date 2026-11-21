@@ -382,47 +382,6 @@ def wait_for_session_open(page: Any, timeout_seconds: int = 45) -> str:
     )
 
 
-def wait_for_exact_link(page: Any, label: str, timeout_seconds: int = 12) -> int | None:
-    deadline = time.monotonic() + timeout_seconds
-    last_links: list[dict[str, Any]] = []
-
-    while time.monotonic() < deadline:
-        last_links = page.locator("a").evaluate_all(
-            """elements => elements.map((element, index) => ({
-                index,
-                text: (element.innerText || element.textContent || "").trim(),
-                visible: getComputedStyle(element).display !== "none" &&
-                    getComputedStyle(element).visibility !== "hidden" &&
-                    !!(element.offsetWidth || element.offsetHeight),
-                href: element.getAttribute("href") || "",
-                className: typeof element.className === "string" ? element.className : "",
-                role: element.getAttribute("role") || "",
-                ariaLabel: element.getAttribute("aria-label") || "",
-                title: element.getAttribute("title") || "",
-                outerHTML: element.outerHTML.slice(0, 700),
-                parentHTML: element.parentElement ? element.parentElement.outerHTML.slice(0, 1000) : ""
-            }))"""
-        )
-        matches = [
-            link for link in last_links
-            if link["visible"] and link["text"] == label
-        ]
-        if matches:
-            print(
-                f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_TARGET="
-                + json.dumps(matches[0], ensure_ascii=False)
-            )
-            return int(matches[0]["index"])
-        page.wait_for_timeout(250)
-
-    print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=false")
-    print(
-        f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
-        + json.dumps(last_links, ensure_ascii=False)
-    )
-    return None
-
-
 def click_exact_link(
     page: Any, label: str, submenu_label: str | None = None
 ) -> bool:
@@ -438,7 +397,7 @@ def click_exact_link(
     if submenu_label is None:
         link.scroll_into_view_if_needed()
         link.click(no_wait_after=True)
-        page.wait_for_timeout(1_000)
+        print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_CLICKED=true")
         print(f"UI_NAV_LINK_{label.upper().replace(' ', '_')}_FOUND=true")
         return True
 
@@ -583,7 +542,7 @@ def inspect_page(url: str) -> int:
                 search_tab = page.get_by_text("Buscar artículos", exact=True)
                 search_tab.wait_for(state="visible", timeout=15_000)
                 search_tab.click(no_wait_after=True)
-                page.wait_for_timeout(750)
+                print("UI_ITEM_SEARCH_TAB_CLICKED=true")
                 visible_snapshot(page, "UI_ITEM_SEARCH")
 
                 product_name = "Producto de prueba Rubrova"
