@@ -37,7 +37,7 @@ El tiempo total incluye conexión, respuesta, reintentos y pausas. No alcanza co
 
 ### Camino de HTTP ejecutado por el navegador
 
-Las llamadas `EXTERNAL HTTP CLIENT` atraviesan una ruta distinta: el servidor convierte `HttpClientAction` en `GHttpClientAction` y el navegador realiza la petición con `XMLHttpRequest`. El timeout se propaga ahora junto a la acción, el cliente GWT aplica el mismo máximo de 60 segundos y un temporizador aborta la petición si no termina. El callback se completa una sola vez tanto en timeout como en respuesta/error de red; la respuesta sin HTTP se devuelve con estado 0 para que la capa lsFusion la convierta en excepción capturable por `TRY/CATCH`.
+Las llamadas `EXTERNAL HTTP CLIENT` atraviesan una ruta distinta: el servidor convierte `HttpClientAction` en `GHttpClientAction` y el navegador realiza la petición con `XMLHttpRequest`. El timeout se propaga ahora junto a la acción, el cliente GWT aplica el mismo máximo de 60 segundos y un temporizador aborta la petición si no termina. El callback se completa una sola vez tanto en timeout como en respuesta/error de red; la respuesta sin HTTP se devuelve con estado 0 y cuerpo ausente (`null`) para que la capa lsFusion la convierta en excepción capturable por `TRY/CATCH` sin intentar interpretar bytes inexistentes.
 
 La ruta usa `XMLHttpRequest` y no `RequestBuilder` porque el cliente actual necesita conservar respuestas binarias (`arraybuffer`). GWT documenta un timeout nativo en `RequestBuilder`, pero su API de alto nivel no reemplaza sin más este contrato binario. La prueba estática confirma la propagación y la compilación GWT del módulo web-client debe aprobarse en el build del fork antes de considerar esta corrección validada en runtime.
 

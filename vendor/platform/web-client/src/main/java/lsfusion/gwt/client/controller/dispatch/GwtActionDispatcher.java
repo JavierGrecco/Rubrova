@@ -824,7 +824,7 @@ public abstract class GwtActionDispatcher implements GActionDispatcher {
                     if (completed.compareAndSet(false, true)) {
                         request.clearOnReadyStateChange();
                         request.abort();
-                        onResult.accept(new GExternalHttpResponse(null, new byte[0],
+                        onResult.accept(new GExternalHttpResponse(null, null,
                                 Collections.<String, List<String>>emptyMap(), 0, "Request timed out"), null);
                     }
                 }
@@ -836,7 +836,7 @@ public abstract class GwtActionDispatcher implements GActionDispatcher {
                     timeoutTimer.cancel();
                     request.clearOnReadyStateChange();
                     ArrayBuffer arrayBuffer = xhr.getResponseArrayBuffer();
-                    byte[] bytes = arrayBuffer == null ? new byte[0] : arrayBufferToBytes(arrayBuffer);
+                    byte[] bytes = xhr.getStatus() == 0 ? null : (arrayBuffer == null ? new byte[0] : arrayBufferToBytes(arrayBuffer));
                     Map<String, List<String>> responseHeaders = getResponseHeaders(xhr.getAllResponseHeaders());
                     onResult.accept(new GExternalHttpResponse(xhr.getResponseHeader("Content-Type"), bytes,
                             responseHeaders, xhr.getStatus(), xhr.getStatusText()), null);

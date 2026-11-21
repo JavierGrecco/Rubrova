@@ -420,6 +420,8 @@ test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () =
   assert.match(gwtDispatcherSource, /completed[.]compareAndSet\(false, true\)/);
   assert.match(gwtDispatcherSource, /xhr[.]getReadyState\(\) == XMLHttpRequest[.]DONE/);
   assert.match(gwtDispatcherSource, /"Request timed out"/);
+  assert.match(gwtDispatcherSource, /new GExternalHttpResponse\(null, null,/);
+  assert.match(gwtDispatcherSource, /xhr[.]getStatus\(\) == 0 \? null/);
 });
 
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
