@@ -362,10 +362,6 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttp401/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttp403/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttp409/);
-  assert.match(uiSmokeSource, /UI_INTEGRATION_400_CLASSIFIED=true/);
-  assert.match(uiSmokeSource, /UI_INTEGRATION_401_CLASSIFIED=true/);
-  assert.match(uiSmokeSource, /UI_INTEGRATION_403_CLASSIFIED=true/);
-  assert.match(uiSmokeSource, /UI_INTEGRATION_409_CLASSIFIED=true/);
   assert.ok(mockProviderSource.includes('if request.path == "/status/400":'));
   assert.ok(mockProviderSource.includes('if request.path == "/status/401":'));
   assert.ok(mockProviderSource.includes('if request.path == "/status/403":'));
@@ -375,6 +371,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("priceType(Invoicing.invoiceType('retail')) <- priceType('retail')"));
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency()"));
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
+  assert.ok(uiSmokeSource.includes('UI_INTEGRATION_{status_code}_CLASSIFIED=true'));
   assert.match(uiSmokeSource, /rubrovaTestPosConfigurationApi/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_MESSAGE=true/);
