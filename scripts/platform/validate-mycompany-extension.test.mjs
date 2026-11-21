@@ -254,7 +254,10 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(resilienceSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /timeoutHttp\(\) <- timeoutMilliseconds/);
   assert.match(resilienceSource, /HEADERSTO responseHeaders/);
-  assert.match(resilienceSource, /GROUP MAX responseHeaders/);
+  assert.match(resilienceSource, /responseHeaders\(STRING\[100\] headerName\)/, "HEADERSTO debe consultar el nombre del encabezado con la clase STRING[100], no con la clase del valor TEXT.");
+  assert.match(resilienceSource, /GROUP MAX responseHeaders\(STRING\[100\] headerName\)/);
+  assert.match(resilienceSource, /retryAfterHeader = DATA ISTRING\[100\] \(IntegrationIncident\)/);
+  assert.match(resilienceSource, /retryAfterHeader\(incident\) <- retryAfterHeaderValue/);
   assert.match(resilienceSource, /timeoutMilliseconds > 30000/);
   assert.match(resilienceSource, /NEWSESSION/);
   assert.match(resilienceSource, /rubrovaRecordIntegrationIncident/);
@@ -385,6 +388,9 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
   assert.ok(runtimeSmokeSource.includes("retryAfter = rubrovaHttpRetryAfter()"));
+  assert.ok(runtimeSmokeSource.includes("retryAfterHeader(i) = '2'"));
+  assert.ok(runtimeSmokeSource.includes("incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1"));
+  assert.match(uiSmokeSource, /incidentRetryAfterPersisted/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);
   assert.ok(runtimeSmokeSource.includes("rubrovaHttp408IncidentCount() = GROUP SUM 1"));
   assert.ok(runtimeSmokeSource.includes("incidentCount = rubrovaHttp408IncidentCount()"));
