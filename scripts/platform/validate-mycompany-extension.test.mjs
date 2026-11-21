@@ -166,7 +166,17 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-runtime-smoke-${{ github.ref }}"));
   assert.match(runtimeWorkflowSource, /build-fork:/);
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-build-fork-${{ github.ref }}"));
-  assert.ok(runtimeWorkflowSource.includes("cancel-in-progress: false"));
+  assert.equal(
+    (runtimeWorkflowSource.match(/cancel-in-progress: true/g) || []).length,
+    2,
+    "El build y el smoke deben cancelar ejecuciones obsoletas de main."
+  );
+  assert.doesNotMatch(runtimeWorkflowSource, /cancel-in-progress: false/);
+  assert.equal(
+    (runtimeWorkflowSource.match(/CHECKED_OUT_SHA=/g) || []).length,
+    2,
+    "Build y smoke deben registrar y verificar el SHA exacto del checkout."
+  );
 
   assert.match(runtimeWorkflowSource, /needs: \[validate, build-fork\]/);
   assert.match(runtimeWorkflowSource, /java-version: "21"/);
