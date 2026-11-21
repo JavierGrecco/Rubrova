@@ -183,7 +183,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f build\/rubrova\/pom[.]xml -Passemble -DskipTests package/);
   assert.match(runtimeWorkflowSource, /vendor\/platform\/web-client\/target/);
   assert.match(runtimeWorkflowSource, /Smoke POS de la extensión actual sobre runtime oficial MyCompany 6[.]2/);
-  assert.ok(runtimeWorkflowSource.includes("cancel-in-progress: false"));
+  assert.match(runtimeWorkflowSource, /cancel-in-progress: true/);
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
   assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-retail[.]png/);
   assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-pos[.]png/);
