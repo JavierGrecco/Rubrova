@@ -123,3 +123,9 @@ Estos eventos ocurrieron durante `onStarted`, antes de finalizar el arranque. No
 - [lsFusion upstream — browser HTTP dispatcher](https://github.com/lsfusion/platform/blob/dd4dbe5bf9b136e73e18fe25d741253929324350/web-client/src/main/java/lsfusion/gwt/client/controller/dispatch/GwtActionDispatcher.java)
 - [lsFusion upstream — client action conversion](https://github.com/lsfusion/platform/blob/dd4dbe5bf9b136e73e18fe25d741253929324350/web-client/src/main/java/lsfusion/gwt/server/convert/ClientActionToGwtConverter.java)
 - [lsFusion upstream — server HTTP action](https://github.com/lsfusion/platform/blob/dd4dbe5bf9b136e73e18fe25d741253929324350/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java)
+
+## Diferencia adicional detectada: persistencia PostgreSQL 18
+
+El test fijaba `postgres:18` pero heredaba el mount antiguo `./docker-db:/var/lib/postgresql/data` del Compose original. La imagen oficial cambió en PostgreSQL 18 el `PGDATA` predeterminado a `/var/lib/postgresql/18/docker` y recomienda montar el padre `/var/lib/postgresql`. Con el mount viejo, el servidor puede escribir en el volumen anónimo de la imagen en lugar del directorio esperado; al recrear el contenedor, los datos no quedan en el bind mount que creíamos persistente. Rubrova ahora crea un volumen independiente `docker-db-pg18`, monta `/var/lib/postgresql` y espera `pg_isready` antes de iniciar el servidor. El directorio antiguo `docker-db` se conserva, no se elimina ni se migra automáticamente.
+
+Fuente: [documentación Docker oficial de PostgreSQL](https://github.com/docker-library/docs/blob/master/postgres/content.md).

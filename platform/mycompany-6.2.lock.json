@@ -112,7 +112,11 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "digest": "sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a"
+      "digest": "sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a",
+      "dataDirectory": "/var/lib/postgresql/18/docker",
+      "volumeMount": "/var/lib/postgresql",
+      "healthcheck": "pg_isready -U postgres -d postgres",
+      "note": "PostgreSQL 18 versioned PGDATA is persisted through the parent mount /var/lib/postgresql; Rubrova uses ./docker-db-pg18 and waits for pg_isready before starting lsFusion."
     },
     "digestPlatform": "linux/amd64",
     "digestSource": "Resolved from the official MyCompany 6.2 Compose, pulled and inspected by GitHub Actions runtime smoke test 44787405843 on 2026-11-20."

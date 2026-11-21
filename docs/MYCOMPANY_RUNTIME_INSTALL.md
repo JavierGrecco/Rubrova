@@ -47,7 +47,9 @@ No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2
 3. Leer el archivo y verificar los tags de sus imágenes. No usar latest, SNAPSHOT ni tags de otras series.
 4. La documentación específica de MyCompany describe cuatro contenedores: PostgreSQL, servidor de aplicación, lógica MyCompany y cliente web.
 5. Ejecutar docker compose config y revisar los puertos publicados antes de iniciar.
-6. Iniciar sólo en la máquina local para la primera prueba. Cambiar la contraseña inicial de admin antes de abrir acceso a otros equipos.
+6. Rubrova fija PostgreSQL 18 por digest. Su directorio persistente es `./docker-db-pg18`, montado en `/var/lib/postgresql`; PostgreSQL 18 guarda allí los datos bajo `18/docker`. El override también espera el healthcheck `pg_isready` antes de iniciar el servidor lsFusion.
+7. Si ya existe una instalación anterior, no borres ni renombres `docker-db`: el directorio de Rubrova para PostgreSQL 18 es nuevo y no migra automáticamente datos de PostgreSQL 17 o anteriores. Hacé un backup lógico y una migración validada antes de cambiar la base activa.
+8. Iniciar sólo en la máquina local para la primera prueba. Cambiar la contraseña inicial de admin antes de abrir acceso a otros equipos.
 
 **Arquitectura Apple Silicon:** Docker Hub publica `lsfusion/mycompany:6.2` sólo para `linux/amd64`; las imágenes `lsfusion/server:6.2` y `lsfusion/client:6.2` publican `amd64` y `arm64`. El stack no es nativo ARM64 de punta a punta. Docker Desktop puede ejecutar imágenes AMD64 mediante emulación, pero eso no convierte la combinación en una instalación soportada o aceptada por Rubrova: el rendimiento y la estabilidad deben medirse en el equipo real. No se debe forzar `platform: linux/amd64` ni cambiar imágenes del Compose sin comprobar el conjunto completo. En una MacBook Intel, `amd64` coincide con la arquitectura del host, aunque el runtime también sigue pendiente de aceptación.
 

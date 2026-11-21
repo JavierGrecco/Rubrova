@@ -113,7 +113,7 @@ services:
   server:
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       logics:
         condition: service_completed_successfully
       toxiproxy:
@@ -125,6 +125,14 @@ services:
     image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
   db:
     image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
+    volumes:
+      - ./docker-db-pg18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
   # Test-only network fault injector; its control API is bound to loopback on the CI host.
   toxiproxy:
     image: ghcr.io/shopify/toxiproxy:2.13.0@sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc

@@ -49,6 +49,10 @@ cmp -s "$OVERRIDE_SOURCE" "$INSTALL_DIR/compose.rubrova.override.yaml" || {
 grep -Fq 'JAVA_OPTS: "-Dlogics.topModule=RubrovaCustom"' "$INSTALL_DIR/compose.rubrova.override.yaml"
 grep -Fq 'USER_SETLANGUAGE: "es"' "$INSTALL_DIR/compose.rubrova.override.yaml"
 grep -Fq 'USER_SETCOUNTRY: "AR"' "$INSTALL_DIR/compose.rubrova.override.yaml"
+grep -Fq 'image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a' "$INSTALL_DIR/compose.rubrova.override.yaml"
+grep -Fq './docker-db-pg18:/var/lib/postgresql' "$INSTALL_DIR/compose.rubrova.override.yaml"
+grep -Fq 'condition: service_healthy' "$INSTALL_DIR/compose.rubrova.override.yaml"
+grep -Fq 'pg_isready -U postgres -d postgres' "$INSTALL_DIR/compose.rubrova.override.yaml"
 
 grep -q '^custom.setting = preserve-me$' "$MODULE_DIR/settings.properties"
 grep -q '^logics.topModule = RubrovaCustom$' "$MODULE_DIR/settings.properties"

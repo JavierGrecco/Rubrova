@@ -1,5 +1,20 @@
 services:
+  db:
+    image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
+    # PostgreSQL 18 stores PGDATA under /var/lib/postgresql/18/docker.
+    # Keep the legacy docker-db directory untouched for safe manual migration.
+    volumes:
+      - ./docker-db-pg18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
   server:
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       JAVA_OPTS: "-Dlogics.topModule=RubrovaCustom"
       USER_SETLANGUAGE: "es"

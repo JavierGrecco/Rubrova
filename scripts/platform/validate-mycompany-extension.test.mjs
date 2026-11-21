@@ -211,6 +211,15 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
     assert.match(digest, /^sha256:[0-9a-f]{64}$/);
     assert.ok(runtimeSmokeSource.includes(`image: ${image}@${digest}`), `Falta digest fijado en el smoke test: ${service}`);
   }
+  assert.equal(lock.dockerImages.postgres.volumeMount, "/var/lib/postgresql");
+  assert.equal(lock.dockerImages.postgres.dataDirectory, "/var/lib/postgresql/18/docker");
+  assert.ok(dockerOverrideSource.includes("image: postgres:18@" + lock.dockerImages.postgres.digest));
+  assert.match(dockerOverrideSource, /\.\/docker-db-pg18:\/var\/lib\/postgresql/);
+  assert.match(dockerOverrideSource, /condition: service_healthy/);
+  assert.match(dockerOverrideSource, /pg_isready -U postgres -d postgres/);
+  assert.match(runtimeSmokeSource, /\.\/docker-db-pg18:\/var\/lib\/postgresql/);
+  assert.match(runtimeSmokeSource, /condition: service_healthy/);
+  assert.match(runtimeSmokeSource, /pg_isready -U postgres -d postgres/);
   assert.equal(lock.dockerImages.digestPlatform, "linux/amd64");
   assert.equal(lock.testTools.toxiproxy.scope, "ci-only");
   assert.equal(lock.testTools.toxiproxy.license, "MIT");
