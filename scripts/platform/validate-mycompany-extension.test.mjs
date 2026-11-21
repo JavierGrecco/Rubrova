@@ -173,6 +173,9 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
   assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
+  assert.match(runtimeSmokeSource, /Exception while starting logics instance/);
+  assert.match(runtimeSmokeSource, /missing \.\+ at/);
+  assert.match(runtimeSmokeSource, /se cancela la espera de arranque/);
   assert.match(runtimeSmokeSource, /módulos Rubrova/);
   assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
   assert.match(runtimeSmokeSource, /compose down --volumes --remove-orphans/);

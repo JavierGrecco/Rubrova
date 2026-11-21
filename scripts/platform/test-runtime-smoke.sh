@@ -389,6 +389,14 @@ MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
 while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
+  if (( SECONDS % 10 < 5 )); then
+    STARTUP_LOGS="$(compose logs --no-color --tail=100 server 2>/dev/null || true)"
+    if grep -Eiq "Exception while starting logics instance|Error starting server|missing .+ at|no viable alternative|mismatched input|failed to compile|compilation failed" <<< "$STARTUP_LOGS"; then
+      echo "MyCompany informó un error fatal al compilar o inicializar la lógica; se cancela la espera de arranque." >&2
+      printf '%s\\n' "$STARTUP_LOGS" | grep -Ei "Exception while starting logics instance|Error starting server|missing .+ at|no viable alternative|mismatched input|failed to compile|compilation failed" | tail -n 40 >&2 || true
+      exit 1
+    fi
+  fi
   HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
   MODULE_PROGRESS="$(grep -hE 'Initializing main logic for module.*#[0-9]+ of [0-9]+' "$START_LOG" "$STDOUT_LOG" 2>/dev/null | tail -n 1 || true)"
   if [[ "$MODULE_PROGRESS" != "$LAST_MODULE_PROGRESS" && -n "$MODULE_PROGRESS" ]]; then
