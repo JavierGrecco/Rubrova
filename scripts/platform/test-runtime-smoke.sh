@@ -276,6 +276,7 @@ rubrovaTestHttpTimeout () {
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
         retryAfter = rubrovaHttpRetryAfter(),
+        incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1,
         httpStatus = statusHttp(),
         userMessage = rubrovaHttpFailureMessage();
 } @@api;
@@ -299,6 +300,9 @@ rubrovaTestHttpTransientStatus () {
         incidentCount = rubrovaHttp408IncidentCount(),
         incidentRetryable = rubrovaHttp408RetryableIncidentCount() = 1;
 } @@api;
+
+rubrovaHttp429RetryAfterIncidentCount() = GROUP SUM 1
+    IF correlationId(IntegrationIncident i) = 'ci-rate-limit-001' AND retryAfterHeader(i) = '2';
 
 rubrovaTestHttpRateLimit () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de límite de solicitudes', 'ci-rate-limit-001',
