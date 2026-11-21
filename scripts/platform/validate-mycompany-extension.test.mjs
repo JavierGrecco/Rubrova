@@ -356,6 +356,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /secrets[.]token_urlsafe\(32\)/);
   assert.ok(runtimeSmokeSource.includes('Authorization: Bearer $TOXIPROXY_AUTH_TOKEN'));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
+  assert.ok(runtimeSmokeSource.includes("userMessage = rubrovaHttpFailureMessage()"));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);

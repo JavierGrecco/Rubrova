@@ -268,7 +268,8 @@ rubrovaTestHttpTimeout () {
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
         retryAfter = rubrovaHttpRetryAfter(),
-        httpStatus = statusHttp();
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
 } @@api;
 
 rubrovaTestHttpTransientStatus () {
