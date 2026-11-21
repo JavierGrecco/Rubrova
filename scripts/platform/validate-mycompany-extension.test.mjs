@@ -390,6 +390,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("incidentCount = rubrovaHttp408IncidentCount()"));
   assert.ok(runtimeSmokeSource.includes("incidentRetryable = safeToRetry(IntegrationIncident i)"));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
+  assert.ok(runtimeSmokeSource.includes("retryable = rubrovaHttpCanRetry(),"), "Los endpoints transitorios deben exponer la decisión local de reintento.");
   assert.match(runtimeSmokeSource, /rubrovaTestHttp400/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttp401/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttp403/);
