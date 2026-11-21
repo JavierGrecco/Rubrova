@@ -670,6 +670,18 @@ if [[ "$ONSTARTED_READY" != "true" ]]; then
   exit 1
 fi
 echo "Arranque completo: onStarted terminó después de ${SECONDS}s."
+echo "Comprobando que el bootstrap dejó las tablas internas y la fecha del sistema persistidas."
+DB_BOOTSTRAP_STATE="$(compose exec -T db psql -X -v ON_ERROR_STOP=1 -U postgres -d lsfusion -Atqc \
+  "SELECT EXISTS (SELECT 1 FROM dumb) AND EXISTS (SELECT 1 FROM _auto WHERE time_currentdate IS NOT NULL)")" || {
+  echo "No se pudo verificar el estado persistente de PostgreSQL después del arranque." >&2
+  exit 1
+}
+if [[ "$DB_BOOTSTRAP_STATE" != "t" ]]; then
+  echo "El bootstrap terminó, pero falta el registro interno dumb o la fecha del sistema en _auto." >&2
+  exit 1
+fi
+echo "PostgreSQL verificado: dumb existe con su registro interno y Time.currentDate quedó persistida."
+
 
 if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
   [[ -x "$RUBROVA_PLAYWRIGHT_PYTHON" ]] || {
