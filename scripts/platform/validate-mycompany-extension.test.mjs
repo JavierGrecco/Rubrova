@@ -368,6 +368,21 @@ test("el lock distingue la imagen MyCompany AMD64 de server/client multi-arquite
 });
 
 test("la prueba de resiliencia inyecta timeout, verifica recuperación y persiste la incidencia", () => {
+  assert.equal(
+    (runtimeSmokeSource.match(/"\\$SCRIPT_DIR\\/inspect-mycompany-ui[.]py"/g) || []).length,
+    1,
+    "El smoke visual del POS debe ejecutarse una sola vez: la segunda pasada intenta abrir un turno ya abierto."
+  );
+  assert.equal(
+    (runtimeSmokeSource.match(/8\\/9 Inspeccionando el login y la pantalla autenticada con Chromium/g) || []).length,
+    1,
+    "No debe repetirse la aceptación visual dentro del mismo runtime efímero."
+  );
+  assert.equal(
+    (runtimeSmokeSource.match(/4[.]1\\/7 Preparando los proxies de fallos de red en Toxiproxy/g) || []).length,
+    1,
+    "La configuración de Toxiproxy debe ejecutarse una sola vez por instancia efímera."
+  );
   assert.match(runtimeSmokeSource, /mock-integration-provider[.]py/);
   assert.match(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
   assert.match(runtimeSmokeSource, /ghcr[.]io\/shopify\/toxiproxy:2[.]13[.]0/);
