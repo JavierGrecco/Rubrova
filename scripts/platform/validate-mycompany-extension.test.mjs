@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -332,4 +332,40 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(mockProviderSource.includes('if request.path == "/slow":'));
   assert.ok(mockProviderSource.includes('if request.path == "/ok":'));
   assert.ok(mockProviderSource.includes('if request.path == "/status/408":'));
+});
+
+test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
+  const callHttpSource = read("vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java");
+  assert.match(callHttpSource, /RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L/);
+  assert.match(callHttpSource, /RUBROVA_MAX_EXTERNAL_HTTP_TIMEOUT_MS = 60_000L/);
+  assert.match(callHttpSource, /Math\.min\(configuredTimeout, RUBROVA_MAX_EXTERNAL_HTTP_TIMEOUT_MS\)/);
+  assert.match(callHttpSource, /return RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS/);
+
+  const sourceRoots = [
+    path.join(root, "vendor/mycompany/src/main/lsfusion"),
+    path.join(root, "extensions/lsfusion")
+  ];
+  const sourceFiles = [];
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const fullPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(fullPath);
+      else if (entry.isFile() && entry.name.endsWith(".lsf")) sourceFiles.push(fullPath);
+    }
+  };
+  for (const directory of sourceRoots) {
+    if (existsSync(directory)) walk(directory);
+  }
+  const numericOverrides = [];
+  let externalHttpCalls = 0;
+  for (const file of sourceFiles) {
+    const source = readFileSync(file, "utf8");
+    externalHttpCalls += (source.match(/EXTERNAL HTTP/g) || []).length;
+    for (const match of source.matchAll(/timeoutHttp\(\)\s*<-\s*(\d+)\s*;/g)) {
+      numericOverrides.push({ file, value: Number(match[1]) });
+    }
+  }
+  assert.ok(externalHttpCalls > 0, "No se inspeccionaron llamadas HTTP de los módulos integrados.");
+  const unsafe = numericOverrides.filter(item => item.value < 1 || item.value > 60_000);
+  assert.deepEqual(unsafe, [], "Hay módulos que exceden el máximo global de timeout HTTP.");
 });

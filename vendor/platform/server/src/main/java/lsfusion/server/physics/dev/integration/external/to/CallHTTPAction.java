@@ -62,6 +62,9 @@ import static lsfusion.base.BaseUtils.*;
 import static lsfusion.interop.session.ExternalUtils.getMultipartContentType;
 
 public abstract class CallHTTPAction extends CallAction {
+    // Rubrova safety net for every EXTERNAL HTTP call, including upstream modules.
+    private static final long RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L;
+    private static final long RUBROVA_MAX_EXTERNAL_HTTP_TIMEOUT_MS = 60_000L;
     boolean clientAction;
     private ExternalHttpMethod method;
     private PropertyInterface queryInterface;
@@ -348,7 +351,9 @@ public abstract class CallHTTPAction extends CallAction {
                     }
                 }
 
-                Long timeout = nvl((Long) context.getBL().LM.timeoutHttp.read(context), getDefaultTimeout());
+                Long configuredTimeout = (Long) context.getBL().LM.timeoutHttp.read(context);
+                Long timeout = configuredTimeout == null ? getDefaultTimeout()
+                        : Math.max(1L, Math.min(configuredTimeout, RUBROVA_MAX_EXTERNAL_HTTP_TIMEOUT_MS));
                 boolean insecureSSL = context.getBL().LM.insecureSSL.read(context) != null;
 
                 if (detailLog && logBuilder != null)
@@ -419,7 +424,7 @@ public abstract class CallHTTPAction extends CallAction {
     }
 
     protected Long getDefaultTimeout() {
-        return 1800000L; //30 minutes
+        return RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS;
     }
 
     protected abstract UrlProcessor createUrlProcessor(String connectionString, boolean noExec);

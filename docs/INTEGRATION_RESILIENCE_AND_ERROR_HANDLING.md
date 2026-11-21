@@ -19,7 +19,7 @@ Los límites de fallo se establecen por proveedor, cuenta, operación y módulo.
 
 ## 2. Política de tiempos de espera
 
-lsFusion 6.2 dispone de timeoutHttp() para configurar en milisegundos el tiempo de espera de llamadas HTTP. El motor usa ese límite para conexión y respuesta. TRY/CATCH permite capturar el error resultante. El valor predeterminado del motor es demasiado alto para una pantalla operativa: Rubrova debe establecer siempre un timeout explícito antes de cada solicitud externa mediante rubrovaSetIntegrationTimeout(), que rechaza valores menores a 1 ms o mayores a 30.000 ms. Cada adaptador debe llamar esta función inmediatamente antes de cada EXTERNAL HTTP.
+lsFusion 6.2 dispone de timeoutHttp() para configurar en milisegundos el tiempo de espera de llamadas HTTP. El motor usa ese límite para conexión y respuesta. TRY/CATCH permite capturar el error resultante. El valor predeterminado upstream del motor era de 30 minutos, demasiado alto para una aplicación operativa. Rubrova lo reemplaza en el punto central de ejecución: 10 segundos por defecto y un máximo absoluto de 60 segundos incluso si un módulo intenta solicitar más. Si la propiedad recibe un valor menor que 1 ms se limita a 1 ms. Esto incluye los `EXTERNAL HTTP` heredados. Además, los adaptadores propios deben establecer un timeout explícito antes de cada solicitud mediante rubrovaSetIntegrationTimeout(), que rechaza valores menores a 1 ms o mayores a 30.000 ms. El límite global es una red de seguridad, no reemplaza el manejo de errores de cada operación.
 
 | Contexto | Timeout por intento | Tiempo total máximo | Tratamiento |
 |---|---:|---:|---|
@@ -29,7 +29,7 @@ lsFusion 6.2 dispone de timeoutHttp() para configurar en milisegundos el tiempo 
 | Descarga/importación grande | 10–20 s por bloque | Límite configurable | Paginación, bloques, checkpoint y reanudación |
 | Operación crítica de pago/fiscal/alta externa | Según contrato del proveedor, con límite estricto | Presupuesto por operación | No repetir ciegamente; usar idempotencia y consulta de estado |
 
-Ninguna pantalla queda esperando un timeout ilimitado. Si una operación es larga, se ejecuta como tarea durable y el usuario puede seguir trabajando.
+Ninguna pantalla queda esperando un timeout ilimitado. El motor impone 10 s por defecto / 60 s como máximo por llamada. Si una operación es larga, se ejecuta como tarea durable y el usuario puede seguir trabajando; no se amplía el timeout a minutos u horas.
 
 Los adaptadores GET ya pueden utilizar rubrovaHttpGet(provider, operation, correlation, url, timeoutMs): inicializa el resultado, valida el límite, ejecuta EXTERNAL HTTP GET dentro de TRY/CATCH y registra tanto una respuesta HTTP no exitosa como un fallo de red/timeout. Devuelve rubrovaHttpSucceeded(), rubrovaHttpResponse(), rubrovaHttpFailureCategory() y rubrovaHttpFailureMessage() sin lanzar la excepción externa al llamador. No hace reintentos automáticos. Para otros métodos y parsing, el adaptador debe rodear cada paso con TRY/CATCH y registrar los fallos de contrato por separado. El helper registra la incidencia en una sesión independiente; si la base de incidencias no responde, intenta un log local de emergencia. El detalle registrado por la ruta común es deliberadamente saneado: no persiste la URL completa, el cuerpo ni la excepción cruda porque podrían contener secretos.
 
