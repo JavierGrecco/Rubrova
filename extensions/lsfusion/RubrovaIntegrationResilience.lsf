@@ -16,6 +16,7 @@ occurredAt 'Fecha' = DATA DATETIME (IntegrationIncident);
 httpStatus 'Estado HTTP' = DATA INTEGER (IntegrationIncident);
 attemptCount 'Intentos' = DATA INTEGER (IntegrationIncident);
 safeToRetry 'Reintentable' = DATA BOOLEAN (IntegrationIncident);
+retryAfterHeader 'Reintentar después de' = DATA ISTRING[100] (IntegrationIncident);
 localReference 'Referencia local' = DATA STRING[100] (IntegrationIncident);
 remoteReference 'Referencia externa' = DATA STRING[100] (IntegrationIncident);
 userMessage 'Mensaje para el operador' = DATA ISTRING[300] (IntegrationIncident);
@@ -38,7 +39,7 @@ rubrovaSetIntegrationTimeout 'Establecer tiempo máximo de integración' (LONG t
 rubrovaRecordIntegrationIncident 'Registrar incidencia Rubrova'
     (STRING providerName, STRING operationName, STRING correlation,
      STRING errorCategory, INTEGER responseStatus, INTEGER attempts,
-     BOOLEAN retryable, STRING localId, STRING remoteId,
+     BOOLEAN retryable, STRING retryAfterHeaderValue, STRING localId, STRING remoteId,
      STRING operatorMessage, TEXT sanitizedTechnicalDetail) {
     TRY {
         NEWSESSION {
@@ -51,6 +52,7 @@ rubrovaRecordIntegrationIncident 'Registrar incidencia Rubrova'
                 httpStatus(incident) <- responseStatus;
                 attemptCount(incident) <- attempts;
                 safeToRetry(incident) <- retryable;
+                retryAfterHeader(incident) <- retryAfterHeaderValue;
                 localReference(incident) <- localId;
                 remoteReference(incident) <- remoteId;
                 userMessage(incident) <- operatorMessage;
@@ -88,7 +90,7 @@ resolveIntegrationIncident 'Marcar incidencia resuelta' (IntegrationIncident inc
 EXTEND FORM integrationData
     OBJECTS rubrovaIncidents = IntegrationIncident
     PROPERTIES(rubrovaIncidents) READONLY occurredAt, provider, operation, category,
-        httpStatus, attemptCount, safeToRetry, localReference, remoteReference,
+        httpStatus, attemptCount, safeToRetry, retryAfterHeader, localReference, remoteReference,
         userMessage, resolved, resolveIntegrationIncident
     FILTERS NOT resolved(rubrovaIncidents)
 ;
@@ -103,7 +105,7 @@ rubrovaHttpFailureMessage = DATA LOCAL ISTRING[300]();
 // GET se considera lectura idempotente. Este helper no reintenta por sí mismo:
 // deja el fallo y su causa clasificados para que el worker o la pantalla decidan.
 rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'
-    (STRING providerName, STRING operationName, STRING correlation, INTEGER responseStatus) {
+    (STRING providerName, STRING operationName, STRING correlation, INTEGER responseStatus, STRING retryAfterHeaderValue) {
     IF responseStatus = 429 THEN {
         rubrovaHttpFailureCategory() <- 'RATE_LIMITED';
         rubrovaHttpFailureMessage() <- 'El servicio externo está limitando las solicitudes. La operación quedó pendiente.';
@@ -129,7 +131,7 @@ rubrovaHandleHttpStatusFailure 'Clasificar error HTTP externo'
     rubrovaHttpCanRetry() <- responseStatus = 408 OR responseStatus = 425 OR responseStatus = 429 OR responseStatus >= 500;
     rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
         rubrovaHttpFailureCategory(), responseStatus, 1,
-        rubrovaHttpCanRetry(), NULL, NULL,
+        rubrovaHttpCanRetry(), retryAfterHeaderValue, NULL, NULL,
         rubrovaHttpFailureMessage(), 'Respuesta HTTP no exitosa. No se guarda el cuerpo ni la URL completa.');
 }
 
@@ -143,13 +145,13 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
     rubrovaHttpFailureMessage() <- NULL;
     statusHttp() <- NULL;
     LOCAL responseHeaders = TEXT(STRING[100]);
-    responseHeaders(TEXT h) <- NULL WHERE responseHeaders(h);
+    responseHeaders(STRING[100] headerName) <- NULL WHERE responseHeaders(headerName);
 
     IF timeoutMilliseconds < 1 OR timeoutMilliseconds > 30000 THEN {
         rubrovaHttpFailureCategory() <- 'CONFIGURATION_ERROR';
         rubrovaHttpFailureMessage() <- 'El tiempo de espera configurado no es válido.';
         rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
-            'CONFIGURATION_ERROR', NULL, 0, NULL, NULL, NULL,
+            'CONFIGURATION_ERROR', NULL, 0, NULL, NULL, NULL, NULL,
             rubrovaHttpFailureMessage(), 'Timeout fuera del rango permitido: 1 a 30000 ms.');
     } ELSE {
         TRY {
@@ -157,15 +159,15 @@ rubrovaHttpGet 'Consultar servicio externo (GET)' (STRING providerName, STRING o
             EXTERNAL HTTP GET url HEADERSTO responseHeaders TO rubrovaHttpResponse;
             rubrovaHttpSucceeded() <- TRUE;
         } CATCH {
-            rubrovaHttpRetryAfter() <- GROUP MAX responseHeaders(TEXT h) IF lower(h) = 'retry-after';
+            rubrovaHttpRetryAfter() <- GROUP MAX responseHeaders(STRING[100] headerName) IF lower(headerName) = 'retry-after';
             IF statusHttp() THEN
-                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp());
+                rubrovaHandleHttpStatusFailure(providerName, operationName, correlation, statusHttp(), rubrovaHttpRetryAfter());
             ELSE {
                 rubrovaHttpFailureCategory() <- 'TIMEOUT_OR_NETWORK';
                 rubrovaHttpCanRetry() <- TRUE;
                 rubrovaHttpFailureMessage() <- 'El servicio externo no respondió a tiempo o no se pudo establecer la conexión.';
                 rubrovaRecordIntegrationIncident(providerName, operationName, correlation,
-                    'TIMEOUT_OR_NETWORK', NULL, 1, TRUE, NULL, NULL,
+                    'TIMEOUT_OR_NETWORK', NULL, 1, TRUE, NULL, NULL, NULL,
                     rubrovaHttpFailureMessage(), 'La solicitud GET terminó sin respuesta HTTP por conexión o timeout. Detalle sensible omitido.');
             }
         }
