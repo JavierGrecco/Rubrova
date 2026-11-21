@@ -385,6 +385,9 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);
+  assert.ok(runtimeSmokeSource.includes("rubrovaHttp408IncidentCount() = GROUP SUM 1"));
+  assert.ok(runtimeSmokeSource.includes("incidentCount = rubrovaHttp408IncidentCount()"));
+  assert.ok(runtimeSmokeSource.includes("incidentRetryable = safeToRetry(IntegrationIncident i)"));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttp400/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttp401/);
@@ -426,6 +429,9 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_CAPTURED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_TIMEOUT_MESSAGE=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_408_CLASSIFIED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_408_INCIDENT_PERSISTED=true/);
+  assert.match(uiSmokeSource, /incident_count != 1/);
+  assert.match(uiSmokeSource, /incidentRetryable/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_429_CLASSIFIED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_503_CLASSIFIED=true/);
   assert.match(uiSmokeSource, /UI_INTEGRATION_RECOVERY_SUCCEEDED=true/);
