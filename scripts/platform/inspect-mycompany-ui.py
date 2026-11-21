@@ -570,6 +570,32 @@ def inspect_page(url: str) -> int:
 
                 print("UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true")
 
+                # Abrir la pantalla de cobro y verificar medios disponibles sin confirmar.
+                if not click_exact_action(page, "Cobrar (ctrl ENTER)"):
+                    raise RuntimeError("No se encontró la acción Cobrar después de agregar el artículo.")
+                page.wait_for_timeout(1200)
+                payment_text = visible_snapshot(page, "UI_PAYMENT_DIALOG")
+                payment_snapshot = screenshot_path.with_name(
+                    screenshot_path.stem + "-payment" + screenshot_path.suffix
+                )
+                page.screenshot(path=str(payment_snapshot), full_page=True)
+                print(f"UI_PAYMENT_SCREENSHOT={payment_snapshot}")
+                normalized_payment_text = payment_text.casefold()
+                if not any(label in normalized_payment_text for label in ("efectivo", "cash")):
+                    raise RuntimeError(
+                        "La pantalla de cobro se abrió, pero no muestra el medio de pago efectivo. "
+                        f"Texto visible: {payment_text.strip()[:3000]}"
+                    )
+                print("UI_PAYMENT_DIALOG_OPEN=true")
+                print("UI_PAYMENT_CASH_METHOD_AVAILABLE=true")
+
+                # Cerrar el diálogo de prueba sin confirmar pagos ni crear documentos.
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(500)
+                if not page.get_by_text("Cobrar (ctrl ENTER)", exact=True).is_visible():
+                    raise RuntimeError("La pantalla POS no volvió después de cerrar el diálogo de cobro.")
+                print("UI_PAYMENT_DIALOG_CLOSED_WITHOUT_CHARGE=true")
+
                 # Ejecutar pruebas de resiliencia sólo contra el simulador local.
                 # Las operaciones de prueba no crean ventas, pagos ni movimientos de caja.
                 api_base = url.rstrip("/") + "/exec/Rubrova."

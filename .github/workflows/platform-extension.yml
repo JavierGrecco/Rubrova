@@ -83,6 +83,7 @@ jobs:
             ${{ runner.temp }}/rubrova-mycompany-ui-pos.png
             ${{ runner.temp }}/rubrova-mycompany-ui-session.png
             ${{ runner.temp }}/rubrova-mycompany-ui-item.png
+            ${{ runner.temp }}/rubrova-mycompany-ui-payment.png
           if-no-files-found: warn
   validate-windows:
     runs-on: windows-latest
