@@ -52,6 +52,18 @@ class MockProviderHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
+        if request.path == "/status/400":
+            self._send(400, b'{"error":"bad request"}')
+            return
+        if request.path == "/status/401":
+            self._send(401, b'{"error":"unauthorized"}')
+            return
+        if request.path == "/status/403":
+            self._send(403, b'{"error":"forbidden"}')
+            return
+        if request.path == "/status/409":
+            self._send(409, b'{"error":"conflict"}')
+            return
         if request.path == "/status/503":
             self._send(503, b'{"error":"temporarily unavailable"}')
             return

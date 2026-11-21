@@ -302,6 +302,50 @@ rubrovaTestHttpServerError () {
         userMessage = rubrovaHttpFailureMessage();
 } @@api;
 
+rubrovaTestHttp400 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 400', 'ci-http-400-001',
+        '$MOCK_PROVIDER_URL/status/400', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp401 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 401', 'ci-http-401-001',
+        '$MOCK_PROVIDER_URL/status/401', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp403 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 403', 'ci-http-403-001',
+        '$MOCK_PROVIDER_URL/status/403', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp409 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 409', 'ci-http-409-001',
+        '$MOCK_PROVIDER_URL/status/409', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
 rubrovaTestHttpRecovery () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de recuperación', 'ci-recovery-001',
         '$MOCK_PROVIDER_URL/ok', 4000);

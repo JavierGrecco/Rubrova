@@ -358,6 +358,18 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttp400/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttp401/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttp403/);
+  assert.match(runtimeSmokeSource, /rubrovaTestHttp409/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_400_CLASSIFIED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_401_CLASSIFIED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_403_CLASSIFIED=true/);
+  assert.match(uiSmokeSource, /UI_INTEGRATION_409_CLASSIFIED=true/);
+  assert.ok(mockProviderSource.includes('if request.path == "/status/400":'));
+  assert.ok(mockProviderSource.includes('if request.path == "/status/401":'));
+  assert.ok(mockProviderSource.includes('if request.path == "/status/403":'));
+  assert.ok(mockProviderSource.includes('if request.path == "/status/409":'));
   assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
   assert.match(runtimeSmokeSource, /rubrovaTestPosConfigurationApi/);
   assert.ok(runtimeSmokeSource.includes("priceType(Invoicing.invoiceType('retail')) <- priceType('retail')"));

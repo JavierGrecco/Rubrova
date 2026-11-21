@@ -725,6 +725,33 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("El HTTP 503 no se clasificó correctamente.")
                 print("UI_INTEGRATION_503_CLASSIFIED=true")
 
+                # Asegurar que los errores definitivos no se clasifiquen como reintentables.
+                for status_code, expected_category in (
+                    (400, "REMOTE_HTTP_ERROR"),
+                    (401, "AUTHENTICATION"),
+                    (403, "AUTHORIZATION"),
+                    (409, "CONFLICT"),
+                ):
+                    status_response = context.request.get(
+                        api_base + f"rubrovaTestHttp{status_code}", timeout=12_000
+                    )
+                    if status_response.status != 200:
+                        raise RuntimeError(
+                            f"La prueba HTTP {status_code} respondió HTTP {status_response.status}: "
+                            f"{status_response.text()[:1200]}"
+                        )
+                    status_payload = status_response.json()
+                    if isinstance(status_payload, list):
+                        status_payload = status_payload[0] if status_payload else {}
+                    print(f"UI_INTEGRATION_{status_code}_RESPONSE=" + json.dumps(status_payload, ensure_ascii=False))
+                    if status_payload.get("category") != expected_category:
+                        raise RuntimeError(
+                            f"El HTTP {status_code} esperaba {expected_category} y obtuvo {status_payload.get('category')}."
+                        )
+                    if status_payload.get("retryable"):
+                        raise RuntimeError(f"El HTTP {status_code} no debe reintentarse automáticamente.")
+                    print(f"UI_INTEGRATION_{status_code}_CLASSIFIED=true")
+
                 recovery_response = context.request.get(
                     api_base + "rubrovaTestHttpRecovery", timeout=12_000
                 )
@@ -754,8 +781,8 @@ def inspect_page(url: str) -> int:
                     incident_payload = incident_payload[0] if incident_payload else {}
                 incident_count = int(incident_payload.get("incidentCount", 0))
                 print(f"UI_INTEGRATION_INCIDENT_COUNT={incident_count}")
-                if incident_count < 4:
-                    raise RuntimeError("No quedaron persistidas las cuatro incidencias simuladas (timeout, 408, 429, 503).")
+                if incident_count < 8:
+                    raise RuntimeError("No quedaron persistidas las ocho incidencias simuladas (timeout, 400, 401, 403, 408, 409, 429, 503).")
                 print("UI_INTEGRATION_INCIDENT_PERSISTED=true")
                 item_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-item" + screenshot_path.suffix
