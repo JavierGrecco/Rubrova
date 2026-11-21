@@ -274,12 +274,19 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
 
 
 def click_exact_action(page: Any, label: str) -> bool:
-    # Use a lazy accessible locator so a GWT re-render cannot invalidate a saved index.
-    button = page.get_by_role("button", name=label, exact=True)
-    try:
-        button.wait_for(state="visible", timeout=12_000)
-    except PlaywrightTimeoutError:
+    # Prefer stable lsFusion property IDs for actions whose rendered accessible names
+    # are not consistently exposed by the GWT widget tree.
+    container = ACTION_CONTAINER_BY_LABEL.get(label)
+    if container:
+        button = page.locator(f'button[lsfusion-container="{container}"]')
+    else:
+        # Keep a lazy accessible locator for other actions to survive GWT re-renders.
+        button = page.get_by_role("button", name=label, exact=True)
+
+    match_count = button.count()
+    if match_count != 1:
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
+        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_MATCH_COUNT={match_count}")
         print(
             f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
             + json.dumps(
@@ -287,6 +294,7 @@ def click_exact_action(page: Any, label: str) -> bool:
                     """elements => elements.map(element => ({
                         tag: element.tagName.toLowerCase(),
                         text: (element.innerText || element.value || element.textContent || "").trim(),
+                        container: element.getAttribute("lsfusion-container") || "",
                         visible: getComputedStyle(element).display !== "none" &&
                             getComputedStyle(element).visibility !== "hidden" &&
                             !!(element.offsetWidth || element.offsetHeight),
@@ -298,6 +306,21 @@ def click_exact_action(page: Any, label: str) -> bool:
         )
         return False
 
+    try:
+        button.wait_for(state="visible", timeout=12_000)
+    except PlaywrightTimeoutError:
+        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
+        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_VISIBLE=false")
+        return False
+
+    actual_label = button.evaluate(
+        'element => (element.innerText || element.value || element.textContent || "").trim()'
+    )
+    if actual_label != label:
+        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_LABEL_MISMATCH={actual_label!r}")
+        return False
+
+    button.scroll_into_view_if_needed()
     button.click(no_wait_after=True)
     print(f"UI_ACTION_{label.upper().replace(' ', '_')}_CLICKED=true")
     return True
@@ -386,6 +409,11 @@ NAVIGATOR_CONTAINER_BY_LABEL = {
     # Stable lsFusion navigator IDs observed in the successful MyCompany 6.2 runtime.
     "Comercio": "Retail.retail",
     "Punto de venta": "Retail.posDashboard",
+}
+
+ACTION_CONTAINER_BY_LABEL = {
+    # MyCompany renders this action as a GWT button with a stable property container.
+    "Abrir turno": "PROPERTY(openSession(p))",
 }
 
 
