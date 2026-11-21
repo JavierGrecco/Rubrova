@@ -383,6 +383,10 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
     1,
     "La configuración de Toxiproxy debe ejecutarse una sola vez por instancia efímera."
   );
+  const timeoutEndpoint = runtimeSmokeSource.split("rubrovaTestHttpTimeout () {")[1]?.split("} @@api;")[0] || "";
+  const rateLimitEndpoint = runtimeSmokeSource.split("rubrovaTestHttpRateLimit () {")[1]?.split("} @@api;")[0] || "";
+  assert.ok(!timeoutEndpoint.includes("incidentRetryAfterPersisted"), "La persistencia de Retry-After no pertenece al endpoint de timeout.");
+  assert.ok(rateLimitEndpoint.includes("incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1"), "El endpoint HTTP 429 debe exponer la comprobación del encabezado persistido.");
   assert.match(runtimeSmokeSource, /mock-integration-provider[.]py/);
   assert.match(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
   assert.match(runtimeSmokeSource, /ghcr[.]io\/shopify\/toxiproxy:2[.]13[.]0/);
