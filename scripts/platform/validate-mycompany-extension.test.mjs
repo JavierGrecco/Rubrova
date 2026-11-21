@@ -182,7 +182,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_CART_PRODUCT_DOM/);
   assert.match(uiSmokeSource, /UI_CART_AMOUNT_LABELS/);
   assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
-  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|topModule/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaCISalesFixture\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
   assert.match(runtimeSmokeSource, /Exception while starting logics instance/);
   assert.match(runtimeSmokeSource, /missing \.\+ at/);
