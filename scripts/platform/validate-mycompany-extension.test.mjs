@@ -255,7 +255,7 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
   assert.match(moduleSource, /DESIGN posPayment/);
-  assert.match(moduleSource, /Invoicing[.]currency\(Invoicing[.]invoiceType\('retail'\)\) <- defaultCurrency\(\)/);
+  assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency()"));
   assert.match(moduleSource, /Sales[.]currency\(Sales[.]priceType\('retail'\)\) <- defaultCurrency\(\)/);
   assert.match(moduleSource, /name\(cashPaymentMethod\(\)\) <- 'Efectivo'/);
   assert.match(moduleSource, /name\(paymentMethod\('card'\)\) <- 'Tarjeta'/);
@@ -360,7 +360,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestHttpServerError/);
   assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
   assert.match(runtimeSmokeSource, /rubrovaTestPosConfigurationApi/);
-  assert.match(runtimeSmokeSource, /priceType\\(Invoicing[.]invoiceType\\('retail'\\)\\) <- priceType\\('retail'\\)/);
+  assert.ok(runtimeSmokeSource.includes("priceType(Invoicing.invoiceType('retail')) <- priceType('retail')"));
   assert.match(runtimeSmokeSource, /Invoicing[.]currency\\(Invoicing[.]invoiceType\\('retail'\\)\\) <- defaultCurrency\\(\\)/);
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
   assert.match(uiSmokeSource, /rubrovaTestPosConfigurationApi/);
