@@ -107,7 +107,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str\)/);
   assert.match(uiSmokeSource, /ACTION_CONTAINER_BY_LABEL = \{/);
   assert.match(uiSmokeSource, /"Abrir turno": "PROPERTY\(openSession\(p\)\)"/);
-  assert.ok(uiSmokeSource.includes("page.locator(f'button[lsfusion-container=\\\"{container}\\\"]')"));
+  assert.ok(uiSmokeSource.includes('button[lsfusion-container="{container}"]'));
   assert.match(uiSmokeSource, /UI_ACTION_.*_MATCH_COUNT/);
   assert.match(uiSmokeSource, /UI_ACTION_.*_CLICKED=true/);
   assert.match(uiSmokeSource, /wait_for_session_open\(page, timeout_seconds=45\)/);
