@@ -812,16 +812,46 @@ public abstract class GwtActionDispatcher implements GActionDispatcher {
             for (Map.Entry<String, String> header : action.headers.entrySet()) {
                 request.setRequestHeader(header.getKey(), header.getValue());
             }
-            sendRequest(request, action.body != null ? bytesToArrayBuffer(action.body) : null);
 
+            // The server has already applied the global 10 s default / 60 s cap.
+            // Clamp again at the browser boundary so malformed or older callers cannot wait forever.
+            final int timeoutMillis = (int) Math.max(1L,
+                    Math.min(action.timeout == null ? 10_000L : action.timeout, 60_000L));
+            final AtomicBoolean completed = new AtomicBoolean(false);
+            final Timer timeoutTimer = new Timer() {
+                @Override
+                public void run() {
+                    if (completed.compareAndSet(false, true)) {
+                        request.clearOnReadyStateChange();
+                        request.abort();
+                        onResult.accept(new GExternalHttpResponse(null, new byte[0],
+                                Collections.<String, List<String>>emptyMap(), 0, "Request timed out"), null);
+                    }
+                }
+            };
+
+            // Register the handler and timer before send. A very fast response must not be missed.
             request.setOnReadyStateChange(xhr -> {
-                if (xhr.getReadyState() == XMLHttpRequest.DONE) {
+                if (xhr.getReadyState() == XMLHttpRequest.DONE && completed.compareAndSet(false, true)) {
+                    timeoutTimer.cancel();
+                    request.clearOnReadyStateChange();
                     ArrayBuffer arrayBuffer = xhr.getResponseArrayBuffer();
-                    byte[] bytes = arrayBufferToBytes(arrayBuffer);
+                    byte[] bytes = arrayBuffer == null ? new byte[0] : arrayBufferToBytes(arrayBuffer);
                     Map<String, List<String>> responseHeaders = getResponseHeaders(xhr.getAllResponseHeaders());
-                    onResult.accept(new GExternalHttpResponse(xhr.getResponseHeader("Content-Type"), bytes, responseHeaders, xhr.getStatus(), xhr.getStatusText()), null);
+                    onResult.accept(new GExternalHttpResponse(xhr.getResponseHeader("Content-Type"), bytes,
+                            responseHeaders, xhr.getStatus(), xhr.getStatusText()), null);
                 }
             });
+
+            timeoutTimer.schedule(timeoutMillis);
+            try {
+                sendRequest(request, action.body != null ? bytesToArrayBuffer(action.body) : null);
+            } catch (RuntimeException | Error error) {
+                timeoutTimer.cancel();
+                completed.set(true);
+                request.clearOnReadyStateChange();
+                throw error;
+            }
         });
     }
 

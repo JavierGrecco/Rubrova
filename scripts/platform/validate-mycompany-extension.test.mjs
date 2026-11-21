@@ -393,6 +393,24 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(mockProviderSource.includes('if request.path == "/status/408":'));
 });
 
+test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () => {
+  const httpClientActionSource = read("vendor/platform/api/src/main/java/lsfusion/interop/session/HttpClientAction.java");
+  const gHttpClientActionSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/action/GHttpClientAction.java");
+  const clientActionConverterSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/server/convert/ClientActionToGwtConverter.java");
+  const gwtDispatcherSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/controller/dispatch/GwtActionDispatcher.java");
+
+  assert.match(httpClientActionSource, /public Long timeout/);
+  assert.match(gHttpClientActionSource, /public Long timeout/);
+  assert.match(clientActionConverterSource, /action[.]timeout/);
+  assert.match(gwtDispatcherSource, /Math[.]min\(action[.]timeout == null \? 10_000L : action[.]timeout, 60_000L\)/);
+  assert.match(gwtDispatcherSource, /timeoutTimer[.]schedule\(timeoutMillis\)/);
+  assert.match(gwtDispatcherSource, /request[.]abort\(\)/);
+  assert.match(gwtDispatcherSource, /request[.]clearOnReadyStateChange\(\)/);
+  assert.match(gwtDispatcherSource, /completed[.]compareAndSet\(false, true\)/);
+  assert.match(gwtDispatcherSource, /xhr[.]getReadyState\(\) == XMLHttpRequest[.]DONE/);
+  assert.match(gwtDispatcherSource, /"Request timed out"/);
+});
+
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
   const callHttpSource = read("vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java");
   assert.match(callHttpSource, /RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L/);
