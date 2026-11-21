@@ -198,14 +198,18 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
     mycompany: "lsfusion/mycompany:6.2",
     server: "lsfusion/server:6.2",
     client: "lsfusion/client:6.2",
-    postgres: "postgres:18",
-    toxiproxy: "ghcr.io/shopify/toxiproxy:2.13.0"
+    postgres: "postgres:18"
   })) {
     const digest = lock.dockerImages[service].digest;
     assert.match(digest, /^sha256:[0-9a-f]{64}$/);
     assert.ok(runtimeSmokeSource.includes(`image: ${image}@${digest}`), `Falta digest fijado en el smoke test: ${service}`);
   }
   assert.equal(lock.dockerImages.digestPlatform, "linux/amd64");
+  assert.equal(lock.testTools.toxiproxy.scope, "ci-only");
+  assert.equal(lock.testTools.toxiproxy.license, "MIT");
+  assert.match(lock.testTools.toxiproxy.digest, /^sha256:[0-9a-f]{64}$/);
+  assert.equal(lock.testTools.toxiproxy.platform, "linux/amd64");
+  assert.ok(runtimeSmokeSource.includes(`image: ${lock.testTools.toxiproxy.image}@${lock.testTools.toxiproxy.digest}`), "Toxiproxy debe usar la imagen CI fijada en el lock.");
   assert.match(runtimeSmokeSource, /docker-server\/logs/);
   assert.match(runtimeSmokeSource, /compose logs --no-color --tail=180 server/);
   assert.match(runtimeSmokeSource, /tail -n 80/);

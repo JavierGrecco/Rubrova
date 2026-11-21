@@ -125,5 +125,16 @@
     "buildAggregator": "build/rubrova/pom.xml",
     "patchDirectory": "patches/lsfusion",
     "status": "source-import-automation-added-build-and-offline-acceptance-pending"
+  },
+  "testTools": {
+    "toxiproxy": {
+      "image": "ghcr.io/shopify/toxiproxy:2.13.0",
+      "digest": "sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc",
+      "platform": "linux/amd64",
+      "license": "MIT",
+      "scope": "ci-only",
+      "purpose": "Deterministic TCP latency, timeout, reset and packet-loss injection for ephemeral integration tests; never part of the local production runtime.",
+      "digestSource": "GitHub Container Registry package metadata for Shopify Toxiproxy 2.13.0, checked on 2026-11-20."
+    }
   }
 }
