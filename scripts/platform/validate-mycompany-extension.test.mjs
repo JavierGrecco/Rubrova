@@ -152,6 +152,8 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeWorkflowSource, /playwright install chromium/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_READY_TIMEOUT_SECONDS: 180/);
+  assert.ok(runtimeWorkflowSource.includes("group: rubrova-runtime-smoke-${{ github.ref }}"));
+  assert.ok(runtimeWorkflowSource.includes("cancel-in-progress: false"));
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
   assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-retail[.]png/);
   assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-pos[.]png/);
