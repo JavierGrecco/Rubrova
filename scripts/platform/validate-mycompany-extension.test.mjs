@@ -384,6 +384,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("userMessage = rubrovaHttpFailureMessage()"));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRateLimit/);
+  assert.ok(runtimeSmokeSource.includes("retryAfter = rubrovaHttpRetryAfter()"));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTransientStatus/);
   assert.ok(runtimeSmokeSource.includes("rubrovaHttp408IncidentCount() = GROUP SUM 1"));
   assert.ok(runtimeSmokeSource.includes("incidentCount = rubrovaHttp408IncidentCount()"));

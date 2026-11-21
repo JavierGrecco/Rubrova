@@ -307,6 +307,7 @@ rubrovaTestHttpRateLimit () {
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
         category = rubrovaHttpFailureCategory(),
         retryable = rubrovaHttpCanRetry(),
+        retryAfter = rubrovaHttpRetryAfter(),
         httpStatus = statusHttp(),
         userMessage = rubrovaHttpFailureMessage();
 } @@api;
