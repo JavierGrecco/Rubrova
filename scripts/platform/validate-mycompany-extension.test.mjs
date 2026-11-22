@@ -20,6 +20,9 @@ const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const posSearchSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardSearch.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
+const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
+const runtimeServerDockerfile = read("build/rubrova/runtime/Dockerfile.server");
+const runtimeClientDockerfile = read("build/rubrova/runtime/Dockerfile.client");
 const sourcePatch = read("scripts/platform/apply-rubrova-source-patches.py");
 
 function parseProperties(source) {
@@ -53,6 +56,8 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(preparerSource, new RegExp("^COMPOSE_SHA256=\"" + lock.artifacts.dockerCompose.sha256 + "\"$", "m"));
   assert.match(preparerSource, /El Compose existente no coincide con el SHA-256 fijado/);
   assert.match(preparerSource, /Hash SHA-256 incorrecto para el Compose/);
+  assert.match(preparerSource, /RUBROVA_SKIP_OFFICIAL_LOGIC_JAR/);
+  assert.match(preparerSource, /Omitiendo el JAR oficial de lógica/);
 });
 
 test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y limpia el stack", () => {
@@ -62,6 +67,14 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
+  assert.match(runtimeSmokeSource, /build-rubrova-runtime-images[.]sh/);
+  assert.match(runtimeSmokeSource, /pull_policy: never/);
+  assert.match(runtimeSmokeSource, /rubrova\/server:6[.]2-/);
+  assert.match(runtimeSmokeSource, /rubrova\/logics:6[.]2-/);
+  assert.match(runtimeSmokeSource, /rubrova\/client:6[.]2-/);
+  assert.doesNotMatch(runtimeSmokeSource, /image: lsfusion\/(mycompany|server|client):/);
+  assert.match(runtimeSmokeSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
+  assert.match(runtimeSmokeSource, /compose config --images/);
   assert.match(runtimeSmokeSource, /RUBROVA_PLAYWRIGHT_PYTHON/);
   assert.match(runtimeSmokeSource, /rubrova-ci/);
   assert.match(runtimeSmokeSource, /rubrova-ci-product/);
@@ -182,7 +195,10 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeWorkflowSource, /java-version: "21"/);
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f build\/rubrova\/pom[.]xml -Passemble -DskipTests package/);
   assert.match(runtimeWorkflowSource, /vendor\/platform\/web-client\/target/);
-  assert.match(runtimeWorkflowSource, /Smoke POS de la extensión actual sobre runtime oficial MyCompany 6[.]2/);
+  assert.match(runtimeWorkflowSource, /Smoke POS sobre runtime construido desde fuentes Rubrova/);
+  assert.match(runtimeWorkflowSource, /actions\/upload-artifact@v4/);
+  assert.match(runtimeWorkflowSource, /actions\/download-artifact@v4/);
+  assert.match(runtimeWorkflowSource, /rubrova-runtime-application/);
   assert.match(runtimeWorkflowSource, /cancel-in-progress: true/);
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
   assert.match(runtimeWorkflowSource, /rubrova-mycompany-ui-retail[.]png/);
@@ -221,21 +237,29 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /se cancela la espera de arranque/);
   assert.match(runtimeSmokeSource, /módulos Rubrova/);
   assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
+  assert.match(runtimeImageBuilderSource, /server[.]jar/);
+  assert.match(runtimeImageBuilderSource, /logics[.]jar/);
+  assert.match(runtimeImageBuilderSource, /client[.]war/);
+  assert.match(runtimeImageBuilderSource, /vendor\/platform\/server\/entrypoint[.]sh/);
+  assert.match(runtimeImageBuilderSource, /vendor\/platform\/server\/src\/main\/resources\/logics\/docker\/Dockerfile/);
+  assert.match(runtimeImageBuilderSource, /docker build --platform linux\/amd64/);
+  assert.match(runtimeImageBuilderSource, /rubrova\/server:6[.]2-/);
+  assert.match(runtimeImageBuilderSource, /rubrova\/logics:6[.]2-/);
+  assert.match(runtimeImageBuilderSource, /rubrova\/client:6[.]2-/);
+  assert.match(runtimeServerDockerfile, /COPY server[.]jar \/server[.]jar/);
+  assert.doesNotMatch(runtimeServerDockerfile, /ADD https?:/);
+  assert.match(runtimeClientDockerfile, /COPY client[.]war \/usr\/local\/tomcat\/webapps\/ROOT[.]war/);
+  assert.doesNotMatch(runtimeClientDockerfile, /ADD https?:/);
   assert.match(runtimeSmokeSource, /compose down --volumes --remove-orphans/);
   assert.match(runtimeSmokeSource, /trap cleanup EXIT/);
   assert.match(runtimeSmokeSource, /mktemp -d.*rubrova-runtime/);
   assert.match(runtimeSmokeSource, /sudo -n rm -rf/);
   assert.match(runtimeSmokeSource, /docker image inspect/);
-  for (const [service, image] of Object.entries({
-    mycompany: "lsfusion/mycompany:6.2",
-    server: "lsfusion/server:6.2",
-    client: "lsfusion/client:6.2",
-    postgres: "postgres:18"
-  })) {
-    const digest = lock.dockerImages[service].digest;
-    assert.match(digest, /^sha256:[0-9a-f]{64}$/);
-    assert.ok(runtimeSmokeSource.includes(`image: ${image}@${digest}`), `Falta digest fijado en el smoke test: ${service}`);
-  }
+  const postgresDigest = lock.dockerImages.postgres.digest;
+  assert.match(postgresDigest, /^sha256:[0-9a-f]{64}$/);
+  assert.ok(runtimeSmokeSource.includes(`image: postgres:18@${postgresDigest}`));
+  assert.ok(runtimeSmokeSource.includes(lock.testTools.toxiproxy.digest));
+  assert.doesNotMatch(runtimeSmokeSource, /image: lsfusion\/(mycompany|server|client):/);
   assert.equal(lock.dockerImages.postgres.volumeMount, "/var/lib/postgresql");
   assert.equal(lock.dockerImages.postgres.dataDirectory, "/var/lib/postgresql/18/docker");
   assert.ok(dockerOverrideSource.includes("image: postgres:18@" + lock.dockerImages.postgres.digest));
