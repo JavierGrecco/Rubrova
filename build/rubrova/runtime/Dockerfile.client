@@ -1,0 +1,5 @@
+FROM tomcat:9-jdk21
+
+# This WAR is compiled from vendor/platform/web-client in the Rubrova reactor.
+# The upstream Dockerfile downloads a prebuilt WAR; this one uses our build output.
+COPY client.war /usr/local/tomcat/webapps/ROOT.war
