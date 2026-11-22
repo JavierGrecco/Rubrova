@@ -265,6 +265,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /sudo -n rm -rf/);
   assert.match(runtimeSmokeSource, /docker image inspect/);
   assert.match(runtimeSmokeSource, /IMAGEN LOCAL VERIFICADA/);
+  assert.ok(runtimeSmokeSource.includes('compose ps -a -q "$local_service"'), "La verificación debe incluir el contenedor logics aunque haya terminado correctamente.");
   assert.match(runtimeSmokeSource, /DIGEST EXTERNO VERIFICADO/);
   assert.match(runtimeSmokeSource, /show_client_tomcat_logs/);
   assert.match(runtimeSmokeSource, /One or more listeners failed to start/);

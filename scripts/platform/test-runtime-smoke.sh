@@ -803,7 +803,7 @@ while IFS= read -r image_name; do
   esac
   if [[ -n "$local_service" ]]; then
     local_image_id="$(docker image inspect --format '{{.Id}}' "$image_name" 2>/dev/null || true)"
-    container_id="$(compose ps -q "$local_service" | head -n 1)"
+    container_id="$(compose ps -a -q "$local_service" | head -n 1)"
     if [[ ! "$local_image_id" =~ ^sha256:[0-9a-f]{64}$ || -z "$container_id" ]]; then
       echo "No se pudo identificar la imagen o el contenedor local de $local_service: $image_name" >&2
       exit 1
