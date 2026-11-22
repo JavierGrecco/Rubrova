@@ -155,7 +155,7 @@ services:
   toxiproxy:
     image: ghcr.io/shopify/toxiproxy:2.13.0@sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc
     environment:
-      TOXIPROXY_AUTH_TOKEN: "${TOXIPROXY_AUTH_TOKEN:?}"
+      TOXIPROXY_AUTH_TOKEN: "\${TOXIPROXY_AUTH_TOKEN:?}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
