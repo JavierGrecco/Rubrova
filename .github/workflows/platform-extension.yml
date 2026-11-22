@@ -49,6 +49,7 @@ jobs:
           bash -n scripts/platform/test-runtime-smoke.sh
           bash -n scripts/platform/build-rubrova-runtime-images.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
+
   build-fork:
     name: Compilar el fork lsFusion + MyCompany de Rubrova
     runs-on: ubuntu-latest
@@ -65,7 +66,7 @@ jobs:
         run: |
           expected_sha="${GITHUB_SHA:?GitHub no informó el SHA esperado}"
           checked_out_sha="$(git rev-parse HEAD)"
-          printf 'GITHUB_SHA=%s\nCHECKED_OUT_SHA=%s\n' "$expected_sha" "$checked_out_sha"
+          printf 'GITHUB_SHA=%s\\nCHECKED_OUT_SHA=%s\\n' "$expected_sha" "$checked_out_sha"
           test "$checked_out_sha" = "$expected_sha"
       - name: Preparar Java 21 y caché Maven
         uses: actions/setup-java@v4
@@ -85,12 +86,31 @@ jobs:
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
         run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
       - name: Verificar y preparar los artefactos propios del runtime
+        shell: bash
         run: |
           test -s vendor/platform/server/target/lsfusion-server-6.2.jar
           test -s vendor/mycompany/target/lsfusion-server-6.2.jar
           test -s vendor/platform/web-client/target/lsfusion-client-6.2.war
           unzip -Z1 vendor/platform/server/target/lsfusion-server-6.2.jar | grep -q 'lsfusion/server/logics/BusinessLogicsBootstrap.class'
-          unzip -Z1 vendor/mycompany/target/lsfusion-server-6.2.jar | grep -Eq '(^|/)MyCompany[.]lsf  runtime-smoke:
+          unzip -Z1 vendor/mycompany/target/lsfusion-server-6.2.jar | grep -Eq '(^|/)MyCompany[.]lsf$'
+          mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
+          cp vendor/platform/server/target/lsfusion-server-6.2.jar "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
+          cp vendor/mycompany/target/lsfusion-server-6.2.jar "$RUNNER_TEMP/rubrova-runtime-artifacts/logics.jar"
+          cp vendor/platform/web-client/target/lsfusion-client-6.2.war "$RUNNER_TEMP/rubrova-runtime-artifacts/client.war"
+          test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
+          test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/logics.jar"
+          test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/client.war"
+          echo "Los artefactos de servidor, lógica MyCompany y cliente web salen del reactor de Rubrova."
+      - name: Publicar artefactos del runtime para el smoke funcional
+        uses: actions/upload-artifact@v4
+        with:
+          name: rubrova-runtime-application
+          path: ${{ runner.temp }}/rubrova-runtime-artifacts/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  runtime-smoke:
     name: Smoke POS sobre runtime construido desde fuentes Rubrova (Linux x86_64)
     runs-on: ubuntu-latest
     needs: [validate, build-fork]
@@ -106,7 +126,7 @@ jobs:
         run: |
           expected_sha="${GITHUB_SHA:?GitHub no informó el SHA esperado}"
           checked_out_sha="$(git rev-parse HEAD)"
-          printf 'GITHUB_SHA=%s\nCHECKED_OUT_SHA=%s\n' "$expected_sha" "$checked_out_sha"
+          printf 'GITHUB_SHA=%s\\nCHECKED_OUT_SHA=%s\\n' "$expected_sha" "$checked_out_sha"
           test "$checked_out_sha" = "$expected_sha"
       - name: Descargar artefactos compilados desde el mismo SHA
         uses: actions/download-artifact@v4
@@ -130,9 +150,11 @@ jobs:
           python3 -m venv "$PLAYWRIGHT_VENV"
           "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
           "$PLAYWRIGHT_VENV/bin/python" -m playwright install chromium
-      - name: Validar sintaxis del smoke test
-        run: bash -n scripts/platform/test-runtime-smoke.sh
-      - name: Levantar MyCompany, inspeccionar interfaz y limpiar datos efímeros
+      - name: Validar sintaxis de los scripts de runtime
+        run: |
+          bash -n scripts/platform/test-runtime-smoke.sh
+          bash -n scripts/platform/build-rubrova-runtime-images.sh
+      - name: Levantar runtime Rubrova, inspeccionar POS y limpiar datos efímeros
         env:
           RUBROVA_STARTUP_TIMEOUT_SECONDS: 900
           RUBROVA_BUILD_ARTIFACTS_DIR: ${{ runner.temp }}/rubrova-runtime-artifacts
@@ -159,128 +181,7 @@ jobs:
             ${{ runner.temp }}/rubrova-mycompany-ui-item.png
             ${{ runner.temp }}/rubrova-mycompany-ui-payment.png
           if-no-files-found: warn
-  validate-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Obtener el repositorio
-        uses: actions/checkout@v7
-      - name: Validar sintaxis de PowerShell
-        shell: pwsh
-        run: |
-          $files = @(
-            'scripts/platform/prepare-mycompany-6.2.ps1',
-            'scripts/platform/deploy-mycompany-6.2.ps1'
-          )
-          foreach ($file in $files) {
-            $tokens = $null
-            $errors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
-            if ($errors.Count -gt 0) {
-              $errors | ForEach-Object { Write-Error $_.Message }
-              exit 1
-            }
-          }
-  validate-macos-arm64:
-    if: github.event_name == 'workflow_dispatch' && inputs.validate_macos
-    name: Validación macOS Apple Silicon
-    runs-on: macos-26
-    steps:
-      - name: Obtener el repositorio
-        uses: actions/checkout@v7
-      - name: Confirmar que el runner es macOS ARM64
-        run: |
-          test "$(uname -s)" = "Darwin"
-          test "$(uname -m)" = "arm64"
-          sw_vers
-      - name: Preparar Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          package-manager-cache: false
-      - name: Validar lock, extensión y glosario
-        run: node --test scripts/platform/validate-mycompany-extension.test.mjs
-      - name: Validar scripts y staging con herramientas macOS
-        run: |
-          bash -n scripts/platform/prepare-mycompany-6.2.sh
-          bash -n scripts/platform/deploy-mycompany-6.2.sh
-          bash scripts/platform/test-deploy-mycompany-6.2.sh
-      - name: Descargar artefactos; verificar JAR y calcular SHA-256 del Compose
-        run: bash scripts/platform/prepare-mycompany-6.2.sh
-      - name: Confirmar que la caché existente se vuelve a verificar
-        run: bash scripts/platform/prepare-mycompany-6.2.sh
 
-          mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
-          cp vendor/platform/server/target/lsfusion-server-6.2.jar "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
-          cp vendor/mycompany/target/lsfusion-server-6.2.jar "$RUNNER_TEMP/rubrova-runtime-artifacts/logics.jar"
-          cp vendor/platform/web-client/target/lsfusion-client-6.2.war "$RUNNER_TEMP/rubrova-runtime-artifacts/client.war"
-          test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
-          test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/logics.jar"
-          test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/client.war"
-          echo "Los artefactos del servidor, lógica MyCompany y cliente web provienen del reactor de Rubrova."
-      - name: Publicar artefactos del runtime para el smoke funcional
-        uses: actions/upload-artifact@v4
-        with:
-          name: rubrova-runtime-application
-          path: ${{ runner.temp }}/rubrova-runtime-artifacts/
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 1
-  runtime-smoke:
-    name: Smoke POS de la extensión actual sobre runtime oficial MyCompany 6.2 (Linux x86_64)
-    runs-on: ubuntu-latest
-    needs: [validate, build-fork]
-    timeout-minutes: 30
-    concurrency:
-      group: rubrova-runtime-smoke-${{ github.ref }}
-      cancel-in-progress: true
-    steps:
-      - name: Obtener el repositorio
-        uses: actions/checkout@v7
-      - name: Confirmar la revisión exacta que se va a probar
-        shell: bash
-        run: |
-          expected_sha="${GITHUB_SHA:?GitHub no informó el SHA esperado}"
-          checked_out_sha="$(git rev-parse HEAD)"
-          printf 'GITHUB_SHA=%s\nCHECKED_OUT_SHA=%s\n' "$expected_sha" "$checked_out_sha"
-          test "$checked_out_sha" = "$expected_sha"
-      - name: Confirmar Docker Engine y Compose
-        run: |
-          docker version
-          docker compose version
-      - name: Preparar Chromium para inspección de interfaz
-        env:
-          PLAYWRIGHT_VENV: ${{ runner.temp }}/rubrova-playwright
-        run: |
-          python3 -m venv "$PLAYWRIGHT_VENV"
-          "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
-          "$PLAYWRIGHT_VENV/bin/python" -m playwright install chromium
-      - name: Validar sintaxis del smoke test
-        run: bash -n scripts/platform/test-runtime-smoke.sh
-      - name: Levantar MyCompany, inspeccionar interfaz y limpiar datos efímeros
-        env:
-          RUBROVA_STARTUP_TIMEOUT_SECONDS: 900
-          RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-playwright/bin/python
-          RUBROVA_UI_SCREENSHOT: ${{ runner.temp }}/rubrova-mycompany-ui.png
-          RUBROVA_UI_TEST_LOGIN: "true"
-          RUBROVA_UI_TEST_USERNAME: "admin"
-          RUBROVA_RMI_TIMEOUT_SECONDS: 180
-          RUBROVA_ONSTARTED_TIMEOUT_SECONDS: 180
-          RUBROVA_UI_READY_TIMEOUT_SECONDS: 180
-        run: bash scripts/platform/test-runtime-smoke.sh
-      - name: Conservar capturas de acceso y pantalla autenticada
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rubrova-mycompany-ui
-          path: |
-            ${{ runner.temp }}/rubrova-mycompany-ui.png
-            ${{ runner.temp }}/rubrova-mycompany-ui-after-login.png
-            ${{ runner.temp }}/rubrova-mycompany-ui-retail.png
-            ${{ runner.temp }}/rubrova-mycompany-ui-pos.png
-            ${{ runner.temp }}/rubrova-mycompany-ui-session.png
-            ${{ runner.temp }}/rubrova-mycompany-ui-item.png
-            ${{ runner.temp }}/rubrova-mycompany-ui-payment.png
-          if-no-files-found: warn
   validate-windows:
     runs-on: windows-latest
     steps:
@@ -302,6 +203,7 @@ jobs:
               exit 1
             }
           }
+
   validate-macos-arm64:
     if: github.event_name == 'workflow_dispatch' && inputs.validate_macos
     name: Validación macOS Apple Silicon
@@ -325,6 +227,7 @@ jobs:
         run: |
           bash -n scripts/platform/prepare-mycompany-6.2.sh
           bash -n scripts/platform/deploy-mycompany-6.2.sh
+          bash -n scripts/platform/build-rubrova-runtime-images.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
       - name: Descargar artefactos; verificar JAR y calcular SHA-256 del Compose
         run: bash scripts/platform/prepare-mycompany-6.2.sh
