@@ -12,25 +12,29 @@ else
 fi
 mkdir -p "$CACHE_DIR"
 
-JAR_URL="https://download.lsfusion.org/solutions/mycompany-6.2.jar"
-JAR_SHA256="fe5a9bda49295f2292ae229a30c9461a16c137fc350a0aa944df7812a1e2f392"
-JAR_PATH="$CACHE_DIR/mycompany-6.2.jar"
-JAR_TMP="$JAR_PATH.download"
-
-if [[ -f "$JAR_PATH" ]]; then
-  actual="$(shasum -a 256 "$JAR_PATH" | awk '{print tolower($1)}')"
-  [[ "$actual" == "$JAR_SHA256" ]] || { echo "El JAR existente no coincide con el hash oficial; no se sobrescribió." >&2; exit 1; }
-  echo "JAR verificado: $JAR_PATH"
+if [[ "${RUBROVA_SKIP_OFFICIAL_LOGIC_JAR:-false}" == "true" ]]; then
+  echo "Omitiendo el JAR oficial de lógica: el smoke usará el ensamblado compilado desde Rubrova."
 else
-  curl --fail --location --retry 2 --connect-timeout 20 --max-time 600 "$JAR_URL" --output "$JAR_TMP"
-  actual="$(shasum -a 256 "$JAR_TMP" | awk '{print tolower($1)}')"
-  if [[ "$actual" != "$JAR_SHA256" ]]; then
-    rm -f "$JAR_TMP"
-    echo "Hash SHA-256 incorrecto. Esperado $JAR_SHA256, recibido $actual." >&2
-    exit 1
+  JAR_URL="https://download.lsfusion.org/solutions/mycompany-6.2.jar"
+  JAR_SHA256="fe5a9bda49295f2292ae229a30c9461a16c137fc350a0aa944df7812a1e2f392"
+  JAR_PATH="$CACHE_DIR/mycompany-6.2.jar"
+  JAR_TMP="$JAR_PATH.download"
+
+  if [[ -f "$JAR_PATH" ]]; then
+    actual="$(shasum -a 256 "$JAR_PATH" | awk '{print tolower($1)}')"
+    [[ "$actual" == "$JAR_SHA256" ]] || { echo "El JAR existente no coincide con el hash oficial; no se sobrescribió." >&2; exit 1; }
+    echo "JAR verificado: $JAR_PATH"
+  else
+    curl --fail --location --retry 2 --connect-timeout 20 --max-time 600 "$JAR_URL" --output "$JAR_TMP"
+    actual="$(shasum -a 256 "$JAR_TMP" | awk '{print tolower($1)}')"
+    if [[ "$actual" != "$JAR_SHA256" ]]; then
+      rm -f "$JAR_TMP"
+      echo "Hash SHA-256 incorrecto. Esperado $JAR_SHA256, recibido $actual." >&2
+      exit 1
+    fi
+    mv "$JAR_TMP" "$JAR_PATH"
+    echo "JAR descargado y verificado: $JAR_PATH"
   fi
-  mv "$JAR_TMP" "$JAR_PATH"
-  echo "JAR descargado y verificado: $JAR_PATH"
 fi
 
 COMPOSE_URL="https://download.lsfusion.org/solutions/mycompany-docker/6.2/compose.yaml"
