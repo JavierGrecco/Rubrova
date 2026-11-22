@@ -756,13 +756,15 @@ def inspect_page(url: str) -> int:
                 )
                 print("UI_PAYMENT_CONFIRMED=true")
 
+                # Estas acciones del fixture están declaradas en NAMESPACE Sales.
+                sales_api_base = url.rstrip("/") + "/exec/Sales."
+
                 # Conciliar la factura y el pago persistidos, no sólo el cierre visual del diálogo.
-                api_base = url.rstrip("/") + "/exec/Rubrova."
                 sales_payload: dict[str, Any] = {}
                 sales_deadline = time.monotonic() + 30
                 while time.monotonic() < sales_deadline:
                     sales_response = context.request.get(
-                        api_base + "rubrovaTestSalesReconciliationApi", timeout=12_000
+                        sales_api_base + "rubrovaTestSalesReconciliationApi", timeout=12_000
                     )
                     if sales_response.status != 200:
                         raise RuntimeError(
@@ -810,7 +812,7 @@ def inspect_page(url: str) -> int:
                 inventory_deadline = time.monotonic() + 30
                 while time.monotonic() < inventory_deadline:
                     inventory_response = context.request.get(
-                        api_base + "rubrovaTestInventoryApi", timeout=12_000
+                        sales_api_base + "rubrovaTestInventoryApi", timeout=12_000
                     )
                     if inventory_response.status != 200:
                         raise RuntimeError(

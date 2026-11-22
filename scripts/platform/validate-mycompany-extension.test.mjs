@@ -153,6 +153,9 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(uiSmokeSource, /UI_PAYMENT_CONFIRMED=true/);
   assert.match(uiSmokeSource, /rubrovaTestSalesReconciliationApi/);
   assert.match(uiSmokeSource, /rubrovaTestInventoryApi/);
+  assert.match(uiSmokeSource, /sales_api_base = url[.]rstrip\("\/"\) \+ "\/exec\/Sales\."/);
+  assert.ok(uiSmokeSource.includes('sales_api_base + "rubrovaTestSalesReconciliationApi"'));
+  assert.ok(uiSmokeSource.includes('sales_api_base + "rubrovaTestInventoryApi"'));
   assert.match(uiSmokeSource, /UI_SALE_PAYMENT_RECONCILED=true/);
   assert.match(uiSmokeSource, /UI_SALE_CASH_BALANCE_RECONCILED=true/);
   assert.match(uiSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
