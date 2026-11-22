@@ -249,7 +249,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
   assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 4'));
   assert.match(runtimeSmokeSource, /RubrovaCISalesFixture[.]lsf/);
-  assert.match(runtimeSmokeSource, /currency\(priceType\('retail'\)\) <- defaultCurrency\(\)/);
+  assert.match(runtimeSmokeSource, /currency\(priceType\('retail'\)\) <- MasterData[.]defaultCurrency\(\)/);
   assert.match(runtimeSmokeSource, /RUBROVA_CI_SALES_LOG_EVIDENCE/);
   assert.match(uiSmokeSource, /UI_RECEIPT_PRODUCT_LINES/);
   assert.match(uiSmokeSource, /UI_RECEIPT_LINE_COUNT/);
@@ -358,7 +358,7 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
   assert.match(moduleSource, /DESIGN posPayment/);
-  assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency()"));
+  assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency()"));
   assert.match(moduleSource, /Sales[.]currency\(Sales[.]priceType\('retail'\)\) <- defaultCurrency\(\)/);
   assert.match(moduleSource, /name\(cashPaymentMethod\(\)\) <- 'Efectivo'/);
   assert.match(moduleSource, /name\(paymentMethod\('card'\)\) <- 'Tarjeta'/);
@@ -498,7 +498,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /rubrovaTestIncidentCountApi/);
   assert.match(runtimeSmokeSource, /rubrovaTestPosConfigurationApi/);
   assert.ok(runtimeSmokeSource.includes("priceType(Invoicing.invoiceType('retail')) <- priceType('retail')"));
-  assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency()"));
+  assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency()"));
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
   assert.match(uiSmokeSource, /def wait_for_payment_dialog\(page: Any, timeout_seconds: int = 20\)/);
   assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str\) -> bool/);
