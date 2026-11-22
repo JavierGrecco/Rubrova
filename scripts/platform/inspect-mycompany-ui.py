@@ -412,8 +412,10 @@ NAVIGATOR_CONTAINER_BY_LABEL = {
 }
 
 ACTION_CONTAINER_BY_LABEL = {
-    # MyCompany renders this action as a GWT button with a stable property container.
+    # MyCompany renders these actions as GWT buttons with stable property containers.
     "Abrir turno": "PROPERTY(openSession(p))",
+    # The payment dialog exposes the visible caption, but GWT omits it from the accessible role name.
+    "Ok (ctrl ENTER)": "PROPERTY(overFormOk)",
 }
 
 
