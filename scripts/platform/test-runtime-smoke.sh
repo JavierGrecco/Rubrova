@@ -205,11 +205,97 @@ NAMESPACE Sales;
 // El POS convierte el precio de lista usando la moneda del tipo de precio.
 // En CI asociamos el tipo minorista a la moneda ARS sintética del fixture.
 loadDefaultData () + {
-    // Ensure invoice type, invoice price type and price type share the organization currency.
     currency(priceType('retail')) <- defaultCurrency();
     priceType(Invoicing.invoiceType('retail')) <- priceType('retail');
     Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency();
 }
+
+NAMESPACE Inventory;
+
+// El depósito y el ajuste inicial existen únicamente en la base descartable de CI.
+rubrovaCITestLocation() = GROUP MAX Location l IF id(l) = 'rubrova-ci-location';
+rubrovaCITestProduct() = GROUP MAX Product p IF id(p) = 'rubrova-ci-product';
+rubrovaCITestStockSeeded = DATA BOOLEAN ();
+
+loadDefaultData () + {
+    IF NOT rubrovaCITestLocation() THEN
+        NEW locationCI = Location {
+            id(locationCI) <- 'rubrova-ci-location';
+            name(locationCI) <- 'Depósito de prueba Rubrova';
+            company(locationCI) <- defaultCompany();
+        }
+
+    positiveOnHand(rubrovaCITestLocation()) <- TRUE;
+
+    IF NOT rubrovaCITestStockSeeded() THEN {
+        NEW adjustmentCI = Adjustment {
+            type(adjustmentCI) <- AdjustmentType.all;
+            location(adjustmentCI) <- rubrovaCITestLocation();
+            inProgress(adjustmentCI) <- TRUE;
+
+            NEW adjustmentLineCI = AdjustmentLine {
+                adjustment(adjustmentLineCI) <- adjustmentCI;
+                product(adjustmentLineCI) <- rubrovaCITestProduct();
+                location(adjustmentLineCI) <- rubrovaCITestLocation();
+                realQuantity(adjustmentLineCI) <- 10;
+            }
+
+            done(adjustmentCI) <- TRUE;
+        }
+        rubrovaCITestStockSeeded() <- TRUE;
+    }
+}
+
+rubrovaTestInventoryApi () {
+    EXPORT JSON FROM
+        incomingQuantity = inQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        outgoingQuantity = outQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        onHand = onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+NAMESPACE Retail;
+
+// SessionShipment ya mapea la ubicación del POS a la factura minorista.
+// El fixture sólo configura ese vínculo con un depósito efímero.
+loadDefaultData () + {
+    location(pos('rubrova-ci')) <- Inventory.rubrovaCITestLocation();
+}
+
+rubrovaCISaleCount() = GROUP SUM 1
+    IF session(Invoice i) AND pos(session(i)) = pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIPaidSaleCount() = GROUP SUM 1
+    IF session(Invoice i) AND pos(session(i)) = pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0 AND Invoicing.done(i);
+
+rubrovaCISalesAmount() = GROUP SUM Invoicing.amount(Invoice i)
+    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIPaidAmount() = GROUP SUM Invoicing.paid(Invoice i)
+    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCICashPaymentAmount() = GROUP SUM paid(Invoice i, cashPaymentMethod())
+    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIIncomingPaymentCount() = GROUP SUM Invoicing.countIncomingPayment(Invoice i)
+    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaTestSalesReconciliationApi () {
+    EXPORT JSON FROM
+        salesCount = rubrovaCISaleCount(),
+        paidSalesCount = rubrovaCIPaidSaleCount(),
+        invoiceAmount = rubrovaCISalesAmount(),
+        paidAmount = rubrovaCIPaidAmount(),
+        cashPaidAmount = rubrovaCICashPaymentAmount(),
+        incomingPaymentCount = rubrovaCIIncomingPaymentCount(),
+        sessionCashPaid = paid(openedSession(pos('rubrova-ci')), cashPaymentMethod()),
+        cashBalance = cashBalance(pos('rubrova-ci'));
+} @@api;
 LSF
 
 ENTRYPOINT_FILE="$COMPOSE_DIR/docker-server/RubrovaCustom.lsf"
@@ -898,4 +984,4 @@ if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVI
 fi
 echo "Los registros confirman los módulos Rubrova y el fixture de precios CI."
 
-echo "OK: MyCompany 6.2 arrancó, respondió HTTP y cargó los módulos Rubrova y el fixture de precios CI. Esto no sustituye la aceptación funcional del POS, la seguridad ni backup/restore."
+echo "OK: MyCompany 6.2 arrancó, el POS confirmó una venta sintética y CI concilió pago, caja e inventario. Esto no sustituye la aceptación de devoluciones, cierre, seguridad ni backup/restore."

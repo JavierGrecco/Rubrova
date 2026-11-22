@@ -599,7 +599,7 @@ def inspect_page(url: str) -> int:
                 if not pos_text.strip():
                     raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
 
-                # Crear un turno únicamente en la base efímera de CI; no se registra ninguna venta.
+                # Abrir un turno en la base efímera de CI; la venta sintética se confirmará explícitamente más adelante.
                 if not click_exact_action(page, "Abrir turno"):
                     raise RuntimeError("El botón 'Abrir turno' no estaba disponible para la prueba aislada.")
                 wait_for_session_open(page, timeout_seconds=45)
@@ -746,12 +746,117 @@ def inspect_page(url: str) -> int:
                 print("UI_PAYMENT_DIALOG_OPEN=true")
                 print("UI_PAYMENT_CASH_METHOD_AVAILABLE=true")
 
-                # Cerrar el diálogo de prueba sin confirmar pagos ni crear documentos.
-                page.keyboard.press("Escape")
-                page.wait_for_timeout(500)
-                if not page.get_by_text("Cobrar (ctrl ENTER)", exact=True).is_visible():
-                    raise RuntimeError("La pantalla POS no volvió después de cerrar el diálogo de cobro.")
-                print("UI_PAYMENT_DIALOG_CLOSED_WITHOUT_CHARGE=true")
+                # Efectivo queda preseleccionado en MyCompany; al confirmar, el módulo original
+                # asigna el total pendiente al medio seleccionado y crea el pago vinculado.
+                if not click_exact_action(page, "Ok (ctrl ENTER)"):
+                    raise RuntimeError("No se encontró la confirmación del diálogo de cobro.")
+                print("UI_PAYMENT_CONFIRM_ACTION_CLICKED=true")
+                page.get_by_text("Cobrar (ctrl ENTER)", exact=True).wait_for(
+                    state="visible", timeout=30_000
+                )
+                print("UI_PAYMENT_CONFIRMED=true")
+
+                # Conciliar la factura y el pago persistidos, no sólo el cierre visual del diálogo.
+                api_base = url.rstrip("/") + "/exec/Rubrova."
+                sales_payload: dict[str, Any] = {}
+                sales_deadline = time.monotonic() + 30
+                while time.monotonic() < sales_deadline:
+                    sales_response = context.request.get(
+                        api_base + "rubrovaTestSalesReconciliationApi", timeout=12_000
+                    )
+                    if sales_response.status != 200:
+                        raise RuntimeError(
+                            "La conciliación de la venta respondió HTTP "
+                            f"{sales_response.status}: {sales_response.text()[:1200]}"
+                        )
+                    sales_payload = sales_response.json()
+                    if isinstance(sales_payload, list):
+                        sales_payload = sales_payload[0] if sales_payload else {}
+                    if int(sales_payload.get("salesCount") or 0) == 1:
+                        break
+                    page.wait_for_timeout(750)
+
+                print("UI_SALE_RECONCILIATION=" + json.dumps(sales_payload, ensure_ascii=False))
+                expected_sales = {
+                    "salesCount": 1,
+                    "paidSalesCount": 1,
+                    "invoiceAmount": 1250,
+                    "paidAmount": 1250,
+                    "cashPaidAmount": 1250,
+                    "incomingPaymentCount": 1,
+                    "sessionCashPaid": 1250,
+                    "cashBalance": 1250,
+                }
+                for field, expected in expected_sales.items():
+                    try:
+                        actual = float(sales_payload.get(field) or 0)
+                    except (TypeError, ValueError) as error:
+                        raise RuntimeError(
+                            f"La conciliación devolvió un valor no numérico para {field}: "
+                            f"{sales_payload.get(field)!r}"
+                        ) from error
+                    if abs(actual - expected) > 0.001:
+                        raise RuntimeError(
+                            f"La venta no quedó conciliada en {field}: "
+                            f"esperado {expected}, recibido {actual}. "
+                            f"Respuesta: {json.dumps(sales_payload, ensure_ascii=False)}"
+                        )
+                print("UI_SALE_DOCUMENT_CREATED=true")
+                print("UI_SALE_PAYMENT_RECONCILED=true")
+                print("UI_SALE_CASH_BALANCE_RECONCILED=true")
+
+                # El despacho minorista original debe descontar una unidad del ledger del depósito.
+                inventory_payload: dict[str, Any] = {}
+                inventory_deadline = time.monotonic() + 30
+                while time.monotonic() < inventory_deadline:
+                    inventory_response = context.request.get(
+                        api_base + "rubrovaTestInventoryApi", timeout=12_000
+                    )
+                    if inventory_response.status != 200:
+                        raise RuntimeError(
+                            "La consulta del inventario respondió HTTP "
+                            f"{inventory_response.status}: {inventory_response.text()[:1200]}"
+                        )
+                    inventory_payload = inventory_response.json()
+                    if isinstance(inventory_payload, list):
+                        inventory_payload = inventory_payload[0] if inventory_payload else {}
+                    try:
+                        outgoing = float(inventory_payload.get("outgoingQuantity") or 0)
+                        on_hand = float(inventory_payload.get("onHand") or 0)
+                    except (TypeError, ValueError):
+                        outgoing = on_hand = -1
+                    if abs(outgoing - 1) <= 0.001 and abs(on_hand - 9) <= 0.001:
+                        break
+                    page.wait_for_timeout(750)
+
+                print("UI_SALE_INVENTORY_RECONCILIATION=" + json.dumps(inventory_payload, ensure_ascii=False))
+                expected_inventory = {
+                    "incomingQuantity": 10,
+                    "outgoingQuantity": 1,
+                    "onHand": 9,
+                }
+                for field, expected in expected_inventory.items():
+                    try:
+                        actual = float(inventory_payload.get(field) or 0)
+                    except (TypeError, ValueError) as error:
+                        raise RuntimeError(
+                            f"El inventario devolvió un valor no numérico para {field}: "
+                            f"{inventory_payload.get(field)!r}"
+                        ) from error
+                    if abs(actual - expected) > 0.001:
+                        raise RuntimeError(
+                            f"El movimiento de inventario no coincide en {field}: "
+                            f"esperado {expected}, recibido {actual}. "
+                            f"Respuesta: {json.dumps(inventory_payload, ensure_ascii=False)}"
+                        )
+                print("UI_SALE_STOCK_DEDUCTED=true")
+
+                sale_screenshot = screenshot_path.with_name(
+                    screenshot_path.stem + "-sale" + screenshot_path.suffix
+                )
+                visible_snapshot(page, "UI_SALE_CONFIRMED")
+                page.screenshot(path=str(sale_screenshot), full_page=True)
+                print(f"UI_SALE_SCREENSHOT={sale_screenshot}")
 
                 # Ejecutar pruebas de resiliencia sólo contra el simulador local.
                 # Las operaciones de prueba no crean ventas, pagos ni movimientos de caja.
