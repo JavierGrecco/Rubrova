@@ -33,6 +33,12 @@ STARTUP_TIMEOUT_SECONDS="${RUBROVA_STARTUP_TIMEOUT_SECONDS:-900}"
 KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
 MOCK_PROVIDER_PORT="${RUBROVA_MOCK_PROVIDER_PORT:-18765}"
 MOCK_PROVIDER_PID=""
+BUILD_ARTIFACTS_DIR="${RUBROVA_BUILD_ARTIFACTS_DIR:-$WORK_DIR/build-artifacts}"
+RUBROVA_IMAGE_TAG="${RUBROVA_RUNTIME_IMAGE_TAG:-${GITHUB_SHA:-local}}"
+RUBROVA_IMAGE_TAG="${RUBROVA_IMAGE_TAG:0:12}"
+SERVER_IMAGE="rubrova/server:6.2-$RUBROVA_IMAGE_TAG"
+LOGICS_IMAGE="rubrova/logics:6.2-$RUBROVA_IMAGE_TAG"
+CLIENT_IMAGE="rubrova/client:6.2-$RUBROVA_IMAGE_TAG"
 
 mkdir -p "$CACHE_DIR" "$COMPOSE_DIR"
 
@@ -95,7 +101,7 @@ if [[ "$MOCK_READY" != "true" ]]; then
 fi
 echo "Simulador HTTP local disponible en el puerto $MOCK_PROVIDER_PORT."
 
-echo "1/6 Preparando el JAR y Compose oficiales MyCompany 6.2"
+echo "1/6 Preparando el Compose MyCompany 6.2; las imágenes de aplicación salen del fork Rubrova"
 RUBROVA_CACHE_DIR="$CACHE_DIR" bash "$PREPARE_SCRIPT"
 cp "$CACHE_DIR/compose.yaml" "$COMPOSE_FILE"
 
@@ -106,10 +112,20 @@ SETTINGS_FILE="$COMPOSE_DIR/docker-server/settings.properties"
   echo "No se preparó compose.rubrova.override.yaml." >&2
   exit 1
 }
-cat > "$IMAGE_OVERRIDE_FILE" <<'YAML'
+echo "2.1/7 Construyendo imágenes propias desde los artefactos compilados del SHA actual"
+if [[ "${RUBROVA_BUILD_ARTIFACTS_DIR:-}" == "" ]]; then
+  mkdir -p "$BUILD_ARTIFACTS_DIR"
+  cp "$REPO_ROOT/vendor/platform/server/target/lsfusion-server-6.2.jar" "$BUILD_ARTIFACTS_DIR/server.jar"
+  cp "$REPO_ROOT/vendor/mycompany/target/lsfusion-server-6.2.jar" "$BUILD_ARTIFACTS_DIR/logics.jar"
+  cp "$REPO_ROOT/vendor/platform/web-client/target/lsfusion-client-6.2.war" "$BUILD_ARTIFACTS_DIR/client.war"
+fi
+bash "$SCRIPT_DIR/build-rubrova-runtime-images.sh" "$BUILD_ARTIFACTS_DIR" "$RUBROVA_IMAGE_TAG"
+
+cat > "$IMAGE_OVERRIDE_FILE" <<YAML
 services:
   logics:
-    image: lsfusion/mycompany:6.2@sha256:9dacff96577de49a56633a53801c7bcd78b5e7df501cd4ebd61098124276bd11
+    image: $LOGICS_IMAGE
+    pull_policy: never
   server:
     depends_on:
       db:
@@ -120,9 +136,11 @@ services:
         condition: service_started
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    image: lsfusion/server:6.2@sha256:79ede6774b177f2bd9dda21e37957412d6c61874706144bf257c263821fecef5
+    image: $SERVER_IMAGE
+    pull_policy: never
   client:
-    image: lsfusion/client:6.2@sha256:fa98e88fb74a1ca855ac85c0c8c6a8102c5defb15309cb4b142324d4dbdca66e
+    image: $CLIENT_IMAGE
+    pull_policy: never
   db:
     image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
     volumes:
@@ -143,6 +161,7 @@ services:
     ports:
       - "127.0.0.1:18474:8474"
 YAML
+
 grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
   echo "No se configuró el punto de entrada RubrovaCustom." >&2
   exit 1
@@ -406,8 +425,21 @@ LSF
 TOXIPROXY_AUTH_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 export TOXIPROXY_AUTH_TOKEN
 
-echo "3/6 Validando la configuración efectiva de Docker Compose"
+echo "3/6 Validando que Compose use sólo las imágenes de aplicación construidas por Rubrova"
 compose config --quiet
+COMPOSE_IMAGES="$(compose config --images)"
+for expected_image in "$LOGICS_IMAGE" "$SERVER_IMAGE" "$CLIENT_IMAGE"; do
+  grep -Fxq "$expected_image" <<< "$COMPOSE_IMAGES" || {
+    echo "Compose no quedó configurado con la imagen Rubrova esperada: $expected_image" >&2
+    printf '%s\n' "$COMPOSE_IMAGES" >&2
+    exit 1
+  }
+done
+if grep -Eq '^lsfusion/(mycompany|server|client):' <<< "$COMPOSE_IMAGES"; then
+  echo "El runtime conserva una imagen oficial de aplicación; no se acepta como build propio." >&2
+  printf '%s\n' "$COMPOSE_IMAGES" >&2
+  exit 1
+fi
 SERVICES="$(compose config --services)"
 SERVICE_COUNT="$(printf '%s\n' "$SERVICES" | awk 'NF { count++ } END { print count+0 }')"
 if [[ "$SERVICE_COUNT" -lt 4 ]]; then
