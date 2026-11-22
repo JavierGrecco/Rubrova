@@ -199,90 +199,85 @@ echo "Preparando tipo de precio minorista con moneda ARS en un módulo de prueba
 cat > "$COMPOSE_DIR/docker-server/RubrovaCISalesFixture.lsf" <<'LSF'
 MODULE RubrovaCISalesFixture;
 REQUIRE MyCompany, RubrovaPOSLocalization;
-
 NAMESPACE Sales;
 
-// El POS convierte el precio de lista usando la moneda del tipo de precio.
-// En CI asociamos el tipo minorista a la moneda ARS sintética del fixture.
+// El POS convierte el precio de lista usando la moneda de la organización.
 loadDefaultData () + {
-    currency(priceType('retail')) <- defaultCurrency();
+    currency(priceType('retail')) <- MasterData.defaultCurrency();
     priceType(Invoicing.invoiceType('retail')) <- priceType('retail');
-    Invoicing.currency(Invoicing.invoiceType('retail')) <- defaultCurrency();
+    Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency();
 }
 
-NAMESPACE Inventory;
-
-// El depósito y el ajuste inicial existen únicamente en la base descartable de CI.
-rubrovaCITestLocation() = GROUP MAX Location l IF id(l) = 'rubrova-ci-location';
-rubrovaCITestProduct() = GROUP MAX Product p IF id(p) = 'rubrova-ci-product';
+// Identidades y stock sintéticos del depósito de CI.
+rubrovaCITestLocation() = GROUP MAX Inventory.Location l
+    IF Inventory.id(l) = 'rubrova-ci-location';
+rubrovaCITestProduct() = GROUP MAX MasterData.Product p
+    IF MasterData.id(p) = 'rubrova-ci-product';
 rubrovaCITestStockSeeded = DATA BOOLEAN ();
 
 loadDefaultData () + {
     IF NOT rubrovaCITestLocation() THEN
-        NEW locationCI = Location {
-            id(locationCI) <- 'rubrova-ci-location';
-            name(locationCI) <- 'Depósito de prueba Rubrova';
-            company(locationCI) <- defaultCompany();
+        NEW locationCI = Inventory.Location {
+            Inventory.id(locationCI) <- 'rubrova-ci-location';
+            Inventory.name(locationCI) <- 'Depósito de prueba Rubrova';
+            Inventory.company(locationCI) <- MasterData.defaultCompany();
         }
 
-    positiveOnHand(rubrovaCITestLocation()) <- TRUE;
+    Inventory.positiveOnHand(rubrovaCITestLocation()) <- TRUE;
 
     IF NOT rubrovaCITestStockSeeded() THEN {
-        NEW adjustmentCI = Adjustment {
-            type(adjustmentCI) <- AdjustmentType.all;
-            location(adjustmentCI) <- rubrovaCITestLocation();
-            inProgress(adjustmentCI) <- TRUE;
+        NEW adjustmentCI = Inventory.Adjustment {
+            Inventory.type(adjustmentCI) <- Inventory.AdjustmentType.all;
+            Inventory.location(adjustmentCI) <- rubrovaCITestLocation();
+            Inventory.inProgress(adjustmentCI) <- TRUE;
 
-            NEW adjustmentLineCI = AdjustmentLine {
-                adjustment(adjustmentLineCI) <- adjustmentCI;
-                product(adjustmentLineCI) <- rubrovaCITestProduct();
-                location(adjustmentLineCI) <- rubrovaCITestLocation();
-                realQuantity(adjustmentLineCI) <- 10;
+            NEW adjustmentLineCI = Inventory.AdjustmentLine {
+                Inventory.adjustment(adjustmentLineCI) <- adjustmentCI;
+                Inventory.product(adjustmentLineCI) <- rubrovaCITestProduct();
+                Inventory.location(adjustmentLineCI) <- rubrovaCITestLocation();
+                Inventory.realQuantity(adjustmentLineCI) <- 10;
             }
 
-            done(adjustmentCI) <- TRUE;
+            Inventory.done(adjustmentCI) <- TRUE;
         }
         rubrovaCITestStockSeeded() <- TRUE;
     }
+
+    // MyCompany ya incorpora SessionShipment: sólo enlazamos la caja al depósito CI.
+    Retail.location(Retail.pos('rubrova-ci')) <- rubrovaCITestLocation();
 }
 
 rubrovaTestInventoryApi () {
     EXPORT JSON FROM
-        incomingQuantity = inQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
-        outgoingQuantity = outQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
-        onHand = onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+        incomingQuantity = Inventory.inQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        outgoingQuantity = Inventory.outQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
-NAMESPACE Retail;
-
-// SessionShipment ya mapea la ubicación del POS a la factura minorista.
-// El fixture sólo configura ese vínculo con un depósito efímero.
-loadDefaultData () + {
-    location(pos('rubrova-ci')) <- Inventory.rubrovaCITestLocation();
-}
-
 rubrovaCISaleCount() = GROUP SUM 1
-    IF session(Invoice i) AND pos(session(i)) = pos('rubrova-ci')
+    IF Retail.session(Invoicing.Invoice i)
+       AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0;
 
 rubrovaCIPaidSaleCount() = GROUP SUM 1
-    IF session(Invoice i) AND pos(session(i)) = pos('rubrova-ci')
+    IF Retail.session(Invoicing.Invoice i)
+       AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0 AND Invoicing.done(i);
 
-rubrovaCISalesAmount() = GROUP SUM Invoicing.amount(Invoice i)
-    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+rubrovaCISalesAmount() = GROUP SUM Invoicing.amount(Invoicing.Invoice i)
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0;
 
-rubrovaCIPaidAmount() = GROUP SUM Invoicing.paid(Invoice i)
-    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+rubrovaCIPaidAmount() = GROUP SUM Invoicing.paid(Invoicing.Invoice i)
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0;
 
-rubrovaCICashPaymentAmount() = GROUP SUM paid(Invoice i, cashPaymentMethod())
-    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+rubrovaCICashPaymentAmount() = GROUP SUM Retail.paid(Invoicing.Invoice i, Retail.cashPaymentMethod())
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0;
 
-rubrovaCIIncomingPaymentCount() = GROUP SUM Invoicing.countIncomingPayment(Invoice i)
-    IF session(i) AND pos(session(i)) = pos('rubrova-ci')
+rubrovaCIIncomingPaymentCount() = GROUP SUM Invoicing.countIncomingPayment(Invoicing.Invoice i)
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0;
 
 rubrovaTestSalesReconciliationApi () {
@@ -293,8 +288,8 @@ rubrovaTestSalesReconciliationApi () {
         paidAmount = rubrovaCIPaidAmount(),
         cashPaidAmount = rubrovaCICashPaymentAmount(),
         incomingPaymentCount = rubrovaCIIncomingPaymentCount(),
-        sessionCashPaid = paid(openedSession(pos('rubrova-ci')), cashPaymentMethod()),
-        cashBalance = cashBalance(pos('rubrova-ci'));
+        sessionCashPaid = Retail.paid(Retail.openedSession(Retail.pos('rubrova-ci')), Retail.cashPaymentMethod()),
+        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci'));
 } @@api;
 LSF
 

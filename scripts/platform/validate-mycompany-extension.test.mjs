@@ -85,7 +85,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /rubrovaCITestStockSeeded/);
   assert.match(runtimeSmokeSource, /AdjustmentType[.]all/);
   assert.match(runtimeSmokeSource, /realQuantity\(adjustmentLineCI\) <- 10/);
-  assert.match(runtimeSmokeSource, /location\(pos\('rubrova-ci'\)\) <- Inventory[.]rubrovaCITestLocation\(\)/);
+  assert.match(runtimeSmokeSource, /Retail[.]location\(Retail[.]pos\('rubrova-ci'\)\) <- rubrovaCITestLocation\(\)/);
   assert.match(runtimeSmokeSource, /rubrovaTestSalesReconciliationApi/);
   assert.match(runtimeSmokeSource, /rubrovaTestInventoryApi/);
   assert.match(uiSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
