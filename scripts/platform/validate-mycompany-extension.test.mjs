@@ -268,7 +268,7 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /DIGEST EXTERNO VERIFICADO/);
   assert.match(runtimeSmokeSource, /show_client_tomcat_logs/);
   assert.match(runtimeSmokeSource, /One or more listeners failed to start/);
-  assert.match(runtimeSmokeSource, /:1DE4\[[:space:]\]/);
+  assert.ok(runtimeSmokeSource.includes(":1DE4[[:space:]]+"), "El healthcheck del servidor debe comprobar el puerto RMI 7652 en /proc/net/tcp.");
   assert.match(runtimeSmokeSource, /service_healthy/);
   const postgresDigest = lock.dockerImages.postgres.digest;
   assert.match(postgresDigest, /^sha256:[0-9a-f]{64}$/);
