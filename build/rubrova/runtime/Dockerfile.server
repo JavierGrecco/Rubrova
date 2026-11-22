@@ -1,0 +1,15 @@
+FROM amazoncorretto:21-alpine-jdk
+
+# This image contains the server assembly built from vendor/platform sources.
+# It deliberately does not download the upstream lsFusion server JAR.
+COPY server.jar /server.jar
+
+RUN apk add --no-cache ttf-dejavu
+
+WORKDIR /lsfusion
+EXPOSE 7652
+
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
