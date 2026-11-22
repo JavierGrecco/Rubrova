@@ -52,7 +52,7 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(lock.artifacts.dockerCompose.sha256, /^[0-9a-f]{64}$/);
   assert.match(lock.artifacts.dockerCompose.url, /\/6\.2\/compose\.yaml$/);
   assert.match(lock.artifacts.dockerCompose.sha256Source, /macOS 26 ARM64 run 44785005509/);
-  assert.match(preparerSource, new RegExp("^JAR_SHA256=\"" + lock.artifacts.applicationJar.sha256 + "\"$", "m"));
+  assert.match(preparerSource, new RegExp("^[ \\t]*JAR_SHA256=\"" + lock.artifacts.applicationJar.sha256 + "\"$", "m"));
   assert.match(preparerSource, new RegExp("^COMPOSE_SHA256=\"" + lock.artifacts.dockerCompose.sha256 + "\"$", "m"));
   assert.match(preparerSource, /El Compose existente no coincide con el SHA-256 fijado/);
   assert.match(preparerSource, /Hash SHA-256 incorrecto para el Compose/);
