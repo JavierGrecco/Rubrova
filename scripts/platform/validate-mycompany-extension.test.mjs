@@ -194,6 +194,13 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeWorkflowSource, /needs: \[validate, build-fork\]/);
   assert.match(runtimeWorkflowSource, /java-version: "21"/);
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f build\/rubrova\/pom[.]xml -Passemble -DskipTests package/);
+  assert.match(runtimeWorkflowSource, /Recompilar el servidor autónomo con API y dependencias incluidas/);
+  assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor\/platform\/pom[.]xml -pl server -am -DskipTests package/);
+  assert.doesNotMatch(runtimeWorkflowSource, /-f vendor\/platform\/pom[.]xml -pl server -am -Passemble/);
+  assert.match(runtimeWorkflowSource, /lsfusion\/base\/DaemonThreadFactory[.]class/);
+  assert.match(runtimeWorkflowSource, /lsfusion\/base\/log\/CustodianDailyRollingFileAppender[.]class/);
+  assert.match(runtimeWorkflowSource, /org\/apache\/log4j\/rolling\/RollingFileAppender[.]class/);
+  assert.match(runtimeWorkflowSource, /Servidor autónomo: API, logging y runtime están incluidos en server[.]jar/);
   assert.match(runtimeWorkflowSource, /vendor\/platform\/web-client\/target/);
   assert.match(runtimeWorkflowSource, /Smoke POS sobre runtime construido desde fuentes Rubrova/);
   assert.match(runtimeWorkflowSource, /actions\/upload-artifact@v4/);
