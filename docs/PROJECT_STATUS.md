@@ -1,73 +1,83 @@
 # Estado real del proyecto Rubrova
 
-**Corte:** 20 de noviembre de 2026  
-**Rama de trabajo:** main  
-**Última prueba funcional:** [CI 44811714783](https://github.com/JavierGrecco/Rubrova/actions/runs/44811714783)
+**Corte:** 22 de noviembre de 2026  
+**Rama:** `main`  
+**Última aceptación funcional:** [CI #172](https://github.com/JavierGrecco/Rubrova/actions/runs/44982716337)  
+**Commit probado:** `3d1cfbf1038e25608768c1561349390708dca6ec`
 
 ## Resumen ejecutivo
 
-Rubrova ya ejecuta MyCompany 6.2 en un entorno CI Linux x86_64 descartable. Se verificaron el inicio, la extensión propia, el login, la navegación al POS, la apertura de turno y, en la ejecución 44811714783, la búsqueda de un producto sintético y su incorporación al recibo con cantidad 1 y precio 1.250. La prueba se detuvo antes de cobrar. No hubo venta ni pago.
+Rubrova ya compila desde sus propias fuentes vendorizadas de lsFusion 6.2 y MyCompany 6.2, construye las imágenes propias del runtime y las ejecuta en un entorno CI Linux x86_64 descartable. La ejecución #172 completó una venta minorista real dentro de esa base temporal: el POS creó una sola factura por ARS 1.250, registró un único ingreso de efectivo, dejó la factura pagada, sumó ARS 1.250 al turno y a la cuenta de caja, y descontó una unidad del inventario (10 iniciales, 1 salida, 9 disponibles).
 
-La decisión arquitectónica cambió para priorizar la independencia del código y la operación local. Rubrova incorporará como código propio versionado los árboles completos de MyCompany 6.2 y del motor lsFusion 6.2. La fuente queda dentro del repositorio como snapshots identificados por commit, no como submódulos Git ni dependencias descargadas en el arranque. La automatización de importación y validación ya está preparada; la compilación desde fuente, la imagen de ejecución propia y el paquete offline son validaciones separadas que todavía deben aprobarse.
+La aceptación no se basa sólo en el mensaje visual. Chromium confirmó el diálogo de cobro y el test consultó las entidades y ledgers persistidos. Los datos del cliente, caja, producto, ubicación, ajuste inicial, venta y pago son sintéticos y se destruyen al terminar el CI. No se modificaron datos comerciales de una instalación real.
 
-## Qué hay probado
+Esta aprobación cierra el primer circuito comercial del POS. No significa que el POS/ERP completo esté terminado: faltan probar cierre de turno, devoluciones, vuelto, pagos mixtos/tarjeta, persistencia después de reiniciar, instalación offline, backup/restore y ejecución real en Windows y macOS.
 
-| Capacidad | Estado | Alcance |
+## Qué está probado
+
+| Capacidad | Estado | Evidencia y alcance |
 |---|---|---|
-| Runtime MyCompany 6.2 | Aprobado en CI Linux x86_64 | Contenedores temporales y artefactos fijados; no es instalación productiva |
-| Módulos Rubrova | Aprobado en CI | Punto de entrada y captions propios cargan |
-| Login y navegación | Aprobado en CI | Chromium llega a Comercio → Punto de venta |
-| Abrir turno | Aprobado en CI | Turno sintético en base descartable |
-| Buscar producto | Aprobado en CI | El fixture aparece en Buscar artículos |
-| Añadir al recibo | Aprobado en CI | Cantidad 1, código de barras y precio 1.250 visibles; sin cobro |
-| Venta/cobro/vuelto | Pendiente | No se ha confirmado ninguna venta o pago |
-| Stock, devolución y cierre | Pendiente | Falta reconciliar cada movimiento con la venta y caja |
-| Localización completa | Parcial | En la interfaz siguen apareciendo títulos y campos en inglés |
-| Fuente MyCompany + motor lsFusion en main | Importación automatizada en curso | Fijar snapshot y validar árbol/licencia |
-| Compilación Rubrova desde fuente propia | Pendiente | El build inicial se ejecuta en CI como diagnóstico |
-| Build completamente offline | Pendiente | Debe pasar con Maven -o y repositorio local preparado |
-| Runtime local sin Internet | Pendiente | Faltan imágenes propias, paquete offline y prueba con red aislada |
-| Instalación y recuperación en la PC de uso | Pendiente | No se ha hecho instalación final ni restauración |
-| ARCA, pagos externos y logística | Pendiente | Cada conector debe aprobar timeout, circuit breaker, idempotencia, fallos simulados y recuperación antes de habilitarse |
+| Fuentes originales lsFusion 6.2 + MyCompany 6.2 | Aprobado | Snapshots fijados en el lock y completos en `vendor/` |
+| Compilación del fork Rubrova | Aprobado en CI | Reactor Maven, servidor, cliente GWT y lógica MyCompany compilados desde fuentes propias |
+| Imágenes propias del runtime | Aprobado en CI | Servidor, lógica y cliente construidos y utilizados por el smoke |
+| Arranque, RMI y cliente web | Aprobado en CI | PostgreSQL 18, lógica, RMI 7652, Tomcat y acceso Chromium |
+| Login y navegación al POS | Aprobado en CI | Chromium llega a Comercio → Punto de venta |
+| Apertura de turno | Aprobado en CI | Turno sintético `SM/000001` |
+| Búsqueda y selección de artículo | Aprobado en CI | Un único producto sintético; una línea de recibo, cantidad 1 y precio ARS 1.250 |
+| Confirmación del cobro en efectivo | Aprobado en CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |
+| Factura y pago | Aprobado en CI | Una factura, una factura pagada, un pago entrante; importe y pago aplicado ARS 1.250 |
+| Caja y turno | Aprobado en CI | Efectivo pagado en el turno ARS 1.250; saldo de la cuenta de caja ARS 1.250 |
+| Movimiento de stock | Aprobado en CI | Ledger de inventario: entrada 10, salida 1, existencia 9 |
+| Resiliencia HTTP GET | Aprobado en escenarios CI | Timeout, clasificación de 408/429/503 y errores definitivos, persistencia de incidencias y recuperación del proveedor simulado |
+| `HEADERSTO` / `Retry-After` | Aprobado en escenario CI | El 429 devuelve y persiste `Retry-After: 2` con el mecanismo nativo de lsFusion |
+| Timeout de `EXTERNAL HTTP CLIENT` desde navegador | Pendiente | Falta una prueba real en Chromium con endpoint lento/CORS, abort, error de red y recuperación |
+| Cierre y arqueo de turno | Pendiente | Falta conciliar apertura, ventas, devoluciones, ingresos/retiros y saldo final |
+| Devolución y reintegro | Pendiente | Falta comprobar Bill, OutgoingPayment, medio original y movimiento inverso de stock |
+| Vuelto, pagos mixtos y tarjeta | Pendiente | El primer circuito aceptado sólo cubre efectivo exacto, sin vuelto |
+| Reinicio conservando datos | Pendiente | Falta reiniciar servidor/cliente conservando PostgreSQL y volver a conciliar factura, pago, caja y stock |
+| Traducción completa | Parcial | POS inicial localizado; aún quedan textos heredados en inglés |
+| Instalación local sin Internet | Pendiente | CI construye imágenes propias, pero no demuestra todavía paquete completo offline ni ausencia de descargas en una PC limpia |
+| Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
+| Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
+| ARCA, adquirentes, marketplaces y logística | Pendiente | Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
 
-## Código que Rubrova mantiene
+## Código y propiedad de fuentes
 
-- vendor/platform/: snapshot del motor lsFusion 6.2 (servidor, API, cliente web/desktop y build).
-- vendor/mycompany/: snapshot completo de MyCompany 6.2 (POS y ERP).
-- extensions/lsfusion/: módulos y localización propios.
-- patches/lsfusion/: mecanismo documentado para modificaciones directas del motor cuando una extensión no alcanza.
-- build/rubrova/pom.xml: reactor Maven que compone las fuentes del motor y de MyCompany.
+- `vendor/platform/`: snapshot del motor lsFusion 6.2 (servidor, API, cliente web/desktop y build).
+- `vendor/mycompany/`: snapshot completo de MyCompany 6.2 (POS y ERP).
+- `extensions/lsfusion/`: módulos y localización propios de Rubrova.
+- `patches/lsfusion/`: modificaciones directas al motor, sólo cuando una extensión no alcanza.
+- `build/rubrova/pom.xml`: reactor Maven que compone las fuentes del motor y de MyCompany.
 
-Los commits y las licencias de origen están en platform/source-lock.json y los marcadores dentro de cada árbol vendorizado. MyCompany usa Apache 2.0; el código lsFusion usa LGPL 3.0. Se conservan los avisos y archivos originales. Las dependencias Maven de terceros se auditarán, fijarán y empaquetarán; no se afirmará que desaparecen por incorporar los repositorios.
+Los commits de origen y licencias están fijados en `platform/source-lock.json` y en los avisos de los árboles vendorizados. MyCompany usa Apache-2.0 y lsFusion LGPL-3.0. Los módulos de pago, factura y despacho usados en el primer circuito se conservaron del snapshot original; la prueba prepara datos sintéticos y mide los resultados, no reimplementa esos procesos.
 
 ## Arquitectura objetivo para una PC local
 
-El runtime productivo será una instalación local con servidor propio, aplicación MyCompany adaptada, cliente web servido desde el mismo equipo y base PostgreSQL local/persistente. Las imágenes necesarias se construirán desde nuestras fuentes y se entregarán en un paquete que se puede cargar sin descargar imágenes. Compose usará pull_policy: never y una red interna sin salida externa en la prueba offline.
+El runtime productivo será local: servidor propio, aplicación MyCompany adaptada, cliente web servido desde el mismo equipo y PostgreSQL persistente. El primer runtime construido desde fuentes Rubrova ya se ejecutó con éxito en CI. Aún falta empaquetar todas las dependencias y demostrar una instalación limpia sin Internet.
 
-El núcleo POS/ERP debe poder operar sin Internet. ARCA, adquirentes/QR, marketplaces, mensajería y transportistas son integraciones naturalmente remotas: si no hay red, quedan pendientes o informan indisponibilidad sin bloquear catálogo, caja local, ventas permitidas, compras, stock e informes.
+El núcleo POS/ERP debe continuar operando sin conexión externa. ARCA, adquirentes/QR, marketplaces, mensajería y transportistas son integraciones remotas: cuando no estén disponibles, deben quedar pendientes o informar indisponibilidad sin bloquear catálogo, caja local, ventas permitidas, compras, stock ni informes.
 
-## Cómo protegeremos producción
+## Protección de producción
 
-No se actualizará automáticamente ningún componente. Cada versión candidata debe superar comparación con su origen, reaplicación de cambios Rubrova, compilación, regresión funcional, migración probada sobre copia de base, backup/restore y prueba offline. Se mantiene el último paquete estable y una ruta de recuperación. Nunca probaremos primero una migración sobre la única base productiva.
+No se actualizará automáticamente ningún componente. Cada versión candidata debe superar comparación con su origen, reaplicación de cambios Rubrova, compilación, regresión funcional, migración probada sobre una copia de base, backup/restore y prueba offline. Se mantendrá el último paquete estable y una ruta de recuperación. Nunca probaremos una migración sobre la única base productiva.
 
 ## Próximo orden de implementación
 
-1. Incorporar y validar los dos árboles completos de fuentes en main.
-2. Conseguir un build Maven real de lsFusion + MyCompany desde vendor/; corregir cualquier incompatibilidad del reactor.
-3. Sustituir los Dockerfiles/Compose upstream que descargan artefactos por imágenes Rubrova construidas localmente y fijadas.
-4. Conseguir un runtime de Rubrova que arranque sin descargar imágenes ni artefactos.
-5. Terminar carrito y validar importes; luego cobrar efectivo en base descartable y conciliar venta, pago, caja y stock.
-6. Probar pagos, vuelto, devolución, cierre, conciliación, permisos y auditoría.
-7. Completar traducción y experiencia visual sobre las fuentes que ahora controlamos.
-8. Preparar paquete offline y probar en una PC limpia con Internet desactivado; luego backup, restauración y recuperación.
-9. Adaptar fiscalidad argentina y conectores externos sin bloquear el funcionamiento local.
+1. **Cerrar el turno de caja:** partir de la venta aceptada y verificar cierre, importes esperados, diferencias, movimientos y saldo final.
+2. **Devolución y reintegro:** usar el circuito original de MyCompany, relacionar Bill con la factura, verificar el medio y monto efectivamente abonados, el OutgoingPayment y la reversión correspondiente de stock.
+3. **Completar los casos de pago:** vuelto, pagos parciales/mixtos, tarjeta y cancelación, con conciliación exacta por medio.
+4. **Persistencia y recuperación:** reiniciar servidor y cliente sin borrar PostgreSQL y repetir consultas de factura, pago, turno y ledger. Probar además backup/restore y rollback sobre copias.
+5. **Prueba del camino HTTP de navegador:** `EXTERNAL HTTP CLIENT` real desde Chromium, con timeout, CORS, abort, fallo de red y recuperación.
+6. **Instalación offline y plataformas:** paquete completo en PC limpia sin Internet; después validación real en Windows y macOS ARM64.
+7. **ERP y localización:** continuar compras, inventario, proveedores, reportes y experiencia visual sobre módulos originales, adaptando con extensiones propias.
+8. **Fiscalidad e integraciones externas:** ARCA, medios electrónicos, marketplaces y logística sólo después de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación probadas.
 
-El proyecto no se declara listo por importar fuentes ni por tener CI verde. Se acepta cuando una instalación local conserva las operaciones y los datos después de reiniciar, concilia dinero y stock, puede recuperarse desde un backup probado y demuestra que las fallas de integraciones quedan aisladas mediante timeout, estado persistido, mensajes claros y pruebas de fault injection.
-
+La aceptación #172 demuestra el primer ciclo comercial local —venta, pago y salida de stock— en el runtime propio de Rubrova. No declara terminado el producto ni autoriza producción. La aceptación completa requiere operación local estable, cierre y devolución conciliados, persistencia después de reiniciar, restauración desde backup y comportamiento seguro ante fallos externos.
 
 ## Política transversal de errores
 
-Se añadió [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md). El motor lsFusion 6.2 ofrece timeoutHttp() y TRY/CATCH, pero eso no equivale a tener la política implementada. El registro común de incidentes y el helper GET ya están en el módulo Rubrova; el motor vendorizado ahora impone un timeout de 10 s por defecto y 60 s máximo a todo `EXTERNAL HTTP`; el cambio está reproducido como parche idempotente y validado en cada importación de fuentes. Faltan terminar la validación runtime de ese módulo, los estados Outbox/circuit breaker y ampliar las pruebas simuladas más allá de GET. Mercado Libre y los demás conectores no se habilitarán en producción sin esas puertas.
+Se mantiene la política de [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md). El motor lsFusion ofrece `timeoutHttp()`, `HEADERSTO` y `TRY/CATCH`, pero esos mecanismos no sustituyen una política completa. El helper GET y el registro de incidencias se probaron contra un proveedor simulado; faltan Outbox, circuit breaker y ampliar los escenarios de escritura más allá de GET. Los conectores de producción permanecen deshabilitados hasta superar esas puertas.
 
+Los logs SQL de arranque se interpretan en el diagnóstico técnico actualizado: las dos consultas iniciales de `dumb` pertenecen a la detección de base vacía; el conflicto serializable de `Time.currentDate` se recuperó y el valor quedó persistido. Los timeouts de consultas siguen observándose y deben medirse para mejorar el arranque, sin aumentar límites indiscriminadamente.
 
-La prueba de precios del POS utiliza `RubrovaCISalesFixture` sólo en CI para asignar ARS al tipo minorista; la venta no se valida con el importe de la búsqueda sino con el precio del renglón y el total del recibo.
+La prueba de venta usa `RubrovaCISalesFixture` sólo en CI: prepara ARS, caja, depósito y stock sintético. La venta aceptada no se valida con el precio de la búsqueda, sino con el importe de la factura, pago asociado, caja y ledger de inventario realmente persistidos.

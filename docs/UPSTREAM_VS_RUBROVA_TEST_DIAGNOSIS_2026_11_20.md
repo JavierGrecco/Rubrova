@@ -2,13 +2,18 @@
 
 ## Conclusión ejecutiva
 
-Los últimos fallos del smoke test no tienen una sola causa. Hay tres clases diferentes:
+El estado cambió después de la aceptación [CI #172](https://github.com/JavierGrecco/Rubrova/actions/runs/44982716337), commit `3d1cfbf1038e25608768c1561349390708dca6ec`. La prueba ahora compila lsFusion 6.2, MyCompany 6.2 y el cliente GWT desde las fuentes vendorizadas de Rubrova, construye las imágenes propias y ejecuta el POS sobre ese runtime en Linux x86_64.
 
-1. **Falso negativo intermitente en la prueba visual del cobro.** El test esperaba 1,2 segundos tras pulsar «Cobrar» y consultaba el DOM una sola vez. lsFusion carga el diálogo de forma asíncrona. En una ejecución la inspección capturó el formulario de venta antes de que aparecieran los medios; en otra, la misma configuración sí mostró «Cobro», «Efectivo» y «Tarjeta». No era una diferencia de configuración POS.
-2. **La validación de runtime no construye el fork de Rubrova.** Arranca artefactos oficiales precompilados de MyCompany/lsFusion y les copia los módulos propios. El reactor Maven que compila `vendor/platform` y `vendor/mycompany` no se ejecuta en ese workflow. Por eso el smoke no está verificando las modificaciones Java del fork.
-3. **La política global de timeout tiene un camino sin cubrir.** El cambio propio de `CallHTTPAction` cubre las llamadas ejecutadas en servidor. El camino `clientAction` del navegador transforma `HttpClientAction` en `GHttpClientAction` sin transportar el timeout; el dispatcher GWT usa `XMLHttpRequest` sin límite temporal. Este comportamiento también existe en el upstream fijado.
+La ejecución #172 confirmó una venta minorista sintética de ARS 1.250 desde Chromium y concilió los datos persistidos:
 
-No corresponde resolver estos tres problemas agregando más condiciones a los datos del POS.
+- Una factura y una factura pagada.
+- Un pago entrante, aplicado por ARS 1.250.
+- ARS 1.250 cobrados en efectivo y reflejados en el turno y la cuenta de caja.
+- Inventario: 10 unidades iniciales, una salida y nueve disponibles.
+
+Los tres grupos de errores PostgreSQL observados se separaron y revisaron contra el código del motor: los dos `relation "dumb" does not exist` corresponden a las comprobaciones de primera instalación antes de sincronizar tablas; el conflicto serializable de `_auto.Time_currentDate` se recuperó durante `ChangeCurrentDate` y el valor quedó persistido; los `SQLTimeoutException` se registran como excepciones manejadas del motor, aunque su frecuencia y el coste de arranque siguen mereciendo seguimiento.
+
+El primer circuito comercial está aceptado en CI; el proyecto no está listo para producción. Cierre de turno, devoluciones, vuelto, tarjeta, persistencia tras reinicio, backup/restore, paquete offline y prueba real del camino HTTP del navegador siguen pendientes.
 
 ## Comparación contra MyCompany original
 
@@ -50,18 +55,21 @@ La corrección es esperar una condición visible y estable —título «Cobro» 
 
 La comparación del historial de CI reveló una segunda carrera de la misma familia: las funciones de navegación y botones guardaban índices calculados de listas DOM y luego hacían clic con `locator(...).nth(index)`. GWT vuelve a renderizar el navegador y sus controles de forma asíncrona, por lo que el índice puede apuntar a otro elemento o a un control que ya fue sustituido. La corrección final usa locators accesibles por nombre exacto, re-resueltos al momento del clic; para «Comercio» espera que «Punto de venta» aparezca antes de seguir. Se eliminó el helper antiguo que devolvía índices y las pausas fijas de 750/1.000 ms que no comprobaban ningún estado.
 
-## Diferencia entre el runtime probado y el fork que queremos distribuir
+## Runtime propio: build y smoke de aceptación
 
-El workflow `.github/workflows/platform-extension.yml` hace lo siguiente:
+El workflow `.github/workflows/platform-extension.yml` separa la compilación y el smoke, pero ambos se ejecutan contra el mismo SHA:
 
-- `prepare-mycompany-6.2.sh` descarga y verifica el JAR oficial `mycompany-6.2.jar` y el Compose oficial.
-- El smoke fija imágenes oficiales `lsfusion/mycompany:6.2`, `lsfusion/server:6.2`, `lsfusion/client:6.2` y PostgreSQL.
-- `deploy-mycompany-6.2.sh` copia los cuatro archivos de `extensions/lsfusion` a `docker-server` y prepara el override.
-- El nuevo job `build-fork` ejecuta `mvn -f build/rubrova/pom.xml -Passemble -DskipTests package`, con Java 21, después de verificar las fuentes y aplicar idempotentemente el parche de timeout.
-- Ese job compila `vendor/platform`, el cliente GWT y `vendor/mycompany`; además verifica los artefactos JAR/WAR generados.
-- El job de smoke visual sigue descargando y ejecutando las imágenes oficiales `lsfusion/mycompany:6.2`, `lsfusion/server:6.2` y `lsfusion/client:6.2`. No instala todavía los JAR/WAR del reactor en una imagen de Rubrova.
+1. Valida snapshots, extensiones y parche idempotente del timeout.
+2. Compila el reactor de Rubrova con Java 21: lsFusion, cliente GWT y MyCompany.
+3. Recompila servidor y cliente web con las dependencias necesarias para su runtime autónomo.
+4. Verifica los artefactos del servidor, la lógica y el WAR cliente.
+5. Publica los tres artefactos y los entrega al job de smoke.
+6. Construye las imágenes `rubrova/server`, `rubrova/logics` y `rubrova/client`; Compose comprueba que cada contenedor usa el ID de imagen local recién construido.
+7. Arranca PostgreSQL 18, MyCompany y el cliente web; Chromium ejecuta la aceptación del POS.
 
-Esto separa por fin dos garantías distintas: **compilación del fork** y **aceptación visual de las extensiones sobre el runtime oficial**. El build del fork debe aprobarse antes de ejecutar el smoke, pero aún falta empaquetar imágenes propias y ejecutar el mismo flujo POS contra esos artefactos compilados. El lock conserva pendiente la aceptación del rebuild offline y no se debe marcar completado hasta que la compilación CI también termine y sus artefactos se inspeccionen.
+La ejecución #172 completó todos esos pasos. No utilizó las imágenes de aplicación oficiales como sustituto de las construidas por Rubrova. Las imágenes auxiliares externas (PostgreSQL y herramientas CI) siguen fijadas por digest.
+
+Esta prueba demuestra el runtime propio en Linux x86_64 dentro de CI. No demuestra todavía una instalación local totalmente offline, un paquete de usuario final ni la ejecución nativa en Windows/macOS. El rebuild Maven completo también sigue siendo online: la caché y el repositorio de dependencias deberán prepararse y probarse en modo offline por separado.
 
 ## Brecha de timeout confirmada en el upstream
 
@@ -99,21 +107,58 @@ Esta primera aprobación incluye el cambio que propaga el timeout al cliente GWT
 
 La compilación fue online (descarga inicial de dependencias Maven); el rebuild offline con repositorio Maven verificado sigue sin aceptarse.
 
-## Errores PostgreSQL observados
+## Errores PostgreSQL observados: diagnóstico con el código fuente
 
-En el mismo arranque se registraron dos errores sobre la tabla interna `dumb`, una escritura concurrente sobre `_auto.Time_currentDate` con error de serialización y varias consultas canceladas. El código upstream confirma que `dumb` es una tabla interna del motor usada para consultas sin columnas y que `TableFactory` debe crearla durante el bootstrap.
+Los registros ya no se tratan como un único grupo ni como un fallo genérico de arranque. Se identificaron tres situaciones diferentes.
 
-Estos eventos ocurrieron durante `onStarted`, antes de finalizar el arranque. No son la causa del falso negativo de «Efectivo»: el servidor completó `onStarted`, abrió el POS, creó el turno, agregó el artículo y luego el test tomó la captura demasiado pronto. Aun así, las consultas de inicialización/serialización deben quedar como una línea separada de investigación y no considerarse aceptadas sólo porque el servidor acaba respondiendo.
+### 1. Dos lecturas de `dumb` durante la detección de una base vacía
 
-## Plan de corrección priorizado
+En el primer arranque de PostgreSQL vacío aparecen dos mensajes `relation "dumb" does not exist`. El origen está en la secuencia de inicialización del motor:
 
-1. **Corregido en la automatización:** esperar el formulario de cobro renderizado, usar locators accesibles estables para navegación y botones, retirar índices DOM guardados y quitar esperas fijas sin condición de éxito.
-2. **Compilación inicial aprobada:** el reactor de Rubrova ya compiló lsFusion, GWT y MyCompany; la revisión posterior del cuerpo nulo está en recompilación.
-3. Ejecutar el smoke visual sobre el último commit después de la compilación. El smoke actual sigue usando el runtime oficial; no validar todavía los parches Java/GWT como desplegados.
-4. Construir imágenes propias: servidor con el perfil `embed-server` e imagen cliente Tomcat con el WAR GWT construido. Sustituir ambas imágenes en el Compose de aceptación y ejecutar el mismo flujo POS.
-5. Añadir prueba de contrato de `EXTERNAL HTTP CLIENT` en el navegador, con endpoint de timeout CORS; probar timeout, error de red, abort y recuperación, además del smoke Toxiproxy del camino servidor.
-6. Investigar por separado los errores de creación de la tabla interna `dumb` y la serialización concurrente de `_auto.Time_currentDate`; no marcar el bootstrap como limpio hasta explicar los registros.
-7. Aceptar rebuild offline y runtime aislado de Internet; siguen pendientes en `platform/source-lock.json`.
+1. `BusinessLogics` ejecuta `initBLTask`.
+2. `initClassDataIndicesTask` depende de `initReflectionEventsTask`.
+3. `InitReflectionEventsTask.run()` llama a `DBManager.initReflectionEvents()`.
+4. `DBManager.initReflectionEvents()` ejecuta `isFirstStart(sql)` dos veces.
+5. `isFirstStart()` consulta la estructura anterior mediante `getOldDBStructure(sql)`. Si PostgreSQL responde SQLSTATE `42P01` (undefined table), el método lo interpreta explícitamente como una base vacía y devuelve `true`.
+
+La tabla `dumb` aún no se ha creado en esa fase. Más adelante, `DBManager.onInit()` inicia `synchronizeDB()`, y `synchronizeDB()` llama a `TableFactory.fillDB(sql, LM.baseClass)`, que crea las tablas internas y el registro vacío. Por eso las dos consultas iniciales fallidas son los dos sondeos de primera instalación previstos por el código; no indican que `dumb` falte después del bootstrap.
+
+La ejecución #172 verificó posteriormente que `dumb` existe y contiene su registro interno. El test también verificó que `_auto.Time_currentDate` ya estaba persistida.
+
+### 2. Conflicto serializable al establecer `Time.currentDate`
+
+En una ejecución de primera instalación, PostgreSQL registró:
+
+`could not serialize access due to concurrent update`
+
+sobre:
+
+`UPDATE _auto SET Time_currentDate=CAST($1 AS date) FROM dumb WHERE 1=1`
+
+El log del servidor muestra `ChangeCurrentDate started: from null to 2026-11-22`, seguido del error de PostgreSQL y, 55 ms después, `ChangeCurrentDate finished`. La comprobación posterior encontró el valor persistido.
+
+El motor convierte conflictos de actualización/deadlock en `SQLConflictException`. `DataSession.transactApply()` revierte una transacción con `SQLHandledException` reintentable y vuelve a ejecutar la aplicación. La secuencia observada y el valor persistido son coherentes con esa recuperación. Este evento se clasifica como conflicto transitorio recuperado, no como arranque fallido; debe seguir observándose para detectar recurrencia anormal.
+
+### 3. `SQLTimeoutException` durante consultas de inicialización y operación
+
+Los logs #166, #171 y #172 contienen consultas canceladas por el límite adaptativo de lsFusion, registradas en `INFO SQLHandLogger`. En el motor, `SQLTimeoutException` deriva de `SQLHandledException`; los intentos que forman parte de un apply transaccional pueden hacer rollback y repetirse mediante `DataSession.transactApply()`. No todo timeout aislado demuestra por sí mismo que esa consulta específica se reintentó, por lo que no se deben borrar del diagnóstico ni declararlos inocuos de manera general.
+
+La evidencia funcional de #172 muestra que estos registros no impidieron completar el circuito: el cobro se confirmó y la factura, el pago, la caja y el inventario quedaron conciliados. Aun así, hay que medir arranque frío frente a reinicio, contar los reintentos y localizar las consultas más costosas. No corresponde elevar límites SQL globales ni desactivar controles sólo para silenciar los logs.
+
+## Estado y próximos pasos después de CI #172
+
+**Aceptado:** build desde fuentes Rubrova, imágenes propias, arranque de PostgreSQL/MyCompany/cliente web, login, POS, apertura de turno, selección de producto, confirmación del cobro y conciliación de factura/pago/caja/stock.
+
+**Siguiente bloque:**
+1. Cierre de turno con conciliación de ventas, devoluciones, ingresos, retiros y saldo final.
+2. Devolución nativa de MyCompany: Bill relacionado con factura, reintegro por el medio realmente abonado, OutgoingPayment y efecto inverso de inventario.
+3. Vuelto, tarjeta y pagos mixtos; comprobar los saldos por medio y el tratamiento de operaciones inciertas.
+4. Reiniciar servidor y cliente sin borrar PostgreSQL y volver a conciliar los mismos registros; después backup/restore y rollback sobre copia.
+5. Probar en Chromium `EXTERNAL HTTP CLIENT` con endpoint lento/CORS, timeout, abort, error de red y recuperación. El test GET del servidor no cubre ese camino.
+6. Preparar paquete offline y validar en PC limpia; luego runtime real Windows y macOS ARM64.
+7. Mantener la localización y la regresión ERP creciendo por módulos, sin alterar los procesos originales de MyCompany que ya cumplen.
+
+No se deben habilitar conectores productivos (ARCA, adquirentes, marketplaces o logística) antes de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación demostradas.
 
 ## Referencias upstream
 
@@ -130,19 +175,45 @@ El test fijaba `postgres:18` pero heredaba el mount antiguo `./docker-db:/var/li
 
 Fuente: [documentación Docker oficial de PostgreSQL](https://github.com/docker-library/docs/blob/master/postgres/content.md).
 
-## Actualización posterior: runtime propio probado en run 163 (22 de noviembre de 2026)
+## Hito histórico: run 163 (22 de noviembre de 2026)
 
-La ejecución [44975665176](https://github.com/JavierGrecco/Rubrova/actions/runs/44975665176), commit `8905827ca2eb1eded7e7e56194148be4feb2cb58`, confirmó lo siguiente:
+La ejecución 163 documentó el primer arranque de las imágenes propias y el problema del WAR sin `api-6.2.jar`. Ese fallo del cliente web se corrigió en la recompilación posterior del WAR con dependencias de runtime. La aceptación más reciente y completa es CI #172, detallada a continuación.
 
-- `validate` y `validate-windows` aprobaron.
-- El reactor compiló lsFusion 6.2, MyCompany y GWT. Después se reconstruyó el servidor sin `-Passemble`; el JAR incluyó `BusinessLogicsBootstrap`, `DaemonThreadFactory`, `CustodianDailyRollingFileAppender` y `RollingFileAppender`.
-- Las tres imágenes Rubrova se construyeron y el Compose las utilizó. La lógica completó los 716 módulos, ejecutó `onStarted` y exportó RMI en 7652.
-- La aceptación falló en el cliente web: Tomcat registró que el listener de `ROOT.war` no pudo iniciar y la ruta raíz quedó en HTTP 404. El servidor de lógica terminó su inicialización; la web no quedó aceptada.
 
-La revisión del WAR generado bajo `-Passemble` mostró que no contiene `WEB-INF/lib/api-6.2.jar`. El perfil `assemble` declara `api` como `provided` para crear el ensamblado de lógica, pero ese alcance no sirve para un WAR web autónomo. La reconstrucción siguiente compila servidor y cliente web sin ese perfil y exige que el WAR incluya la API. El Compose también hace que Tomcat espere la disponibilidad real de RMI en 7652 antes de desplegar el cliente.
+## Aceptación comercial del POS en CI #172 (22 de noviembre de 2026)
 
-Se corrigió otra condición del propio test: las imágenes `rubrova/*` no se publican en un registry y por eso no tienen `RepoDigest`. Se verificará su ID local frente al ID usado por cada contenedor; PostgreSQL y Toxiproxy seguirán requiriendo los digests fijados.
+Ejecución: [44982716337](https://github.com/JavierGrecco/Rubrova/actions/runs/44982716337)  
+Commit: `3d1cfbf1038e25608768c1561349390708dca6ec`.
 
-Finalmente, la prueba de timeout usa una respuesta lenta real de cinco segundos y exige que la operación termine entre 0,75 y 4 segundos con un timeout configurado de un segundo. Ya no podrá aprobar por un rechazo de conexión casi instantáneo.
+Los cinco jobs del workflow terminaron correctamente: validación Linux, validación PowerShell, build desde fuentes, recompilación/validación de artefactos y smoke de runtime Linux x86_64. macOS ARM64 quedó omitido porque es un job manual.
 
-**Estado tras run 163:** compilación de servidor propio aprobada; carga de lógica y RMI aprobadas; WAR/arranque web y smoke funcional POS aún pendientes. Venta cobrada, impacto en stock, cierre de caja, instalación offline, ARM64, backup/restore y aceptación productiva siguen pendientes.
+Chromium confirmó el diálogo nativo de cobro. La automatización anterior buscaba `Ok (ctrl ENTER)` por nombre accesible y GWT no lo exponía como esperaba Playwright, aunque el botón sí existía en el DOM. El test ahora usa el identificador estable `PROPERTY(overFormOk)`; no se cambió el proceso de pago original.
+
+La respuesta del test de conciliación fue:
+
+```json
+{
+  "salesCount": 1,
+  "paidSalesCount": 1,
+  "invoiceAmount": 1250,
+  "paidAmount": 1250,
+  "cashPaidAmount": 1250,
+  "incomingPaymentCount": 1,
+  "sessionCashPaid": 1250,
+  "cashBalance": 1250
+}
+```
+
+La conciliación de inventario devolvió:
+
+```json
+{
+  "incomingQuantity": 10,
+  "outgoingQuantity": 1,
+  "onHand": 9
+}
+```
+
+Los valores son consultados después de confirmar el cobro en la base temporal. El fixture crea una moneda ARS, una caja, una ubicación y un ajuste inicial sintéticos. La venta utiliza el POS original de MyCompany y el despacho automático minorista; no escribe importes ni movimientos desde el test.
+
+Esta prueba cierra el primer circuito comercial de POS en runtime Rubrova. No cubre cierre de turno, devolución, vuelto, tarjeta, reinicio con persistencia, backup/restore, instalación offline ni el camino HTTP CLIENT desde navegador.
