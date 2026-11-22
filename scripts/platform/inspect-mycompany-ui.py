@@ -780,10 +780,15 @@ def inspect_page(url: str) -> int:
                         "La categoría de fallo no fue TIMEOUT_OR_NETWORK: "
                         + str(timeout_payload.get("category"))
                     )
+                if timeout_elapsed < 0.75:
+                    raise RuntimeError(
+                        f"La ruta lenta no demostró el timeout de 1 segundo; terminó demasiado pronto ({timeout_elapsed:.3f}s)."
+                    )
                 if timeout_elapsed > 4.0:
                     raise RuntimeError(
                         f"El límite de 1 segundo no se respetó; la API tardó {timeout_elapsed:.3f}s."
                     )
+                print("UI_INTEGRATION_TIMEOUT_BOUNDARY_PROVEN=true")
                 print("UI_INTEGRATION_TIMEOUT_CAPTURED=true")
                 timeout_message = str(timeout_payload.get("userMessage") or "")
                 if "no respondió a tiempo" not in timeout_message:

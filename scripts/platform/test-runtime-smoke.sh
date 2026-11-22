@@ -46,6 +46,24 @@ compose() {
   COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose -f "$COMPOSE_FILE" -f "$EXTENSION_OVERRIDE_FILE" -f "$IMAGE_OVERRIDE_FILE" --project-directory "$COMPOSE_DIR" "$@"
 }
 
+show_client_tomcat_logs() {
+  local client_container
+  client_container="$(compose ps -a -q client 2>/dev/null | head -n 1)"
+  [[ -n "$client_container" ]] || return 0
+  docker exec "$client_container" sh -c '
+    found=false
+    for log_file in /usr/local/tomcat/logs/catalina.*.log /usr/local/tomcat/logs/localhost.*.log; do
+      [ -f "$log_file" ] || continue
+      echo "=== $log_file ==="
+      tail -n 160 "$log_file"
+      found=true
+    done
+    if [ "$found" != true ]; then
+      echo "No se encontraron archivos catalina/localhost en /usr/local/tomcat/logs."
+    fi
+  ' >&2 || true
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT
@@ -60,6 +78,8 @@ cleanup() {
       compose ps --all >&2
       echo "=== Últimos registros de MyCompany ===" >&2
       compose logs --no-color --tail=180 >&2
+      echo "=== Logs internos de Tomcat (cliente web) ===" >&2
+      show_client_tomcat_logs
     fi
     compose down --volumes --remove-orphans
   fi
@@ -138,7 +158,16 @@ services:
       - "host.docker.internal:host-gateway"
     image: $SERVER_IMAGE
     pull_policy: never
+    healthcheck:
+      test: ["CMD-SHELL", "grep -iqE ':1DE4[[:space:]]+[[:xdigit:]]+:[[:xdigit:]]+[[:space:]]+0A' /proc/net/tcp /proc/net/tcp6"]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+      start_period: 30s
   client:
+    depends_on:
+      server:
+        condition: service_healthy
     image: $CLIENT_IMAGE
     pull_policy: never
   db:
@@ -283,13 +312,12 @@ grep -q "rubrova-ci" "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" || 
 }
 
 MOCK_PROVIDER_URL="http://toxiproxy:8666"
-MOCK_PROVIDER_TIMEOUT_URL="http://toxiproxy:8667"
 cat >> "$COMPOSE_DIR/docker-server/RubrovaIntegrationResilience.lsf" <<LSF
 
 // Endpoints exclusivos de la base efímera CI: nunca se instalan en Rubrova.
 rubrovaTestHttpTimeout () {
     rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de timeout', 'ci-timeout-001',
-        '$MOCK_PROVIDER_TIMEOUT_URL/ok', 1000);
+        '$MOCK_PROVIDER_URL/slow?delay=5', 1000);
     EXPORT JSON FROM
         outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'failure-captured',
         category = rubrovaHttpFailureCategory(),
@@ -492,13 +520,8 @@ fi
 curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
   --request POST --header "Content-Type: application/json" \
   --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
-  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true},{"name":"rubrova_ci_timeout","listen":"0.0.0.0:8667","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
+  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
   "$TOXIPROXY_API_URL/populate" >/dev/null
-curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
-  --request POST --header "Content-Type: application/json" \
-  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
-  --data-binary '{"name":"drop-response","type":"timeout","stream":"downstream","toxicity":1.0,"attributes":{"timeout":0}}' \
-  "$TOXIPROXY_API_URL/proxies/rubrova_ci_timeout/toxics" >/dev/null
 PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
   --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" "$TOXIPROXY_API_URL/proxies")"
 python3 - "$PROXY_CONFIG" <<'PY'
@@ -506,14 +529,10 @@ import json
 import sys
 
 payload = json.loads(sys.argv[1])
-required = {"rubrova_ci_normal", "rubrova_ci_timeout"}
-if not required.issubset(payload):
-    raise SystemExit("Toxiproxy no creó los dos proxies de aceptación requeridos.")
-toxics = payload["rubrova_ci_timeout"].get("toxics", [])
-if not any(item.get("name") == "drop-response" and item.get("type") == "timeout" for item in toxics):
-    raise SystemExit("No quedó activo el corte de respuesta TCP para el test de timeout.")
+if "rubrova_ci_normal" not in payload:
+    raise SystemExit("Toxiproxy no creó el proxy hacia el simulador HTTP local.")
 PY
-echo "Toxiproxy listo: un proxy normal y otro que retiene respuestas hasta que el cliente agota su timeout."
+echo "Toxiproxy listo: proxy HTTP hacia el simulador, incluida la ruta de respuesta lenta."
 
 echo "5/7 Comprobando que la configuración y los módulos Rubrova estén montados en el servidor"
 SERVER_CONTAINER_ID="$(compose ps -q server)"
@@ -629,6 +648,15 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
     fi
   fi
   HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
+  if [[ "$HTTP_STATUS" == "404" ]]; then
+    CLIENT_STARTUP_LOGS="$(compose logs --no-color --tail=100 client 2>/dev/null || true)"
+    if grep -Eiq 'One or more listeners failed to start|startup failed due to previous errors' <<< "$CLIENT_STARTUP_LOGS"; then
+      echo "Tomcat inició, pero falló el listener de ROOT.war; no se esperará el timeout general." >&2
+      printf '%s\\n' "$CLIENT_STARTUP_LOGS" | tail -n 80 >&2
+      show_client_tomcat_logs
+      exit 1
+    fi
+  fi
   MODULE_PROGRESS="$(grep -hE 'Initializing main logic for module.*#[0-9]+ of [0-9]+' "$START_LOG" "$STDOUT_LOG" 2>/dev/null | tail -n 1 || true)"
   if [[ "$MODULE_PROGRESS" != "$LAST_MODULE_PROGRESS" && -n "$MODULE_PROGRESS" ]]; then
     LAST_MODULE_PROGRESS="$MODULE_PROGRESS"
@@ -767,18 +795,40 @@ IMAGES="$(compose config --images)"
 printf '%s\n' "$IMAGES"
 while IFS= read -r image_name; do
   [[ -n "$image_name" ]] || continue
+  local_service=""
+  case "$image_name" in
+    rubrova/server:6.2-*) local_service=server ;;
+    rubrova/logics:6.2-*) local_service=logics ;;
+    rubrova/client:6.2-*) local_service=client ;;
+  esac
+  if [[ -n "$local_service" ]]; then
+    local_image_id="$(docker image inspect --format '{{.Id}}' "$image_name" 2>/dev/null || true)"
+    container_id="$(compose ps -q "$local_service" | head -n 1)"
+    if [[ ! "$local_image_id" =~ ^sha256:[0-9a-f]{64}$ || -z "$container_id" ]]; then
+      echo "No se pudo identificar la imagen o el contenedor local de $local_service: $image_name" >&2
+      exit 1
+    fi
+    container_image_id="$(docker inspect --format '{{.Image}}' "$container_id" 2>/dev/null || true)"
+    if [[ "$container_image_id" != "$local_image_id" ]]; then
+      echo "El servicio $local_service no ejecuta la imagen Rubrova construida: imagen=$local_image_id, contenedor=${container_image_id:-ninguno}" >&2
+      exit 1
+    fi
+    printf 'IMAGEN LOCAL VERIFICADA %s -> %s (servicio %s)\\n' "$image_name" "$local_image_id" "$local_service"
+    continue
+  fi
+
   image_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$image_name" 2>/dev/null || true)"
   expected_digest="${image_name##*@}"
   actual_digest="${image_digest##*@}"
   if [[ -z "$expected_digest" || "$expected_digest" == "$image_name" ]]; then
-    echo "La imagen no tiene un digest fijado en el override: $image_name" >&2
+    echo "La imagen externa no tiene un digest fijado en el override: $image_name" >&2
     exit 1
   fi
   if [[ -z "$image_digest" || "$image_digest" == "<no value>" || "$actual_digest" != "$expected_digest" ]]; then
-    echo "Digest de imagen distinto al fijado para $image_name: esperado $expected_digest, recibido ${actual_digest:-ninguno}" >&2
+    echo "Digest de imagen externa distinto al fijado para $image_name: esperado $expected_digest, recibido ${actual_digest:-ninguno}" >&2
     exit 1
   fi
-  printf 'DIGEST VERIFICADO %s -> %s\n' "$image_name" "$image_digest"
+  printf 'DIGEST EXTERNO VERIFICADO %s -> %s\\n' "$image_name" "$image_digest"
 done <<< "$IMAGES"
 
 LOG_DIR="$COMPOSE_DIR/docker-server/logs"

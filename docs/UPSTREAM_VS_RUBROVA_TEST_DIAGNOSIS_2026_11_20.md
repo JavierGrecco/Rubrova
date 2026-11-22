@@ -129,3 +129,20 @@ Estos eventos ocurrieron durante `onStarted`, antes de finalizar el arranque. No
 El test fijaba `postgres:18` pero heredaba el mount antiguo `./docker-db:/var/lib/postgresql/data` del Compose original. La imagen oficial cambió en PostgreSQL 18 el `PGDATA` predeterminado a `/var/lib/postgresql/18/docker` y recomienda montar el padre `/var/lib/postgresql`. Con el mount viejo, el servidor puede escribir en el volumen anónimo de la imagen en lugar del directorio esperado; al recrear el contenedor, los datos no quedan en el bind mount que creíamos persistente. Rubrova ahora crea un volumen independiente `docker-db-pg18`, monta `/var/lib/postgresql` y espera `pg_isready` antes de iniciar el servidor. El directorio antiguo `docker-db` se conserva, no se elimina ni se migra automáticamente.
 
 Fuente: [documentación Docker oficial de PostgreSQL](https://github.com/docker-library/docs/blob/master/postgres/content.md).
+
+## Actualización posterior: runtime propio probado en run 163 (22 de noviembre de 2026)
+
+La ejecución [44975665176](https://github.com/JavierGrecco/Rubrova/actions/runs/44975665176), commit `8905827ca2eb1eded7e7e56194148be4feb2cb58`, confirmó lo siguiente:
+
+- `validate` y `validate-windows` aprobaron.
+- El reactor compiló lsFusion 6.2, MyCompany y GWT. Después se reconstruyó el servidor sin `-Passemble`; el JAR incluyó `BusinessLogicsBootstrap`, `DaemonThreadFactory`, `CustodianDailyRollingFileAppender` y `RollingFileAppender`.
+- Las tres imágenes Rubrova se construyeron y el Compose las utilizó. La lógica completó los 716 módulos, ejecutó `onStarted` y exportó RMI en 7652.
+- La aceptación falló en el cliente web: Tomcat registró que el listener de `ROOT.war` no pudo iniciar y la ruta raíz quedó en HTTP 404. El servidor de lógica terminó su inicialización; la web no quedó aceptada.
+
+La revisión del WAR generado bajo `-Passemble` mostró que no contiene `WEB-INF/lib/api-6.2.jar`. El perfil `assemble` declara `api` como `provided` para crear el ensamblado de lógica, pero ese alcance no sirve para un WAR web autónomo. La reconstrucción siguiente compila servidor y cliente web sin ese perfil y exige que el WAR incluya la API. El Compose también hace que Tomcat espere la disponibilidad real de RMI en 7652 antes de desplegar el cliente.
+
+Se corrigió otra condición del propio test: las imágenes `rubrova/*` no se publican en un registry y por eso no tienen `RepoDigest`. Se verificará su ID local frente al ID usado por cada contenedor; PostgreSQL y Toxiproxy seguirán requiriendo los digests fijados.
+
+Finalmente, la prueba de timeout usa una respuesta lenta real de cinco segundos y exige que la operación termine entre 0,75 y 4 segundos con un timeout configurado de un segundo. Ya no podrá aprobar por un rechazo de conexión casi instantáneo.
+
+**Estado tras run 163:** compilación de servidor propio aprobada; carga de lógica y RMI aprobadas; WAR/arranque web y smoke funcional POS aún pendientes. Venta cobrada, impacto en stock, cierre de caja, instalación offline, ARM64, backup/restore y aceptación productiva siguen pendientes.

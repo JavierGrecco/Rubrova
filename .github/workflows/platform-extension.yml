@@ -85,8 +85,8 @@ jobs:
           grep -q 'RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L' vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
         run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
-      - name: Recompilar el servidor autónomo con API y dependencias incluidas
-        run: mvn -B -ntp -f vendor/platform/pom.xml -pl server -am -DskipTests package
+      - name: Recompilar servidor y cliente web con dependencias de runtime
+        run: mvn -B -ntp -f vendor/platform/pom.xml -pl server,web-client -am -DskipTests package
       - name: Verificar y preparar los artefactos propios del runtime
         shell: bash
         run: |
@@ -101,6 +101,10 @@ jobs:
           unzip -Z1 "$SERVER_JAR" | grep -F -x 'lsfusion/base/log/CustodianDailyRollingFileAppender.class' >/dev/null
           unzip -Z1 "$SERVER_JAR" | grep -F -x 'org/apache/log4j/rolling/RollingFileAppender.class' >/dev/null
           unzip -Z1 "$LOGICS_JAR" | grep -Eq '(^|/)MyCompany[.]lsf$'
+          # El perfil assemble marca api como provided para la lógica; el WAR web necesita incluirla.
+          unzip -Z1 "$CLIENT_WAR" | grep -F -x 'WEB-INF/lib/api-6.2.jar' >/dev/null
+          unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
+          unzip -Z1 "$RUNNER_TEMP/rubrova-client-api.jar" | grep -F -x 'lsfusion/base/DaemonThreadFactory.class' >/dev/null
           mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
           cp "$SERVER_JAR" "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
           cp "$LOGICS_JAR" "$RUNNER_TEMP/rubrova-runtime-artifacts/logics.jar"
@@ -109,6 +113,7 @@ jobs:
           test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/logics.jar"
           test -s "$RUNNER_TEMP/rubrova-runtime-artifacts/client.war"
           echo "Servidor autónomo: API, logging y runtime están incluidos en server.jar."
+          echo "Cliente GWT: WEB-INF/lib/api-6.2.jar está incluido para el arranque de Spring/Tomcat."
           echo "Lógica MyCompany y cliente web salen del reactor de Rubrova."
       - name: Publicar artefactos del runtime para el smoke funcional
         uses: actions/upload-artifact@v4
