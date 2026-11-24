@@ -129,6 +129,15 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /METRIC_COLD_SERVER_STARTUP_MS/);
   assert.match(runtimeSmokeSource, /METRIC_COLD_SQL_TIMEOUTS/);
   assert.match(runtimeSmokeSource, /METRIC_COLD_MATERIALIZATION_TIMEOUTS/);
+  assert.ok(
+    runtimeSmokeSource.includes('COLD_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/adjust.log" \'FAILED TIMEOUT\')"'),
+    "Los timeouts de materialización se registran en adjust.log, no en start.log."
+  );
+  assert.ok(
+    runtimeSmokeSource.includes('PRE_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/adjust.log" \'FAILED TIMEOUT\')"')
+    && runtimeSmokeSource.includes('AFTER_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/adjust.log" \'FAILED TIMEOUT\')"'),
+    "La medición fría y caliente debe leer el mismo archivo adjust.log."
+  );
   assert.match(runtimeSmokeSource, /compose restart server/);
   assert.match(runtimeSmokeSource, /compose restart client/);
   assert.ok(runtimeSmokeSource.includes('extract_last_server_startup_ms "$SERVER_RESTART_LOGS"'));

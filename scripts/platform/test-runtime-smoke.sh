@@ -922,7 +922,7 @@ if [[ "$COLD_SERVER_READY" != "true" ]]; then
 fi
 echo "Arranque final confirmado: el motor completó Reflection y publicó el marcador de inicio."
 COLD_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
-COLD_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
+COLD_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/adjust.log" 'FAILED TIMEOUT')"
 echo "METRIC_COLD_SERVER_STARTUP_MS=$COLD_SERVER_STARTUP_MS"
 echo "METRIC_COLD_SQL_TIMEOUTS=$COLD_SQL_TIMEOUTS"
 echo "METRIC_COLD_MATERIALIZATION_TIMEOUTS=$COLD_MATERIALIZATION_TIMEOUTS"
@@ -945,7 +945,7 @@ if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
     PRE_RESTART_START_EVENTS="$(count_text_matches "$SERVER_LOGS_BEFORE_RESTART" 'Server has successfully started in')"
     PRE_RESTART_ONSTARTED_EVENTS="$(count_text_matches "$SERVER_LOGS_BEFORE_RESTART" 'Executing onStarted action finished')"
     PRE_RESTART_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
-    PRE_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
+    PRE_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/adjust.log" 'FAILED TIMEOUT')"
   
     compose restart server
     RESTART_TIMEOUT_SECONDS="${RUBROVA_RESTART_TIMEOUT_SECONDS:-$STARTUP_TIMEOUT_SECONDS}"
@@ -979,7 +979,7 @@ if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
     fi
     AFTER_RESTART_ONSTARTED_EVENTS="$(count_text_matches "$SERVER_RESTART_LOGS" 'Executing onStarted action finished')"
     AFTER_RESTART_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
-    AFTER_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
+    AFTER_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/adjust.log" 'FAILED TIMEOUT')"
     WARM_ONSTARTED_EVENTS="$(count_delta_after_restart "$PRE_RESTART_ONSTARTED_EVENTS" "$AFTER_RESTART_ONSTARTED_EVENTS")"
     WARM_SQL_TIMEOUTS="$(count_delta_after_restart "$PRE_RESTART_SQL_TIMEOUTS" "$AFTER_RESTART_SQL_TIMEOUTS")"
     WARM_MATERIALIZATION_TIMEOUTS="$(count_delta_after_restart "$PRE_RESTART_MATERIALIZATION_TIMEOUTS" "$AFTER_RESTART_MATERIALIZATION_TIMEOUTS")"
