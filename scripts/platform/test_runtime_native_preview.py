@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 import zipfile
+from xml.etree import ElementTree as ET
 from pathlib import Path
 from unittest.mock import patch
 
@@ -107,13 +108,22 @@ class NativePreviewTests(unittest.TestCase):
             )
 
             deployed_xml = base / "webapps" / "ROOT" / "WEB-INF" / "web.xml"
-            text = deployed_xml.read_text(encoding="utf-8")
-            self.assertIn("<param-value>127.0.0.1</param-value>", text)
-            self.assertIn("<param-value>17652</param-value>", text)
+            deployed_root = ET.parse(deployed_xml).getroot()
+            namespace = deployed_root.tag.split("}", 1)[0] + "}" if deployed_root.tag.startswith("{") else ""
+            params = {}
+            for item in deployed_root.findall(f"{namespace}context-param"):
+                name = item.find(f"{namespace}param-name")
+                value = item.find(f"{namespace}param-value")
+                if name is not None and value is not None:
+                    params[name.text or ""] = value.text
+            self.assertEqual(params.get("host"), "127.0.0.1")
+            self.assertEqual(params.get("port"), "17652")
 
-            server_xml = (base / "conf" / "server.xml").read_text(encoding="utf-8")
-            self.assertIn('port="18080"', server_xml)
-            self.assertIn('address="127.0.0.1"', server_xml)
+            server_xml = ET.parse(base / "conf" / "server.xml").getroot()
+            connector = server_xml.find(".//Connector")
+            self.assertIsNotNone(connector)
+            self.assertEqual(connector.get("port"), "18080")
+            self.assertEqual(connector.get("address"), "127.0.0.1")
 
     def test_invalid_war_path_is_rejected_before_extraction(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
