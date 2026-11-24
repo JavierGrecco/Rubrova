@@ -1011,6 +1011,11 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("No se encontró la acción nativa 'Cerrar turno' de MyCompany.")
                 print("UI_SESSION_CLOSE_ACTION_CLICKED=true")
                 close_confirmation_message = accept_ls_fusion_confirmation(page, "Cerrar turno")
+                if not close_confirmation_message.startswith("¿Confirma que desea ejecutar la acción"):
+                    raise RuntimeError(
+                        "La confirmación nativa del servidor no está localizada al español: "
+                        f"{close_confirmation_message!r}"
+                    )
                 print("UI_SESSION_CLOSE_CONFIRMATION=" + close_confirmation_message)
 
                 closed_session_payload: dict[str, Any] = {}

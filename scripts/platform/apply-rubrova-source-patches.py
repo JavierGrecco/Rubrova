@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Apply Rubrova's bounded HTTP timeout policy to the pinned lsFusion source."""
+"""Apply Rubrova compatibility and Spanish localization patches to pinned lsFusion/MyCompany sources."""
 
 from __future__ import annotations
 
@@ -121,6 +121,8 @@ TAX_HISTORY_TARGETS = (
 
 GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
+SERVER_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ServerResourceBundle_es.properties"
+SERVER_MESSAGES_TARGET = ROOT / "vendor/platform/server/src/main/resources/ServerResourceBundle_es.properties"
 
 
 
@@ -343,6 +345,26 @@ def main() -> int:
         GWT_MESSAGES_TARGET.parent.mkdir(parents=True, exist_ok=True)
         GWT_MESSAGES_TARGET.write_text(expected_messages, encoding="utf-8")
         print("Traducciones españolas críticas del cliente GWT aplicadas.")
+
+    if not SERVER_MESSAGES_SOURCE.is_file():
+        print(f"No se encontró el paquete español del servidor: {SERVER_MESSAGES_SOURCE}", file=sys.stderr)
+        return 2
+
+    expected_server_messages = SERVER_MESSAGES_SOURCE.read_text(encoding="utf-8")
+    if SERVER_MESSAGES_TARGET.exists():
+        current_server_messages = SERVER_MESSAGES_TARGET.read_text(encoding="utf-8")
+        if current_server_messages != expected_server_messages:
+            print(
+                "El paquete español del servidor difiere de su fuente Rubrova; "
+                "se detiene para evitar sobrescribir cambios.",
+                file=sys.stderr,
+            )
+            return 1
+        print("Traducciones españolas críticas del servidor ya aplicadas.")
+    else:
+        SERVER_MESSAGES_TARGET.parent.mkdir(parents=True, exist_ok=True)
+        SERVER_MESSAGES_TARGET.write_text(expected_server_messages, encoding="utf-8")
+        print("Traducciones españolas críticas del servidor aplicadas.")
 
     return 0
 

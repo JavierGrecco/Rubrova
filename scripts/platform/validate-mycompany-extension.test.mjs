@@ -35,6 +35,8 @@ const formButtonSource = read("vendor/platform/web-client/src/main/java/lsfusion
 const spanishGwtMessagesSource = read("patches/lsfusion/ClientMessages_es.properties");
 const gwtModuleSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/main.gwt.xml");
 const spanishGwtMessagesVendor = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties");
+const spanishServerMessagesSource = read("patches/lsfusion/ServerResourceBundle_es.properties");
+const spanishServerMessagesVendor = read("vendor/platform/server/src/main/resources/ServerResourceBundle_es.properties");
 
 
 function parseProperties(source) {
@@ -642,6 +644,21 @@ test("los botones de confirmación del cliente GWT están localizados al españo
   );
   assert.ok(sourcePatch.includes("GWT_MESSAGES_SOURCE"));
   assert.ok(sourcePatch.includes("GWT_MESSAGES_TARGET"));
+});
+
+test("los mensajes críticos del motor servidor están localizados al español", () => {
+  const entries = parseProperties(spanishServerMessagesSource);
+  assert.deepEqual(
+    parseProperties(spanishServerMessagesVendor),
+    entries,
+    "El bundle español generado para el servidor debe coincidir con la fuente Rubrova."
+  );
+  assert.equal(entries.get("form.instance.do.you.really.want.to.take.action"), "¿Confirma que desea ejecutar la acción");
+  assert.equal(entries.get("form.instance.do.you.really.want.to.edit.property"), "¿Confirma que desea editar la propiedad");
+  assert.equal(entries.get("form.instance.changes.saved"), "Los cambios se guardaron correctamente...");
+  assert.equal(entries.get("form.do.you.really.want.to.undo.changes"), "¿Desea deshacer los cambios?");
+  assert.ok(sourcePatch.includes("SERVER_MESSAGES_SOURCE"));
+  assert.ok(sourcePatch.includes("SERVER_MESSAGES_TARGET"));
 });
 
 test("el POS separa la cuenta central del cajón de efectivo", () => {
