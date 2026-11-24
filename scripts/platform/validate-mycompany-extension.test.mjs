@@ -636,6 +636,26 @@ test("el POS separa la cuenta central del cajón de efectivo", () => {
   assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
 });
 
+test("MyCompany guarda cambios pendientes antes de abrir NEWSESSION en acciones documentales", () => {
+  const expectedPaths = [
+    "vendor/mycompany/src/main/lsfusion/inventory/receipts/Receipt.lsf",
+    "vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptScrap.lsf",
+    "vendor/mycompany/src/main/lsfusion/inventory/receipts/shipment/ReceiptShipment.lsf",
+    "vendor/mycompany/src/main/lsfusion/inventory/scraps/Scrap.lsf",
+    "vendor/mycompany/src/main/lsfusion/inventory/shipments/Shipment.lsf",
+    "vendor/mycompany/src/main/lsfusion/inventory/shipments/receipt/ShipmentReceipt.lsf",
+    "vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf",
+    "vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf",
+    "vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf",
+    "vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf"
+  ];
+  assert.ok(sourcePatch.includes("NEWSESSION_GUARD_TARGETS"));
+  assert.ok(sourcePatch.includes("def apply_newsession_guards()"));
+  assert.ok(sourcePatch.includes("remainder.startswith(expected_guard)"));
+  for (const path of expectedPaths) assert.ok(sourcePatch.includes(path), "Falta el backport: " + path);
+  assert.ok(sourcePatch.includes("9dca1499bd4e2615d34983fe77c2927560fd5f9b"));
+});
+
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
   const callHttpSource = read("vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java");
   assert.match(callHttpSource, /RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L/);

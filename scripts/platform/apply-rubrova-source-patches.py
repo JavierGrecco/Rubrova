@@ -50,15 +50,78 @@ CASH_ACCOUNT_ANCHOR = "cashBalance 'Cash at the checkout' (Pos p) = balance(cash
 CASH_ACCOUNT_REQUIRED_MARKER = "CONSTRAINT account(Pos p) = cashAccount(p)"
 CASH_ACCOUNT_REPLACEMENT = (
     CASH_ACCOUNT_ANCHOR
-    + "\\n\\n"
-    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\\n"
-    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\\n"
-    + "CONSTRAINT account(Pos p) = cashAccount(p)\\n"
+    + "\n\n"
+    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\n"
+    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\n"
+    + "CONSTRAINT account(Pos p) = cashAccount(p)\n"
     + "                MESSAGE 'La cuenta central de caja no puede ser la misma que la cuenta de efectivo';"
 )
 
+# Backport from upstream MyCompany commit 9dca1499bd4e2615d34983fe77c2927560fd5f9b.
+# APPLY is deliberately placed before NEWSESSION so dirty form values are committed
+# before the action reads the document in a fresh session.
+NEWSESSION_GUARD_TARGETS = (
+    ("vendor/mycompany/src/main/lsfusion/inventory/receipts/Receipt.lsf", "copy 'Copy' (Receipt from) { "),
+    ("vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptScrap.lsf", "scrap 'Scrap' (Receipt r) {"),
+    ("vendor/mycompany/src/main/lsfusion/inventory/receipts/shipment/ReceiptShipment.lsf", "return 'Return' (Receipt r) {    "),
+    ("vendor/mycompany/src/main/lsfusion/inventory/scraps/Scrap.lsf", "copy 'Copy' (Scrap s) {"),
+    ("vendor/mycompany/src/main/lsfusion/inventory/shipments/Shipment.lsf", "copy 'Copy' (Shipment from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/inventory/shipments/receipt/ShipmentReceipt.lsf", "return 'Return' (Shipment s) {    "),
+    ("vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf", "copy 'Copy' (Bill from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf", "copy 'Copy' (Invoice from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf", "copy 'Copy' (Order from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf", "copy 'Copy' (Order from)  { "),
+)
+
+GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
+
+
+
+def apply_newsession_guards() -> bool:
+    for relative_path, anchor in NEWSESSION_GUARD_TARGETS:
+        target = ROOT / relative_path
+        if not target.is_file():
+            print(f"No se encontró el módulo MyCompany fijado: {target}", file=sys.stderr)
+            return False
+
+        source = target.read_text(encoding="utf-8")
+        occurrences = source.count(anchor)
+        if occurrences != 1:
+            print(
+                "No se aplicó la protección NEWSESSION. Se esperaba exactamente "
+                f"una coincidencia en {relative_path} y se encontraron {occurrences}.",
+                file=sys.stderr,
+            )
+            return False
+
+        remainder = source[source.index(anchor) + len(anchor):].lstrip(" \t\r\n")
+        expected_guard = "APPLY;\n    IF canceled() THEN RETURN;"
+        if remainder.startswith("APPLY;"):
+            if not remainder.startswith(expected_guard):
+                print(
+                    f"El guard NEWSESSION en {relative_path} existe pero difiere del esperado.",
+                    file=sys.stderr,
+                )
+                return False
+            continue
+
+        if not remainder.startswith("NEWSESSION {"):
+            print(
+                f"El ancla de {relative_path} ya no abre NEWSESSION inmediatamente; "
+                "requiere revisión manual.",
+                file=sys.stderr,
+            )
+            return False
+
+        insertion = "\n    APPLY;\n    IF canceled() THEN RETURN;"
+        source = source.replace(anchor, anchor + insertion, 1)
+        target.write_text(source, encoding="utf-8")
+        print(f"Protección de cambios pendientes aplicada: {relative_path}")
+
+    print(f"Protección NEWSESSION verificada en {len(NEWSESSION_GUARD_TARGETS)} módulos.")
+    return True
 
 
 def main() -> int:
@@ -116,6 +179,9 @@ def main() -> int:
         print("Control de caja aplicado: cuenta central y cajón de efectivo deben ser distintos.")
     else:
         print("El control de cuentas de caja de Rubrova ya está aplicado.")
+
+    if not apply_newsession_guards():
+        return 1
 
     if not GWT_MESSAGES_SOURCE.is_file():
         print(f"No se encontró el glosario español del cliente GWT: {GWT_MESSAGES_SOURCE}", file=sys.stderr)

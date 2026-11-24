@@ -82,6 +82,8 @@ jobs:
         run: |
           bash scripts/platform/validate-vendored-sources.sh
           python3 scripts/platform/apply-rubrova-source-patches.py
+          # Segunda pasada: demostrar que todos los parches del fuente son idempotentes.
+          python3 scripts/platform/apply-rubrova-source-patches.py
           grep -q 'RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L' vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java
           grep -Fq 'CONSTRAINT account(Pos p) = cashAccount(p)' vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
