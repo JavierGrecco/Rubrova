@@ -1,7 +1,7 @@
 # Modos de ejecución y control local de Rubrova
 
 **Decisión de arquitectura:** separar el lugar donde corre el POS/ERP de la conectividad con proveedores externos. Ofrecer siempre un control independiente del servidor para consultar estado y cambiar el destino de ejecución.  
-**Estado:** contrato de configuración inicial y validador implementados; lanzador nativo completo, panel visual y migración entre destinos pendientes.
+**Estado:** contrato de configuración y CLI implementados; existe un primer prototipo de lanzador nativo y pruebas unitarias para sus protecciones principales. El runtime completo aún no superó una aceptación funcional nativa en macOS/Windows; panel visual, instalador offline y migración entre destinos siguen pendientes.
 
 ## 1. Decisión
 
@@ -42,7 +42,38 @@ La imagen oficial `lsfusion/mycompany:6.2` publicada para Docker es `linux/amd64
 
 La documentación oficial de lsFusion describe instalaciones manuales y automáticas con servidor Java, PostgreSQL y Tomcat, además de Docker. MyCompany publica una ruta de instalación en Windows x64 y Linux; Rubrova debe empaquetar su propio runtime para macOS y para una instalación offline verificable, sin depender del instalador online de MyCompany.
 
-## 4. Qué hará el supervisor
+### Investigación de proyectos y ramas que comparten las fuentes
+
+La conclusión de la revisión es que **no necesitamos un fork distinto para quitar Docker**. El propio lsFusion 6.2 ya define instalación manual, automática y mediante Docker. El camino manual oficial levanta el servidor desde Java y `BusinessLogicsBootstrap`; Docker no es una dependencia del motor ni de MyCompany, sino una forma de empaquetar y aislar esos procesos.
+
+Fuentes y proyectos comparados:
+
+| Proyecto o referencia | Qué aporta | Decisión para Rubrova |
+|---|---|---|
+| [lsFusion platform 6.2](https://github.com/lsfusion/platform/tree/6.2) y [su guía de instalación](https://docs.lsfusion.org/v6/Install/) | Instalación manual nativa. El servidor se ejecuta como proceso Java; PostgreSQL y Tomcat funcionan como servicios del sistema. El [entrypoint Docker de la misma versión](https://github.com/lsfusion/platform/blob/6.2/server/entrypoint.sh) también ejecuta `BusinessLogicsBootstrap` con el classpath del servidor. | Reutilizar el mecanismo del propio motor; mantener el mismo JAR y el mismo classpath, no crear otro servidor. |
+| [MyCompany 6.2](https://github.com/lsfusion-solutions/mycompany/tree/6.2) y [guía oficial de instalación](https://mycompany-docs.lsfusion.org/administration/installation/) | Instalación nativa documentada para Linux y un instalador Windows x64. La lógica MyCompany se puede incorporar al classpath del servidor lsFusion. | Mantener la lógica original, sumar los módulos Rubrova y desplegarla como instalación nativa. |
+| [Guía oficial de desarrollo MyCompany](https://mycompany-docs.lsfusion.org/administration/development/) | Describe el trabajo sobre las fuentes, JDK, PostgreSQL, ejecución del servidor desde el IDE y carga de módulos propios. | Reutilizar el flujo directo de desarrollo; no hace falta convertir cada ciclo de prueba en una compilación de imagen Docker. |
+| [NikitaKolotushkin/lsfusion-myCompany](https://github.com/NikitaKolotushkin/lsfusion-myCompany) | Clon de MyCompany con `compose.yaml` y README que instruye `docker-compose up -d`; no aporta un lanzador nativo sin Docker. | No importar su configuración de despliegue. |
+| [ichavchavadze/lsfusion-aggregate](https://github.com/ichavchavadze/lsfusion-aggregate) | Integra plataforma, MyCompany, samples y plugin mediante Git subtrees y sincroniza las fuentes conservando su historial. | Es una referencia útil para sincronización y trazabilidad del código fuente, no para ejecutar el servidor. Rubrova ya usa snapshots fijados en `platform/source-lock.json`. |
+| [laigor/lsfusion-mycompany](https://github.com/laigor/lsfusion-mycompany) y [nd989/mycompany](https://github.com/nd989/mycompany) | Copias con instrucciones de instalación nativa o manual, pero sus POM ya apuntan a 7.0-SNAPSHOT. La rama `v6` de MyCompany también avanzó a 6.3-SNAPSHOT. | No transplantar sus cambios de build a nuestro fork 6.2: cambian la versión de plataforma y pueden introducir incompatibilidades. |
+
+La búsqueda de repositorios públicos y forks relevantes no es una prueba de que no exista ningún despliegue privado o no indexado. Sí alcanza para una decisión de ingeniería: no encontré un fork público de lsFusion/MyCompany 6.2 cuya modificación nativa justifique sustituir el mecanismo oficial. Los forks revisados que sí pudimos inspeccionar son ejemplos de Docker, espejos de código o versiones posteriores; ninguno aporta una pieza de runtime mejor que la vía manual del proveedor.
+
+### Aprendizajes que aplicamos
+
+1. El servidor no se debe reescribir ni envolver en un microservicio Python. Python sólo supervisa procesos; lsFusion sigue ejecutando la lógica y PostgreSQL conserva los datos.
+2. El orden correcto es PostgreSQL listo → `BusinessLogicsBootstrap` inicializado → RMI disponible → `onStarted` finalizado → Tomcat/cliente web disponible. Un puerto abierto o una respuesta HTTP temprana no es suficiente.
+3. El servidor debe trabajar con una carpeta de datos exclusiva y persistente de Rubrova. El lanzador no puede adoptar ni detener una instalación PostgreSQL ajena.
+4. En Apple Silicon hay que usar Java y PostgreSQL nativos ARM64. El hecho de que la imagen MyCompany 6.2 de Docker publique `linux/amd64` no impide ejecutar el JAR de lógica desde una JVM ARM64.
+5. El código de la plataforma y MyCompany debe seguir ligado al SHA 6.2 registrado. No mezclaremos soluciones de 6.3/7.0 para solucionar el método de arranque.
+
+## 4. Prototipo de supervisor nativo y límites actuales
+
+Ya existe `scripts/platform/run-local-native-preview.py`. Usa Python estándar como **supervisor**, no como sustituto del servidor lsFusion, de la lógica MyCompany, de PostgreSQL ni de Tomcat. Descubre Java 21 y PostgreSQL 18, prepara un clúster separado, descarga Tomcat 9 con SHA-512 verificado, despliega el WAR y lanza el servidor Java directamente.
+
+El prototipo ya aplica varias protecciones: enlaza la web y PostgreSQL sólo a `127.0.0.1`, cambia el host/puerto RMI del `web.xml`, verifica que el clúster PostgreSQL corresponda al directorio privado de Rubrova, no detiene una instancia PostgreSQL que ya estaba en marcha y espera el mensaje de arranque, RMI y finalización de `onStarted` antes de iniciar Tomcat. La autenticación PostgreSQL `trust` queda limitada a este clúster local de desarrollo; **no es la configuración del instalador productivo**, que debe usar SCRAM y el almacén seguro del sistema operativo.
+
+Las pruebas unitarias de `scripts/platform/test_runtime_native_preview.py` cubren la espera de arranque, el aislamiento de PostgreSQL, el enlace a loopback y la validación de rutas del WAR. Estas pruebas validan el supervisor; **no demuestran todavía que toda la aplicación haya arrancado y completado una venta nativa**. No presentar el prototipo como producto aceptado ni como instalador listo para uso diario.
 
 Para desarrollar y probar primero usaremos Python como **supervisor de procesos**, no como reemplazo del servidor, de PostgreSQL ni de Tomcat. La biblioteca estándar de Python alcanza para iniciar procesos, vigilar puertos, capturar logs, manejar señales, validar rutas y escribir configuración de forma atómica.
 
@@ -93,25 +124,30 @@ Antes de aplicar un cambio, el panel debe mostrar qué base se usará, crear un 
 
 ## 8. Pruebas que deben ejecutarse sin Docker
 
-El pipeline debe tener un camino de aceptación nativo, además del actual camino Docker:
+El **camino principal de desarrollo y CI** será el runtime nativo. Docker queda como verificación secundaria de empaquetado, compatibilidad de imágenes e aislamiento; no debe bloquear cada cambio funcional.
 
-1. preparar Java 21, PostgreSQL 18 y Tomcat 9 dentro del runner Linux;
-2. construir server JAR, MyCompany logic JAR y client WAR desde las fuentes de Rubrova;
-3. iniciar PostgreSQL con un directorio de datos temporal;
-4. iniciar servidor y Tomcat mediante el supervisor nativo;
-5. abrir la UI con Chromium y realizar una venta sintética en efectivo;
-6. comprobar factura, pago, caja, stock y turno desde los datos persistidos;
-7. reiniciar servidor y cliente sin borrar PostgreSQL y volver a conciliar;
-8. simular falta de Internet, manteniendo los procesos locales, y comprobar que las funciones del núcleo siguen disponibles;
-9. detener procesos y borrar exclusivamente el directorio temporal de CI.
+El smoke nativo debe:
 
-La prueba nativa será la ruta rápida de desarrollo y el Docker smoke conservará su utilidad como verificación de empaquetado/aislamiento. Ninguna se marcará aprobada antes de ejecutar el flujo completo.
+1. preparar Java 21, PostgreSQL 18 y Tomcat 9 en el runner;
+2. construir server JAR, MyCompany logic JAR y client WAR desde las fuentes fijadas de Rubrova;
+3. iniciar un clúster PostgreSQL temporal con un directorio exclusivo;
+4. iniciar el servidor y Tomcat mediante el supervisor nativo;
+5. inyectar los mismos fixtures sintéticos de POS y de integración que hoy se agregan al Compose efímero;
+6. iniciar el proveedor HTTP simulado como proceso local y abrir la UI con Chromium;
+7. ejecutar una venta de efectivo, validar factura/pago/caja/stock/turno en los datos persistidos;
+8. reiniciar servidor y cliente sin borrar PostgreSQL y volver a conciliar sin duplicar operaciones;
+9. bloquear la salida a Internet y demostrar que las funciones locales siguen funcionando; la llamada al proveedor simulado debe permanecer en loopback;
+10. detener únicamente los procesos de prueba y borrar exclusivamente los datos temporales de CI.
+
+También simplificaremos el escenario de fallos externos: el smoke actual usa Toxiproxy como un proxy de paso hacia `mock-provider` (crea el proxy y consulta su API, pero no configura toxics). El servidor simulado ya expone directamente rutas lentas y respuestas HTTP 400/401/403/408/409/429/503. Para el camino nativo se lo consultará en `127.0.0.1`; dentro de Docker, en `mock-provider:18765`. Así eliminamos una dependencia innecesaria sin perder los escenarios que medimos.
+
+La primera puerta de CI será el smoke funcional nativo en Linux. Después se repetirá en macOS ARM64 y Windows x64. El runtime sólo se marcará aprobado cuando pase el ciclo completo y no sólo el diagnóstico de dependencias o la compilación.
 
 ## 9. Estado real y siguiente entrega
 
-**Implementado en este bloque:** esquema JSON de configuración, validador Python, comandos de lectura/validación y cambios de destino con confirmación explícita de que el archivo no migra ni copia datos.
+**Implementado en este bloque:** esquema JSON de configuración, validador/CLI, prototipo de supervisor nativo y pruebas unitarias de sus controles principales. La validación estática del supervisor y las pruebas Windows/Ubuntu del workflow pasan; el runtime nativo completo todavía no se ha ejecutado en un runner ni en tu Mac.
 
-**Todavía pendiente:** panel visual independiente, supervisor de PostgreSQL/Java/Tomcat, empaquetado nativo macOS/Windows, migración segura entre bases y smoke funcional nativo sin Docker.
+**Todavía pendiente:** smoke de venta y persistencia sin Docker, panel visual independiente, empaquetado con PostgreSQL/JRE/Tomcat, instalador offline, migración entre bases y aceptación nativa macOS ARM64/Windows x64.
 
 El primer objetivo de prueba será tu MacBook Air: ejecutar los mismos JAR/WAR del proyecto en Java 21 nativo ARM64, con PostgreSQL 18 y Tomcat local, sin Docker Desktop. Después incorporaremos el paquete autónomo para una PC limpia y Windows.
 
