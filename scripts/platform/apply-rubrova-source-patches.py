@@ -61,6 +61,8 @@ CASH_ACCOUNT_REPLACEMENT = (
 # APPLY is deliberately placed before NEWSESSION so dirty form values are committed
 # before the action reads the document in a fresh session.
 NEWSESSION_GUARD_TARGETS = (
+    ("vendor/mycompany/src/main/lsfusion/crm/leads/Lead.lsf", "copy 'Copy' (Lead from)  {"),
+    ("vendor/mycompany/src/main/lsfusion/fleet/vehicles/service/VehicleService.lsf", "copy 'Copy' (VehicleService from)  {"),
     ("vendor/mycompany/src/main/lsfusion/inventory/receipts/Receipt.lsf", "copy 'Copy' (Receipt from) { "),
     ("vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptScrap.lsf", "scrap 'Scrap' (Receipt r) {"),
     ("vendor/mycompany/src/main/lsfusion/inventory/receipts/shipment/ReceiptShipment.lsf", "return 'Return' (Receipt r) {    "),
@@ -69,8 +71,17 @@ NEWSESSION_GUARD_TARGETS = (
     ("vendor/mycompany/src/main/lsfusion/inventory/shipments/receipt/ShipmentReceipt.lsf", "return 'Return' (Shipment s) {    "),
     ("vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf", "copy 'Copy' (Bill from)  { "),
     ("vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf", "copy 'Copy' (Invoice from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf", "copy 'Copy' (Bom b) {"),
+    ("vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf", "copy 'Copy' (ManufacturingOrder from) {"),
+    ("vendor/mycompany/src/main/lsfusion/manufacturing/orders/scrap/ManufacturingOrderScrap.lsf", "scrap 'Scrap' (ManufacturingOrder o) {"),
+    ("vendor/mycompany/src/main/lsfusion/masterdata/items/products/Product.lsf", "copy 'Copy' (Product p) {"),
+    ("vendor/mycompany/src/main/lsfusion/masterdata/items/services/ServiceP.lsf", "copy 'Copy' (Service s) {"),
+    ("vendor/mycompany/src/main/lsfusion/projectManagement/timeEntries/TimeEntry.lsf", "copy 'Copy' (TimeEntry from) {"),
     ("vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf", "copy 'Copy' (Order from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/purchase/pricelists/PurchasePricelist.lsf", "copy 'Copy' (Pricelist pl) {"),
+    ("vendor/mycompany/src/main/lsfusion/region/pl/invoicing/ksef/invoices/KSeFInvoiceSend.lsf", "sendToKSeF 'Wyślij do KSeF' (Invoice i) {"),
     ("vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf", "copy 'Copy' (Order from)  { "),
+    ("vendor/mycompany/src/main/lsfusion/sales/pricelists/SalesPricelist.lsf", "copy 'Copy' (Pricelist pl) {"),
 )
 
 CASH_ACCOUNT_QUERIES_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/accounts/cash/CashAccount.lsf"
@@ -85,7 +96,29 @@ CASH_ACCOUNT_QUERY_REPLACEMENTS = (
     ),
 )
 
-GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
+BANK_ACCOUNT_QUERIES_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/accounts/bank/BankAccount.lsf"
+BANK_ACCOUNT_QUERY_REPLACEMENTS = (
+    (
+        "calcDefaultBankAccount (Partner p) = GROUP LAST BankAccount a ORDER a WHERE holder(a) = p IF countBankAccount(p) = 1;",
+        "calcDefaultBankAccount (Partner p) = GROUP LAST BankAccount a ORDER a WHERE a IS BankAccount AND holder(a) = p IF countBankAccount(p) = 1;",
+    ),
+)
+
+# Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
+# Tax changes are part of the document-line audit trail, alongside quantity and amount.
+TAX_HISTORY_TARGETS = (
+    (
+        ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf",
+        "@defineDocHistoryLineProperty(bill, BillLine, untaxedAmount, '{Amount}', nameItem);",
+        "@defineDocHistoryLineProperty(bill, BillLine, taxes, 'Taxes', nameItem);",
+    ),
+    (
+        ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf",
+        "@defineDocHistoryLineProperty(invoice, InvoiceLine, untaxedAmount, '{Amount}', nameItem);",
+        "@defineDocHistoryLineProperty(invoice, InvoiceLine, taxes, 'Taxes', nameItem);",
+    ),
+)
+
 GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
 
@@ -120,6 +153,62 @@ def apply_cash_account_query_filters() -> bool:
         print("Filtros de clase CashAccount ya aplicados.")
     return True
 
+
+
+def apply_bank_account_query_filters() -> bool:
+    if not BANK_ACCOUNT_QUERIES_TARGET.is_file():
+        print(f"No se encontró el módulo BankAccount: {BANK_ACCOUNT_QUERIES_TARGET}", file=sys.stderr)
+        return False
+
+    source = BANK_ACCOUNT_QUERIES_TARGET.read_text(encoding="utf-8")
+    changed = False
+    for before, after in BANK_ACCOUNT_QUERY_REPLACEMENTS:
+        if after in source:
+            continue
+        count = source.count(before)
+        if count != 1:
+            print(
+                "No se aplicó el filtro BankAccount. Se esperaba exactamente "
+                f"una coincidencia y se encontraron {count}: {before}",
+                file=sys.stderr,
+            )
+            return False
+        source = source.replace(before, after, 1)
+        changed = True
+
+    if changed:
+        BANK_ACCOUNT_QUERIES_TARGET.write_text(source, encoding="utf-8")
+        print("Filtro de clase BankAccount aplicado.")
+    else:
+        print("Filtro de clase BankAccount ya aplicado.")
+    return True
+
+
+def apply_tax_history_line_tracking() -> bool:
+    for target, anchor, replacement in TAX_HISTORY_TARGETS:
+        if not target.is_file():
+            print(f"No se encontró el módulo documental: {target}", file=sys.stderr)
+            return False
+
+        source = target.read_text(encoding="utf-8")
+        if replacement in source:
+            continue
+
+        count = source.count(anchor)
+        if count != 1:
+            print(
+                "No se incorporó el historial de impuestos. Se esperaba exactamente "
+                f"una coincidencia en {target} y se encontraron {count}.",
+                file=sys.stderr,
+            )
+            return False
+
+        source = source.replace(anchor, anchor + "\n" + replacement, 1)
+        target.write_text(source, encoding="utf-8")
+        print(f"Historial de impuestos por línea aplicado: {target.name}")
+
+    print(f"Historial de impuestos verificado en {len(TAX_HISTORY_TARGETS)} documentos.")
+    return True
 
 
 def apply_newsession_guards() -> bool:
@@ -227,6 +316,12 @@ def main() -> int:
         return 1
 
     if not apply_cash_account_query_filters():
+        return 1
+
+    if not apply_bank_account_query_filters():
+        return 1
+
+    if not apply_tax_history_line_tracking():
         return 1
 
     if not GWT_MESSAGES_SOURCE.is_file():

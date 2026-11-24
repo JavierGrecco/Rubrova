@@ -300,7 +300,7 @@ rubrovaTestSessionCloseApi () {
         sessionNumber = Retail.number(rubrovaCITestSession()),
         openingDateTime = Retail.openingDateTime(rubrovaCITestSession()),
         closingDateTime = Retail.closingDateTime(rubrovaCITestSession()),
-        opened = Retail.opened(rubrovaCITestSession()),
+        sessionStatus = CASE WHEN Retail.opened(rubrovaCITestSession()) THEN 'OPEN' ELSE 'CLOSED',
         salesCount = Retail.countInvoices(rubrovaCITestSession()),
         salesAmount = Retail.totalAmountInvoice(rubrovaCITestSession()),
         returnsCount = Retail.countBills(rubrovaCITestSession()),

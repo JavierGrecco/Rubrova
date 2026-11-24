@@ -1027,7 +1027,10 @@ def inspect_page(url: str) -> int:
                     closed_session_payload = close_response.json()
                     if isinstance(closed_session_payload, list):
                         closed_session_payload = closed_session_payload[0] if closed_session_payload else {}
-                    if closed_session_payload.get("closingDateTime") and not closed_session_payload.get("opened"):
+                    if (
+                        closed_session_payload.get("closingDateTime")
+                        and closed_session_payload.get("sessionStatus") == "CLOSED"
+                    ):
                         break
                     page.wait_for_timeout(750)
 
@@ -1038,8 +1041,11 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("El turno cerrado no conservó su fecha de apertura.")
                 if not closed_session_payload.get("closingDateTime"):
                     raise RuntimeError("El cierre nativo no persistió closingDateTime.")
-                if closed_session_payload.get("opened") is not False:
-                    raise RuntimeError("El turno sigue abierto después de ejecutar Cerrar turno.")
+                if closed_session_payload.get("sessionStatus") != "CLOSED":
+                    raise RuntimeError(
+                        "El turno sigue abierto después de ejecutar Cerrar turno. "
+                        f"Estado informado: {closed_session_payload.get('sessionStatus')!r}"
+                    )
 
                 expected_close = {
                     "salesCount": 1,

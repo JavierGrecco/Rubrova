@@ -20,6 +20,9 @@ const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const posSearchSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardSearch.lsf");
 const paymentMethodSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf");
 const cashAccountSource = read("vendor/mycompany/src/main/lsfusion/invoicing/accounts/cash/CashAccount.lsf");
+const bankAccountSource = read("vendor/mycompany/src/main/lsfusion/invoicing/accounts/bank/BankAccount.lsf");
+const billSource = read("vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf");
+const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
@@ -580,6 +583,7 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(runtimeSmokeSource.includes("rubrovaCITestSession() = GROUP MAX Retail.Session"));
   assert.ok(runtimeSmokeSource.includes("rubrovaTestSessionCloseApi"));
   assert.ok(runtimeSmokeSource.includes("Retail.closingDateTime(rubrovaCITestSession())"));
+  assert.ok(runtimeSmokeSource.includes("sessionStatus = CASE WHEN Retail.opened(rubrovaCITestSession()) THEN 'OPEN' ELSE 'CLOSED'"));
   assert.ok(runtimeSmokeSource.includes("Retail.countInvoices(rubrovaCITestSession())"));
   assert.ok(runtimeSmokeSource.includes("Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod())"));
   assert.ok(uiSmokeSource.includes('"Cerrar turno": "PROPERTY(close(s))"'));
@@ -600,6 +604,8 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes("UI_SESSION_TAB_ACTIVATED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_BUTTON_VISIBLE=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_ACTION_CLICKED=true"));
+  assert.ok(uiSmokeSource.includes('closed_session_payload.get("sessionStatus") == "CLOSED"'));
+  assert.ok(uiSmokeSource.includes('closed_session_payload.get("sessionStatus") != "CLOSED"'));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_TIMESTAMP_PERSISTED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_SALES_RECONCILED=true"));
@@ -650,6 +656,8 @@ test("el POS separa la cuenta central del cajón de efectivo", () => {
 
 test("MyCompany guarda cambios pendientes antes de abrir NEWSESSION en acciones documentales", () => {
   const expectedPaths = [
+    "vendor/mycompany/src/main/lsfusion/crm/leads/Lead.lsf",
+    "vendor/mycompany/src/main/lsfusion/fleet/vehicles/service/VehicleService.lsf",
     "vendor/mycompany/src/main/lsfusion/inventory/receipts/Receipt.lsf",
     "vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptScrap.lsf",
     "vendor/mycompany/src/main/lsfusion/inventory/receipts/shipment/ReceiptShipment.lsf",
@@ -658,9 +666,19 @@ test("MyCompany guarda cambios pendientes antes de abrir NEWSESSION en acciones 
     "vendor/mycompany/src/main/lsfusion/inventory/shipments/receipt/ShipmentReceipt.lsf",
     "vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf",
     "vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf",
+    "vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf",
+    "vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf",
+    "vendor/mycompany/src/main/lsfusion/manufacturing/orders/scrap/ManufacturingOrderScrap.lsf",
+    "vendor/mycompany/src/main/lsfusion/masterdata/items/products/Product.lsf",
+    "vendor/mycompany/src/main/lsfusion/masterdata/items/services/ServiceP.lsf",
+    "vendor/mycompany/src/main/lsfusion/projectManagement/timeEntries/TimeEntry.lsf",
     "vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf",
-    "vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf"
+    "vendor/mycompany/src/main/lsfusion/purchase/pricelists/PurchasePricelist.lsf",
+    "vendor/mycompany/src/main/lsfusion/region/pl/invoicing/ksef/invoices/KSeFInvoiceSend.lsf",
+    "vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf",
+    "vendor/mycompany/src/main/lsfusion/sales/pricelists/SalesPricelist.lsf"
   ];
+  assert.equal(expectedPaths.length, 21);
   assert.ok(sourcePatch.includes("NEWSESSION_GUARD_TARGETS"));
   assert.ok(sourcePatch.includes("def apply_newsession_guards()"));
   assert.ok(sourcePatch.includes("remainder.startswith(expected_guard)"));
@@ -673,6 +691,24 @@ test("las búsquedas de cuenta de caja restringen la clase CashAccount", () => {
   assert.ok(cashAccountSource.includes("WHERE a IS CashAccount AND holder(a) = legalEntity(e) AND responsible(a) = e"));
   assert.ok(sourcePatch.includes("CASH_ACCOUNT_QUERY_REPLACEMENTS"));
   assert.ok(sourcePatch.includes("def apply_cash_account_query_filters()"));
+});
+
+test("la búsqueda de cuenta bancaria restringe la clase BankAccount", () => {
+  assert.ok(bankAccountSource.includes("WHERE holder(a) = p IF countBankAccount(p) = 1;"));
+  assert.ok(sourcePatch.includes("BANK_ACCOUNT_QUERY_REPLACEMENTS"));
+  assert.ok(sourcePatch.includes("a IS BankAccount AND holder(a) = p IF countBankAccount(p) = 1;"));
+  assert.ok(sourcePatch.includes("def apply_bank_account_query_filters()"));
+  assert.ok(sourcePatch.includes("if not apply_bank_account_query_filters():"));
+});
+
+test("el historial de facturas y compras registra los cambios de impuestos por línea", () => {
+  assert.ok(billSource.includes("@defineDocHistoryLineProperty(bill, BillLine, untaxedAmount, '{Amount}', nameItem);"));
+  assert.ok(invoiceSource.includes("@defineDocHistoryLineProperty(invoice, InvoiceLine, untaxedAmount, '{Amount}', nameItem);"));
+  assert.ok(sourcePatch.includes("TAX_HISTORY_TARGETS"));
+  assert.ok(sourcePatch.includes("@defineDocHistoryLineProperty(bill, BillLine, taxes, 'Taxes', nameItem);"));
+  assert.ok(sourcePatch.includes("@defineDocHistoryLineProperty(invoice, InvoiceLine, taxes, 'Taxes', nameItem);"));
+  assert.ok(sourcePatch.includes("def apply_tax_history_line_tracking()"));
+  assert.ok(sourcePatch.includes("if not apply_tax_history_line_tracking():"));
 });
 
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
