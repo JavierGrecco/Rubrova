@@ -592,6 +592,9 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes("UI_GWT_CONFIRMATION_ACCEPTED=true"));
   assert.ok(!uiSmokeSource.includes('page.once("dialog", accept_session_close_dialog)'));
   assert.ok(uiSmokeSource.includes('page.get_by_text("Turno", exact=True)'));
+  assert.ok(uiSmokeSource.includes("visible_session_tabs"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_TAB_VISIBLE_MATCHES="));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_TAB_CANDIDATES="));
   assert.ok(uiSmokeSource.includes("UI_SESSION_TAB_ACTIVATED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_BUTTON_VISIBLE=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_ACTION_CLICKED=true"));

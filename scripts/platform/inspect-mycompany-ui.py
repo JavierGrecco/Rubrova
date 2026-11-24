@@ -947,14 +947,50 @@ def inspect_page(url: str) -> int:
                 # Después del cobro, el POS vuelve a dejar activa la pestaña "By order".
                 # El cierre pertenece al panel "Turno"; volver a esa pestaña hace visible
                 # la acción original sin llamar al cierre por una API auxiliar.
-                session_tab = page.get_by_text("Turno", exact=True)
-                session_tab_count = session_tab.count()
-                if session_tab_count != 1:
-                    raise RuntimeError(
-                        "No se encontró una única pestaña 'Turno' en el POS después del cobro. "
-                        f"Coincidencias: {session_tab_count}."
+                session_tab_matches = page.get_by_text("Turno", exact=True)
+                visible_session_tabs: list[Any] = []
+                session_tab_diagnostics: list[dict[str, Any]] = []
+                for index in range(session_tab_matches.count()):
+                    candidate = session_tab_matches.nth(index)
+                    is_visible = candidate.is_visible()
+                    candidate_info = candidate.evaluate(
+                        """element => {
+                            const ancestors = [];
+                            for (let node = element, depth = 0; node && depth < 4; node = node.parentElement, depth++) {
+                                ancestors.push({
+                                    tag: node.tagName.toLowerCase(),
+                                    className: typeof node.className === "string" ? node.className : "",
+                                    role: node.getAttribute("role") || "",
+                                    lsfusionContainer: node.getAttribute("lsfusion-container") || "",
+                                    text: (node.innerText || node.textContent || "").trim().slice(0, 100)
+                                });
+                            }
+                            return {
+                                tag: element.tagName.toLowerCase(),
+                                className: typeof element.className === "string" ? element.className : "",
+                                role: element.getAttribute("role") || "",
+                                lsfusionContainer: element.getAttribute("lsfusion-container") || "",
+                                ancestors
+                            };
+                        }"""
                     )
-                session_tab.wait_for(state="visible", timeout=10_000)
+                    session_tab_diagnostics.append({**candidate_info, "visible": is_visible})
+                    if is_visible:
+                        visible_session_tabs.append(candidate)
+
+                print("UI_SESSION_TAB_TOTAL_MATCHES=" + str(session_tab_matches.count()))
+                print("UI_SESSION_TAB_VISIBLE_MATCHES=" + str(len(visible_session_tabs)))
+                print("UI_SESSION_TAB_CANDIDATES=" + json.dumps(session_tab_diagnostics, ensure_ascii=False))
+                if len(visible_session_tabs) != 1:
+                    raise RuntimeError(
+                        "Se esperaba un único encabezado visible 'Turno' en el POS después del cobro; "
+                        f"aparecieron {len(visible_session_tabs)}. "
+                        + page.locator("body").inner_text(timeout=5_000)[:1800]
+                    )
+
+                # get_by_text encuentra también el nodo del panel oculto conservado por GWT.
+                # Elegimos únicamente el encabezado visible de la pestaña, no el texto oculto.
+                session_tab = visible_session_tabs[0]
                 session_tab.click(no_wait_after=True)
                 print("UI_SESSION_TAB_ACTIVATED=true")
 
