@@ -2,8 +2,9 @@
 
 **Corte:** 24 de noviembre de 2026  
 **Rama:** `main`  
-**Última aceptación funcional completa:** [CI 45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823)  
-**Commit funcional aceptado:** `20029852e82e20b126412e1d704a5afe634fe3bd`  
+**Última aceptación funcional completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218)  
+**Commit funcional aceptado:** `e23acfc7bb3387ebd184b1aeed9e80c8994593c5`  
+**Validación de runtime sin salida externa:** [CI 45508387716](https://github.com/JavierGrecco/Rubrova/actions/runs/45508387716), en curso para el commit `acecfb58180508ffd02aea2876cded2ef0df8057`  
 **Revisión de idioma y experiencia en curso:** `891009e93c8ccca719a6d53f8fe14afaa39fe32b`
 
 ## Resumen ejecutivo
@@ -35,9 +36,10 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Cierre básico después de venta en efectivo exacto | Aprobado en CI | Turno `SM/000001` quedó `CLOSED`; venta/neta y saldo de caja ARS 1.250 conciliados. Faltan arqueo contado, diferencias, ingresos y retiros |
 | Devolución y reintegro | Pendiente | Falta comprobar Bill, OutgoingPayment, medio original y movimiento inverso de stock |
 | Vuelto, pagos mixtos y tarjeta | Pendiente | El primer circuito aceptado sólo cubre efectivo exacto, sin vuelto |
-| Reinicio conservando datos | Pendiente | Falta reiniciar servidor/cliente conservando PostgreSQL y volver a conciliar factura, pago, caja y stock |
+| Reinicio conservando datos | Aprobado en CI | En `45503956218` se reiniciaron servidor y cliente sin borrar PostgreSQL y se volvieron a conciliar factura, pago, caja, stock y turno cerrado |
 | Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
-| Instalación local sin Internet | Pendiente | CI construye imágenes propias, pero no demuestra todavía paquete completo offline ni ausencia de descargas en una PC limpia |
+| Runtime durante una caída de Internet | En validación en CI | Se agregó una red Docker interna sin salida externa para PostgreSQL, servidor, lógica, cliente y simuladores. La nueva aceptación está en curso en `45508387716`; todavía no se declara aprobada |
+| Instalación inicial y paquete completo sin Internet | Pendiente | La prueba de runtime aislado no demuestra todavía que el instalador, los artefactos, las imágenes base y las dependencias puedan instalarse en una PC limpia sin conexión |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
 | Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
 | ARCA, adquirentes, marketplaces y logística | Pendiente | Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
