@@ -568,6 +568,22 @@ test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () =
   assert.match(gwtDispatcherSource, /xhr[.]getStatus\(\) == 0 \? null/);
 });
 
+test("el cierre nativo del turno concilia y persiste la sesión", () => {
+  assert.match(runtimeSmokeSource, /rubrovaCITestSession\\(\\) = GROUP MAX Retail[.]Session/);
+  assert.match(runtimeSmokeSource, /rubrovaTestSessionCloseApi/);
+  assert.match(runtimeSmokeSource, /Retail[.]closingDateTime\\(rubrovaCITestSession\\(\\)\\)/);
+  assert.match(runtimeSmokeSource, /Retail[.]countInvoices\\(rubrovaCITestSession\\(\\)\\)/);
+  assert.match(runtimeSmokeSource, /Retail[.]paid\\(rubrovaCITestSession\\(\\), Retail[.]cashPaymentMethod\\(\\)\\)/);
+  assert.match(uiSmokeSource, /"Cerrar turno": "PROPERTY\\(close\\(s\\)\\)"/);
+  assert.match(uiSmokeSource, /accept_session_close_dialog/);
+  assert.match(uiSmokeSource, /UI_SESSION_CLOSE_ACTION_CLICKED=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_CLOSE_TIMESTAMP_PERSISTED=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_CLOSED=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_SALES_RECONCILED=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_CASH_RECONCILED=true/);
+  assert.match(uiSmokeSource, /UI_SESSION_CLOSED_SCREENSHOT/);
+});
+
 test("el POS separa la cuenta central del cajón de efectivo", () => {
   assert.match(paymentMethodSource, /CONSTRAINT account\\(Pos p\\) = cashAccount\\(p\\)/);
   assert.match(paymentMethodSource, /La cuenta central de caja no puede ser la misma que la cuenta de efectivo/);
