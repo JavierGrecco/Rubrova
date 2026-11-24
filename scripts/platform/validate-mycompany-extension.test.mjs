@@ -25,6 +25,11 @@ const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-i
 const runtimeServerDockerfile = read("build/rubrova/runtime/Dockerfile.server");
 const runtimeClientDockerfile = read("build/rubrova/runtime/Dockerfile.client");
 const sourcePatch = read("scripts/platform/apply-rubrova-source-patches.py");
+const dialogBoxHelperSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/DialogBoxHelper.java");
+const modalWindowSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/ModalWindow.java");
+const formButtonSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/FormButton.java");
+const spanishGwtMessagesSource = read("patches/lsfusion/ClientMessages_es.properties");
+
 
 function parseProperties(source) {
   const entries = new Map();
@@ -568,20 +573,41 @@ test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () =
   assert.match(gwtDispatcherSource, /xhr[.]getStatus\(\) == 0 \? null/);
 });
 
-test("el cierre nativo del turno concilia y persiste la sesión", () => {
+test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión", () => {
   assert.ok(runtimeSmokeSource.includes("rubrovaCITestSession() = GROUP MAX Retail.Session"));
   assert.ok(runtimeSmokeSource.includes("rubrovaTestSessionCloseApi"));
   assert.ok(runtimeSmokeSource.includes("Retail.closingDateTime(rubrovaCITestSession())"));
   assert.ok(runtimeSmokeSource.includes("Retail.countInvoices(rubrovaCITestSession())"));
   assert.ok(runtimeSmokeSource.includes("Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod())"));
   assert.ok(uiSmokeSource.includes('"Cerrar turno": "PROPERTY(close(s))"'));
-  assert.ok(uiSmokeSource.includes("accept_session_close_dialog"));
+  assert.ok(uiSmokeSource.includes("def accept_ls_fusion_confirmation"));
+  assert.ok(uiSmokeSource.includes('page.locator(".modal.show")'));
+  assert.ok(uiSmokeSource.includes('modal.locator(".modal-footer button.btn-primary")'));
+  assert.ok(uiSmokeSource.includes('affirmative_label != "Sí"'));
+  assert.ok(uiSmokeSource.includes("UI_GWT_CONFIRMATION_ACCEPTED=true"));
+  assert.ok(!uiSmokeSource.includes('page.once("dialog", accept_session_close_dialog)'));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_ACTION_CLICKED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_TIMESTAMP_PERSISTED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_SALES_RECONCILED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CASH_RECONCILED=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSED_SCREENSHOT"));
+
+  // In lsFusion 6.2, CONFIRM becomes a MessageBox; YES is the unique primary button.
+  assert.ok(dialogBoxHelperSource.includes("new MessageBox(caption, contents, timeout, closeCallback, options[initialValue], options)"));
+  assert.ok(dialogBoxHelperSource.includes("option.isPrimary() ? FormButton.ButtonStyle.PRIMARY : FormButton.ButtonStyle.SECONDARY"));
+  assert.ok(modalWindowSource.includes('GwtClientUtils.addClassName(modal, "show")'));
+  assert.ok(formButtonSource.includes('GwtClientUtils.addClassName(this, "btn-primary")'));
+});
+
+test("los botones de confirmación del cliente GWT están localizados al español", () => {
+  const entries = parseProperties(spanishGwtMessagesSource);
+  assert.equal(entries.get("yes"), "Sí");
+  assert.equal(entries.get("no"), "No");
+  assert.equal(entries.get("ok"), "Aceptar");
+  assert.equal(entries.get("cancel"), "Cancelar");
+  assert.ok(sourcePatch.includes("GWT_MESSAGES_SOURCE"));
+  assert.ok(sourcePatch.includes("GWT_MESSAGES_TARGET"));
 });
 
 test("el POS separa la cuenta central del cajón de efectivo", () => {

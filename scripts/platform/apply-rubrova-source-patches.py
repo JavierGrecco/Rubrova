@@ -50,12 +50,16 @@ CASH_ACCOUNT_ANCHOR = "cashBalance 'Cash at the checkout' (Pos p) = balance(cash
 CASH_ACCOUNT_REQUIRED_MARKER = "CONSTRAINT account(Pos p) = cashAccount(p)"
 CASH_ACCOUNT_REPLACEMENT = (
     CASH_ACCOUNT_ANCHOR
-    + "\n\n"
-    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\n"
-    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\n"
-    + "CONSTRAINT account(Pos p) = cashAccount(p)\n"
+    + "\\n\\n"
+    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\\n"
+    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\\n"
+    + "CONSTRAINT account(Pos p) = cashAccount(p)\\n"
     + "                MESSAGE 'La cuenta central de caja no puede ser la misma que la cuenta de efectivo';"
 )
+
+GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
+GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
+
 
 def main() -> int:
     if not TARGET.is_file():
@@ -112,6 +116,26 @@ def main() -> int:
         print("Control de caja aplicado: cuenta central y cajón de efectivo deben ser distintos.")
     else:
         print("El control de cuentas de caja de Rubrova ya está aplicado.")
+
+    if not GWT_MESSAGES_SOURCE.is_file():
+        print(f"No se encontró el glosario español del cliente GWT: {GWT_MESSAGES_SOURCE}", file=sys.stderr)
+        return 2
+
+    expected_messages = GWT_MESSAGES_SOURCE.read_text(encoding="utf-8")
+    if GWT_MESSAGES_TARGET.exists():
+        current_messages = GWT_MESSAGES_TARGET.read_text(encoding="utf-8")
+        if current_messages != expected_messages:
+            print(
+                "El bundle español generado de GWT difiere de su fuente Rubrova; "
+                "se detiene para evitar sobrescribir cambios.",
+                file=sys.stderr,
+            )
+            return 1
+        print("Traducciones españolas críticas del cliente GWT ya aplicadas.")
+    else:
+        GWT_MESSAGES_TARGET.parent.mkdir(parents=True, exist_ok=True)
+        GWT_MESSAGES_TARGET.write_text(expected_messages, encoding="utf-8")
+        print("Traducciones españolas críticas del cliente GWT aplicadas.")
 
     return 0
 

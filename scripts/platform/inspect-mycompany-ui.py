@@ -521,6 +521,53 @@ def click_exact_link(
     return True
 
 
+def accept_ls_fusion_confirmation(page: Any, action_label: str) -> str:
+    """Accept lsFusion's GWT CONFIRM modal, not a browser-native JavaScript dialog."""
+    modal = page.locator(".modal.show")
+    modal.wait_for(state="visible", timeout=15_000)
+
+    modal_count = modal.count()
+    if modal_count != 1:
+        raise RuntimeError(
+            f"{action_label}: se esperaba un único modal de confirmación GWT, "
+            f"pero aparecieron {modal_count}."
+        )
+
+    message = modal.locator(".modal-body").inner_text(timeout=5_000).strip()
+    footer_buttons = modal.locator(".modal-footer button")
+    button_labels = [
+        label.strip()
+        for label in footer_buttons.all_inner_texts()
+        if label.strip()
+    ]
+    print(f"UI_GWT_CONFIRMATION_MESSAGE={message}")
+    print("UI_GWT_CONFIRMATION_BUTTONS=" + json.dumps(button_labels, ensure_ascii=False))
+
+    # DialogBoxHelper maps OptionType.YES to FormButton.ButtonStyle.PRIMARY.
+    # This is the positive option; the secondary button is NO.
+    affirmative = modal.locator(".modal-footer button.btn-primary")
+    affirmative_count = affirmative.count()
+    if affirmative_count != 1:
+        raise RuntimeError(
+            f"{action_label}: el modal GWT debe exponer exactamente un botón afirmativo "
+            f"btn-primary; se encontraron {affirmative_count}. "
+            f"Botones: {json.dumps(button_labels, ensure_ascii=False)}"
+        )
+
+    affirmative_label = affirmative.inner_text().strip()
+    if affirmative_label != "Sí":
+        raise RuntimeError(
+            f"{action_label}: el botón afirmativo del cliente GWT no quedó localizado. "
+            f"Se esperaba 'Sí', se recibió {affirmative_label!r}."
+        )
+
+    print("UI_GWT_CONFIRMATION_AFFIRMATIVE=Sí")
+    affirmative.click(no_wait_after=True)
+    modal.wait_for(state="detached", timeout=15_000)
+    print("UI_GWT_CONFIRMATION_ACCEPTED=true")
+    return message
+
+
 def inspect_page(url: str) -> int:
     screenshot_path = Path(
         os.environ.get("RUBROVA_UI_SCREENSHOT", "/tmp/rubrova-mycompany-ui.png")
@@ -874,19 +921,13 @@ def inspect_page(url: str) -> int:
                 page.screenshot(path=str(sale_screenshot), full_page=True)
                 print(f"UI_SALE_SCREENSHOT={sale_screenshot}")
 
-                # Cierre nativo de MyCompany: acepta la confirmación del action CONFIRM
-                # y comprueba la sesión persistida, sin escribir un cierre desde el fixture.
-                close_dialog_messages: list[str] = []
-
-                def accept_session_close_dialog(dialog: Any) -> None:
-                    close_dialog_messages.append(dialog.message)
-                    print("UI_SESSION_CLOSE_CONFIRMATION=" + dialog.message)
-                    dialog.accept()
-
-                page.once("dialog", accept_session_close_dialog)
+                # Cierre nativo de MyCompany: CONFIRM se muestra como MessageBox GWT,
+                # no como window.confirm del navegador. Aceptamos el botón afirmativo real.
                 if not click_exact_action(page, "Cerrar turno"):
                     raise RuntimeError("No se encontró la acción nativa 'Cerrar turno' de MyCompany.")
                 print("UI_SESSION_CLOSE_ACTION_CLICKED=true")
+                close_confirmation_message = accept_ls_fusion_confirmation(page, "Cerrar turno")
+                print("UI_SESSION_CLOSE_CONFIRMATION=" + close_confirmation_message)
 
                 closed_session_payload: dict[str, Any] = {}
                 close_deadline = time.monotonic() + 30
@@ -944,7 +985,7 @@ def inspect_page(url: str) -> int:
                 print("UI_SESSION_CLOSED=true")
                 print("UI_SESSION_SALES_RECONCILED=true")
                 print("UI_SESSION_CASH_RECONCILED=true")
-                print(f"UI_SESSION_CLOSE_CONFIRMATION_COUNT={len(close_dialog_messages)}")
+                print("UI_SESSION_CLOSE_CONFIRMATION_COUNT=1")
 
                 closed_session_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-session-closed" + screenshot_path.suffix
