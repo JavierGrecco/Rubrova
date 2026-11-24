@@ -422,6 +422,8 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.equal(entries.get("Discount_p"), "Descuento, %");
   assert.equal(entries.get("Date"), "Fecha");
   assert.equal(entries.get("Reference"), "Referencia");
+  assert.equal(entries.get("Unknown"), "Consumidor final");
+  assert.equal(entries.get("rubrova.pos.search_price"), "Precio");
   for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {
     assert.ok(entries.get(key), "Falta traducción de navegación: " + key);
   }
@@ -678,7 +680,13 @@ test("los mensajes críticos del motor servidor están localizados al español",
     ["navigator.pin.mode", "Fijar paneles de navegación"],
     ["authentication.color.theme", "Tema de color"],
     ["reflection.find.navigator", "Buscar"],
-    ["service.setting", "Configuración"]
+    ["service.setting", "Configuración"],
+    ["master.data.master.data", "Datos maestros"],
+    ["system.group.base", "Atributos"],
+    ["system.events.design", "Diseño"],
+    ["system.events.auto.mode", "Tema automático"],
+    ["system.events.navigator.pin.navbar", "Fijar barra de navegación"],
+    ["messenger.chat", "Mensajes"]
   ]) assert.equal(entries.get(key), value, "Traducción incorrecta: " + key);
   assert.ok(sourcePatch.includes("SERVER_MESSAGES_SOURCE"));
   assert.ok(sourcePatch.includes("SERVER_MESSAGES_TARGET"));

@@ -644,7 +644,24 @@ def inspect_page(url: str) -> int:
                     "UI_LOGIN_STATUS=authenticated:"
                     + os.environ.get("RUBROVA_UI_TEST_USERNAME", "admin")
                 )
-                visible_snapshot(page, "UI_AFTER_LOGIN")
+                home_text = visible_snapshot(page, "UI_AFTER_LOGIN")
+                home_lines = {line.strip() for line in home_text.splitlines()}
+                legacy_navigation_labels = {
+                    "Master data", "Auto theme", "Pin navbar", "Attributes", "Design"
+                }
+                present_legacy_navigation = sorted(legacy_navigation_labels.intersection(home_lines))
+                if present_legacy_navigation:
+                    raise RuntimeError(
+                        "La navegación general conserva textos en inglés: "
+                        + ", ".join(present_legacy_navigation)
+                    )
+                for required_label in (
+                    "Datos maestros", "Tema automático", "Fijar barra de navegación", "Diseño"
+                ):
+                    if required_label not in home_lines:
+                        raise RuntimeError(
+                            f"Falta el texto localizado en la navegación: {required_label!r}"
+                        )
                 page.screenshot(path=str(after_login_screenshot), full_page=True)
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
                 if not final_text.strip():
@@ -680,7 +697,7 @@ def inspect_page(url: str) -> int:
                     screenshot_path.stem + "-session" + screenshot_path.suffix
                 )
                 session_text = visible_snapshot(page, "UI_SESSION_OPEN")
-                legacy_pos_labels = {"By order", "Discount, %", "Delete", "Date"}
+                legacy_pos_labels = {"By order", "Discount, %", "Delete", "Date", "Unknown"}
                 session_lines = {line.strip() for line in session_text.splitlines()}
                 present_legacy_labels = sorted(legacy_pos_labels.intersection(session_lines))
                 if present_legacy_labels:
@@ -688,7 +705,7 @@ def inspect_page(url: str) -> int:
                         "La pantalla de turno conserva captions en inglés: "
                         + ", ".join(present_legacy_labels)
                     )
-                for required_caption in ("Por pedido", "Descuento, %", "Eliminar", "Fecha"):
+                for required_caption in ("Por pedido", "Descuento, %", "Eliminar", "Fecha", "Consumidor final"):
                     if required_caption not in session_lines:
                         raise RuntimeError(
                             f"Falta el caption español requerido en el POS: {required_caption!r}"
