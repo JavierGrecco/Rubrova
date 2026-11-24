@@ -105,16 +105,16 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
 - Preparar y validar los artefactos desde Windows, Linux y macOS; desplegar la extensión en Windows/Linux nativo o Docker. CI ya arranca MyCompany 6.2 en Linux x86_64 y ejecuta la extensión Rubrova.
-- Verificar con Chromium el login, la navegación Comercio → Punto de venta, el selector de caja y la apertura de un turno sintético. Esta aceptación visual y de sesión ya pasó en CI; no equivale a una jornada de venta aceptada.
-- Completar la localización española: los captions críticos del POS se ven en español, pero siguen apareciendo textos heredados en inglés en navegación, filtros y grillas.
-- Completar catálogo → búsqueda → carrito → venta → pagos/vuelto → caja → stock → devolución → cierre y conciliación.
-- Demostrar exportación, backup/restore, permisos, recuperación, hardware y adaptación fiscal argentina antes del uso real.
+- CI [#45481198077](https://github.com/JavierGrecco/Rubrova/actions/runs/45481198077), sobre `7fbfbe5`, compiló el fork vendorizado y ejecutó un ciclo sintético: login, apertura de turno, selección de producto, venta de ARS 1.250, cobro exacto en efectivo, factura/pago, stock (10 → 9) y cierre `CLOSED` conciliado.
+- El mismo smoke simuló ocho resultados de integración (timeout, HTTP 400/401/403/408/409/429/503) y comprobó recuperación posterior. Los datos se destruyen al finalizar; no es una instalación ni una jornada real.
+- El POS sigue en aceptación: faltan devoluciones/reintegros, vuelto, pagos mixtos y tarjeta, movimientos y arqueo de caja, permisos por perfil, backup/restore, periféricos y pruebas fiscales argentinas.
+- La localización aún es parcial. La navegación general y varios formularios heredados requieren revisión. La Mac Apple Silicon ya compila localmente, pero no ejecuta nativamente el stack completo: MyCompany 6.2 publica su lógica como `linux/amd64`.
 
 El detalle de módulos y bloques está en el [Inicio de implementación](docs/IMPLEMENTATION_START.md). La instalación paso a paso está en la [guía del primer piloto](docs/MYCOMPANY_RUNTIME_INSTALL.md). La [Evaluación de plataformas](docs/PLATFORM_EVALUATION.md) conserva las puertas de aceptación.
 
 **Siguiente resultado:** una jornada de mostrador completa y repetible, conectada a los datos de gestión, con pagos y stock conciliados, devolución auditada, cierre de caja y recuperación probada.
 
-MyCompany 6.2 ya se ejecuta en un entorno efímero de CI Linux x86_64. La prueba 44811714783 también confirmó la búsqueda de un artículo sintético y su carga al recibo, sin cobrar. La decisión ahora es incorporar a Rubrova los fuentes completos de MyCompany 6.2 y lsFusion 6.2, construir nuestros propios artefactos y eliminar las descargas remotas del runtime. El código fuente está en proceso de incorporación; build desde fuentes, paquete offline, venta real de prueba e instalación local siguen pendientes. El estado detallado está en [Estado real del proyecto](docs/PROJECT_STATUS.md) y la estrategia completa en [Propiedad del código y operación offline](docs/SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md).
+MyCompany 6.2 y lsFusion 6.2 ya están vendorizados y Rubrova construye sus propios artefactos. El smoke actual de CI prueba una venta y cierre sintéticos, además de conciliación de stock y efectivo; la instalación anfitriona, los circuitos aún pendientes y la aceptación operativa siguen abiertos. El estado detallado está en [Estado real del proyecto](docs/PROJECT_STATUS.md) y la estrategia completa en [Propiedad del código y operación offline](docs/SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md).
 
 ## Forma de trabajo
 
@@ -137,5 +137,5 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 
 ---
 
-**Estado del producto:** Fase 0 avanzada; primer runtime POS probado en CI, circuito comercial todavía incompleto.  
-**Estado del software:** MyCompany 6.2 + extensión RubrovaCustom/RubrovaPOSLocalization; login, navegación POS y apertura de turno sintético verificados en CI Linux x86_64. Venta, pago, stock, devolución, cierre, localización completa e instalación local siguen pendientes.
+**Estado del producto:** Fase 0 avanzada; ciclo básico de venta, cobro en efectivo, stock y cierre sintéticos probado en CI Linux x86_64. No está aprobado para uso diario.  
+**Estado del software:** MyCompany 6.2 + extensiones RubrovaCustom/RubrovaPOSLocalization/RubrovaIntegrationResilience; build local macOS y artefactos verificados. Devoluciones, medios mixtos, arqueo, permisos, backup/restore, periféricos, localización completa e instalación anfitriona siguen pendientes.

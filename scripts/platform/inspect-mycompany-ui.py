@@ -727,7 +727,7 @@ def inspect_page(url: str) -> int:
                         "La pantalla de turno conserva captions en inglés: "
                         + ", ".join(present_legacy_labels)
                     )
-                for required_caption in ("Por pedido", "Descuento, %", "Eliminar", "Fecha", "Consumidor final"):
+                for required_caption in ("Por pedido", "Desc. %", "Eliminar", "Fecha", "Consumidor final", "Nº", "Cant.", "P. c/desc."):
                     if required_caption not in session_lines:
                         raise RuntimeError(
                             f"Falta el caption español requerido en el POS: {required_caption!r}"
@@ -749,7 +749,7 @@ def inspect_page(url: str) -> int:
                         "La búsqueda del POS conserva captions en inglés: "
                         + ", ".join(present_search_labels)
                     )
-                for required_caption in ("Precio (F7)", "Nombre completo", "Referencia", "Cantidad", "Precio"):
+                for required_caption in ("Precio (F7)", "Nombre completo", "Referencia", "Cant.", "Precio", "Disp."):
                     if required_caption not in search_lines:
                         raise RuntimeError(
                             f"Falta el caption español en la búsqueda del POS: {required_caption!r}"

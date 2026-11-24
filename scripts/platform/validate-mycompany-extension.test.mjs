@@ -381,6 +381,12 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.equal(lock.extension.topModule, "RubrovaCustom");
   assert.match(moduleSource, /^NAMESPACE Retail;/m);
   assert.match(moduleSource, /DESIGN posDashboard/);
+  assert.ok(moduleSource.includes("PROPERTY(index(l)) { caption = '{rubrova.pos.line_short}'; charWidth = 3; }"));
+  assert.ok(moduleSource.includes("PROPERTY(quantity(l)) { caption = '{rubrova.pos.quantity_short}'; charWidth = 7; }"));
+  assert.ok(moduleSource.includes("PROPERTY(discount(l)) { caption = '{rubrova.pos.discount_percent_short}'; charWidth = 7; }"));
+  assert.ok(moduleSource.includes("PROPERTY(discountPrice(l)) { caption = '{rubrova.pos.discount_price_short}'; charWidth = 10; }"));
+  assert.ok(moduleSource.includes("PROPERTY(available(i, it)) { caption = '{rubrova.pos.available_short}'; charWidth = 8; }"));
+  assert.ok(moduleSource.includes("PROPERTY(quantity(i, it)) { caption = '{rubrova.pos.quantity_short}'; charWidth = 7; }"));
   assert.match(moduleSource, /DESIGN posPayment/);
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency()"));
   assert.match(moduleSource, /Sales[.]currency\(Sales[.]priceType\('retail'\)\) <- defaultCurrency\(\)/);
@@ -432,6 +438,12 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.ok(!moduleSource.includes("IF MasterData.id(i) = 'unknown' THEN"));
   assert.ok(moduleSource.includes("MasterData.lastName(i) <- 'Consumidor final'"));
   assert.equal(entries.get("rubrova.pos.search_price"), "Precio");
+  assert.equal(entries.get("rubrova.pos.line_short"), "Nº");
+  assert.equal(entries.get("rubrova.pos.quantity_short"), "Cant.");
+  assert.equal(entries.get("rubrova.pos.discount_short"), "Desc.");
+  assert.equal(entries.get("rubrova.pos.discount_percent_short"), "Desc. %");
+  assert.equal(entries.get("rubrova.pos.discount_price_short"), "P. c/desc.");
+  assert.equal(entries.get("rubrova.pos.available_short"), "Disp.");
   for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {
     assert.ok(entries.get(key), "Falta traducción de navegación: " + key);
   }

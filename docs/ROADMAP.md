@@ -5,7 +5,7 @@
 
 ## Estado real
 
-Rubrova sigue en **Fase 0: piloto integrado POS + ERP**, pero ya superó el arranque básico y aceptó en CI Linux x86_64 un primer ciclo comercial sobre runtime construido desde sus propias fuentes vendorizadas de lsFusion 6.2 y MyCompany 6.2. La ejecución [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) probó login, navegación, apertura de turno, búsqueda de producto, venta de ARS 1.250, cobro exacto en efectivo, factura/pago persistidos, salida de stock y cierre básico del turno. La prueba fue sobre una base sintética descartable; no equivale a una instalación en el equipo de uso ni a una jornada real aceptada.
+Rubrova sigue en **Fase 0: piloto integrado POS + ERP**. La ejecución [45481198077](https://github.com/JavierGrecco/Rubrova/actions/runs/45481198077), sobre el commit `7fbfbe5`, compiló el runtime desde fuentes vendorizadas y aceptó en CI Linux x86_64 el ciclo sintético de login, apertura, selección de producto, venta de ARS 1.250, cobro exacto en efectivo, conciliación de factura/pago/stock/caja y cierre `CLOSED`. También se probaron ocho respuestas de integración y recuperación posterior. La base fue descartable; no equivale a una instalación ni a una jornada real. Durante el arranque se registraron 14 `SQLTimeoutException`; no bloquearon la inicialización, pero deben investigarse antes de aceptar el rendimiento y la estabilidad.
 
 Los árboles fuente completos están en `vendor/platform/` y `vendor/mycompany/`, con versiones y licencias fijadas. Rubrova compila servidor, cliente web y lógica MyCompany, construye imágenes propias y ejecuta Chromium contra ellas. Tryton 8.0 + tryton-ar 8.0 permanece como contraste fiscal argentino, no como segundo núcleo operativo.
 

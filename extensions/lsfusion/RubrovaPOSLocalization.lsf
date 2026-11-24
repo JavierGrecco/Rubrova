@@ -16,18 +16,22 @@ DESIGN posDashboard '{rubrova.pos.title}' {
         PROPERTY(openingDateTime(s)) { caption = '{rubrova.pos.opened}'; }
         PROPERTY(close(s)) { caption = '{rubrova.pos.close_session}'; }
     }
+    invoiceHeader {
+        PROPERTY(available(i, it)) { caption = '{rubrova.pos.available_short}'; charWidth = 8; }
+    }
     invoice {
         PROPERTY(nameCustomer(i)) { caption = '{rubrova.pos.customer}'; }
         PROPERTY(phoneCustomer(i)) { caption = '{rubrova.pos.phone}'; }
         PROPERTY(emailCustomer(i)) { caption = '{rubrova.pos.email}'; }
     }
     GRID(l) {
-        PROPERTY(index(l)) { caption = '{rubrova.pos.line}'; }
-        PROPERTY(nameItem(l)) { caption = '{rubrova.pos.item}'; }
-        PROPERTY(quantity(l)) { caption = '{rubrova.pos.quantity}'; }
-        PROPERTY(price(l)) { caption = '{rubrova.pos.price}'; }
-        PROPERTY(nameSalesDiscount(l)) { caption = '{rubrova.pos.discount}'; }
-        PROPERTY(discountPrice(l)) { caption = '{rubrova.pos.discount_price}'; }
+        PROPERTY(index(l)) { caption = '{rubrova.pos.line_short}'; charWidth = 3; }
+        PROPERTY(nameItem(l)) { caption = '{rubrova.pos.item}'; charWidth = 27; }
+        PROPERTY(quantity(l)) { caption = '{rubrova.pos.quantity_short}'; charWidth = 7; }
+        PROPERTY(price(l)) { caption = '{rubrova.pos.price}'; charWidth = 8; }
+        PROPERTY(nameSalesDiscount(l)) { caption = '{rubrova.pos.discount_short}'; charWidth = 7; }
+        PROPERTY(discount(l)) { caption = '{rubrova.pos.discount_percent_short}'; charWidth = 7; }
+        PROPERTY(discountPrice(l)) { caption = '{rubrova.pos.discount_price_short}'; charWidth = 10; }
     }
     bill {
         PROPERTY(nameVendor(b)) { caption = '{rubrova.pos.return_customer}'; }
@@ -64,11 +68,12 @@ DESIGN posDashboard '{rubrova.pos.title}' {
             search {
                 PROPERTY(filterPrice()) { caption = '{rubrova.pos.search_price}'; }
                 GRID(it) {
-                    PROPERTY(idBarCode(it)) { caption = '{rubrova.pos.barcode}'; }
-                    PROPERTY(id(it)) { caption = '{rubrova.pos.code}'; }
-                    PROPERTY(reference(it)) { caption = '{rubrova.pos.reference}'; }
-                    PROPERTY(quantity(i, it)) { caption = '{rubrova.pos.quantity}'; }
-                    PROPERTY(overListPrice(i, it)) { caption = '{rubrova.pos.price}'; }
+                    PROPERTY(name(it)) { charWidth = 26; }
+                    PROPERTY(idBarCode(it)) { caption = '{rubrova.pos.barcode}'; charWidth = 14; }
+                    PROPERTY(id(it)) { caption = '{rubrova.pos.code}'; charWidth = 8; }
+                    PROPERTY(reference(it)) { caption = '{rubrova.pos.reference}'; charWidth = 8; }
+                    PROPERTY(quantity(i, it)) { caption = '{rubrova.pos.quantity_short}'; charWidth = 7; }
+                    PROPERTY(overListPrice(i, it)) { caption = '{rubrova.pos.price}'; charWidth = 8; }
                 }
             }
             BOX(o) { caption = '{rubrova.pos.by_order}'; }
