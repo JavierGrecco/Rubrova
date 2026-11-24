@@ -18,6 +18,7 @@ const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
 const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const posSearchSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardSearch.lsf");
+const paymentMethodSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
@@ -565,6 +566,16 @@ test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () =
   assert.match(gwtDispatcherSource, /"Request timed out"/);
   assert.match(gwtDispatcherSource, /new GExternalHttpResponse\(null, null,/);
   assert.match(gwtDispatcherSource, /xhr[.]getStatus\(\) == 0 \? null/);
+});
+
+test("el POS separa la cuenta central del cajón de efectivo", () => {
+  assert.match(paymentMethodSource, /CONSTRAINT account\\(Pos p\\) = cashAccount\\(p\\)/);
+  assert.match(paymentMethodSource, /The central checkout account must not be the same as the cash account/);
+  assert.match(sourcePatch, /CASH_ACCOUNT_REQUIRED_MARKER/);
+  assert.match(sourcePatch, /CASH_ACCOUNT_ANCHOR/);
+  assert.match(runtimeSmokeSource, /centralCashAccountName = Retail[.]nameAccount/);
+  assert.match(uiSmokeSource, /UI_POS_CASH_ACCOUNTS_DISTINCT=true/);
+  assert.match(runtimeWorkflowSource, /CONSTRAINT account\\(Pos p\\) = cashAccount\\(p\\)/);
 });
 
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
