@@ -711,7 +711,7 @@ test("las búsquedas de cuenta de caja restringen la clase CashAccount", () => {
 });
 
 test("la búsqueda de cuenta bancaria restringe la clase BankAccount", () => {
-  assert.ok(bankAccountSource.includes("WHERE holder(a) = p IF countBankAccount(p) = 1;"));
+  assert.ok(bankAccountSource.includes("WHERE a IS BankAccount AND holder(a) = p IF countBankAccount(p) = 1;"));
   assert.ok(sourcePatch.includes("BANK_ACCOUNT_QUERY_REPLACEMENTS"));
   assert.ok(sourcePatch.includes("a IS BankAccount AND holder(a) = p IF countBankAccount(p) = 1;"));
   assert.ok(sourcePatch.includes("def apply_bank_account_query_filters()"));
