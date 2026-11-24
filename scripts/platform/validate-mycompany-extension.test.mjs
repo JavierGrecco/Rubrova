@@ -415,6 +415,11 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   const customIds = [...moduleSource.matchAll(/\{(rubrova\.[^}]+)\}/g)].map((match) => match[1]);
   for (const id of customIds) assert.ok(entries.has(id), "Falta traducción del caption Rubrova: " + id);
   assert.equal(entries.get("Retail"), "Comercio");
+  assert.equal(entries.get("By_order"), "Por pedido");
+  assert.equal(entries.get("Name_full_"), "Nombre completo");
+  assert.equal(entries.get("Discount_p"), "Descuento, %");
+  assert.equal(entries.get("Date"), "Fecha");
+  assert.equal(entries.get("Reference"), "Referencia");
   for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {
     assert.ok(entries.get(key), "Falta traducción de navegación: " + key);
   }
@@ -637,6 +642,13 @@ test("los botones de confirmación del cliente GWT están localizados al españo
   assert.equal(entries.get("no"), "No");
   assert.equal(entries.get("ok"), "Aceptar");
   assert.equal(entries.get("cancel"), "Cancelar");
+  for (const [key, value] of [
+    ["formGridExport", "Exportar"],
+    ["formGridPreferences", "Preferencias de la grilla"],
+    ["busyDialogLoading", "Cargando"],
+    ["formFilterAddCondition", "Agregar condición"],
+    ["rmiConnectionLost", "Conexión perdida"]
+  ]) assert.equal(entries.get(key), value, "Traducción GWT incorrecta: " + key);
   assert.deepEqual(
     parseProperties(spanishGwtMessagesVendor),
     entries,
@@ -657,6 +669,15 @@ test("los mensajes críticos del motor servidor están localizados al español",
   assert.equal(entries.get("form.instance.do.you.really.want.to.edit.property"), "¿Confirma que desea editar la propiedad");
   assert.equal(entries.get("form.instance.changes.saved"), "Los cambios se guardaron correctamente...");
   assert.equal(entries.get("form.do.you.really.want.to.undo.changes"), "¿Desea deshacer los cambios?");
+  for (const [key, value] of [
+    ["logics.delete", "Eliminar"],
+    ["navigator.account", "Cuenta"],
+    ["navigator.administration", "Administración"],
+    ["navigator.pin.mode", "Fijar paneles de navegación"],
+    ["authentication.color.theme", "Tema de color"],
+    ["reflection.find.navigator", "Buscar"],
+    ["service.setting", "Configuración"]
+  ]) assert.equal(entries.get(key), value, "Traducción incorrecta: " + key);
   assert.ok(sourcePatch.includes("SERVER_MESSAGES_SOURCE"));
   assert.ok(sourcePatch.includes("SERVER_MESSAGES_TARGET"));
 });

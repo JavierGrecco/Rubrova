@@ -57,6 +57,24 @@ DESIGN posDashboard '{rubrova.pos.title}' {
     }
 }
 
+
+    // Captions puntuales de la búsqueda y la lista de pedidos del POS.
+    DESIGN posDashboard {
+        tabPane {
+            search {
+                PROPERTY(filterPrice()) { caption = '{rubrova.pos.search_price}'; }
+                GRID(it) {
+                    PROPERTY(idBarCode(it)) { caption = '{rubrova.pos.barcode}'; }
+                    PROPERTY(id(it)) { caption = '{rubrova.pos.code}'; }
+                    PROPERTY(reference(it)) { caption = '{rubrova.pos.reference}'; }
+                    PROPERTY(quantity(i, it)) { caption = '{rubrova.pos.quantity}'; }
+                    PROPERTY(overListPrice(i, it)) { caption = '{rubrova.pos.price}'; }
+                }
+            }
+            BOX(o) { caption = '{rubrova.pos.by_order}'; }
+        }
+    }
+
 DESIGN posPayment '{rubrova.pos.payment_title}' {
     PROPERTY(nameCustomer(i)) { caption = '{rubrova.pos.customer}'; }
     PROPERTY(amount(i)) { caption = '{rubrova.pos.amount_due}'; }

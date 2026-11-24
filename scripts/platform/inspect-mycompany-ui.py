@@ -679,7 +679,20 @@ def inspect_page(url: str) -> int:
                 session_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-session" + screenshot_path.suffix
                 )
-                visible_snapshot(page, "UI_SESSION_OPEN")
+                session_text = visible_snapshot(page, "UI_SESSION_OPEN")
+                legacy_pos_labels = {"By order", "Discount, %", "Delete", "Date"}
+                session_lines = {line.strip() for line in session_text.splitlines()}
+                present_legacy_labels = sorted(legacy_pos_labels.intersection(session_lines))
+                if present_legacy_labels:
+                    raise RuntimeError(
+                        "La pantalla de turno conserva captions en inglés: "
+                        + ", ".join(present_legacy_labels)
+                    )
+                for required_caption in ("Por pedido", "Descuento, %", "Eliminar", "Fecha"):
+                    if required_caption not in session_lines:
+                        raise RuntimeError(
+                            f"Falta el caption español requerido en el POS: {required_caption!r}"
+                        )
                 page.screenshot(path=str(session_screenshot), full_page=True)
                 print(f"UI_SESSION_SCREENSHOT={session_screenshot}")
 
@@ -688,7 +701,20 @@ def inspect_page(url: str) -> int:
                 search_tab.wait_for(state="visible", timeout=15_000)
                 search_tab.click(no_wait_after=True)
                 print("UI_ITEM_SEARCH_TAB_CLICKED=true")
-                visible_snapshot(page, "UI_ITEM_SEARCH")
+                search_text = visible_snapshot(page, "UI_ITEM_SEARCH")
+                legacy_search_labels = {"Price (F7)", "Name (full)", "Reference", "Quantity", "Price"}
+                search_lines = {line.strip() for line in search_text.splitlines()}
+                present_search_labels = sorted(legacy_search_labels.intersection(search_lines))
+                if present_search_labels:
+                    raise RuntimeError(
+                        "La búsqueda del POS conserva captions en inglés: "
+                        + ", ".join(present_search_labels)
+                    )
+                for required_caption in ("Precio (F7)", "Nombre completo", "Referencia", "Cantidad", "Precio"):
+                    if required_caption not in search_lines:
+                        raise RuntimeError(
+                            f"Falta el caption español en la búsqueda del POS: {required_caption!r}"
+                        )
 
                 product_name = "Producto de prueba Rubrova"
                 product_result = page.get_by_text(product_name, exact=True)
