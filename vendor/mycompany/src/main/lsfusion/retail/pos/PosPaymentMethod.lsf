@@ -23,18 +23,18 @@ CONSTRAINT company(Pos p) AND account(p) AND NOT holder(account(p)) = company(p)
                 MESSAGE 'Central checkout account holder does not match the company in the payment method';
 
 cashAccount (Pos p) = account(p, cashPaymentMethod());
-cashBalance 'Cash at the checkout' (Pos p) = balance(cashAccount(p));\n\n// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\n// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\nCONSTRAINT account(Pos p) = cashAccount(p)\n                MESSAGE 'The central checkout account must not be the same as the cash account';
+cashBalance 'Cash at the checkout' (Pos p) = balance(cashAccount(p));
 
 // Rubrova guard ported from the maintained MyCompany 6.x line. The central account
 // is the counterparty for deposits/withdrawals and cannot also be the till drawer.
 CONSTRAINT account(Pos p) = cashAccount(p)
-                MESSAGE 'The central checkout account must not be the same as the cash account';
+                MESSAGE 'La cuenta central de caja no puede ser la misma que la cuenta de efectivo';
 
 EXTEND FORM pos
     PROPERTIES(p) nameAccount
 
     OBJECTS pm = PaymentMethod
-    PROPERTIES(pm) READONLY id, name 
+    PROPERTIES(pm) READONLY id, name
     PROPERTIES(p, pm) disabled, Retail.nameAccount[Pos,PaymentMethod]
 ;
 
