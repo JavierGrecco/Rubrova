@@ -38,11 +38,17 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Vuelto, pagos mixtos y tarjeta | Pendiente | El primer circuito aceptado sólo cubre efectivo exacto, sin vuelto |
 | Reinicio conservando datos | Aprobado en CI | En `45503956218` se reiniciaron servidor y cliente sin borrar PostgreSQL y se volvieron a conciliar factura, pago, caja, stock y turno cerrado |
 | Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
-| Runtime durante una caída de Internet | En validación en CI | Se agregó una red Docker interna sin salida externa para PostgreSQL, servidor, lógica, cliente y simuladores. La nueva aceptación está en curso en `45508387716`; todavía no se declara aprobada |
+| Runtime durante una caída de Internet | Pendiente de aceptación | Se incorporó una prueba con red Docker interna sin salida externa. El primer ajuste falló por una aserción estática; la siguiente ejecución debe completar el smoke funcional antes de aceptar el resultado |
 | Instalación inicial y paquete completo sin Internet | Pendiente | La prueba de runtime aislado no demuestra todavía que el instalador, los artefactos, las imágenes base y las dependencias puedan instalarse en una PC limpia sin conexión |
+| Ejecución local nativa sin Docker | En diseño / base inicial | lsFusion permite ejecución nativa con Java, PostgreSQL y Tomcat. Se definió el contrato de destinos y un gestor de configuración; falta implementar y probar el supervisor de procesos y el runtime completo en macOS/Windows |
+| Configuración siempre disponible | En desarrollo inicial | Existe el esquema y el gestor CLI para `native-local`, `docker-local` y `remote-online`; falta el panel visual independiente y su integración con la administración del POS |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
 | Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
 | ARCA, adquirentes, marketplaces y logística | Pendiente | Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
+
+## Modos de ejecución y control local
+
+El contrato inicial está en `platform/runtime-config.schema.json`; `scripts/platform/runtime-config.py` valida y guarda preferencias sin credenciales. Los destinos separados son `native-local`, `docker-local` y `remote-online`. La conectividad de integraciones externas se configura aparte. Este selector todavía no inicia ni detiene procesos, no cambia la base activa y no migra datos. El supervisor nativo y el panel visual siguen pendientes. Ver [Modos de ejecución y control local](RUNTIME_MODES_AND_LOCAL_CONTROL.md).
 
 ## Código y propiedad de fuentes
 
