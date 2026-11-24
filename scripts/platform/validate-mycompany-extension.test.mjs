@@ -39,6 +39,9 @@ const gwtModuleSource = read("vendor/platform/web-client/src/main/java/lsfusion/
 const spanishGwtMessagesVendor = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties");
 const spanishServerMessagesSource = read("patches/lsfusion/ServerResourceBundle_es.properties");
 const spanishServerMessagesVendor = read("vendor/platform/server/src/main/resources/ServerResourceBundle_es.properties");
+const spanishWebMessagesSource = read("patches/lsfusion/ServerMessages_es.properties");
+const spanishWebMessagesVendor = read("vendor/platform/web-client/src/main/resources/ServerMessages_es.properties");
+const serverMessagesClass = read("vendor/platform/web-client/src/main/java/lsfusion/base/ServerMessages.java");
 
 
 function parseProperties(source) {
@@ -422,7 +425,8 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.equal(entries.get("Discount_p"), "Descuento, %");
   assert.equal(entries.get("Date"), "Fecha");
   assert.equal(entries.get("Reference"), "Referencia");
-  assert.equal(entries.get("Unknown"), "Consumidor final");
+  assert.ok(moduleSource.includes("FOR MasterData.Individual i WHERE MasterData.id(i) = 'unknown'"));
+  assert.ok(moduleSource.includes("MasterData.lastName(i) <- 'Consumidor final'"));
   assert.equal(entries.get("rubrova.pos.search_price"), "Precio");
   for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {
     assert.ok(entries.get(key), "Falta traducción de navegación: " + key);
@@ -690,6 +694,29 @@ test("los mensajes críticos del motor servidor están localizados al español",
   ]) assert.equal(entries.get(key), value, "Traducción incorrecta: " + key);
   assert.ok(sourcePatch.includes("SERVER_MESSAGES_SOURCE"));
   assert.ok(sourcePatch.includes("SERVER_MESSAGES_TARGET"));
+});
+
+test("la pantalla de acceso y los errores web usan el bundle español ServerMessages", () => {
+  const entries = parseProperties(spanishWebMessagesSource);
+  assert.deepEqual(
+    parseProperties(spanishWebMessagesVendor),
+    entries,
+    "El bundle español incluido en el cliente web debe coincidir con su fuente Rubrova."
+  );
+  for (const [key, value] of [
+    ["sign.in", "Ingresar"],
+    ["sign.in.title", "Ingresar"],
+    ["login", "Usuario"],
+    ["password", "Contraseña"],
+    ["password.forgot", "¿Olvidaste tu contraseña?"],
+    ["register", "Registrarse"],
+    ["run.desktop.client", "Abrir cliente de escritorio"],
+    ["app.server.unavailable", "El servidor de aplicación no está disponible"],
+    ["internal.server.error", "Error interno del servidor"]
+  ]) assert.equal(entries.get(key), value, "Mensaje web sin traducción: " + key);
+  assert.ok(serverMessagesClass.includes('LocalizeUtils.getBundle("ServerMessages", locale)'));
+  assert.ok(sourcePatch.includes("SERVER_TEXT_MESSAGES_SOURCE"));
+  assert.ok(sourcePatch.includes("SERVER_TEXT_MESSAGES_TARGET"));
 });
 
 test("el POS separa la cuenta central del cajón de efectivo", () => {

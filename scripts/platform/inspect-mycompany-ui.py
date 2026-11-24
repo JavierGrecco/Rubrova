@@ -634,7 +634,29 @@ def inspect_page(url: str) -> int:
                 initial_text = wait_for_application_server(page)
             else:
                 initial_text = page.locator("body").inner_text(timeout=10_000)
-            visible_snapshot(page, "UI_INITIAL")
+            initial_text = visible_snapshot(page, "UI_INITIAL")
+            initial_lines = {line.strip() for line in initial_text.splitlines()}
+            legacy_login_phrases = (
+                "Sign in", "LOGIN", "PASSWORD", "Forgot password",
+                "Don't have account?", "Sign up", "Run desktop client"
+            )
+            present_legacy_login = [
+                phrase for phrase in legacy_login_phrases if phrase in initial_text
+            ]
+            if present_legacy_login:
+                raise RuntimeError(
+                    "La pantalla de acceso conserva textos en inglés: "
+                    + ", ".join(present_legacy_login)
+                )
+            for required_label in (
+                "Ingresar", "USUARIO", "CONTRASEÑA",
+                "¿Olvidaste tu contraseña?", "Registrarse",
+                "Abrir cliente de escritorio"
+            ):
+                if required_label not in initial_text:
+                    raise RuntimeError(
+                        f"Falta el texto localizado en la pantalla de acceso: {required_label!r}"
+                    )
             page.screenshot(path=str(screenshot_path), full_page=True)
             print(f"UI_INITIAL_SCREENSHOT={screenshot_path}")
 

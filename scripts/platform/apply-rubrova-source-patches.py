@@ -137,6 +137,8 @@ GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
 SERVER_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ServerResourceBundle_es.properties"
 SERVER_MESSAGES_TARGET = ROOT / "vendor/platform/server/src/main/resources/ServerResourceBundle_es.properties"
+SERVER_TEXT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ServerMessages_es.properties"
+SERVER_TEXT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/resources/ServerMessages_es.properties"
 
 
 
@@ -409,6 +411,26 @@ def main() -> int:
         SERVER_MESSAGES_TARGET.parent.mkdir(parents=True, exist_ok=True)
         SERVER_MESSAGES_TARGET.write_text(expected_server_messages, encoding="utf-8")
         print("Traducciones españolas críticas del servidor aplicadas.")
+
+    if not SERVER_TEXT_MESSAGES_SOURCE.is_file():
+        print(f"No se encontró el glosario español del acceso web: {SERVER_TEXT_MESSAGES_SOURCE}", file=sys.stderr)
+        return 2
+
+    expected_text_messages = SERVER_TEXT_MESSAGES_SOURCE.read_text(encoding="utf-8")
+    if SERVER_TEXT_MESSAGES_TARGET.exists():
+        current_text_messages = SERVER_TEXT_MESSAGES_TARGET.read_text(encoding="utf-8")
+        if current_text_messages != expected_text_messages:
+            print(
+                "El glosario español del acceso web difiere de su fuente Rubrova; "
+                "se detiene para evitar sobrescribir cambios.",
+                file=sys.stderr,
+            )
+            return 1
+        print("Traducciones españolas de acceso web ya aplicadas.")
+    else:
+        SERVER_TEXT_MESSAGES_TARGET.parent.mkdir(parents=True, exist_ok=True)
+        SERVER_TEXT_MESSAGES_TARGET.write_text(expected_text_messages, encoding="utf-8")
+        print("Traducciones españolas de acceso web aplicadas.")
 
     return 0
 
