@@ -25,6 +25,11 @@ CONSTRAINT company(Pos p) AND account(p) AND NOT holder(account(p)) = company(p)
 cashAccount (Pos p) = account(p, cashPaymentMethod());
 cashBalance 'Cash at the checkout' (Pos p) = balance(cashAccount(p));
 
+// Rubrova guard ported from the maintained MyCompany 6.x line. The central account
+// is the counterparty for deposits/withdrawals and cannot also be the till drawer.
+CONSTRAINT account(Pos p) = cashAccount(p)
+                MESSAGE 'The central checkout account must not be the same as the cash account';
+
 EXTEND FORM pos
     PROPERTIES(p) nameAccount
 
