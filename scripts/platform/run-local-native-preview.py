@@ -396,23 +396,38 @@ def wait_for_port(host: str, port: int, timeout: int, process: subprocess.Popen[
 def wait_for_server_ready(
     process: subprocess.Popen[Any],
     log_dir: Path,
+    rmi_port: int,
     timeout: int = STARTUP_TIMEOUT_SECONDS,
 ) -> None:
-    candidates = [log_dir / "start.log", log_dir / "stdout.log", log_dir.parent / "server-console.log"]
+    # Wait for application bootstrap, the configured RMI port, and the onStarted action.
+    # The port can open before MyCompany has completed initialization.
+    candidates = [log_dir / "start.log", log_dir / "stdout.log", log_dir / "stderr.log"]
+    started = False
+    onstarted = False
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if process.poll() is not None:
             logs = "\n\n".join(f"--- {path} ---\n{tail_file(path, 80)}" for path in candidates)
-            raise RuntimeErrorRubrova(f"El servidor Rubrova terminó durante el arranque.\n{logs}")
-        for path in candidates:
-            if path.is_file() and "Server has successfully started in" in path.read_text(encoding="utf-8", errors="replace"):
-                return
-        if port_is_open("127.0.0.1", 7652):
-            # The RMI port can open before Reflection/materialization completes.
-            pass
+            raise RuntimeErrorRubrova(
+                f"El servidor Rubrova terminó durante el arranque (código {process.returncode}).\n{logs}"
+            )
+        snapshots = [
+            path.read_text(encoding="utf-8", errors="replace")
+            for path in candidates
+            if path.is_file()
+        ]
+        combined = "\n".join(snapshots)
+        started = started or "Server has successfully started in" in combined
+        onstarted = onstarted or "Executing onStarted action finished" in combined
+        rmi_ready = port_is_open("127.0.0.1", rmi_port)
+        if started and rmi_ready and onstarted:
+            return
         time.sleep(2)
     logs = "\n\n".join(f"--- {path} ---\n{tail_file(path, 80)}" for path in candidates)
-    raise RuntimeErrorRubrova(f"El servidor no completó el arranque dentro de {timeout} segundos.\n{logs}")
+    raise RuntimeErrorRubrova(
+        "El servidor no completó toda la inicialización (inicio, RMI y onStarted) "
+        f"dentro de {timeout} segundos.\n{logs}"
+    )
 
 
 def wait_for_web(url: str, process: subprocess.Popen[Any], timeout: int = WEB_TIMEOUT_SECONDS) -> None:
@@ -449,8 +464,21 @@ def stop_process(process: subprocess.Popen[Any] | None, name: str, timeout: int 
         process.wait(timeout=10)
 
 
-def stop_postgres(pg_bin: Path, data_dir: Path) -> None:
-    if not data_dir.exists() or not (data_dir / "PG_VERSION").is_file():
+def postgres_cluster_is_running(pg_ctl: Path, data_dir: Path) -> bool:
+    if not (data_dir / "PG_VERSION").is_file():
+        return False
+    result = subprocess.run(
+        [str(pg_ctl), "-D", str(data_dir), "status"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    return result.returncode == 0
+
+
+def stop_postgres(pg_bin: Path, data_dir: Path, started_by_this_process: bool) -> None:
+    # Never stop a developer's pre-existing PostgreSQL service.
+    if not started_by_this_process or not data_dir.exists() or not (data_dir / "PG_VERSION").is_file():
         return
     pg_ctl = pg_bin / ("pg_ctl.exe" if os.name == "nt" else "pg_ctl")
     result = subprocess.run(
@@ -463,7 +491,8 @@ def stop_postgres(pg_bin: Path, data_dir: Path) -> None:
         print(f"Advertencia al detener PostgreSQL:\n{result.stdout}", file=sys.stderr)
 
 
-def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> None:
+def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> bool:
+    """Start only Rubrova's private cluster; return whether this call started it."""
     initdb = pg_bin / ("initdb.exe" if os.name == "nt" else "initdb")
     pg_ctl = pg_bin / ("pg_ctl.exe" if os.name == "nt" else "pg_ctl")
     pg_isready = pg_bin / ("pg_isready.exe" if os.name == "nt" else "pg_isready")
@@ -483,17 +512,15 @@ def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> N
         run_checked(
             [
                 str(initdb),
-                "-D",
-                str(data_dir),
-                "-U",
-                "postgres",
+                "-D", str(data_dir),
+                "-U", "postgres",
                 "--encoding=UTF8",
                 "--auth-local=trust",
                 "--auth-host=trust",
             ]
         )
-        # This cluster is intentionally private to the current user's machine.
-        # PostgreSQL listens only on loopback; host authentication is not exposed to the LAN.
+        # Development-only cluster: TCP is bound to loopback, never exposed to the LAN.
+        # The production installer must use SCRAM and the OS credential store.
         with (data_dir / "postgresql.conf").open("a", encoding="utf-8") as conf:
             conf.write("\nlisten_addresses = '127.0.0.1'\n")
             conf.write(f"port = {port}\n")
@@ -502,62 +529,82 @@ def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> N
             hba.write("\nhost all all 127.0.0.1/32 trust\n")
             hba.write("host all all ::1/128 trust\n")
 
-    version_file = data_dir / "PG_VERSION"
-    version = version_file.read_text(encoding="utf-8").strip()
+    version = (data_dir / "PG_VERSION").read_text(encoding="utf-8").strip()
     if version != "18":
         raise RuntimeErrorRubrova(
             f"El directorio local de Rubrova usa PostgreSQL {version}; se requiere PostgreSQL 18. "
             "No se ejecutará una migración automática."
         )
 
-    if not port_is_open("127.0.0.1", port):
+    started_here = False
+    if postgres_cluster_is_running(pg_ctl, data_dir):
+        # A listening PostgreSQL process is accepted only if it belongs to this exact data dir.
+        identity = run_checked(
+            [
+                str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
+                "-U", "postgres", "-d", "postgres", "-At",
+                "-c", "SHOW data_directory",
+            ]
+        ).stdout.strip()
+        if Path(identity).resolve() != data_dir.resolve():
+            raise RuntimeErrorRubrova(
+                f"El puerto {port} responde, pero PostgreSQL no pertenece al directorio privado de Rubrova. "
+                "No se utilizará ni detendrá esa instancia."
+            )
+    else:
+        if port_is_open("127.0.0.1", port):
+            raise RuntimeErrorRubrova(
+                f"El puerto PostgreSQL {port} ya está ocupado por otra instancia. "
+                "No se conectará a una base de datos ajena."
+            )
         run_checked(
             [
                 str(pg_ctl),
-                "-D",
-                str(data_dir),
-                "-l",
-                str(logfile),
-                "-o",
-                f"-p {port} -h 127.0.0.1",
-                "-w",
-                "-t",
-                "90",
-                "start",
+                "-D", str(data_dir),
+                "-l", str(logfile),
+                "-o", f"-p {port} -h 127.0.0.1",
+                "-w", "-t", "90", "start",
             ]
         )
+        started_here = True
 
     wait_for_port("127.0.0.1", port, 60)
     run_checked([str(pg_isready), "-h", "127.0.0.1", "-p", str(port), "-U", "postgres", "-t", "5"])
+    identity = run_checked(
+        [
+            str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
+            "-U", "postgres", "-d", "postgres", "-At",
+            "-c", "SELECT current_setting('data_directory') || '|' || current_setting('port') || '|' || current_setting('server_version_num')",
+        ]
+    ).stdout.strip()
+    try:
+        actual_dir, actual_port, actual_version = identity.split("|", 2)
+    except ValueError as exc:
+        raise RuntimeErrorRubrova(f"No se pudo identificar la instancia PostgreSQL local: {identity!r}") from exc
+    if (
+        Path(actual_dir).resolve() != data_dir.resolve()
+        or int(actual_port) != port
+        or not actual_version.startswith("18")
+    ):
+        raise RuntimeErrorRubrova(
+            "La instancia PostgreSQL no coincide con el directorio, puerto y versión configurados para Rubrova."
+        )
+
     query = run_checked(
         [
-            str(psql),
-            "-X",
-            "-h",
-            "127.0.0.1",
-            "-p",
-            str(port),
-            "-U",
-            "postgres",
-            "-d",
-            "postgres",
-            "-tAc",
+            str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
+            "-U", "postgres", "-d", "postgres", "-tAc",
             "SELECT 1 FROM pg_database WHERE datname = 'rubrova_dev'",
         ]
     ).stdout.strip()
     if query != "1":
         run_checked(
             [
-                str(createdb),
-                "-h",
-                "127.0.0.1",
-                "-p",
-                str(port),
-                "-U",
-                "postgres",
-                "rubrova_dev",
+                str(createdb), "-h", "127.0.0.1", "-p", str(port),
+                "-U", "postgres", "rubrova_dev",
             ]
         )
+    return started_here
 
 
 def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bool) -> None:
@@ -598,7 +645,14 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
     ensure_extension_files(logics_dir)
     prepare_tomcat_base(tomcat_home, tomcat_base, artifacts["client"], ports)
 
-    ensure_database(pg_bin, pg_data, ports["postgres"], log_dir)
+    if port_is_open("127.0.0.1", ports["rmi"]):
+        raise RuntimeErrorRubrova(
+            f"El puerto RMI {ports['rmi']} ya está ocupado. Detené el otro servidor antes de iniciar esta instancia."
+        )
+    if port_is_open("127.0.0.1", ports["web"]):
+        raise RuntimeErrorRubrova(
+            f"El puerto web {ports['web']} ya está ocupado. Detené el otro servidor antes de iniciar esta instancia."
+        )
 
     classpath = os.pathsep.join([".", "./*", "../server.jar"])
     server_log = log_dir / "server-console.log"
@@ -624,7 +678,10 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
     server_process: subprocess.Popen[Any] | None = None
     tomcat_process: subprocess.Popen[Any] | None = None
     tomcat_stream = None
+    postgres_started_here = False
     try:
+        postgres_started_here = ensure_database(pg_bin, pg_data, ports["postgres"], log_dir)
+        print("PostgreSQL local listo.")
         print("Iniciando servidor Rubrova nativo (sin Docker)...")
         server_process = subprocess.Popen(
             server_command,
@@ -635,7 +692,7 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
             creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if os.name == "nt" else 0,
             start_new_session=(os.name != "nt"),
         )
-        wait_for_server_ready(server_process, logics_dir / "logs")
+        wait_for_server_ready(server_process, logics_dir / "logs", ports["rmi"])
         print("Servidor Rubrova y PostgreSQL están listos.")
 
         env = {
@@ -671,7 +728,9 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
         print("RUBROVA LOCAL ACTIVO (sin Docker)")
         print(f"URL: {web_url}")
         print(f"Datos persistentes: {pg_data}")
-        print(f"Logs: {log_dir}")
+        print(f"Logs del supervisor y PostgreSQL: {log_dir}")
+        print(f"Logs del servidor lsFusion: {logics_dir / 'logs'}")
+        print(f"Logs de Tomcat: {tomcat_base / 'logs'}")
         print("El núcleo se ejecuta localmente. Internet sólo se necesita para integraciones externas que estén habilitadas.")
         print("Presioná Ctrl+C para detener los procesos; la base de datos se conserva.")
         if open_browser:
@@ -689,7 +748,7 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
     finally:
         stop_process(tomcat_process, "cliente web")
         stop_process(server_process, "servidor de aplicación")
-        stop_postgres(pg_bin, pg_data)
+        stop_postgres(pg_bin, pg_data, postgres_started_here)
         if server_stream:
             server_stream.close()
         if tomcat_stream:
