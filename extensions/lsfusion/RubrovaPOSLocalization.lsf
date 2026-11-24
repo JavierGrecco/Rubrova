@@ -123,6 +123,8 @@ loadDefaultData () + {
 
     // MyCompany crea un cliente genérico para ventas de mostrador con el ID estable "unknown".
     // Cambiamos su dato real de contacto; no dependemos de una traducción de etiqueta.
-    FOR MasterData.Individual i WHERE MasterData.id(i) = 'unknown' DO
-        MasterData.lastName(i) <- 'Consumidor final';
+    FOR MasterData.Individual i DO {
+        IF MasterData.id(i) = 'unknown' THEN
+            MasterData.lastName(i) <- 'Consumidor final';
+    }
 }
