@@ -15,7 +15,7 @@ CLASS IncomingPayment 'Incoming payment';
 type 'Type' = DATA IncomingPaymentType (IncomingPayment) NONULL;
 nameType 'Type' (IncomingPayment s) = name(type(s));
 
-dateTime 'Date' = DATA DATETIME (IncomingPayment) NONULL IN id;
+dateTime '{Date}' = DATA DATETIME (IncomingPayment) NONULL IN id;
 dateTime(IncomingPayment p) <- currentDateTime() WHEN SET(p IS IncomingPayment);
 @defineDateTimeAggregation(IncomingPayment);
 

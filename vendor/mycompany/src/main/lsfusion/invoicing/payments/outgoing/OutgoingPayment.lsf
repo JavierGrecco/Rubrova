@@ -15,7 +15,7 @@ CLASS OutgoingPayment 'Outgoing payment';
 type 'Type' = DATA OutgoingPaymentType (OutgoingPayment) NONULL;
 nameType 'Type' (OutgoingPayment s) = name(type(s));
 
-dateTime 'Date' = DATA DATETIME (OutgoingPayment) NONULL IN id;
+dateTime '{Date}' = DATA DATETIME (OutgoingPayment) NONULL IN id;
 dateTime(OutgoingPayment p) <- currentDateTime() WHEN SET(p IS OutgoingPayment);
 @defineDateTimeAggregation(OutgoingPayment);
 

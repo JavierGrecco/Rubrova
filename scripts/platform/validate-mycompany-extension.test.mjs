@@ -23,6 +23,8 @@ const cashAccountSource = read("vendor/mycompany/src/main/lsfusion/invoicing/acc
 const bankAccountSource = read("vendor/mycompany/src/main/lsfusion/invoicing/accounts/bank/BankAccount.lsf");
 const billSource = read("vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf");
 const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf");
+const incomingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf");
+const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
@@ -747,6 +749,17 @@ test("el historial de facturas y compras registra los cambios de impuestos por l
   assert.ok(sourcePatch.includes("@defineDocHistoryLineProperty(invoice, InvoiceLine, taxes, 'Taxes', nameItem);"));
   assert.ok(sourcePatch.includes("def apply_tax_history_line_tracking()"));
   assert.ok(sourcePatch.includes("if not apply_tax_history_line_tracking():"));
+});
+
+test("los movimientos de caja usan la clave española de fecha en lugar de un caption literal", () => {
+  assert.ok(incomingPaymentSource.includes("dateTime '{Date}' = DATA DATETIME (IncomingPayment) NONULL IN id;"));
+  assert.ok(outgoingPaymentSource.includes("dateTime '{Date}' = DATA DATETIME (OutgoingPayment) NONULL IN id;"));
+  assert.ok(!incomingPaymentSource.includes("dateTime 'Date' = DATA DATETIME"));
+  assert.ok(!outgoingPaymentSource.includes("dateTime 'Date' = DATA DATETIME"));
+  assert.ok(sourcePatch.includes("CASH_MOVEMENT_DATE_CAPTION_TARGETS"));
+  assert.ok(sourcePatch.includes("def apply_cash_movement_date_captions()"));
+  assert.ok(sourcePatch.includes("if not apply_cash_movement_date_captions():"));
+  assert.ok(bundle.includes("Date=Fecha"));
 });
 
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {

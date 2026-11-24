@@ -104,6 +104,20 @@ BANK_ACCOUNT_QUERY_REPLACEMENTS = (
     ),
 )
 
+# Literal captions bypass ResourceBundle lookup; use the existing localized key instead.
+CASH_MOVEMENT_DATE_CAPTION_TARGETS = (
+    (
+        ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf",
+        "dateTime 'Date' = DATA DATETIME (IncomingPayment) NONULL IN id;",
+        "dateTime '{Date}' = DATA DATETIME (IncomingPayment) NONULL IN id;",
+    ),
+    (
+        ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf",
+        "dateTime 'Date' = DATA DATETIME (OutgoingPayment) NONULL IN id;",
+        "dateTime '{Date}' = DATA DATETIME (OutgoingPayment) NONULL IN id;",
+    ),
+)
+
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
 # Tax changes are part of the document-line audit trail, alongside quantity and amount.
 TAX_HISTORY_TARGETS = (
@@ -183,6 +197,33 @@ def apply_bank_account_query_filters() -> bool:
         print("Filtro de clase BankAccount aplicado.")
     else:
         print("Filtro de clase BankAccount ya aplicado.")
+    return True
+
+
+def apply_cash_movement_date_captions() -> bool:
+    for target, before, after in CASH_MOVEMENT_DATE_CAPTION_TARGETS:
+        if not target.is_file():
+            print(f"No se encontró el módulo de pagos: {target}", file=sys.stderr)
+            return False
+
+        source = target.read_text(encoding="utf-8")
+        if after in source:
+            continue
+
+        count = source.count(before)
+        if count != 1:
+            print(
+                "No se corrigió el caption Date de movimientos de caja. Se esperaba "
+                f"exactamente una coincidencia en {target} y se encontraron {count}.",
+                file=sys.stderr,
+            )
+            return False
+
+        source = source.replace(before, after, 1)
+        target.write_text(source, encoding="utf-8")
+        print(f"Caption de fecha localizado al español: {target.name}")
+
+    print("Captions de fecha de ingresos y retiros verificados.")
     return True
 
 
@@ -324,6 +365,9 @@ def main() -> int:
         return 1
 
     if not apply_tax_history_line_tracking():
+        return 1
+
+    if not apply_cash_movement_date_captions():
         return 1
 
     if not GWT_MESSAGES_SOURCE.is_file():
