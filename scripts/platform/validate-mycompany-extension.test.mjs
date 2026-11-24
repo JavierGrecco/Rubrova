@@ -30,6 +30,7 @@ const dialogBoxHelperSource = read("vendor/platform/web-client/src/main/java/lsf
 const modalWindowSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/ModalWindow.java");
 const formButtonSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/FormButton.java");
 const spanishGwtMessagesSource = read("patches/lsfusion/ClientMessages_es.properties");
+const gwtModuleSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/main.gwt.xml");
 const spanishGwtMessagesVendor = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties");
 
 
@@ -610,6 +611,16 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(dialogBoxHelperSource.includes("option.isPrimary() ? FormButton.ButtonStyle.PRIMARY : FormButton.ButtonStyle.SECONDARY"));
   assert.ok(modalWindowSource.includes('GwtClientUtils.addClassName(modal, "show")'));
   assert.ok(formButtonSource.includes('GwtClientUtils.addClassName(this, "btn-primary")'));
+});
+
+test("el cliente GWT compila la variante española y expone Sí/No", () => {
+  assert.ok(gwtModuleSource.includes('<extend-property name="locale" values="ru,en,be,uk,es"/>'));
+  assert.ok(gwtModuleSource.includes('<set-property name="locale" value="ru,en,be,uk,es"/>'));
+  const messages = parseProperties(spanishGwtMessagesSource);
+  assert.equal(messages.get("yes"), "Sí");
+  assert.equal(messages.get("no"), "No");
+  assert.ok(sourcePatch.includes("GWT_MESSAGES_SOURCE"));
+  assert.ok(sourcePatch.includes("GWT_MESSAGES_TARGET"));
 });
 
 test("los botones de confirmación del cliente GWT están localizados al español", () => {
