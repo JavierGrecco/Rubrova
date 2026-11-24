@@ -43,6 +43,10 @@ jobs:
         run: node --test scripts/platform/validate-mycompany-extension.test.mjs
       - name: Validar configuración de ejecución nativa, Docker y remota
         run: python3 scripts/platform/test_runtime_config.py
+      - name: Validar supervisor nativo sin Docker
+        run: |
+          python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py
+          python3 scripts/platform/test_runtime_native_preview.py
       - name: Validar scripts de shell
         run: |
           bash -n scripts/platform/prepare-mycompany-6.2.sh
