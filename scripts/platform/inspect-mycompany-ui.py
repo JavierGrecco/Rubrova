@@ -416,6 +416,7 @@ ACTION_CONTAINER_BY_LABEL = {
     "Abrir turno": "PROPERTY(openSession(p))",
     # The payment dialog exposes the visible caption, but GWT omits it from the accessible role name.
     "Ok (ctrl ENTER)": "PROPERTY(overFormOk)",
+    "Cerrar turno": "PROPERTY(close(s))",
 }
 
 
@@ -872,6 +873,85 @@ def inspect_page(url: str) -> int:
                 visible_snapshot(page, "UI_SALE_CONFIRMED")
                 page.screenshot(path=str(sale_screenshot), full_page=True)
                 print(f"UI_SALE_SCREENSHOT={sale_screenshot}")
+
+                # Cierre nativo de MyCompany: acepta la confirmación del action CONFIRM
+                # y comprueba la sesión persistida, sin escribir un cierre desde el fixture.
+                close_dialog_messages: list[str] = []
+
+                def accept_session_close_dialog(dialog: Any) -> None:
+                    close_dialog_messages.append(dialog.message)
+                    print("UI_SESSION_CLOSE_CONFIRMATION=" + dialog.message)
+                    dialog.accept()
+
+                page.once("dialog", accept_session_close_dialog)
+                if not click_exact_action(page, "Cerrar turno"):
+                    raise RuntimeError("No se encontró la acción nativa 'Cerrar turno' de MyCompany.")
+                print("UI_SESSION_CLOSE_ACTION_CLICKED=true")
+
+                closed_session_payload: dict[str, Any] = {}
+                close_deadline = time.monotonic() + 30
+                while time.monotonic() < close_deadline:
+                    close_response = context.request.get(
+                        sales_api_base + "rubrovaTestSessionCloseApi", timeout=12_000
+                    )
+                    if close_response.status != 200:
+                        raise RuntimeError(
+                            "La consulta de cierre de turno respondió HTTP "
+                            f"{close_response.status}: {close_response.text()[:1200]}"
+                        )
+                    closed_session_payload = close_response.json()
+                    if isinstance(closed_session_payload, list):
+                        closed_session_payload = closed_session_payload[0] if closed_session_payload else {}
+                    if closed_session_payload.get("closingDateTime") and not closed_session_payload.get("opened"):
+                        break
+                    page.wait_for_timeout(750)
+
+                print("UI_SESSION_CLOSE_RECONCILIATION=" + json.dumps(closed_session_payload, ensure_ascii=False))
+                if not closed_session_payload.get("sessionNumber"):
+                    raise RuntimeError("No se encontró el turno original después de intentar cerrarlo.")
+                if not closed_session_payload.get("openingDateTime"):
+                    raise RuntimeError("El turno cerrado no conservó su fecha de apertura.")
+                if not closed_session_payload.get("closingDateTime"):
+                    raise RuntimeError("El cierre nativo no persistió closingDateTime.")
+                if closed_session_payload.get("opened") is not False:
+                    raise RuntimeError("El turno sigue abierto después de ejecutar Cerrar turno.")
+
+                expected_close = {
+                    "salesCount": 1,
+                    "salesAmount": 1250,
+                    "returnsCount": 0,
+                    "returnsAmount": 0,
+                    "netAmount": 1250,
+                    "cashPaid": 1250,
+                    "cashBalance": 1250,
+                }
+                for field, expected in expected_close.items():
+                    try:
+                        actual = float(closed_session_payload.get(field) or 0)
+                    except (TypeError, ValueError) as error:
+                        raise RuntimeError(
+                            f"El cierre devolvió un valor no numérico para {field}: "
+                            f"{closed_session_payload.get(field)!r}"
+                        ) from error
+                    if abs(actual - expected) > 0.001:
+                        raise RuntimeError(
+                            f"El turno no quedó conciliado en {field}: esperado {expected}, "
+                            f"recibido {actual}. Respuesta: "
+                            f"{json.dumps(closed_session_payload, ensure_ascii=False)}"
+                        )
+
+                print("UI_SESSION_CLOSE_TIMESTAMP_PERSISTED=true")
+                print("UI_SESSION_CLOSED=true")
+                print("UI_SESSION_SALES_RECONCILED=true")
+                print("UI_SESSION_CASH_RECONCILED=true")
+                print(f"UI_SESSION_CLOSE_CONFIRMATION_COUNT={len(close_dialog_messages)}")
+
+                closed_session_screenshot = screenshot_path.with_name(
+                    screenshot_path.stem + "-session-closed" + screenshot_path.suffix
+                )
+                visible_snapshot(page, "UI_SESSION_CLOSED")
+                page.screenshot(path=str(closed_session_screenshot), full_page=True)
+                print(f"UI_SESSION_CLOSED_SCREENSHOT={closed_session_screenshot}")
 
                 # Ejecutar pruebas de resiliencia sólo contra el simulador local.
                 # Las operaciones de prueba no crean ventas, pagos ni movimientos de caja.
