@@ -669,7 +669,7 @@ def inspect_page(url: str) -> int:
                 home_text = visible_snapshot(page, "UI_AFTER_LOGIN")
                 home_lines = {line.strip() for line in home_text.splitlines()}
                 legacy_navigation_labels = {
-                    "Master data", "Auto theme", "Pin navbar", "Attributes", "Design"
+                    "Master data", "Auto theme", "Pin navbar", "Attributes", "Numerators", "Design"
                 }
                 present_legacy_navigation = sorted(legacy_navigation_labels.intersection(home_lines))
                 if present_legacy_navigation:
@@ -678,7 +678,7 @@ def inspect_page(url: str) -> int:
                         + ", ".join(present_legacy_navigation)
                     )
                 for required_label in (
-                    "Datos maestros", "Tema automático", "Fijar barra de navegación", "Diseño"
+                    "Datos maestros", "Atributos", "Numeradores", "Tema automático", "Fijar barra de navegación", "Diseño"
                 ):
                     if required_label not in home_lines:
                         raise RuntimeError(

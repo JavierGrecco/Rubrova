@@ -118,6 +118,12 @@ CASH_MOVEMENT_DATE_CAPTION_TARGETS = (
     ),
 )
 
+# MyCompany's item-attribute navigator caption is literal in the upstream file.
+# Resolve it through the existing "Attributes" ResourceBundle key.
+ITEM_ATTRIBUTE_NAVIGATION_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf"
+ITEM_ATTRIBUTE_NAVIGATION_BEFORE = "FORM attributes 'Attributes'"
+ITEM_ATTRIBUTE_NAVIGATION_AFTER = "FORM attributes '{Attributes}'"
+
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
 # Tax changes are part of the document-line audit trail, alongside quantity and amount.
 TAX_HISTORY_TARGETS = (
@@ -199,6 +205,36 @@ def apply_bank_account_query_filters() -> bool:
         print("Filtro de clase BankAccount aplicado.")
     else:
         print("Filtro de clase BankAccount ya aplicado.")
+    return True
+
+
+def apply_item_attribute_navigation_caption() -> bool:
+    target = ITEM_ATTRIBUTE_NAVIGATION_TARGET
+    if not target.is_file():
+        print(f"No se encontró el módulo de atributos: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    if ITEM_ATTRIBUTE_NAVIGATION_AFTER in source:
+        print("Caption de navegación Atributos ya localizado.")
+        return True
+
+    count = source.count(ITEM_ATTRIBUTE_NAVIGATION_BEFORE)
+    if count != 1:
+        print(
+            "No se localizó el caption literal de atributos. Se esperaba exactamente "
+            f"una coincidencia en {target} y se encontraron {count}.",
+            file=sys.stderr,
+        )
+        return False
+
+    source = source.replace(
+        ITEM_ATTRIBUTE_NAVIGATION_BEFORE,
+        ITEM_ATTRIBUTE_NAVIGATION_AFTER,
+        1,
+    )
+    target.write_text(source, encoding="utf-8")
+    print("Caption de navegación Atributos localizado.")
     return True
 
 
@@ -370,6 +406,9 @@ def main() -> int:
         return 1
 
     if not apply_cash_movement_date_captions():
+        return 1
+
+    if not apply_item_attribute_navigation_caption():
         return 1
 
     if not GWT_MESSAGES_SOURCE.is_file():

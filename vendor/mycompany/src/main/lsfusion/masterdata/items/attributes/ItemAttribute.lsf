@@ -79,7 +79,7 @@ FORM childValues 'Values'
             matches(v, c)
 ;
 
-FORM attributes 'Attributes'
+FORM attributes '{Attributes}'
     OBJECTS a = ItemAttribute
     PROPERTIES(a) READONLY index, id, name, nonull
     PROPERTIES(a) NEWSESSION NEW, EDIT, DELETE 

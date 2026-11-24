@@ -25,6 +25,7 @@ const billSource = read("vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill
 const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf");
 const incomingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf");
 const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf");
+const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
@@ -784,6 +785,18 @@ test("el historial de facturas y compras registra los cambios de impuestos por l
   assert.ok(sourcePatch.includes("@defineDocHistoryLineProperty(invoice, InvoiceLine, taxes, 'Taxes', nameItem);"));
   assert.ok(sourcePatch.includes("def apply_tax_history_line_tracking()"));
   assert.ok(sourcePatch.includes("if not apply_tax_history_line_tracking():"));
+});
+
+test("el navegador de atributos usa el caption español y Numerators se traduce desde el motor", () => {
+  assert.ok(itemAttributeSource.includes("FORM attributes '{Attributes}'"));
+  assert.ok(!itemAttributeSource.includes("FORM attributes 'Attributes'"));
+  assert.ok(sourcePatch.includes("ITEM_ATTRIBUTE_NAVIGATION_TARGET"));
+  assert.ok(sourcePatch.includes("def apply_item_attribute_navigation_caption()"));
+  assert.ok(sourcePatch.includes("if not apply_item_attribute_navigation_caption():"));
+  assert.equal(parseProperties(bundle).get("Attributes"), "Atributos");
+  const serverEntries = parseProperties(spanishServerMessagesSource);
+  assert.equal(serverEntries.get("numerator.numerators"), "Numeradores");
+  assert.equal(serverEntries.get("numerator.numerator"), "Numerador");
 });
 
 test("los movimientos de caja usan la clave española de fecha en lugar de un caption literal", () => {
