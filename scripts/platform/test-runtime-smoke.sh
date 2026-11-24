@@ -47,13 +47,13 @@ KEEP_RUNTIME_STACK="${RUBROVA_KEEP_RUNTIME_STACK:-false}"
 KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
 if [[ "$KEEP_RUNTIME_STACK" == "true" ]]; then KEEP_WORK_DIR=true; fi
 MOCK_PROVIDER_PORT="${RUBROVA_MOCK_PROVIDER_PORT:-18765}"
-MOCK_PROVIDER_PID=""
 BUILD_ARTIFACTS_DIR="${RUBROVA_BUILD_ARTIFACTS_DIR:-$WORK_DIR/build-artifacts}"
 RUBROVA_IMAGE_TAG="${RUBROVA_RUNTIME_IMAGE_TAG:-${GITHUB_SHA:-local}}"
 RUBROVA_IMAGE_TAG="${RUBROVA_IMAGE_TAG:0:12}"
 SERVER_IMAGE="rubrova/server:6.2-$RUBROVA_IMAGE_TAG"
 LOGICS_IMAGE="rubrova/logics:6.2-$RUBROVA_IMAGE_TAG"
 CLIENT_IMAGE="rubrova/client:6.2-$RUBROVA_IMAGE_TAG"
+MOCK_PROVIDER_IMAGE="rubrova/mock-provider:6.2-$RUBROVA_IMAGE_TAG"
 
 mkdir -p "$CACHE_DIR" "$COMPOSE_DIR"
 
@@ -110,10 +110,6 @@ cleanup() {
   local exit_code=$?
   trap - EXIT
   set +e
-  if [[ -n "$MOCK_PROVIDER_PID" ]]; then
-    kill "$MOCK_PROVIDER_PID" 2>/dev/null || true
-    wait "$MOCK_PROVIDER_PID" 2>/dev/null || true
-  fi
   if [[ -s "$COMPOSE_FILE" && -s "$EXTENSION_OVERRIDE_FILE" && -s "$IMAGE_OVERRIDE_FILE" ]]; then
     if [[ "$exit_code" -ne 0 ]]; then
       echo "=== Estado final de los contenedores ===" >&2
@@ -160,24 +156,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Preparando simulador HTTP local para probar timeout y recuperación."
-python3 "$SCRIPT_DIR/mock-integration-provider.py" --host 0.0.0.0 --port "$MOCK_PROVIDER_PORT" > "$WORK_DIR/mock-provider.log" 2>&1 &
-MOCK_PROVIDER_PID=$!
-MOCK_READY=false
-for attempt in 1 2 3 4 5 6 7 8 9 10; do
-  if curl --silent --fail --connect-timeout 1 --max-time 2 "http://127.0.0.1:$MOCK_PROVIDER_PORT/health" >/dev/null; then
-    MOCK_READY=true
-    break
-  fi
-  sleep 1
-done
-if [[ "$MOCK_READY" != "true" ]]; then
-  echo "El simulador HTTP local no inició correctamente." >&2
-  cat "$WORK_DIR/mock-provider.log" >&2 || true
-  exit 1
-fi
-echo "Simulador HTTP local disponible en el puerto $MOCK_PROVIDER_PORT."
-
+echo "Preparando la prueba de aceptación sin salida a Internet."
 echo "1/6 Preparando el Compose MyCompany 6.2; las imágenes de aplicación salen del fork Rubrova"
 RUBROVA_CACHE_DIR="$CACHE_DIR" bash "$PREPARE_SCRIPT"
 cp "$CACHE_DIR/compose.yaml" "$COMPOSE_FILE"
@@ -198,6 +177,19 @@ if [[ "${RUBROVA_BUILD_ARTIFACTS_DIR:-}" == "" ]]; then
 fi
 bash "$SCRIPT_DIR/build-rubrova-runtime-images.sh" "$BUILD_ARTIFACTS_DIR" "$RUBROVA_IMAGE_TAG"
 
+MOCK_PROVIDER_BUILD_DIR="$WORK_DIR/mock-provider-build"
+mkdir -p "$MOCK_PROVIDER_BUILD_DIR"
+cp "$SCRIPT_DIR/mock-integration-provider.py" "$MOCK_PROVIDER_BUILD_DIR/mock-integration-provider.py"
+cat > "$MOCK_PROVIDER_BUILD_DIR/Dockerfile" <<'DOCKERFILE'
+FROM python:3.13-alpine
+WORKDIR /app
+COPY mock-integration-provider.py /app/mock-integration-provider.py
+EXPOSE 18765
+CMD ["python3", "/app/mock-integration-provider.py", "--host", "0.0.0.0", "--port", "18765"]
+DOCKERFILE
+echo "Construyendo simulador HTTP local: $MOCK_PROVIDER_IMAGE"
+docker build --platform linux/amd64 --tag "$MOCK_PROVIDER_IMAGE" "$MOCK_PROVIDER_BUILD_DIR"
+
 cat > "$IMAGE_OVERRIDE_FILE" <<YAML
 services:
   logics:
@@ -212,8 +204,6 @@ services:
         condition: service_completed_successfully
       toxiproxy:
         condition: service_started
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     image: $SERVER_IMAGE
     platform: linux/amd64
     pull_policy: never
@@ -240,15 +230,20 @@ services:
       timeout: 3s
       retries: 30
       start_period: 5s
-  # Test-only network fault injector; its control API is bound to loopback on the CI host.
+  # El proxy y el simulador quedan dentro de la red privada de aceptación.
   toxiproxy:
     image: ghcr.io/shopify/toxiproxy:2.13.0@sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc
     environment:
       TOXIPROXY_AUTH_TOKEN: "\${TOXIPROXY_AUTH_TOKEN:?}"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:18474:8474"
+  mock-provider:
+    image: $MOCK_PROVIDER_IMAGE
+    platform: linux/amd64
+    pull_policy: never
+networks:
+  default:
+    internal: true
 YAML
 
 grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
@@ -640,7 +635,42 @@ printf 'Servicios definidos (%s):\n%s\n' "$SERVICE_COUNT" "$SERVICES"
 echo "4/7 Iniciando MyCompany 6.2 en un proyecto efímero"
 compose up -d --remove-orphans
 
-echo "4.0/7 Comprobando la ubicación y persistencia de PostgreSQL 18"
+echo "4.0/7 Verificando que todo el runtime quedó en una red interna sin salida a Internet."
+SERVER_CONTAINER_ID="$(compose ps -a -q server | head -n 1)"
+[[ -n "$SERVER_CONTAINER_ID" ]] || {
+  echo "No se encontró el contenedor server para comprobar el aislamiento de red." >&2
+  exit 1
+}
+RUNTIME_NETWORK="$(docker inspect --format '{{range $name, $config := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$SERVER_CONTAINER_ID" | head -n 1)"
+[[ -n "$RUNTIME_NETWORK" ]] || {
+  echo "El servidor no quedó conectado a una red Docker." >&2
+  exit 1
+}
+RUNTIME_NETWORK_INTERNAL="$(docker network inspect --format '{{.Internal}}' "$RUNTIME_NETWORK")"
+[[ "$RUNTIME_NETWORK_INTERNAL" == "true" ]] || {
+  echo "La red del runtime no está marcada como interna; no se acepta como prueba offline." >&2
+  exit 1
+}
+for service_name in db logics server client toxiproxy mock-provider; do
+  service_container="$(compose ps -a -q "$service_name" | head -n 1)"
+  [[ -n "$service_container" ]] || {
+    echo "Falta el contenedor del servicio $service_name en la prueba offline." >&2
+    exit 1
+  }
+  service_networks="$(docker inspect --format '{{range $name, $config := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$service_container")"
+  service_network_count="$(docker inspect --format '{{len .NetworkSettings.Networks}}' "$service_container")"
+  if [[ "$service_network_count" != "1" ]] || ! grep -Fxq "$RUNTIME_NETWORK" <<< "$service_networks"; then
+    echo "El servicio $service_name no está confinado exclusivamente a la red interna $RUNTIME_NETWORK." >&2
+    printf '%s\n' "$service_networks" >&2
+    exit 1
+  fi
+done
+printf 'RUBROVA_RUNTIME_NETWORK=%s\n' "$RUNTIME_NETWORK"
+echo "RUBROVA_RUNTIME_NETWORK_INTERNAL=true"
+echo "RUBROVA_RUNTIME_EXTERNAL_EGRESS=blocked"
+echo "PostgreSQL, servidor, lógica, cliente, proxy y simulador sólo se comunican por la red interna."
+
+echo "4.0.1/7 Comprobando la ubicación y persistencia de PostgreSQL 18"
 DB_CONTAINER_ID="$(compose ps -q db)"
 [[ -n "$DB_CONTAINER_ID" ]] || { echo "No se encontró el contenedor PostgreSQL." >&2; exit 1; }
 DB_PGDATA="$(compose exec -T db sh -c 'printf "%s" "$PGDATA"' | tr -d "\r")"
@@ -660,7 +690,7 @@ compose exec -T db sh -c 'test -s "$PGDATA/PG_VERSION"' || {
 }
 echo "PostgreSQL 18 verificado: PGDATA y bind mount persistente correctos."
 
-echo "4.1/7 Preparando los proxies de fallos de red en Toxiproxy"
+echo "4.1/7 Preparando los proxies de fallos de red dentro de la red interna"
 TOXIPROXY_API_URL="http://127.0.0.1:18474"
 TOXIPROXY_READY=false
 for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
@@ -680,7 +710,7 @@ fi
 curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
   --request POST --header "Content-Type: application/json" \
   --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
-  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"host.docker.internal:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
+  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"mock-provider:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
   "$TOXIPROXY_API_URL/populate" >/dev/null
 PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
   --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" "$TOXIPROXY_API_URL/proxies")"
@@ -692,7 +722,7 @@ payload = json.loads(sys.argv[1])
 if "rubrova_ci_normal" not in payload:
     raise SystemExit("Toxiproxy no creó el proxy hacia el simulador HTTP local.")
 PY
-echo "Toxiproxy listo: proxy HTTP hacia el simulador, incluida la ruta de respuesta lenta."
+echo "Toxiproxy listo: proxy HTTP hacia mock-provider dentro de la red sin Internet."
 
 echo "5/7 Comprobando que la configuración y los módulos Rubrova estén montados en el servidor"
 SERVER_CONTAINER_ID="$(compose ps -q server)"
@@ -1116,6 +1146,7 @@ while IFS= read -r image_name; do
     rubrova/server:6.2-*) local_service=server ;;
     rubrova/logics:6.2-*) local_service=logics ;;
     rubrova/client:6.2-*) local_service=client ;;
+    rubrova/mock-provider:6.2-*) local_service=mock-provider ;;
   esac
   if [[ -n "$local_service" ]]; then
     local_image_id="$(docker image inspect --format '{{.Id}}' "$image_name" 2>/dev/null || true)"
