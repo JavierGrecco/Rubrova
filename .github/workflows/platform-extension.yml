@@ -41,6 +41,8 @@ jobs:
           package-manager-cache: false
       - name: Validar lock, extensión y glosario
         run: node --test scripts/platform/validate-mycompany-extension.test.mjs
+      - name: Validar configuración de ejecución nativa, Docker y remota
+        run: python3 scripts/platform/test_runtime_config.py
       - name: Validar scripts de shell
         run: |
           bash -n scripts/platform/prepare-mycompany-6.2.sh
