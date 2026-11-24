@@ -944,6 +944,31 @@ def inspect_page(url: str) -> int:
                 page.screenshot(path=str(sale_screenshot), full_page=True)
                 print(f"UI_SALE_SCREENSHOT={sale_screenshot}")
 
+                # Después del cobro, el POS vuelve a dejar activa la pestaña "By order".
+                # El cierre pertenece al panel "Turno"; volver a esa pestaña hace visible
+                # la acción original sin llamar al cierre por una API auxiliar.
+                session_tab = page.get_by_text("Turno", exact=True)
+                session_tab_count = session_tab.count()
+                if session_tab_count != 1:
+                    raise RuntimeError(
+                        "No se encontró una única pestaña 'Turno' en el POS después del cobro. "
+                        f"Coincidencias: {session_tab_count}."
+                    )
+                session_tab.wait_for(state="visible", timeout=10_000)
+                session_tab.click(no_wait_after=True)
+                print("UI_SESSION_TAB_ACTIVATED=true")
+
+                close_button = page.locator('button[lsfusion-container="PROPERTY(close(s))"]')
+                try:
+                    close_button.wait_for(state="visible", timeout=15_000)
+                except PlaywrightTimeoutError as error:
+                    visible_snapshot(page, "UI_SESSION_TAB_CLOSE_BUTTON_NOT_VISIBLE")
+                    raise RuntimeError(
+                        "La pestaña 'Turno' se activó, pero el botón nativo 'Cerrar turno' "
+                        "sigue oculto."
+                    ) from error
+                print("UI_SESSION_CLOSE_BUTTON_VISIBLE=true")
+
                 # Cierre nativo de MyCompany: CONFIRM se muestra como MessageBox GWT,
                 # no como window.confirm del navegador. Aceptamos el botón afirmativo real.
                 if not click_exact_action(page, "Cerrar turno"):
