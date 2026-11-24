@@ -511,13 +511,23 @@ test("el lock distingue la imagen MyCompany AMD64 de server/client multi-arquite
 test("la prueba de resiliencia inyecta timeout, verifica recuperación y persiste la incidencia", () => {
   assert.equal(
     runtimeSmokeSource.split('"$SCRIPT_DIR/inspect-mycompany-ui.py"').length - 1,
-    1,
-    "El smoke visual del POS debe ejecutarse una sola vez: la segunda pasada intenta abrir un turno ya abierto."
+    2,
+    "Se espera una pasada para vender/cerrar y otra pasada de sólo lectura tras reiniciar."
   );
   assert.equal(
-    runtimeSmokeSource.split("8/9 Inspeccionando el login y la pantalla autenticada con Chromium").length - 1,
+    runtimeSmokeSource.split('RUBROVA_UI_VERIFY_PERSISTED_ONLY="true"').length - 1,
     1,
-    "No debe repetirse la aceptación visual dentro del mismo runtime efímero."
+    "La segunda pasada debe estar limitada a verificar datos persistidos, sin abrir otro turno."
+  );
+  assert.equal(
+    runtimeSmokeSource.split("8/10 Inspeccionando el login y la pantalla autenticada con Chromium").length - 1,
+    1,
+    "La aceptación visual/venta inicial debe ocurrir una sola vez."
+  );
+  assert.equal(
+    uiSmokeSource.split('click_exact_action(page, "Abrir turno")').length - 1,
+    1,
+    "El navegador no debe intentar abrir un segundo turno en la comprobación de persistencia."
   );
   assert.equal(
     runtimeSmokeSource.split("4.1/7 Preparando los proxies de fallos de red en Toxiproxy").length - 1,
