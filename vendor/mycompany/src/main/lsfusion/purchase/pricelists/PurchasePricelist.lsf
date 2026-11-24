@@ -141,6 +141,8 @@ NAVIGATOR {
 
 // copy
 copy 'Copy' (Pricelist pl) {
+    APPLY;
+    IF canceled() THEN RETURN;
     NEWSESSION {
         NEW p = Pricelist {
             startDateTime(p) <- startDateTime(pl);

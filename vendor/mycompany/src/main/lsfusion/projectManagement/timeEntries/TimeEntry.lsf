@@ -110,6 +110,8 @@ clone (TimeEntry to, TimeEntry from) + {
 }
 
 copy 'Copy' (TimeEntry from) {
+    APPLY;
+    IF canceled() THEN RETURN;
     NEWSESSION {
         NEW to = TimeEntry {
             clone(to, from);
