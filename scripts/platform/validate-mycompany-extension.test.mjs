@@ -29,6 +29,7 @@ const dialogBoxHelperSource = read("vendor/platform/web-client/src/main/java/lsf
 const modalWindowSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/ModalWindow.java");
 const formButtonSource = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/base/view/FormButton.java");
 const spanishGwtMessagesSource = read("patches/lsfusion/ClientMessages_es.properties");
+const spanishGwtMessagesVendor = read("vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties");
 
 
 function parseProperties(source) {
@@ -580,6 +581,10 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(runtimeSmokeSource.includes("Retail.countInvoices(rubrovaCITestSession())"));
   assert.ok(runtimeSmokeSource.includes("Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod())"));
   assert.ok(uiSmokeSource.includes('"Cerrar turno": "PROPERTY(close(s))"'));
+  assert.ok(uiSmokeSource.includes("UI_ACTION_CERRAR_TURNO_STABLE_SELECTOR_HIDDEN=true"));
+  assert.ok(uiSmokeSource.includes('page.get_by_role("button", name=label, exact=True)'));
+  assert.ok(uiSmokeSource.includes('input[type="submit"][value='));
+  assert.ok(uiSmokeSource.includes("Never retain a DOM index"));
   assert.ok(uiSmokeSource.includes("def accept_ls_fusion_confirmation"));
   assert.ok(uiSmokeSource.includes('page.locator(".modal.show")'));
   assert.ok(uiSmokeSource.includes('modal.locator(".modal-footer button.btn-primary")'));
@@ -606,6 +611,11 @@ test("los botones de confirmación del cliente GWT están localizados al españo
   assert.equal(entries.get("no"), "No");
   assert.equal(entries.get("ok"), "Aceptar");
   assert.equal(entries.get("cancel"), "Cancelar");
+  assert.deepEqual(
+    parseProperties(spanishGwtMessagesVendor),
+    entries,
+    "El bundle español generado dentro del cliente GWT debe coincidir con la fuente Rubrova."
+  );
   assert.ok(sourcePatch.includes("GWT_MESSAGES_SOURCE"));
   assert.ok(sourcePatch.includes("GWT_MESSAGES_TARGET"));
 });

@@ -274,37 +274,60 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
 
 
 def click_exact_action(page: Any, label: str) -> bool:
-    # Prefer stable lsFusion property IDs for actions whose rendered accessible names
-    # are not consistently exposed by the GWT widget tree.
+    # Prefer the stable lsFusion property container, but GWT can leave a hidden
+    # projection node with that ID while the actual visible submit control is elsewhere.
     container = ACTION_CONTAINER_BY_LABEL.get(label)
-    if container:
-        button = page.locator(f'button[lsfusion-container="{container}"]')
-    else:
-        # Keep a lazy accessible locator for other actions to survive GWT re-renders.
-        button = page.get_by_role("button", name=label, exact=True)
+    button = None
 
-    match_count = button.count()
-    if match_count != 1:
-        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
-        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_MATCH_COUNT={match_count}")
-        print(
-            f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
-            + json.dumps(
-                page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
-                    """elements => elements.map(element => ({
-                        tag: element.tagName.toLowerCase(),
-                        text: (element.innerText || element.value || element.textContent || "").trim(),
-                        container: element.getAttribute("lsfusion-container") || "",
-                        visible: getComputedStyle(element).display !== "none" &&
-                            getComputedStyle(element).visibility !== "hidden" &&
-                            !!(element.offsetWidth || element.offsetHeight),
-                        outerHTML: element.outerHTML.slice(0, 700)
-                    }))"""
-                ),
-                ensure_ascii=False,
+    if container:
+        stable_button = page.locator(f'button[lsfusion-container="{container}"]')
+        stable_count = stable_button.count()
+        if stable_count == 1 and stable_button.is_visible():
+            button = stable_button
+        elif stable_count == 1:
+            print(f"UI_ACTION_{label.upper().replace(' ', '_')}_STABLE_SELECTOR_HIDDEN=true")
+            print(
+                f"UI_ACTION_{label.upper().replace(' ', '_')}_HIDDEN_OUTERHTML="
+                + stable_button.evaluate("element => element.outerHTML.slice(0, 900)")
             )
-        )
-        return False
+        else:
+            print(
+                f"UI_ACTION_{label.upper().replace(' ', '_')}_STABLE_SELECTOR_MATCH_COUNT={stable_count}"
+            )
+
+    if button is None:
+        # Resolve the visible action by its accessible name at click time.
+        # Never retain a DOM index: GWT can replace controls during rerenders.
+        button = page.get_by_role("button", name=label, exact=True)
+        accessible_count = button.count()
+        if accessible_count != 1:
+            # Some lsFusion builds render toolbar actions as input[type=submit].
+            button = page.locator(
+                f'input[type="submit"][value={json.dumps(label, ensure_ascii=False)}]:visible'
+            )
+            submit_count = button.count()
+            if submit_count != 1:
+                print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
+                print(f"UI_ACTION_{label.upper().replace(' ', '_')}_MATCH_COUNT={accessible_count}")
+                print(f"UI_ACTION_{label.upper().replace(' ', '_')}_SUBMIT_MATCH_COUNT={submit_count}")
+                print(
+                    f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
+                    + json.dumps(
+                        page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
+                            """elements => elements.map(element => ({
+                                tag: element.tagName.toLowerCase(),
+                                text: (element.innerText || element.value || element.textContent || "").trim(),
+                                container: element.getAttribute("lsfusion-container") || "",
+                                visible: getComputedStyle(element).display !== "none" &&
+                                    getComputedStyle(element).visibility !== "hidden" &&
+                                    !!(element.offsetWidth || element.offsetHeight),
+                                outerHTML: element.outerHTML.slice(0, 700)
+                            }))"""
+                        ),
+                        ensure_ascii=False,
+                    )
+                )
+                return False
 
     try:
         button.wait_for(state="visible", timeout=12_000)
