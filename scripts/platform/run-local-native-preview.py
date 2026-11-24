@@ -456,6 +456,21 @@ def stop_process(process: subprocess.Popen[Any] | None, name: str, timeout: int 
     if process is None or process.poll() is not None:
         return
     print(f"Deteniendo {name}...")
+    if os.name == "nt":
+        # catalina.bat launches java.exe as a child. Terminate the full tree,
+        # otherwise an orphan Tomcat JVM can keep the ports occupied.
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+        return
     try:
         process.terminate()
         process.wait(timeout=timeout)
@@ -537,74 +552,79 @@ def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> b
         )
 
     started_here = False
-    if postgres_cluster_is_running(pg_ctl, data_dir):
-        # A listening PostgreSQL process is accepted only if it belongs to this exact data dir.
+    try:
+        if postgres_cluster_is_running(pg_ctl, data_dir):
+            # A listening PostgreSQL process is accepted only if it belongs to this exact data dir.
+            identity = run_checked(
+                [
+                    str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
+                    "-U", "postgres", "-d", "postgres", "-At",
+                    "-c", "SHOW data_directory",
+                ]
+            ).stdout.strip()
+            if Path(identity).resolve() != data_dir.resolve():
+                raise RuntimeErrorRubrova(
+                    f"El puerto {port} responde, pero PostgreSQL no pertenece al directorio privado de Rubrova. "
+                    "No se utilizará ni detendrá esa instancia."
+                )
+        else:
+            if port_is_open("127.0.0.1", port):
+                raise RuntimeErrorRubrova(
+                    f"El puerto PostgreSQL {port} ya está ocupado por otra instancia. "
+                    "No se conectará a una base de datos ajena."
+                )
+            run_checked(
+                [
+                    str(pg_ctl),
+                    "-D", str(data_dir),
+                    "-l", str(logfile),
+                    "-o", f"-p {port} -h 127.0.0.1",
+                    "-w", "-t", "90", "start",
+                ]
+            )
+            started_here = True
+
+        wait_for_port("127.0.0.1", port, 60)
+        run_checked([str(pg_isready), "-h", "127.0.0.1", "-p", str(port), "-U", "postgres", "-t", "5"])
         identity = run_checked(
             [
                 str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
                 "-U", "postgres", "-d", "postgres", "-At",
-                "-c", "SHOW data_directory",
+                "-c", "SELECT current_setting('data_directory') || '|' || current_setting('port') || '|' || current_setting('server_version_num')",
             ]
         ).stdout.strip()
-        if Path(identity).resolve() != data_dir.resolve():
+        try:
+            actual_dir, actual_port, actual_version = identity.split("|", 2)
+        except ValueError as exc:
+            raise RuntimeErrorRubrova(f"No se pudo identificar la instancia PostgreSQL local: {identity!r}") from exc
+        if (
+            Path(actual_dir).resolve() != data_dir.resolve()
+            or int(actual_port) != port
+            or not actual_version.startswith("18")
+        ):
             raise RuntimeErrorRubrova(
-                f"El puerto {port} responde, pero PostgreSQL no pertenece al directorio privado de Rubrova. "
-                "No se utilizará ni detendrá esa instancia."
+                "La instancia PostgreSQL no coincide con el directorio, puerto y versión configurados para Rubrova."
             )
-    else:
-        if port_is_open("127.0.0.1", port):
-            raise RuntimeErrorRubrova(
-                f"El puerto PostgreSQL {port} ya está ocupado por otra instancia. "
-                "No se conectará a una base de datos ajena."
+
+        query = run_checked(
+            [
+                str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
+                "-U", "postgres", "-d", "postgres", "-tAc",
+                "SELECT 1 FROM pg_database WHERE datname = 'rubrova_dev'",
+            ]
+        ).stdout.strip()
+        if query != "1":
+            run_checked(
+                [
+                    str(createdb), "-h", "127.0.0.1", "-p", str(port),
+                    "-U", "postgres", "rubrova_dev",
+                ]
             )
-        run_checked(
-            [
-                str(pg_ctl),
-                "-D", str(data_dir),
-                "-l", str(logfile),
-                "-o", f"-p {port} -h 127.0.0.1",
-                "-w", "-t", "90", "start",
-            ]
-        )
-        started_here = True
-
-    wait_for_port("127.0.0.1", port, 60)
-    run_checked([str(pg_isready), "-h", "127.0.0.1", "-p", str(port), "-U", "postgres", "-t", "5"])
-    identity = run_checked(
-        [
-            str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
-            "-U", "postgres", "-d", "postgres", "-At",
-            "-c", "SELECT current_setting('data_directory') || '|' || current_setting('port') || '|' || current_setting('server_version_num')",
-        ]
-    ).stdout.strip()
-    try:
-        actual_dir, actual_port, actual_version = identity.split("|", 2)
-    except ValueError as exc:
-        raise RuntimeErrorRubrova(f"No se pudo identificar la instancia PostgreSQL local: {identity!r}") from exc
-    if (
-        Path(actual_dir).resolve() != data_dir.resolve()
-        or int(actual_port) != port
-        or not actual_version.startswith("18")
-    ):
-        raise RuntimeErrorRubrova(
-            "La instancia PostgreSQL no coincide con el directorio, puerto y versión configurados para Rubrova."
-        )
-
-    query = run_checked(
-        [
-            str(psql), "-X", "-h", "127.0.0.1", "-p", str(port),
-            "-U", "postgres", "-d", "postgres", "-tAc",
-            "SELECT 1 FROM pg_database WHERE datname = 'rubrova_dev'",
-        ]
-    ).stdout.strip()
-    if query != "1":
-        run_checked(
-            [
-                str(createdb), "-h", "127.0.0.1", "-p", str(port),
-                "-U", "postgres", "rubrova_dev",
-            ]
-        )
-    return started_here
+        return started_here
+    except Exception:
+        # Do not leave a half-started cluster behind when initialization fails.
+        stop_postgres(pg_bin, data_dir, started_here)
+        raise
 
 
 def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bool) -> None:
@@ -773,7 +793,14 @@ def doctor(config_path: Path, allow_tomcat_download: bool) -> None:
     print("  Docker: no requerido")
 
 
+def _handle_termination_signal(signum: int, frame: Any) -> None:
+    # Convert TERM into the same cleanup path as Ctrl+C for CI and service managers.
+    raise KeyboardInterrupt
+
+
 def main() -> int:
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, _handle_termination_signal)
     parser = argparse.ArgumentParser(description="Vista previa nativa de Rubrova, sin Docker.")
     parser.add_argument("--config", type=Path, default=runtime_config.default_config_path())
     parser.add_argument("--offline", action="store_true", help="No descargar Tomcat si todavía no está en caché.")
