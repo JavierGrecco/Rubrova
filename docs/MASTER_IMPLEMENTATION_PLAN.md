@@ -1,8 +1,8 @@
 # Plan maestro de implementación de Rubrova
 
-**Revisión:** 20 de noviembre de 2026  
-**Estado:** MyCompany 6.2 fijado como primer piloto integrado; Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino; aceptación funcional pendiente.  
-**Estado real del software:** MyCompany 6.2 ya se ejecuta como base externa del piloto en CI Linux x86_64. La extensión propia RubrovaCustom/RubrovaPOSLocalization carga; Chromium autentica, abre el POS y abre un turno sintético. Rubrova todavía no tiene un circuito de venta propio aceptado; no se copió ni vendorizó el código fuente upstream. El repositorio conserva definición, arquitectura, investigación, validadores sintéticos, scripts de despliegue y la extensión inicial.
+**Revisión:** 24 de noviembre de 2026  
+**Estado:** MyCompany 6.2 + lsFusion 6.2 fijados y vendorizados como primer piloto integrado; Tryton 8.0 + tryton-ar 8.0 se conserva como contraste fiscal argentino.  
+**Estado real del software:** Rubrova compila desde sus fuentes propias el servidor, cliente web y lógica MyCompany; CI construye imágenes propias y las ejecuta en Linux x86_64. El run [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) aceptó una venta de ARS 1.250 en efectivo, factura/pago persistidos, salida de stock y cierre básico del turno. La prueba fue sintética y descartable; no existe aún aceptación para operar en una instalación productiva. Siguen pendientes devoluciones, reintegros, movimientos/arqueo de caja, pagos mixtos/vuelto, reinicio, instalación offline y backup/restore.
 
 ## 1. Decisión ejecutiva
 
@@ -27,7 +27,7 @@ No significa postergar toda la administración hasta terminar el POS: las dimens
 
 El primer piloto será MyCompany 6.2: su código ya contiene Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras y facturación dentro de una suite integrada. El tag y commit están fijados en el lock de plataforma. La suite comparte servidor y base, por lo que se evaluará como una aplicación integrada, no como microservicios.
 
-Tryton 8.0 con el conjunto argentino fijado se mantiene como contraste para fiscalidad, comprobantes y recuperación. ERPNext 16 queda en reserva; no se mantendrán tres implementaciones activas en paralelo. La extensión Rubrova ya se carga por encima de MyCompany sin editar el código upstream. CI valida login, POS y apertura de un turno sintético; la traducción sigue parcial. No se han probado venta, pagos, stock, devoluciones, ARCA, hardware, modo offline, concurrencia, exportación ni restauración en una instalación de uso. El plan detallado está en [Inicio de implementación](IMPLEMENTATION_START.md).
+Tryton 8.0 con el conjunto argentino fijado se mantiene como contraste para fiscalidad, comprobantes y recuperación. ERPNext 16 queda en reserva; no se mantendrán tres implementaciones activas en paralelo. La extensión Rubrova se carga por encima de MyCompany y los árboles fuente completos están vendorizados. CI ya probó venta en efectivo, factura/pago persistidos, salida de stock y cierre básico en la instancia efímera. La localización sigue en ampliación y debe superar el smoke actualizado; todavía faltan devoluciones, pagos mixtos/vuelto, ARCA, hardware, modo offline, persistencia tras reinicio, exportación y restauración en una instalación de uso. El plan detallado está en [Inicio de implementación](IMPLEMENTATION_START.md).
 
 ## 2. Qué tiene que ser la primera entrega
 

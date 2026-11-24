@@ -1,7 +1,7 @@
 # Inicio de implementación: POS + ERP
 
-**Revisión:** 20 de noviembre de 2026.  
-**Estado:** MyCompany 6.2 fijado como primer piloto integrado. El runtime efímero Linux x86_64, la carga de RubrovaCustom, el login, la navegación POS y la apertura de un turno sintético ya pasaron CI. No está instalado en el equipo de uso ni aprobado para operar ventas reales. Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino.
+**Revisión:** 24 de noviembre de 2026.  
+**Estado:** MyCompany 6.2 y lsFusion 6.2 están vendorizados y fijados; el runtime Rubrova propio compila y arranca en CI Linux x86_64. Ya pasó un recorrido sintético de venta en efectivo, factura/pago, salida de stock y cierre básico de turno. No está instalado en el equipo de uso ni aprobado para operar ventas reales. Tryton 8.0 + tryton-ar 8.0 queda como contraste fiscal argentino.
 
 ## Decisión de partida
 
@@ -68,12 +68,12 @@ No agregamos un gateway, broker, una segunda base ni microservicios de forma pre
 - [x] Verificar que el formulario POS termine de cargar sin el indicador `Loading`; Chromium encontró la caja sintética y el botón `Abrir turno`.
 - [x] Confirmar visualmente que los captions críticos propios del POS se resuelven: `Punto de venta`, `Caja`, `Turno`, `Abrir turno` y `Cerrar turno`.
 - [x] Abrir un turno sintético en CI y verificar que la pantalla muestre `SM/000001` y cambie a `Cerrar turno`.
-- [ ] Completar la localización del resto de la interfaz: aún se ven `Master data`, `Settings`, `Date`, `Delete` y otras cadenas heredadas.
-- [ ] Recorrer los formularios de error y filtros heredados y traducir las cadenas que sigan apareciendo en inglés.
+- [x] Ampliar captions de POS, fecha de movimientos y navegación común desde los bundles correctos; los captions de F7 usan el hotkey nativo sin duplicarlo.
+- [ ] Completar la auditoría visual de login, menús, filtros, formularios, diálogos y errores heredados en Chromium; aceptar cada bloque sólo cuando el runtime muestre los textos esperados.
 - [ ] Asegurar la cuenta admin y el firewall del equipo anfitrión.
 - [ ] Crear backup y restaurarlo en una instalación limpia.
 
-La validación estática pasó en Linux, Windows y macOS Apple Silicon. El run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) terminó con sus cuatro jobs aprobados: validación Windows, validación macOS Apple Silicon, pruebas estáticas y runtime real MyCompany 6.2 en Linux x86_64. El runtime verificó imágenes/digests fijados, PostgreSQL, servidor, cliente, carga de `RubrovaPOSLocalization` y `RubrovaCustom`, login con Chromium y navegación Comercio → Punto de venta. La prueba 44810418808 encontró `Caja de prueba Rubrova`, abrió un turno sintético y comprobó `SM/000001`. La ejecución 44811714783, también aprobada en los cuatro jobs, encontró `Producto de prueba Rubrova`, código de barras `7790000000013`, precio 1.250 y lo agregó al recibo con cantidad 1. No ejecutó Cobrar ni registró venta/pago. Todavía faltan cobro, vuelto, impacto en stock, devolución, cierre, seguridad productiva y backup/restore. La prueba generó algunos avisos transitorios de SQLTimeout/SQLConflict en los logs; aunque no bloquearon la aceptación automatizada, deben revisarse antes del uso real.
+La validación estática pasó en Linux, Windows y macOS Apple Silicon. El run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) terminó con sus cuatro jobs aprobados: validación Windows, validación macOS Apple Silicon, pruebas estáticas y runtime real MyCompany 6.2 en Linux x86_64. El runtime verificó imágenes/digests fijados, PostgreSQL, servidor, cliente, carga de `RubrovaPOSLocalization` y `RubrovaCustom`, login con Chromium y navegación Comercio → Punto de venta. La prueba 44810418808 encontró `Caja de prueba Rubrova`, abrió un turno sintético y comprobó `SM/000001`. La aceptación funcional posterior [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) fue más allá del recorrido de escaneo: confirmó una venta de ARS 1.250 en efectivo, factura y pago persistidos, stock 10 → 9 y cierre nativo del turno `SM/000001`. Siguen sin aceptarse vuelto, medios mixtos/tarjeta, devoluciones, ingresos/retiros y arqueo, persistencia tras reinicio, seguridad productiva y backup/restore. La prueba generó algunos avisos transitorios de SQLTimeout/SQLConflict en los logs; aunque no bloquearon la aceptación automatizada, deben revisarse antes del uso real.
 
 ## Guía operativa del primer arranque
 

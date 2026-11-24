@@ -1,13 +1,15 @@
 # Plan de trabajo
 
-**Revisión:** 20 de noviembre de 2026  
+**Revisión:** 24 de noviembre de 2026  
 **Dirección prioritaria:** POS y operación comercial → ERP de gestión → contabilidad/fiscalidad → análisis y reportes → perfiles sectoriales y canales → logística avanzada.
 
 ## Estado real
 
-Rubrova sigue en **Fase 0: piloto integrado POS + ERP**, pero ya superó el primer hito de runtime: MyCompany 6.2 arranca en CI Linux x86_64, carga la extensión Rubrova, permite login, navegación hasta Punto de venta y apertura de un turno sintético. Aún no hay una instalación en el equipo de uso ni una jornada comercial aceptada. Tryton 8.0 + tryton-ar 8.0 permanece como contraste fiscal argentino. El repositorio conserva diseño, investigación, validadores sintéticos y una extensión pequeña sobre MyCompany; no contiene una implementación propia completa de POS/ERP ni código fuente upstream copiado.
+Rubrova sigue en **Fase 0: piloto integrado POS + ERP**, pero ya superó el arranque básico y aceptó en CI Linux x86_64 un primer ciclo comercial sobre runtime construido desde sus propias fuentes vendorizadas de lsFusion 6.2 y MyCompany 6.2. La ejecución [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) probó login, navegación, apertura de turno, búsqueda de producto, venta de ARS 1.250, cobro exacto en efectivo, factura/pago persistidos, salida de stock y cierre básico del turno. La prueba fue sobre una base sintética descartable; no equivale a una instalación en el equipo de uso ni a una jornada real aceptada.
 
-El validador del dataset tiene 34 pruebas aprobadas y el fixture canónico es válido en CI (20/11/2026), incluidas reglas sintéticas de identidad de pagos y minimización de datos. El benchmark separado de demanda mensual con StatsForecast 2.1.1 también terminó correctamente. Además, el run [44810418808](https://github.com/JavierGrecco/Rubrova/actions/runs/44810418808) pasó sus cuatro jobs, incluido el runtime real Linux x86_64: MyCompany arrancó, Chromium abrió el POS y se abrió un turno sintético. Esa prueba valida arranque, navegación y estado de sesión, no el circuito de venta completo, pagos, stock, devoluciones o instalación local.
+Los árboles fuente completos están en `vendor/platform/` y `vendor/mycompany/`, con versiones y licencias fijadas. Rubrova compila servidor, cliente web y lógica MyCompany, construye imágenes propias y ejecuta Chromium contra ellas. Tryton 8.0 + tryton-ar 8.0 permanece como contraste fiscal argentino, no como segundo núcleo operativo.
+
+El validador del dataset mantiene sus 34 pruebas aprobadas y el benchmark de demanda con StatsForecast 2.1.1 conserva su aceptación previa. La prioridad inmediata es completar devoluciones/reintegros, caja con movimientos y arqueo, y casos de pago pendientes antes de ampliar fiscalidad o integraciones comerciales.
 
 La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
@@ -62,16 +64,18 @@ El lock de versión, la extensión modular, los scripts de preparación y el det
 
 ### Cierre actual de Fase 0 y próximo bloque
 
-- [x] MyCompany 6.2 fijado y ejecutado en CI Linux x86_64.
-- [x] Extensión RubrovaCustom + RubrovaPOSLocalization cargada sin modificar módulos upstream.
-- [x] Login, navegación Comercio → Punto de venta y renderizado del formulario validados con Chromium.
-- [x] Caja sintética seleccionada y turno `SM/000001` abierto en la base descartable de CI.
-- [ ] Buscar el producto sintético, añadirlo al recibo y verificar línea, cantidad y precio.
-- [ ] Confirmar una venta sintética en efectivo y conciliar recibo, pago, caja e inventario.
-- [ ] Probar vuelto/pago mixto, devolución, cierre y conciliación.
-- [ ] Completar traducción crítica, permisos, exportación y backup/restauración.
+- [x] MyCompany 6.2 y lsFusion 6.2 fijados; árboles completos de fuentes vendorizados y compilados desde Rubrova.
+- [x] Runtime propio Linux x86_64 (lógica, servidor y cliente) levantado en CI.
+- [x] Login, navegación hasta Punto de venta y apertura del turno sintético `SM/000001`.
+- [x] Venta sintética ARS 1.250, pago exacto en efectivo y factura persistida.
+- [x] Stock conciliado: entrada 10, salida 1, existencia 9.
+- [x] Cierre básico nativo del turno conciliado: estado `CLOSED`, neto y caja ARS 1.250.
+- [ ] Devolución/reintegro vinculados a la venta original y reposición de stock.
+- [ ] Ingresos/retiros y arqueo de caja con diferencias.
+- [ ] Vuelto, medios mixtos, tarjeta y cancelación.
+- [ ] Instalación offline, persistencia tras reinicio, exportación y backup/restore.
 
-**Dirección inmediata:** no sumar otra suite ERP ni módulos periféricos. Primero completar una venta reproducible de punta a punta sobre MyCompany; sólo incorporar código especializado cuando una brecha concreta esté observada y medida.
+**Dirección inmediata:** cerrar devolución/reintegro y movimientos/arqueo de caja sobre MyCompany; no sumar otra suite ERP ni un segundo ledger. Después completar los medios de pago y recuperación antes de iniciar la homologación fiscal.
 
 ## Fase 1 — primera entrega: POS con gestión mínima real
 

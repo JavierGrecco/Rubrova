@@ -1,17 +1,18 @@
 # Estado real del proyecto Rubrova
 
-**Corte:** 22 de noviembre de 2026  
+**Corte:** 24 de noviembre de 2026  
 **Rama:** `main`  
-**Última aceptación funcional:** [CI #172](https://github.com/JavierGrecco/Rubrova/actions/runs/44982716337)  
-**Commit probado:** `3d1cfbf1038e25608768c1561349390708dca6ec`
+**Última aceptación funcional completa:** [CI 45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823)  
+**Commit funcional aceptado:** `20029852e82e20b126412e1d704a5afe634fe3bd`  
+**Revisión de idioma y experiencia en curso:** `891009e93c8ccca719a6d53f8fe14afaa39fe32b`
 
 ## Resumen ejecutivo
 
-Rubrova ya compila desde sus propias fuentes vendorizadas de lsFusion 6.2 y MyCompany 6.2, construye las imágenes propias del runtime y las ejecuta en un entorno CI Linux x86_64 descartable. La ejecución #172 completó una venta minorista real dentro de esa base temporal: el POS creó una sola factura por ARS 1.250, registró un único ingreso de efectivo, dejó la factura pagada, sumó ARS 1.250 al turno y a la cuenta de caja, y descontó una unidad del inventario (10 iniciales, 1 salida, 9 disponibles).
+Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany; CI construye imágenes propias de Rubrova y las ejecuta sobre PostgreSQL 18 en un entorno descartable Linux x86_64.
 
-La aceptación no se basa sólo en el mensaje visual. Chromium confirmó el diálogo de cobro y el test consultó las entidades y ledgers persistidos. Los datos del cliente, caja, producto, ubicación, ajuste inicial, venta y pago son sintéticos y se destruyen al terminar el CI. No se modificaron datos comerciales de una instalación real.
+La aceptación funcional [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) completó con Chromium una venta de prueba de ARS 1.250: una factura y un pago en efectivo persistidos, caja y turno conciliados, stock reducido de 10 a 9 y cierre nativo del turno `SM/000001`. El cierre quedó con estado `CLOSED`, total vendido ARS 1.250, neto del turno ARS 1.250 y efectivo en caja ARS 1.250. La aceptación consulta los documentos y ledgers guardados, no se limita a comprobar mensajes visuales.
 
-Esta aprobación cierra el primer circuito comercial del POS. No significa que el POS/ERP completo esté terminado: faltan probar cierre de turno, devoluciones, vuelto, pagos mixtos/tarjeta, persistencia después de reiniciar, instalación offline, backup/restore y ejecución real en Windows y macOS.
+Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de CI que se destruye al terminar. Esta aprobación demuestra el primer recorrido venta → cobro → stock → cierre básico; no habilita aún el uso diario ni significa que el POS/ERP esté terminado.
 
 ## Qué está probado
 
@@ -31,11 +32,11 @@ Esta aprobación cierra el primer circuito comercial del POS. No significa que e
 | Resiliencia HTTP GET | Aprobado en escenarios CI | Timeout, clasificación de 408/429/503 y errores definitivos, persistencia de incidencias y recuperación del proveedor simulado |
 | `HEADERSTO` / `Retry-After` | Aprobado en escenario CI | El 429 devuelve y persiste `Retry-After: 2` con el mecanismo nativo de lsFusion |
 | Timeout de `EXTERNAL HTTP CLIENT` desde navegador | Pendiente | Falta una prueba real en Chromium con endpoint lento/CORS, abort, error de red y recuperación |
-| Cierre y arqueo de turno | Pendiente | Falta conciliar apertura, ventas, devoluciones, ingresos/retiros y saldo final |
+| Cierre básico después de venta en efectivo exacto | Aprobado en CI | Turno `SM/000001` quedó `CLOSED`; venta/neta y saldo de caja ARS 1.250 conciliados. Faltan arqueo contado, diferencias, ingresos y retiros |
 | Devolución y reintegro | Pendiente | Falta comprobar Bill, OutgoingPayment, medio original y movimiento inverso de stock |
 | Vuelto, pagos mixtos y tarjeta | Pendiente | El primer circuito aceptado sólo cubre efectivo exacto, sin vuelto |
 | Reinicio conservando datos | Pendiente | Falta reiniciar servidor/cliente conservando PostgreSQL y volver a conciliar factura, pago, caja y stock |
-| Traducción completa | Parcial | POS inicial localizado; aún quedan textos heredados en inglés |
+| Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
 | Instalación local sin Internet | Pendiente | CI construye imágenes propias, pero no demuestra todavía paquete completo offline ni ausencia de descargas en una PC limpia |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
 | Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
@@ -63,8 +64,8 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 
 ## Próximo orden de implementación
 
-1. **Cerrar el turno de caja:** partir de la venta aceptada y verificar cierre, importes esperados, diferencias, movimientos y saldo final.
-2. **Devolución y reintegro:** usar el circuito original de MyCompany, relacionar Bill con la factura, verificar el medio y monto efectivamente abonados, el OutgoingPayment y la reversión correspondiente de stock.
+1. **Completar caja y arqueo:** probar fondo inicial, ingresos/retiros nativos, conteo esperado, diferencias y saldo por medio. El cierre básico después de una venta simple ya pasó.
+2. **Devolución y reintegro:** usar el circuito original de MyCompany, relacionar Bill con la factura, verificar el medio y monto efectivamente abonados, el OutgoingPayment y la reposición correspondiente de stock.
 3. **Completar los casos de pago:** vuelto, pagos parciales/mixtos, tarjeta y cancelación, con conciliación exacta por medio.
 4. **Persistencia y recuperación:** reiniciar servidor y cliente sin borrar PostgreSQL y repetir consultas de factura, pago, turno y ledger. Probar además backup/restore y rollback sobre copias.
 5. **Prueba del camino HTTP de navegador:** `EXTERNAL HTTP CLIENT` real desde Chromium, con timeout, CORS, abort, fallo de red y recuperación.
@@ -72,7 +73,7 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 7. **ERP y localización:** continuar compras, inventario, proveedores, reportes y experiencia visual sobre módulos originales, adaptando con extensiones propias.
 8. **Fiscalidad e integraciones externas:** ARCA, medios electrónicos, marketplaces y logística sólo después de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación probadas.
 
-La aceptación #172 demuestra el primer ciclo comercial local —venta, pago y salida de stock— en el runtime propio de Rubrova. No declara terminado el producto ni autoriza producción. La aceptación completa requiere operación local estable, cierre y devolución conciliados, persistencia después de reiniciar, restauración desde backup y comportamiento seguro ante fallos externos.
+La aceptación funcional 45461105823 demuestra el primer recorrido comercial integrado —venta, pago, salida de stock y cierre básico— en el runtime propio de Rubrova. No declara terminado el producto ni autoriza producción. La aceptación completa requiere devoluciones y reintegros conciliados, arqueo y movimientos de caja, casos de pago restantes, persistencia después de reiniciar, restauración desde backup y comportamiento seguro ante fallos externos.
 
 ## Política transversal de errores
 
