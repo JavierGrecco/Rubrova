@@ -10,13 +10,9 @@ La disponibilidad legal de la denominación y de los dominios todavía no está 
 
 ## Probar el proyecto localmente
 
-En Mac Apple Silicon hay una vista previa experimental del POS que construye las imágenes, crea una caja y producto sintéticos y deja la aplicación abierta en `http://127.0.0.1:8080`. La guía está en [Compatibilidad con macOS](docs/MACOS_SUPPORT.md):
+El objetivo de desarrollo es poder iniciar Rubrova de forma nativa, sin Docker, y conservar Docker como una alternativa de ejecución aislada. La configuración ya distingue los destinos `native-local`, `docker-local` y `remote-online`; el supervisor nativo y el panel visual todavía están en construcción. Consultá [Modos de ejecución y control local](docs/RUNTIME_MODES_AND_LOCAL_CONTROL.md).
 
-```bash
-bash scripts/platform/run-local-preview-macos.sh
-```
-
-Esta modalidad sirve para revisar la interfaz y el flujo desde tu equipo; no representa una instalación productiva ni un servidor ARM64 nativo.
+La vista previa experimental que existe hoy en Mac Apple Silicon sigue necesitando Docker Desktop. **No la ejecutes en una Mac sin Docker**: todavía no es el lanzador nativo que estamos preparando. La guía de esa vista previa está en [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
 
 ## Qué estamos construyendo
 
@@ -56,6 +52,7 @@ Una plataforma que reúne en un solo lugar:
 | [Requisitos del POS](docs/POS_REQUIREMENTS.md) | Venta, caja, descuentos, pagos, hardware y operación diaria |
 | [Arquitectura](docs/ARCHITECTURE.md) | Estructura técnica, módulos, datos y decisiones de plataforma |
 | [Arquitectura modular distribuida](docs/DISTRIBUTED_MODULAR_ARCHITECTURE.md) | Servicios independientes, APIs/eventos, idempotencia, CAS y operación local |
+| [Modos de ejecución y control local](docs/RUNTIME_MODES_AND_LOCAL_CONTROL.md) | Ejecución nativa sin Docker, Docker local, conexión remota, supervisor y cambio seguro de destino |
 | [Modelo de dominio](docs/DOMAIN_MODEL.md) | Entidades, movimientos, estados y relaciones |
 | [Captura de datos y base analítica](docs/DATA_CAPTURE_AND_ANALYTICAL_FOUNDATION.md) | Fechas históricas, áreas/canales, compras, stock, pagos, cajeros, reclamos, exportaciones e IA de lectura |
 | [Inteligencia del negocio](docs/BUSINESS_INTELLIGENCE.md) | Métricas, rentabilidad, estacionalidad, tendencias y pronósticos |
