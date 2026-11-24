@@ -291,6 +291,24 @@ rubrovaTestSalesReconciliationApi () {
         sessionCashPaid = Retail.paid(Retail.openedSession(Retail.pos('rubrova-ci')), Retail.cashPaymentMethod()),
         cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci'));
 } @@api;
+
+rubrovaCITestSession() = GROUP MAX Retail.Session s
+    IF Retail.pos(s) = Retail.pos('rubrova-ci');
+
+rubrovaTestSessionCloseApi () {
+    EXPORT JSON FROM
+        sessionNumber = Retail.number(rubrovaCITestSession()),
+        openingDateTime = Retail.openingDateTime(rubrovaCITestSession()),
+        closingDateTime = Retail.closingDateTime(rubrovaCITestSession()),
+        opened = Retail.opened(rubrovaCITestSession()),
+        salesCount = Retail.countInvoices(rubrovaCITestSession()),
+        salesAmount = Retail.totalAmountInvoice(rubrovaCITestSession()),
+        returnsCount = Retail.countBills(rubrovaCITestSession()),
+        returnsAmount = Retail.totalAmountBill(rubrovaCITestSession()),
+        netAmount = Retail.amount(rubrovaCITestSession()),
+        cashPaid = Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod()),
+        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci'));
+} @@api;
 LSF
 
 ENTRYPOINT_FILE="$COMPOSE_DIR/docker-server/RubrovaCustom.lsf"
