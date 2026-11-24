@@ -19,6 +19,7 @@ const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
 const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const posSearchSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardSearch.lsf");
 const paymentMethodSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf");
+const cashAccountSource = read("vendor/mycompany/src/main/lsfusion/invoicing/accounts/cash/CashAccount.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
@@ -654,6 +655,13 @@ test("MyCompany guarda cambios pendientes antes de abrir NEWSESSION en acciones 
   assert.ok(sourcePatch.includes("remainder.startswith(expected_guard)"));
   for (const path of expectedPaths) assert.ok(sourcePatch.includes(path), "Falta el backport: " + path);
   assert.ok(sourcePatch.includes("9dca1499bd4e2615d34983fe77c2927560fd5f9b"));
+});
+
+test("las búsquedas de cuenta de caja restringen la clase CashAccount", () => {
+  assert.ok(cashAccountSource.includes("WHERE a IS CashAccount AND holder(a) = p IF countCashAccount(p) = 1"));
+  assert.ok(cashAccountSource.includes("WHERE a IS CashAccount AND holder(a) = legalEntity(e) AND responsible(a) = e"));
+  assert.ok(sourcePatch.includes("CASH_ACCOUNT_QUERY_REPLACEMENTS"));
+  assert.ok(sourcePatch.includes("def apply_cash_account_query_filters()"));
 });
 
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {

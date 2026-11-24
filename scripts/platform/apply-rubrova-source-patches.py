@@ -73,9 +73,52 @@ NEWSESSION_GUARD_TARGETS = (
     ("vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf", "copy 'Copy' (Order from)  { "),
 )
 
+CASH_ACCOUNT_QUERIES_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/invoicing/accounts/cash/CashAccount.lsf"
+CASH_ACCOUNT_QUERY_REPLACEMENTS = (
+    (
+        "calcDefaultCashAccount (Partner p) = GROUP LAST CashAccount a ORDER a WHERE holder(a) = p IF countCashAccount(p) = 1;",
+        "calcDefaultCashAccount (Partner p) = GROUP LAST CashAccount a ORDER a WHERE a IS CashAccount AND holder(a) = p IF countCashAccount(p) = 1;",
+    ),
+    (
+        "cashAccount (Employee e) = GROUP LAST CashAccount a ORDER a WHERE holder(a) = legalEntity(e) AND responsible(a) = e;",
+        "cashAccount (Employee e) = GROUP LAST CashAccount a ORDER a WHERE a IS CashAccount AND holder(a) = legalEntity(e) AND responsible(a) = e;",
+    ),
+)
+
 GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
+
+
+
+
+def apply_cash_account_query_filters() -> bool:
+    if not CASH_ACCOUNT_QUERIES_TARGET.is_file():
+        print(f"No se encontró el módulo CashAccount: {CASH_ACCOUNT_QUERIES_TARGET}", file=sys.stderr)
+        return False
+
+    source = CASH_ACCOUNT_QUERIES_TARGET.read_text(encoding="utf-8")
+    changed = False
+    for before, after in CASH_ACCOUNT_QUERY_REPLACEMENTS:
+        if after in source:
+            continue
+        count = source.count(before)
+        if count != 1:
+            print(
+                "No se aplicó el filtro CashAccount. Se esperaba exactamente "
+                f"una coincidencia y se encontraron {count}: {before}",
+                file=sys.stderr,
+            )
+            return False
+        source = source.replace(before, after, 1)
+        changed = True
+
+    if changed:
+        CASH_ACCOUNT_QUERIES_TARGET.write_text(source, encoding="utf-8")
+        print("Filtros de clase CashAccount aplicados en las dos búsquedas de cuenta.")
+    else:
+        print("Filtros de clase CashAccount ya aplicados.")
+    return True
 
 
 
@@ -181,6 +224,9 @@ def main() -> int:
         print("El control de cuentas de caja de Rubrova ya está aplicado.")
 
     if not apply_newsession_guards():
+        return 1
+
+    if not apply_cash_account_query_filters():
         return 1
 
     if not GWT_MESSAGES_SOURCE.is_file():
