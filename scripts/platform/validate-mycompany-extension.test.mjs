@@ -571,7 +571,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
     "El navegador no debe intentar abrir un segundo turno en la comprobación de persistencia."
   );
   assert.equal(
-    runtimeSmokeSource.split("4.1/7 Preparando los proxies de fallos de red en Toxiproxy").length - 1,
+    runtimeSmokeSource.split("4.1/7 Preparando los proxies de fallos de red dentro de la red interna").length - 1,
     1,
     "La configuración de Toxiproxy debe ejecutarse una sola vez por instancia efímera."
   );
@@ -580,7 +580,11 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(!timeoutEndpoint.includes("incidentRetryAfterPersisted"), "La persistencia de Retry-After no pertenece al endpoint de timeout.");
   assert.ok(rateLimitEndpoint.includes("incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1"), "El endpoint HTTP 429 debe exponer la comprobación del encabezado persistido.");
   assert.match(runtimeSmokeSource, /mock-integration-provider[.]py/);
-  assert.match(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
+  assert.match(runtimeSmokeSource, /rubrova\/mock-provider:6[.]2-/);
+  assert.match(runtimeSmokeSource, /FROM python:3[.]13-alpine/);
+  assert.match(runtimeSmokeSource, /internal: true/);
+  assert.match(runtimeSmokeSource, /RUBROVA_RUNTIME_EXTERNAL_EGRESS=blocked/);
+  assert.doesNotMatch(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
   assert.match(runtimeSmokeSource, /ghcr[.]io\/shopify\/toxiproxy:2[.]13[.]0/);
   assert.match(runtimeSmokeSource, /9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc/);
   assert.match(runtimeSmokeSource, /127[.]0[.]0[.]1:18474:8474/);
@@ -588,7 +592,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.doesNotMatch(runtimeSmokeSource, /rubrova_ci_timeout|drop-response|MOCK_PROVIDER_TIMEOUT_URL/);
   assert.match(runtimeSmokeSource, /MOCK_PROVIDER_URL="http:\/\/toxiproxy:8666"/);
   assert.match(runtimeSmokeSource, /\/slow\?delay=5/);
-  assert.match(runtimeSmokeSource, /Toxiproxy listo: proxy HTTP hacia el simulador/);
+  assert.match(runtimeSmokeSource, /Toxiproxy listo: proxy HTTP hacia mock-provider dentro de la red sin Internet/);
   assert.match(runtimeSmokeSource, /TOXIPROXY_AUTH_TOKEN/);
   assert.match(runtimeSmokeSource, /secrets[.]token_urlsafe\(32\)/);
   assert.ok(runtimeSmokeSource.includes('Authorization: Bearer $TOXIPROXY_AUTH_TOKEN'));
