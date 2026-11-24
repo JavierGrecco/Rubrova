@@ -591,6 +591,142 @@ def accept_ls_fusion_confirmation(page: Any, action_label: str) -> str:
     return message
 
 
+
+def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[str, Any]:
+    response = context.request.get(endpoint, timeout=12_000)
+    if response.status != 200:
+        raise RuntimeError(
+            f"La verificación posterior al reinicio ({label}) respondió HTTP "
+            f"{response.status}: {response.text()[:1200]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError(
+            f"La verificación posterior al reinicio ({label}) no devolvió JSON válido."
+        ) from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"La verificación posterior al reinicio ({label}) devolvió "
+            f"{type(payload).__name__}, no un objeto JSON."
+        )
+    print(f"UI_RESTART_PERSISTENCE_{label.upper()}_PAYLOAD=" + json.dumps(payload, ensure_ascii=False))
+    return payload
+
+
+def verify_restarted_persistence(context: Any, url: str) -> None:
+    base = url.rstrip("/") + "/exec/"
+
+    sales = fetch_restart_api_payload(
+        context,
+        base + "Sales.rubrovaTestSalesReconciliationApi",
+        "sale",
+    )
+    expected_sales = {
+        "salesCount": 1,
+        "paidSalesCount": 1,
+        "invoiceAmount": 1250,
+        "paidAmount": 1250,
+        "cashPaidAmount": 1250,
+        "incomingPaymentCount": 1,
+        "cashBalance": 1250,
+    }
+    for field, expected in expected_sales.items():
+        try:
+            actual = float(sales.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"La persistencia posterior al reinicio devolvió un valor inválido "
+                f"para {field}: {sales.get(field)!r}"
+            ) from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"La venta/pago no sobrevivió al reinicio en {field}: "
+                f"esperado {expected}, recibido {actual}."
+            )
+    print("UI_RESTART_PERSISTENCE_SALE_RECONCILED=true")
+
+    inventory = fetch_restart_api_payload(
+        context,
+        base + "Sales.rubrovaTestInventoryApi",
+        "inventory",
+    )
+    for field, expected in {
+        "incomingQuantity": 10,
+        "outgoingQuantity": 1,
+        "onHand": 9,
+    }.items():
+        try:
+            actual = float(inventory.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"El inventario persistido devolvió un valor inválido para {field}."
+            ) from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"El inventario no sobrevivió al reinicio en {field}: "
+                f"esperado {expected}, recibido {actual}."
+            )
+    print("UI_RESTART_PERSISTENCE_STOCK_RECONCILED=true")
+
+    session = fetch_restart_api_payload(
+        context,
+        base + "Sales.rubrovaTestSessionCloseApi",
+        "session",
+    )
+    if (
+        session.get("sessionStatus") != "CLOSED"
+        or not session.get("sessionNumber")
+        or not session.get("openingDateTime")
+        or not session.get("closingDateTime")
+    ):
+        raise RuntimeError(
+            "El cierre del turno no sobrevivió al reinicio o perdió sus marcas de tiempo: "
+            + json.dumps(session, ensure_ascii=False)
+        )
+    for field, expected in {
+        "salesCount": 1,
+        "salesAmount": 1250,
+        "returnsCount": 0,
+        "returnsAmount": 0,
+        "netAmount": 1250,
+        "cashPaid": 1250,
+        "cashBalance": 1250,
+    }.items():
+        try:
+            actual = float(session.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"El cierre persistido devolvió un valor inválido para {field}."
+            ) from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"El cierre persistido no coincide en {field}: "
+                f"esperado {expected}, recibido {actual}."
+            )
+    print("UI_RESTART_PERSISTENCE_SESSION_CLOSED=true")
+    print("UI_RESTART_PERSISTENCE_CASH_RECONCILED=true")
+
+    incidents = fetch_restart_api_payload(
+        context,
+        base + "Rubrova.rubrovaTestIncidentCountApi",
+        "incidents",
+    )
+    try:
+        incident_count = int(incidents.get("incidentCount") or 0)
+    except (TypeError, ValueError) as error:
+        raise RuntimeError("El contador de incidencias persistidas no es numérico.") from error
+    if incident_count < 8:
+        raise RuntimeError(
+            "No sobrevivieron las ocho incidencias de integración al reinicio; "
+            f"se encontraron {incident_count}."
+        )
+    print(f"UI_RESTART_PERSISTENCE_INCIDENT_COUNT={incident_count}")
+    print("UI_RESTART_PERSISTENCE_INCIDENTS_RETAINED=true")
+
+
 def inspect_page(url: str) -> int:
     screenshot_path = Path(
         os.environ.get("RUBROVA_UI_SCREENSHOT", "/tmp/rubrova-mycompany-ui.png")
@@ -688,6 +824,11 @@ def inspect_page(url: str) -> int:
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
+
+                if os.environ.get("RUBROVA_UI_VERIFY_PERSISTED_ONLY", "false").lower() == "true":
+                    verify_restarted_persistence(context, url)
+                    print("UI_RESTART_PERSISTENCE_VERIFIED=true")
+                    return 0
 
                 # El servidor corre sobre PostgreSQL descartable de CI; el turno y sus datos se destruyen al finalizar.
                 if not click_exact_link(page, "Comercio", submenu_label="Punto de venta"):

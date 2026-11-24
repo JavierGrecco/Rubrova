@@ -859,22 +859,160 @@ fi
 echo "PostgreSQL verificado: dumb existe con su registro interno y Time.currentDate quedó persistida."
 
 
+LOG_DIR="$COMPOSE_DIR/docker-server/logs"
+count_file_matches() {
+  local file="$1"
+  local pattern="$2"
+  local matches
+  if [[ ! -f "$file" ]]; then
+    printf '0\n'
+    return 0
+  fi
+  matches="$(grep -Ec "$pattern" "$file" || true)"
+  printf '%s\n' "${matches:-0}"
+}
+
+count_text_matches() {
+  local content="$1"
+  local marker="$2"
+  local matches
+  matches="$(grep -Fc -- "$marker" <<< "$content" || true)"
+  printf '%s\n' "${matches:-0}"
+}
+
+extract_last_server_startup_ms() {
+  local log_content="$1"
+  grep -Eo 'Server has successfully started in [0-9]+ ms' <<< "$log_content" \
+    | tail -n 1 | grep -Eo '[0-9]+' | tail -n 1 || true
+}
+
+count_delta_after_restart() {
+  local before="$1"
+  local after="$2"
+  if (( after >= before )); then
+    printf '%s\n' "$((after - before))"
+  else
+    # The application may rotate/truncate its log on process restart.
+    printf '%s\n' "$after"
+  fi
+}
+
+COLD_SERVER_LOGS="$(compose logs --no-color --tail=5000 server 2>/dev/null || true)"
+COLD_SERVER_STARTUP_MS="$(extract_last_server_startup_ms "$COLD_SERVER_LOGS")"
+if [[ ! "$COLD_SERVER_STARTUP_MS" =~ ^[0-9]+$ ]]; then
+  echo "No se pudo medir el arranque en frío en los registros del contenedor." >&2
+  exit 1
+fi
+COLD_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
+COLD_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
+echo "METRIC_COLD_SERVER_STARTUP_MS=$COLD_SERVER_STARTUP_MS"
+echo "METRIC_COLD_SQL_TIMEOUTS=$COLD_SQL_TIMEOUTS"
+echo "METRIC_COLD_MATERIALIZATION_TIMEOUTS=$COLD_MATERIALIZATION_TIMEOUTS"
+
 if [[ -n "${RUBROVA_PLAYWRIGHT_PYTHON:-}" ]]; then
   [[ -x "$RUBROVA_PLAYWRIGHT_PYTHON" ]] || {
     echo "No se encuentra el intérprete Playwright configurado: $RUBROVA_PLAYWRIGHT_PYTHON" >&2
     exit 1
   }
-  echo "8/9 Inspeccionando el login y la pantalla autenticada con Chromium"
+  echo "8/10 Inspeccionando el login y la pantalla autenticada con Chromium"
   RUBROVA_UI_SCREENSHOT="${RUBROVA_UI_SCREENSHOT:-$WORK_DIR/mycompany-ui.png}" \
     RUBROVA_UI_TEST_LOGIN="${RUBROVA_UI_TEST_LOGIN:-false}" \
     RUBROVA_UI_TEST_USERNAME="${RUBROVA_UI_TEST_USERNAME:-admin}" \
     RUBROVA_UI_TEST_PASSWORD="${RUBROVA_UI_TEST_PASSWORD:-}" \
     "$RUBROVA_PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
+
+  if [[ "${RUBROVA_UI_TEST_LOGIN:-false}" == "true" ]]; then
+    echo "9/10 Reiniciando servidor y cliente, sin tocar PostgreSQL ni la lógica."
+    SERVER_LOGS_BEFORE_RESTART="$(compose logs --no-color --tail=5000 server 2>/dev/null || true)"
+    PRE_RESTART_START_EVENTS="$(count_text_matches "$SERVER_LOGS_BEFORE_RESTART" 'Server has successfully started in')"
+    PRE_RESTART_ONSTARTED_EVENTS="$(count_text_matches "$SERVER_LOGS_BEFORE_RESTART" 'Executing onStarted action finished')"
+    PRE_RESTART_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
+    PRE_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
+  
+    compose restart server
+    RESTART_TIMEOUT_SECONDS="${RUBROVA_RESTART_TIMEOUT_SECONDS:-$STARTUP_TIMEOUT_SECONDS}"
+    SECONDS=0
+    SERVER_RESTART_READY=false
+    SERVER_RESTART_LOGS=""
+    while (( SECONDS < RESTART_TIMEOUT_SECONDS )); do
+      SERVER_RESTART_LOGS="$(compose logs --no-color --tail=5000 server 2>/dev/null || true)"
+      START_EVENTS_NOW="$(count_text_matches "$SERVER_RESTART_LOGS" 'Server has successfully started in')"
+      if (( START_EVENTS_NOW > PRE_RESTART_START_EVENTS )) \
+        && docker exec "$SERVER_CONTAINER_ID" sh -c 'grep -iqE ":1DE4[[:space:]]+[[:xdigit:]]+:[[:xdigit:]]+[[:space:]]+0A" /proc/net/tcp /proc/net/tcp6' >/dev/null 2>&1; then
+        SERVER_RESTART_READY=true
+        break
+      fi
+      if (( SECONDS % 30 < 2 )); then
+        echo "El servidor sigue reiniciando; transcurridos=${SECONDS}s."
+      fi
+      sleep 2
+    done
+    if [[ "$SERVER_RESTART_READY" != "true" ]]; then
+      echo "El servidor no completó un segundo arranque en ${RESTART_TIMEOUT_SECONDS}s." >&2
+      printf '%s\n' "$SERVER_RESTART_LOGS" | tail -n 140 >&2
+      if [[ -f "$LOG_DIR/start.log" ]]; then tail -n 100 "$LOG_DIR/start.log" >&2; fi
+      exit 1
+    fi
+  
+    WARM_SERVER_STARTUP_MS="$(extract_last_server_startup_ms "$SERVER_RESTART_LOGS")"
+    if [[ ! "$WARM_SERVER_STARTUP_MS" =~ ^[0-9]+$ ]]; then
+      echo "El segundo arranque terminó, pero no se pudo extraer su duración de start.log." >&2
+      exit 1
+    fi
+    AFTER_RESTART_ONSTARTED_EVENTS="$(count_text_matches "$SERVER_RESTART_LOGS" 'Executing onStarted action finished')"
+    AFTER_RESTART_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
+    AFTER_RESTART_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
+    WARM_ONSTARTED_EVENTS="$(count_delta_after_restart "$PRE_RESTART_ONSTARTED_EVENTS" "$AFTER_RESTART_ONSTARTED_EVENTS")"
+    WARM_SQL_TIMEOUTS="$(count_delta_after_restart "$PRE_RESTART_SQL_TIMEOUTS" "$AFTER_RESTART_SQL_TIMEOUTS")"
+    WARM_MATERIALIZATION_TIMEOUTS="$(count_delta_after_restart "$PRE_RESTART_MATERIALIZATION_TIMEOUTS" "$AFTER_RESTART_MATERIALIZATION_TIMEOUTS")"
+    echo "METRIC_WARM_SERVER_STARTUP_MS=$WARM_SERVER_STARTUP_MS"
+    echo "METRIC_WARM_ONSTARTED_EVENTS=$WARM_ONSTARTED_EVENTS"
+    echo "METRIC_WARM_SQL_TIMEOUTS=$WARM_SQL_TIMEOUTS"
+    echo "METRIC_WARM_MATERIALIZATION_TIMEOUTS=$WARM_MATERIALIZATION_TIMEOUTS"
+  
+    # Restart the browser client after the application server has completed startup.
+    compose restart client
+    SECONDS=0
+    CLIENT_RESTART_READY=false
+    while (( SECONDS < RESTART_TIMEOUT_SECONDS )); do
+      HTTP_STATUS="$(curl --silent --output "$WORK_DIR/restart-web-response.html" \
+        --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
+      if [[ "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]] && [[ -s "$WORK_DIR/restart-web-response.html" ]]; then
+        CLIENT_RESTART_READY=true
+        break
+      fi
+      if (( SECONDS % 30 < 2 )); then
+        echo "El cliente web todavía no responde después del reinicio; HTTP=${HTTP_STATUS:-sin respuesta}, transcurridos=${SECONDS}s."
+      fi
+      sleep 2
+    done
+    if [[ "$CLIENT_RESTART_READY" != "true" ]]; then
+      echo "El cliente web no se recuperó después del reinicio en ${RESTART_TIMEOUT_SECONDS}s." >&2
+      compose logs --no-color --tail=160 client >&2 || true
+      exit 1
+    fi
+    echo "Cliente web recuperado después de reiniciar; HTTP $HTTP_STATUS."
+  
+    ORIGINAL_SCREENSHOT="${RUBROVA_UI_SCREENSHOT:-$WORK_DIR/mycompany-ui.png}"
+    RESTART_SCREENSHOT="${ORIGINAL_SCREENSHOT%.*}-after-restart.${ORIGINAL_SCREENSHOT##*.}"
+    echo "Iniciando sesión en una ventana nueva y verificando sólo los datos persistidos; no se crea otra venta."
+    RUBROVA_UI_SCREENSHOT="$RESTART_SCREENSHOT" \
+      RUBROVA_UI_TEST_LOGIN="true" \
+      RUBROVA_UI_TEST_USERNAME="${RUBROVA_UI_TEST_USERNAME:-admin}" \
+      RUBROVA_UI_TEST_PASSWORD="${RUBROVA_UI_TEST_PASSWORD:-}" \
+      RUBROVA_UI_READY_TIMEOUT_SECONDS="${RUBROVA_UI_READY_TIMEOUT_SECONDS:-180}" \
+      RUBROVA_UI_VERIFY_PERSISTED_ONLY="true" \
+      "$RUBROVA_PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
+    echo "METRIC_RESTART_PERSISTENCE_CHECK=passed"
+  else
+    echo "AVISO: se omite el reinicio porque la inspección inicial no ejecutó el login funcional."
+  fi
 else
+  echo "AVISO: se omiten reinicio y comprobación de persistencia porque Playwright no está configurado."
   echo "AVISO: se omitió la inspección de Chromium porque RUBROVA_PLAYWRIGHT_PYTHON no está configurado."
 fi
 
-echo "9/9 Recopilando evidencia del runtime, la extensión y las imágenes"
+echo "10/10 Recopilando evidencia del runtime, la extensión y las imágenes"
 compose ps
 
 echo "Configuración efectiva de los cuatro servicios (sin valores de entorno):"

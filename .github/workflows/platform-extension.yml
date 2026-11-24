@@ -199,6 +199,8 @@ jobs:
             ${{ runner.temp }}/rubrova-mycompany-ui-payment.png
             ${{ runner.temp }}/rubrova-mycompany-ui-sale.png
             ${{ runner.temp }}/rubrova-mycompany-ui-session-closed.png
+            ${{ runner.temp }}/rubrova-mycompany-ui-after-restart.png
+            ${{ runner.temp }}/rubrova-mycompany-ui-after-restart-after-login.png
           if-no-files-found: warn
 
   validate-windows:
