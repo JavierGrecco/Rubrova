@@ -45,39 +45,76 @@ REQUIRED_MARKERS = (
 )
 
 
+CASH_ACCOUNT_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf"
+CASH_ACCOUNT_ANCHOR = "cashBalance 'Cash at the checkout' (Pos p) = balance(cashAccount(p));"
+CASH_ACCOUNT_REPLACEMENT = (
+    CASH_ACCOUNT_ANCHOR
+    + "\\n\\n"
+    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\\n"
+    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\\n"
+    + "CONSTRAINT account(Pos p) = cashAccount(p)\\n"
+    + "                MESSAGE 'The central checkout account must not be the same as the cash account';"
+)
+CASH_ACCOUNT_REQUIRED_MARKER = "CONSTRAINT account(Pos p) = cashAccount(p)"
+
+
 def main() -> int:
     if not TARGET.is_file():
         print(f"No se encontró el fuente fijado del motor: {TARGET}", file=sys.stderr)
         return 2
 
     source = TARGET.read_text(encoding="utf-8")
-    if all(marker in source for marker in REQUIRED_MARKERS):
-        print("La protección global HTTP de Rubrova ya está aplicada.")
-        return 0
+    if not all(marker in source for marker in REQUIRED_MARKERS):
+        # Do not apply a partial or fuzzy change: upstream drift must be reviewed.
+        for before, _ in REPLACEMENTS:
+            count = source.count(before)
+            if count != 1:
+                print(
+                    "No se aplicó el parche HTTP. Se esperaba exactamente una coincidencia "
+                    f"del ancla del fuente y se encontraron {count}: {before[:140]!r}",
+                    file=sys.stderr,
+                )
+                return 1
 
-    # Do not apply a partial or fuzzy change: upstream drift must be reviewed.
-    for before, _ in REPLACEMENTS:
-        count = source.count(before)
+        for before, after in REPLACEMENTS:
+            source = source.replace(before, after, 1)
+
+        missing = [marker for marker in REQUIRED_MARKERS if marker not in source]
+        if missing:
+            print("El parche HTTP quedó incompleto: " + ", ".join(missing), file=sys.stderr)
+            return 1
+
+        TARGET.write_text(source, encoding="utf-8")
+        print("Protección global HTTP aplicada: 10 s por defecto, 60 s máximo.")
+    else:
+        print("La protección global HTTP de Rubrova ya está aplicada.")
+
+    if not CASH_ACCOUNT_TARGET.is_file():
+        print(f"No se encontró el módulo de caja de MyCompany: {CASH_ACCOUNT_TARGET}", file=sys.stderr)
+        return 2
+
+    cash_source = CASH_ACCOUNT_TARGET.read_text(encoding="utf-8")
+    if CASH_ACCOUNT_REQUIRED_MARKER not in cash_source:
+        count = cash_source.count(CASH_ACCOUNT_ANCHOR)
         if count != 1:
             print(
-                "No se aplicó el parche. Se esperaba exactamente una coincidencia "
-                f"del ancla del fuente y se encontraron {count}: {before[:140]!r}",
+                "No se aplicó el control de cuentas de caja. Se esperaba exactamente "
+                f"una coincidencia del ancla y se encontraron {count}.",
                 file=sys.stderr,
             )
             return 1
 
-    for before, after in REPLACEMENTS:
-        source = source.replace(before, after, 1)
+        cash_source = cash_source.replace(CASH_ACCOUNT_ANCHOR, CASH_ACCOUNT_REPLACEMENT, 1)
+        if CASH_ACCOUNT_REQUIRED_MARKER not in cash_source:
+            print("El control de cuentas de caja quedó incompleto.", file=sys.stderr)
+            return 1
 
-    missing = [marker for marker in REQUIRED_MARKERS if marker not in source]
-    if missing:
-        print("El parche quedó incompleto: " + ", ".join(missing), file=sys.stderr)
-        return 1
+        CASH_ACCOUNT_TARGET.write_text(cash_source, encoding="utf-8")
+        print("Control de caja aplicado: cuenta central y cajón de efectivo deben ser distintos.")
+    else:
+        print("El control de cuentas de caja de Rubrova ya está aplicado.")
 
-    TARGET.write_text(source, encoding="utf-8")
-    print("Protección global HTTP aplicada: 10 s por defecto, 60 s máximo.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
