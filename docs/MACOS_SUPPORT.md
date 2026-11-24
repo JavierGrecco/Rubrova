@@ -24,7 +24,7 @@ La CI no instala MyCompany, no inicia el Compose y no certifica periféricos, na
 
 Las imágenes `lsfusion/server:6.2` y `lsfusion/client:6.2` publican ARM64, pero eso no vuelve ARM64 al stack completo mientras la imagen de lógica MyCompany siga siendo AMD64.
 
-Docker Desktop ofrece emulación AMD64 en Apple Silicon. Debe tratarse como una alternativa experimental para este piloto: la emulación puede afectar rendimiento y comportamiento, y la opción Docker VMM no admite actualmente la aceleración Rosetta. No vamos a modificar el Compose ni fijar `platform: linux/amd64` sin una prueba completa y reproducible.
+Docker Desktop permite ejecutar contenedores AMD64 en Apple Silicon mediante emulación. Para Rubrova sigue siendo una modalidad experimental: sirve para que puedas abrir y probar el POS localmente, pero no equivale a soporte nativo ni a aceptación productiva. La vista previa usa un override temporal que fija las imágenes de aplicación en `linux/amd64`, y publica el navegador y RMI sólo en `127.0.0.1`. El Compose oficial descargado no se modifica. Para acelerar la emulación, Docker indica activar Rosetta bajo Apple Virtualization Framework; Docker VMM no admite actualmente Rosetta. Consultá [los ajustes de Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/) y [Virtual Machine Manager](https://docs.docker.com/desktop/features/vmm/).
 
 Referencias oficiales: [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [Docker Desktop para Mac](https://docs.docker.com/docker-for-mac/install/), [ajustes de Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/) y [Virtual Machine Manager](https://docs.docker.com/desktop/features/vmm/).
 
@@ -55,6 +55,25 @@ uname -m
 ```
 
 `arm64` identifica Apple Silicon; `x86_64` identifica Intel.
+
+## Probar Rubrova localmente en Apple Silicon
+
+La vista previa está preparada en `scripts/platform/run-local-preview-macos.sh`. Necesita Docker Desktop, Docker Compose 2.24.4 o superior y los tres artefactos compilados en `vendor/platform/server/target`, `vendor/mycompany/target` y `vendor/platform/web-client/target`. También instala Chromium/Playwright en una caché del usuario; no instala MyCompany en macOS ni modifica los módulos versionados.
+
+Desde la raíz del repositorio:
+
+```bash
+git pull --ff-only
+bash scripts/platform/run-local-preview-macos.sh
+```
+
+El script construye las imágenes propias desde tus artefactos, descarga y verifica el Compose oficial, despliega la extensión en una carpeta temporal, crea una base nueva con una caja y un producto sintéticos, ejecuta el recorrido de aceptación, reinicia servidor y cliente y comprueba la persistencia de factura, pago, caja, stock y turno cerrado. Si termina correctamente, deja los contenedores y la base encendidos para que puedas seguir probando en `http://127.0.0.1:8080`. La captura inicial queda en el Escritorio como `rubrova-local-preview.png`.
+
+El usuario inicial de la base sintética es `admin` sin contraseña, sólo para esta prueba aislada. No cargues datos reales ni habilites acceso desde la LAN. El simulador HTTP de fallos se ejecuta durante unos minutos en el host para la aceptación automatizada; usá una red privada y cerrá el entorno cuando termines. La resiliencia HTTP completa sigue validándose en CI.
+
+Al terminar, el propio script imprime un comando único para detener los contenedores, borrar los volúmenes y eliminar la carpeta temporal. No lo ejecutes hasta terminar de probar. Si faltan artefactos compilados, el script imprime los dos comandos Maven necesarios para generarlos.
+
+En Apple Silicon el arranque puede ser lento y sigue siendo emulado; esta prueba no certifica rendimiento, soporte nativo ni producción. En Mac Intel, el mismo script funciona sin emulación ARM64.
 
 ## Usar una MacBook como equipo cliente
 

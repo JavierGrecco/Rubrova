@@ -47,6 +47,7 @@ jobs:
           bash -n scripts/platform/deploy-mycompany-6.2.sh
           bash -n scripts/platform/test-deploy-mycompany-6.2.sh
           bash -n scripts/platform/test-runtime-smoke.sh
+          bash -n scripts/platform/run-local-preview-macos.sh
           bash -n scripts/platform/build-rubrova-runtime-images.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
 

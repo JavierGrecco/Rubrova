@@ -8,6 +8,16 @@ La denominación actual es provisoria y se mantiene únicamente en este README y
 
 La disponibilidad legal de la denominación y de los dominios todavía no está verificada. Antes de convertirla en marca pública habrá que consultar el buscador oficial del INPI, revisar variantes fonéticas y clases pertinentes, y comprobar los dominios.
 
+## Probar el proyecto localmente
+
+En Mac Apple Silicon hay una vista previa experimental del POS que construye las imágenes, crea una caja y producto sintéticos y deja la aplicación abierta en `http://127.0.0.1:8080`. La guía está en [Compatibilidad con macOS](docs/MACOS_SUPPORT.md):
+
+```bash
+bash scripts/platform/run-local-preview-macos.sh
+```
+
+Esta modalidad sirve para revisar la interfaz y el flujo desde tu equipo; no representa una instalación productiva ni un servidor ARM64 nativo.
+
 ## Qué estamos construyendo
 
 Una plataforma que reúne en un solo lugar:

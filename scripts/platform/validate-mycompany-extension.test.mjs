@@ -14,6 +14,7 @@ const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
+const localPreviewSource = read("scripts/platform/run-local-preview-macos.sh");
 const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
 const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
@@ -80,10 +81,19 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(preparerSource, /Omitiendo el JAR oficial de lógica/);
 });
 
-test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y limpia el stack", () => {
+test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con opt-in", () => {
   assert.match(runtimeSmokeSource, /uname -s/);
   assert.match(runtimeSmokeSource, /uname -m/);
   assert.match(runtimeSmokeSource, /Linux.*x86_64/);
+  assert.match(runtimeSmokeSource, /Darwin.*arm64/);
+  assert.match(runtimeSmokeSource, /RUBROVA_ALLOW_EXPERIMENTAL_MACOS_AMD64_EMULATION/);
+  assert.match(runtimeSmokeSource, /LOCAL_MAC_PREVIEW=true/);
+  assert.match(runtimeSmokeSource, /platform: linux\/amd64/);
+  assert.match(runtimeSmokeSource, /ports: !override/);
+  assert.match(runtimeSmokeSource, /127[.]0[.]0[.]1:8080:8080/);
+  assert.match(runtimeSmokeSource, /127[.]0[.]0[.]1:7652:7652/);
+  assert.match(runtimeSmokeSource, /RUBROVA_KEEP_RUNTIME_STACK/);
+  assert.match(runtimeSmokeSource, /VISTA PREVIA RUBROVA ACTIVA/);
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
@@ -378,6 +388,20 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /successfully started/);
   assert.match(runtimeSmokeSource, /RubrovaPOSLocalization/);
   assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience/);
+});
+
+
+test("la vista previa macOS prepara Chromium y conserva una base sintética para probar el POS", () => {
+  assert.match(localPreviewSource, /playwright==1[.]65[.]2/);
+  assert.match(localPreviewSource, /parts < \(2, 24, 4\)/);
+  assert.match(localPreviewSource, /rubrova-local-preview-.*date \+%Y%m%d%H%M%S/);
+  assert.match(localPreviewSource, /playwright install chromium/);
+  assert.match(localPreviewSource, /RUBROVA_ALLOW_EXPERIMENTAL_MACOS_AMD64_EMULATION=true/);
+  assert.match(localPreviewSource, /RUBROVA_KEEP_RUNTIME_STACK=true/);
+  assert.match(localPreviewSource, /RUBROVA_KEEP_RUNTIME_WORK_DIR=true/);
+  assert.match(localPreviewSource, /RUBROVA_UI_TEST_LOGIN=true/);
+  assert.match(localPreviewSource, /bash .*test-runtime-smoke[.]sh/);
+  assert.match(localPreviewSource, /http:\/\/127[.]0[.]0[.]1:8080/);
 });
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {

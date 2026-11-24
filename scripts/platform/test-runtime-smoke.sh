@@ -14,8 +14,20 @@ for command_name in docker curl shasum python3; do
 done
 docker compose version >/dev/null
 
-if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
-  echo "La prueba de runtime MyCompany 6.2 requiere un anfitrión Linux x86_64; no se ejecutará por emulación." >&2
+HOST_OS="$(uname -s)"
+HOST_ARCH="$(uname -m)"
+LOCAL_MAC_PREVIEW=false
+if [[ "$HOST_OS" == "Linux" && "$HOST_ARCH" == "x86_64" ]]; then
+  :
+elif [[ "$HOST_OS" == "Darwin" && "$HOST_ARCH" == "x86_64" ]]; then
+  LOCAL_MAC_PREVIEW=true
+  echo "Ejecutando el runtime en Mac Intel x86_64."
+elif [[ "$HOST_OS" == "Darwin" && "$HOST_ARCH" == "arm64" && "${RUBROVA_ALLOW_EXPERIMENTAL_MACOS_AMD64_EMULATION:-false}" == "true" ]]; then
+  LOCAL_MAC_PREVIEW=true
+  echo "AVISO: vista previa experimental en Apple Silicon: el runtime se ejecutará como linux/amd64 por emulación."
+  echo "Esta modalidad sirve para probar la interfaz localmente; no certifica rendimiento ni compatibilidad de producción."
+else
+  echo "El smoke aceptado requiere Linux x86_64. Apple Silicon sólo puede usar la vista previa experimental con RUBROVA_ALLOW_EXPERIMENTAL_MACOS_AMD64_EMULATION=true." >&2
   exit 2
 fi
 
@@ -28,9 +40,12 @@ PROJECT_NAME="${COMPOSE_PROJECT_NAME:-rubrova-smoke-${GITHUB_RUN_ID:-local}}"
 COMPOSE_FILE="$COMPOSE_DIR/compose.yaml"
 EXTENSION_OVERRIDE_FILE="$COMPOSE_DIR/compose.rubrova.override.yaml"
 IMAGE_OVERRIDE_FILE="$COMPOSE_DIR/compose.images.override.yaml"
+LOCAL_PREVIEW_OVERRIDE_FILE="$COMPOSE_DIR/compose.local-preview.override.yaml"
 WEB_URL="${RUBROVA_WEB_URL:-http://127.0.0.1:8080/}"
 STARTUP_TIMEOUT_SECONDS="${RUBROVA_STARTUP_TIMEOUT_SECONDS:-900}"
+KEEP_RUNTIME_STACK="${RUBROVA_KEEP_RUNTIME_STACK:-false}"
 KEEP_WORK_DIR="${RUBROVA_KEEP_RUNTIME_WORK_DIR:-false}"
+if [[ "$KEEP_RUNTIME_STACK" == "true" ]]; then KEEP_WORK_DIR=true; fi
 MOCK_PROVIDER_PORT="${RUBROVA_MOCK_PROVIDER_PORT:-18765}"
 MOCK_PROVIDER_PID=""
 BUILD_ARTIFACTS_DIR="${RUBROVA_BUILD_ARTIFACTS_DIR:-$WORK_DIR/build-artifacts}"
@@ -42,8 +57,35 @@ CLIENT_IMAGE="rubrova/client:6.2-$RUBROVA_IMAGE_TAG"
 
 mkdir -p "$CACHE_DIR" "$COMPOSE_DIR"
 
+if [[ "$LOCAL_MAC_PREVIEW" == "true" ]]; then
+  cat > "$LOCAL_PREVIEW_OVERRIDE_FILE" <<'YAML'
+services:
+  db:
+    platform: linux/amd64
+    ports: !override []
+  logics:
+    platform: linux/amd64
+  server:
+    platform: linux/amd64
+    ports: !override
+      - "127.0.0.1:7652:7652"
+  client:
+    platform: linux/amd64
+    ports: !override
+      - "127.0.0.1:8080:8080"
+  toxiproxy:
+    platform: linux/amd64
+    ports: !override
+      - "127.0.0.1:18474:8474"
+YAML
+fi
+
 compose() {
-  COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose -f "$COMPOSE_FILE" -f "$EXTENSION_OVERRIDE_FILE" -f "$IMAGE_OVERRIDE_FILE" --project-directory "$COMPOSE_DIR" "$@"
+  local compose_files=(-f "$COMPOSE_FILE" -f "$EXTENSION_OVERRIDE_FILE" -f "$IMAGE_OVERRIDE_FILE")
+  if [[ -s "$LOCAL_PREVIEW_OVERRIDE_FILE" ]]; then
+    compose_files+=(-f "$LOCAL_PREVIEW_OVERRIDE_FILE")
+  fi
+  COMPOSE_PROJECT_NAME="$PROJECT_NAME" docker compose "${compose_files[@]}" --project-directory "$COMPOSE_DIR" "$@"
 }
 
 show_client_tomcat_logs() {
@@ -81,7 +123,22 @@ cleanup() {
       echo "=== Logs internos de Tomcat (cliente web) ===" >&2
       show_client_tomcat_logs
     fi
-    compose down --volumes --remove-orphans
+    if [[ "$KEEP_RUNTIME_STACK" == "true" && "$exit_code" -eq 0 ]]; then
+      echo ""
+      echo "VISTA PREVIA RUBROVA ACTIVA: $WEB_URL"
+      echo "Proyecto Docker: $PROJECT_NAME"
+      echo "Datos sintéticos aislados en: $WORK_DIR"
+      echo "La interfaz web y RMI se enlazan sólo a 127.0.0.1."
+      stop_command="COMPOSE_PROJECT_NAME=$(printf '%q' "$PROJECT_NAME") docker compose -f $(printf '%q' "$COMPOSE_FILE") -f $(printf '%q' "$EXTENSION_OVERRIDE_FILE") -f $(printf '%q' "$IMAGE_OVERRIDE_FILE")"
+      if [[ -s "$LOCAL_PREVIEW_OVERRIDE_FILE" ]]; then
+        stop_command+=" -f $(printf '%q' "$LOCAL_PREVIEW_OVERRIDE_FILE")"
+      fi
+      stop_command+=" --project-directory $(printf '%q' "$COMPOSE_DIR") down --volumes --remove-orphans && rm -rf $(printf '%q' "$WORK_DIR")"
+      echo "Para detener el sistema y borrar la base sintética, copiá y ejecutá:"
+      echo "$stop_command"
+    else
+      compose down --volumes --remove-orphans
+    fi
   fi
   if [[ "$KEEP_WORK_DIR" != "true" ]]; then
     cleanup_failed=0
@@ -145,6 +202,7 @@ cat > "$IMAGE_OVERRIDE_FILE" <<YAML
 services:
   logics:
     image: $LOGICS_IMAGE
+    platform: linux/amd64
     pull_policy: never
   server:
     depends_on:
@@ -157,6 +215,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     image: $SERVER_IMAGE
+    platform: linux/amd64
     pull_policy: never
     healthcheck:
       test: ["CMD-SHELL", "grep -iqE ':1DE4[[:space:]]+[[:xdigit:]]+:[[:xdigit:]]+[[:space:]]+0A' /proc/net/tcp /proc/net/tcp6"]
@@ -169,6 +228,7 @@ services:
       server:
         condition: service_healthy
     image: $CLIENT_IMAGE
+    platform: linux/amd64
     pull_policy: never
   db:
     image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
