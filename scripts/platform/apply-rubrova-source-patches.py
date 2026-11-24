@@ -47,16 +47,15 @@ REQUIRED_MARKERS = (
 
 CASH_ACCOUNT_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf"
 CASH_ACCOUNT_ANCHOR = "cashBalance 'Cash at the checkout' (Pos p) = balance(cashAccount(p));"
+CASH_ACCOUNT_REQUIRED_MARKER = "CONSTRAINT account(Pos p) = cashAccount(p)"
 CASH_ACCOUNT_REPLACEMENT = (
     CASH_ACCOUNT_ANCHOR
-    + "\\n\\n"
-    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\\n"
-    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\\n"
-    + "CONSTRAINT account(Pos p) = cashAccount(p)\\n"
-    + "                MESSAGE 'The central checkout account must not be the same as the cash account';"
+    + "\n\n"
+    + "// Rubrova guard ported from the maintained MyCompany 6.x line. The central account\n"
+    + "// is the counterparty for deposits/withdrawals and cannot also be the till drawer.\n"
+    + "CONSTRAINT account(Pos p) = cashAccount(p)\n"
+    + "                MESSAGE 'La cuenta central de caja no puede ser la misma que la cuenta de efectivo';"
 )
-CASH_ACCOUNT_REQUIRED_MARKER = "CONSTRAINT account(Pos p) = cashAccount(p)"
-
 
 def main() -> int:
     if not TARGET.is_file():
