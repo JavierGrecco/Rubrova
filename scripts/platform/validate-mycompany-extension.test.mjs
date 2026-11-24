@@ -569,29 +569,29 @@ test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () =
 });
 
 test("el cierre nativo del turno concilia y persiste la sesión", () => {
-  assert.match(runtimeSmokeSource, /rubrovaCITestSession\\(\\) = GROUP MAX Retail[.]Session/);
-  assert.match(runtimeSmokeSource, /rubrovaTestSessionCloseApi/);
-  assert.match(runtimeSmokeSource, /Retail[.]closingDateTime\\(rubrovaCITestSession\\(\\)\\)/);
-  assert.match(runtimeSmokeSource, /Retail[.]countInvoices\\(rubrovaCITestSession\\(\\)\\)/);
-  assert.match(runtimeSmokeSource, /Retail[.]paid\\(rubrovaCITestSession\\(\\), Retail[.]cashPaymentMethod\\(\\)\\)/);
-  assert.match(uiSmokeSource, /"Cerrar turno": "PROPERTY\\(close\\(s\\)\\)"/);
-  assert.match(uiSmokeSource, /accept_session_close_dialog/);
-  assert.match(uiSmokeSource, /UI_SESSION_CLOSE_ACTION_CLICKED=true/);
-  assert.match(uiSmokeSource, /UI_SESSION_CLOSE_TIMESTAMP_PERSISTED=true/);
-  assert.match(uiSmokeSource, /UI_SESSION_CLOSED=true/);
-  assert.match(uiSmokeSource, /UI_SESSION_SALES_RECONCILED=true/);
-  assert.match(uiSmokeSource, /UI_SESSION_CASH_RECONCILED=true/);
-  assert.match(uiSmokeSource, /UI_SESSION_CLOSED_SCREENSHOT/);
+  assert.ok(runtimeSmokeSource.includes("rubrovaCITestSession() = GROUP MAX Retail.Session"));
+  assert.ok(runtimeSmokeSource.includes("rubrovaTestSessionCloseApi"));
+  assert.ok(runtimeSmokeSource.includes("Retail.closingDateTime(rubrovaCITestSession())"));
+  assert.ok(runtimeSmokeSource.includes("Retail.countInvoices(rubrovaCITestSession())"));
+  assert.ok(runtimeSmokeSource.includes("Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod())"));
+  assert.ok(uiSmokeSource.includes('"Cerrar turno": "PROPERTY(close(s))"'));
+  assert.ok(uiSmokeSource.includes("accept_session_close_dialog"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_ACTION_CLICKED=true"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_TIMESTAMP_PERSISTED=true"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSED=true"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_SALES_RECONCILED=true"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_CASH_RECONCILED=true"));
+  assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSED_SCREENSHOT"));
 });
 
 test("el POS separa la cuenta central del cajón de efectivo", () => {
-  assert.match(paymentMethodSource, /CONSTRAINT account\\(Pos p\\) = cashAccount\\(p\\)/);
-  assert.match(paymentMethodSource, /La cuenta central de caja no puede ser la misma que la cuenta de efectivo/);
-  assert.match(sourcePatch, /CASH_ACCOUNT_REQUIRED_MARKER/);
-  assert.match(sourcePatch, /CASH_ACCOUNT_ANCHOR/);
-  assert.match(runtimeSmokeSource, /centralCashAccountName = Retail[.]nameAccount/);
-  assert.match(uiSmokeSource, /UI_POS_CASH_ACCOUNTS_DISTINCT=true/);
-  assert.match(runtimeWorkflowSource, /CONSTRAINT account\\(Pos p\\) = cashAccount\\(p\\)/);
+  assert.ok(paymentMethodSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
+  assert.ok(paymentMethodSource.includes("La cuenta central de caja no puede ser la misma que la cuenta de efectivo"));
+  assert.ok(sourcePatch.includes("CASH_ACCOUNT_REQUIRED_MARKER"));
+  assert.ok(sourcePatch.includes("CASH_ACCOUNT_ANCHOR"));
+  assert.ok(runtimeSmokeSource.includes("centralCashAccountName = Retail.nameAccount"));
+  assert.ok(uiSmokeSource.includes("UI_POS_CASH_ACCOUNTS_DISTINCT=true"));
+  assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
 });
 
 test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () => {
