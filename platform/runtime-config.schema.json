@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rubrova.local/schemas/runtime-config-v1.json",
+  "title": "Configuración de ejecución de Rubrova",
+  "description": "Selecciona dónde se ejecuta el núcleo POS/ERP y controla por separado las integraciones externas. No almacena credenciales ni migra datos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "execution", "connectivity", "local_runtime"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "remote_url", "compose_file"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "enum": ["native-local", "docker-local", "remote-online"],
+          "description": "Destino activo previsto. native-local ejecuta Java, PostgreSQL y Tomcat en el host; docker-local utiliza contenedores en este equipo; remote-online conecta el cliente con un servidor remoto."
+        },
+        "remote_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "URL HTTPS del servidor remoto. HTTP sólo se admite para loopback durante desarrollo."
+        },
+        "compose_file": {
+          "type": ["string", "null"],
+          "description": "Ruta del Compose de Rubrova para docker-local."
+        }
+      }
+    },
+    "connectivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["external_integrations"],
+      "properties": {
+        "external_integrations": {
+          "type": "string",
+          "enum": ["enabled", "paused"],
+          "default": "enabled",
+          "description": "Habilita o pausa adaptadores externos. No cambia dónde se ejecuta el POS/ERP."
+        }
+      }
+    },
+    "local_runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_directory", "postgres_bin", "tomcat_home", "java_home", "ports"],
+      "properties": {
+        "data_directory": {
+          "type": ["string", "null"],
+          "description": "Directorio local persistente administrado por Rubrova. No debe compartirse entre motores ni sistemas operativos."
+        },
+        "postgres_bin": {
+          "type": ["string", "null"],
+          "description": "Directorio que contiene initdb, pg_ctl, pg_isready y psql de PostgreSQL 18."
+        },
+        "tomcat_home": {
+          "type": ["string", "null"],
+          "description": "Instalación compatible de Apache Tomcat 9 para el cliente lsFusion 6.2."
+        },
+        "java_home": {
+          "type": ["string", "null"],
+          "description": "JRE/JDK 21 compatible con los artefactos compilados por Rubrova."
+        },
+        "ports": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["postgres", "rmi", "web"],
+          "properties": {
+            "postgres": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535,
+              "default": 55432
+            },
+            "rmi": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535,
+              "default": 7652
+            },
+            "web": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535,
+              "default": 8080
+            }
+          }
+        }
+      }
+    }
+  }
+}
