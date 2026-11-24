@@ -426,9 +426,10 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.equal(entries.get("Discount_p"), "Descuento, %");
   assert.equal(entries.get("Date"), "Fecha");
   assert.equal(entries.get("Reference"), "Referencia");
-  assert.ok(moduleSource.includes("FOR MasterData.Individual i DO {"));
-  assert.ok(moduleSource.includes("IF MasterData.id(i) = 'unknown' THEN"));
+  assert.ok(moduleSource.includes("FOR MasterData.id(MasterData.Individual i) = 'unknown' DO {"));
   assert.ok(!moduleSource.includes("FOR MasterData.Individual i WHERE"));
+  assert.ok(!moduleSource.includes("FOR MasterData.Individual i DO {"));
+  assert.ok(!moduleSource.includes("IF MasterData.id(i) = 'unknown' THEN"));
   assert.ok(moduleSource.includes("MasterData.lastName(i) <- 'Consumidor final'"));
   assert.equal(entries.get("rubrova.pos.search_price"), "Precio");
   for (const key of ["Retail", "Manufacturing", "Human_resources", "Projects", "Fleet", "Documentation"]) {

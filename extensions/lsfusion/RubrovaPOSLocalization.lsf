@@ -121,10 +121,8 @@ loadDefaultData () + {
     IF paymentMethod('card') THEN
         name(paymentMethod('card')) <- 'Tarjeta';
 
-    // MyCompany crea un cliente genérico para ventas de mostrador con el ID estable "unknown".
-    // Cambiamos su dato real de contacto; no dependemos de una traducción de etiqueta.
-    FOR MasterData.Individual i DO {
-        IF MasterData.id(i) = 'unknown' THEN
-            MasterData.lastName(i) <- 'Consumidor final';
+    // La expresión del FOR filtra por el ID estable: sólo se modifica el cliente genérico.
+    FOR MasterData.id(MasterData.Individual i) = 'unknown' DO {
+        MasterData.lastName(i) <- 'Consumidor final';
     }
 }
