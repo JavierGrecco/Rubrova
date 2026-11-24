@@ -50,14 +50,14 @@ class RuntimeConfigTests(unittest.TestCase):
         config = runtime_config.default_config()
         config["execution"]["target"] = "remote-online"
         config["execution"]["remote_url"] = "http://192.168.1.20:8080"
-        self.assertTrue(any("HTTPS" in error for error in runtime_config.validate_config(config)))
+        self.assertTrue(any("TLS" in error for error in runtime_config.validate_config(config)))
 
         config["execution"]["remote_url"] = "http://127.0.0.1:8080"
         self.assertEqual(runtime_config.validate_config(config), [])
 
     def test_changing_database_authority_requires_explicit_acknowledgement(self) -> None:
         config = runtime_config.default_config()
-        with self.assertRaisesRegex(ValueError, "respalde"):
+        with self.assertRaisesRegex(ValueError, "respaldar"):
             runtime_config.set_target(config, "docker-local")
         updated = runtime_config.set_target(
             config,
