@@ -521,6 +521,7 @@ rubrovaTestPosConfigurationApi () {
         retailInvoicePriceTypeName = Sales.namePriceType(Invoicing.invoiceType('retail')),
         retailPriceTypeCurrencyName = Sales.nameCurrency(Sales.priceType('retail')),
         cashMethodName = name(Retail.cashPaymentMethod()),
+        centralCashAccountName = Retail.nameAccount(Retail.pos('rubrova-ci')),
         cardMethodName = name(Retail.paymentMethod('card')),
         cashAccountName = Retail.nameAccount(Retail.pos('rubrova-ci'), Retail.cashPaymentMethod()),
         cardAccountName = Retail.nameAccount(Retail.pos('rubrova-ci'), Retail.paymentMethod('card')),
