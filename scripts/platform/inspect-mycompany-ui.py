@@ -729,6 +729,17 @@ def inspect_page(url: str) -> int:
                     pos_config_payload = pos_config_payload[0] if pos_config_payload else {}
                 print("UI_POS_EFFECTIVE_CONFIGURATION=" + json.dumps(pos_config_payload, ensure_ascii=False))
 
+                # 6.x upstream agregó este invariante: cuenta central != cajón de efectivo.
+                central_cash_account = str(pos_config_payload.get("centralCashAccountName") or "").strip()
+                till_cash_account = str(pos_config_payload.get("cashAccountName") or "").strip()
+                if not central_cash_account or not till_cash_account:
+                    raise RuntimeError("El POS no informó las dos cuentas de efectivo configuradas.")
+                if central_cash_account == till_cash_account:
+                    raise RuntimeError(
+                        "Configuración inválida: la cuenta central no puede ser también el cajón de efectivo."
+                    )
+                print("UI_POS_CASH_ACCOUNTS_DISTINCT=true")
+
                 # Abrir la pantalla de cobro y verificar medios disponibles sin confirmar.
                 if not click_exact_action(page, "Cobrar (ctrl ENTER)"):
                     raise RuntimeError("No se encontró la acción Cobrar después de agregar el artículo.")
