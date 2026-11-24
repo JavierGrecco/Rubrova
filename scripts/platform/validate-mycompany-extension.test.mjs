@@ -123,12 +123,20 @@ test("el smoke test ejecuta sólo en Linux x86_64, configura la extensión y lim
   assert.match(runtimeSmokeSource, /RUBROVA_ONSTARTED_TIMEOUT_SECONDS/);
   assert.match(runtimeSmokeSource, /DB_BOOTSTRAP_STATE=/);
   assert.match(runtimeSmokeSource, /COLD_SERVER_LOGS/);
+  assert.match(runtimeSmokeSource, /SERVER_FINAL_START_TIMEOUT_SECONDS/);
+  assert.match(runtimeSmokeSource, /COLD_SERVER_READY=true/);
+  assert.match(runtimeSmokeSource, /Server has successfully started in/);
   assert.match(runtimeSmokeSource, /METRIC_COLD_SERVER_STARTUP_MS/);
   assert.match(runtimeSmokeSource, /METRIC_COLD_SQL_TIMEOUTS/);
   assert.match(runtimeSmokeSource, /METRIC_COLD_MATERIALIZATION_TIMEOUTS/);
   assert.match(runtimeSmokeSource, /compose restart server/);
   assert.match(runtimeSmokeSource, /compose restart client/);
   assert.ok(runtimeSmokeSource.includes('extract_last_server_startup_ms "$SERVER_RESTART_LOGS"'));
+  assert.ok(
+    runtimeSmokeSource.indexOf('Arranque completo: onStarted terminó') <
+    runtimeSmokeSource.indexOf('COLD_SERVER_READY=true'),
+    "La medición fría debe esperar a la finalización del motor, posterior a onStarted."
+  );
   assert.match(runtimeSmokeSource, /METRIC_WARM_SERVER_STARTUP_MS/);
   assert.match(runtimeSmokeSource, /METRIC_WARM_ONSTARTED_EVENTS/);
   assert.match(runtimeSmokeSource, /METRIC_WARM_SQL_TIMEOUTS/);

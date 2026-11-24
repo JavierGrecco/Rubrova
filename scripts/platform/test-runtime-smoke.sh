@@ -897,12 +897,30 @@ count_delta_after_restart() {
   fi
 }
 
-COLD_SERVER_LOGS="$(compose logs --no-color --tail=5000 server 2>/dev/null || true)"
-COLD_SERVER_STARTUP_MS="$(extract_last_server_startup_ms "$COLD_SERVER_LOGS")"
-if [[ ! "$COLD_SERVER_STARTUP_MS" =~ ^[0-9]+$ ]]; then
-  echo "No se pudo medir el arranque en frío en los registros del contenedor." >&2
+SERVER_FINAL_START_TIMEOUT_SECONDS="${RUBROVA_SERVER_FINAL_START_TIMEOUT_SECONDS:-300}"
+SECONDS=0
+COLD_SERVER_READY=false
+COLD_SERVER_LOGS=""
+COLD_SERVER_STARTUP_MS=""
+while (( SECONDS < SERVER_FINAL_START_TIMEOUT_SECONDS )); do
+  COLD_SERVER_LOGS="$(compose logs --no-color --tail=5000 server 2>/dev/null || true)"
+  COLD_SERVER_STARTUP_MS="$(extract_last_server_startup_ms "$COLD_SERVER_LOGS")"
+  if [[ "$COLD_SERVER_STARTUP_MS" =~ ^[0-9]+$ ]]; then
+    COLD_SERVER_READY=true
+    break
+  fi
+  if (( SECONDS % 20 < 2 )); then
+    echo "El servidor sigue finalizando Reflection/materializaciones; transcurridos=${SECONDS}s."
+  fi
+  sleep 2
+done
+if [[ "$COLD_SERVER_READY" != "true" ]]; then
+  echo "El servidor no confirmó el fin de Reflection y el arranque final en ${SERVER_FINAL_START_TIMEOUT_SECONDS}s." >&2
+  printf '%s\n' "$COLD_SERVER_LOGS" | tail -n 120 >&2
+  if [[ -f "$LOG_DIR/start.log" ]]; then tail -n 120 "$LOG_DIR/start.log" >&2; fi
   exit 1
 fi
+echo "Arranque final confirmado: el motor completó Reflection y publicó el marcador de inicio."
 COLD_SQL_TIMEOUTS="$(count_file_matches "$LOG_DIR/sqlhand.log" 'SQLTimeoutException')"
 COLD_MATERIALIZATION_TIMEOUTS="$(count_file_matches "$LOG_DIR/start.log" 'FAILED TIMEOUT')"
 echo "METRIC_COLD_SERVER_STARTUP_MS=$COLD_SERVER_STARTUP_MS"
