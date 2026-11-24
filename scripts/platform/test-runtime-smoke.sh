@@ -73,10 +73,6 @@ services:
     platform: linux/amd64
     ports: !override
       - "127.0.0.1:8080:8080"
-  toxiproxy:
-    platform: linux/amd64
-    ports: !override
-      - "127.0.0.1:18474:8474"
 YAML
 fi
 
@@ -202,7 +198,7 @@ services:
         condition: service_healthy
       logics:
         condition: service_completed_successfully
-      toxiproxy:
+      mock-provider:
         condition: service_started
     image: $SERVER_IMAGE
     platform: linux/amd64
@@ -230,13 +226,7 @@ services:
       timeout: 3s
       retries: 30
       start_period: 5s
-  # El proxy y el simulador quedan dentro de la red privada de aceptación.
-  toxiproxy:
-    image: ghcr.io/shopify/toxiproxy:2.13.0@sha256:9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc
-    environment:
-      TOXIPROXY_AUTH_TOKEN: "\${TOXIPROXY_AUTH_TOKEN:?}"
-    ports:
-      - "127.0.0.1:18474:8474"
+  # El simulador HTTP se comunica directamente con el servidor dentro de la red privada.
   mock-provider:
     image: $MOCK_PROVIDER_IMAGE
     platform: linux/amd64
@@ -465,7 +455,7 @@ grep -q "rubrova-ci" "$COMPOSE_DIR/docker-server/RubrovaPOSLocalization.lsf" || 
   exit 1
 }
 
-MOCK_PROVIDER_URL="http://toxiproxy:8666"
+MOCK_PROVIDER_URL="http://mock-provider:$MOCK_PROVIDER_PORT"
 cat >> "$COMPOSE_DIR/docker-server/RubrovaIntegrationResilience.lsf" <<LSF
 
 // Endpoints exclusivos de la base efímera CI: nunca se instalan en Rubrova.
@@ -604,10 +594,6 @@ rubrovaTestPosConfigurationApi () {
 } @@api;
 LSF
 
-# Token efímero para la API de control de Toxiproxy: la red de contenedores también puede alcanzarla.
-TOXIPROXY_AUTH_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
-export TOXIPROXY_AUTH_TOKEN
-
 echo "3/6 Validando que Compose use sólo las imágenes de aplicación construidas por Rubrova"
 compose config --quiet
 COMPOSE_IMAGES="$(compose config --images)"
@@ -651,7 +637,7 @@ RUNTIME_NETWORK_INTERNAL="$(docker network inspect --format '{{.Internal}}' "$RU
   echo "La red del runtime no está marcada como interna; no se acepta como prueba offline." >&2
   exit 1
 }
-for service_name in db logics server client toxiproxy mock-provider; do
+for service_name in db logics server client mock-provider; do
   service_container="$(compose ps -a -q "$service_name" | head -n 1)"
   [[ -n "$service_container" ]] || {
     echo "Falta el contenedor del servicio $service_name en la prueba offline." >&2
@@ -668,7 +654,7 @@ done
 printf 'RUBROVA_RUNTIME_NETWORK=%s\n' "$RUNTIME_NETWORK"
 echo "RUBROVA_RUNTIME_NETWORK_INTERNAL=true"
 echo "RUBROVA_RUNTIME_EXTERNAL_EGRESS=blocked"
-echo "PostgreSQL, servidor, lógica, cliente, proxy y simulador sólo se comunican por la red interna."
+echo "PostgreSQL, servidor, lógica, cliente y simulador sólo se comunican por la red interna."
 
 echo "4.0.1/7 Comprobando la ubicación y persistencia de PostgreSQL 18"
 DB_CONTAINER_ID="$(compose ps -q db)"
@@ -690,40 +676,7 @@ compose exec -T db sh -c 'test -s "$PGDATA/PG_VERSION"' || {
 }
 echo "PostgreSQL 18 verificado: PGDATA y bind mount persistente correctos."
 
-echo "4.1/7 Preparando los proxies de fallos de red dentro de la red interna"
-TOXIPROXY_API_URL="http://127.0.0.1:18474"
-TOXIPROXY_READY=false
-for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-  if curl --silent --fail --connect-timeout 1 --max-time 2 \
-      --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
-      "$TOXIPROXY_API_URL/version" >/dev/null; then
-    TOXIPROXY_READY=true
-    break
-  fi
-  sleep 1
-done
-if [[ "$TOXIPROXY_READY" != "true" ]]; then
-  echo "Toxiproxy no respondió en su API local durante el plazo esperado." >&2
-  compose logs --no-color --tail=120 toxiproxy >&2 || true
-  exit 1
-fi
-curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
-  --request POST --header "Content-Type: application/json" \
-  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" \
-  --data-binary '[{"name":"rubrova_ci_normal","listen":"0.0.0.0:8666","upstream":"mock-provider:'"$MOCK_PROVIDER_PORT"'","enabled":true}]' \
-  "$TOXIPROXY_API_URL/populate" >/dev/null
-PROXY_CONFIG="$(curl --fail --silent --show-error --connect-timeout 2 --max-time 5 \
-  --header "Authorization: Bearer $TOXIPROXY_AUTH_TOKEN" "$TOXIPROXY_API_URL/proxies")"
-python3 - "$PROXY_CONFIG" <<'PY'
-import json
-import sys
-
-payload = json.loads(sys.argv[1])
-if "rubrova_ci_normal" not in payload:
-    raise SystemExit("Toxiproxy no creó el proxy hacia el simulador HTTP local.")
-PY
-echo "Toxiproxy listo: proxy HTTP hacia mock-provider dentro de la red sin Internet."
-
+echo "4.1/7 El servidor usa directamente mock-provider:$MOCK_PROVIDER_PORT dentro de la red interna."
 echo "5/7 Comprobando que la configuración y los módulos Rubrova estén montados en el servidor"
 SERVER_CONTAINER_ID="$(compose ps -q server)"
 [[ -n "$SERVER_CONTAINER_ID" ]] || {
