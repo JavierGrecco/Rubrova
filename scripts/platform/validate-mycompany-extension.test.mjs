@@ -570,7 +570,7 @@ test("el timeout HTTP también se propaga y se aplica en el navegador GWT", () =
 
 test("el POS separa la cuenta central del cajón de efectivo", () => {
   assert.match(paymentMethodSource, /CONSTRAINT account\\(Pos p\\) = cashAccount\\(p\\)/);
-  assert.match(paymentMethodSource, /The central checkout account must not be the same as the cash account/);
+  assert.match(paymentMethodSource, /La cuenta central de caja no puede ser la misma que la cuenta de efectivo/);
   assert.match(sourcePatch, /CASH_ACCOUNT_REQUIRED_MARKER/);
   assert.match(sourcePatch, /CASH_ACCOUNT_ANCHOR/);
   assert.match(runtimeSmokeSource, /centralCashAccountName = Retail[.]nameAccount/);
