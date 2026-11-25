@@ -1,91 +1,123 @@
 # Compatibilidad con macOS
 
-**Revisión:** 20 de noviembre de 2026.
-**Objetivo:** permitir trabajar con Rubrova desde una MacBook sin confundir compatibilidad del repositorio, equipo cliente y servidor.
+**Revisión:** 24 de noviembre de 2026.
+**Objetivo:** ejecutar el mismo runtime Rubrova en el equipo local sin Docker, sin confundir la compatibilidad del repositorio con la aceptación del servidor nativo.
 
-## Qué está cubierto
+## Decisión actual
 
-- Los scripts de preparación y staging se ejecutan con Bash en macOS.
-- El preparador usa `~/Library/Caches/Rubrova/platforms/mycompany-6.2` como caché predeterminada; respeta `RUBROVA_CACHE_DIR` y `XDG_CACHE_HOME`.
-- El staging Docker puede copiar la extensión y actualizar `settings.properties` sin iniciar contenedores.
-- La CI agrega un runner macOS 26 Apple Silicon para ejecutar pruebas estáticas, probar las herramientas BSD, ejercitar el staging y descargar/verificar el JAR y el Compose contra sus SHA-256 fijados.
-- Una MacBook puede utilizarse como puesto cliente del sistema web cuando el servidor se encuentre disponible en un equipo compatible de la red.
+El camino previsto para macOS es nativo:
 
-La primera ejecución del workflow [44785005509](https://github.com/JavierGrecco/Rubrova/actions/runs/44785005509) terminó correctamente en Linux, Windows y macOS ARM64. Sus logs permitieron fijar el SHA-256 del Compose oficial (`4b7eeb62c92a4701f46f18255c290f9227ab9694986aa82e8034b2ea8a3d2def`); la segunda ejecución desde caché devolvió la misma huella.
+- Java 21 ejecuta el servidor lsFusion y la lógica MyCompany/Rubrova desde los JAR compilados por el propio repositorio.
+- PostgreSQL 18 se ejecuta como proceso nativo y conserva los datos en una carpeta privada de Rubrova.
+- Apache Tomcat 9.0.124 sirve el WAR del cliente web desde `127.0.0.1`.
+- Python 3 supervisa el arranque, comprueba los procesos/puertos y los detiene sin borrar la base.
+- Docker queda como una alternativa secundaria para verificar el empaquetado en contenedores; no es requisito para el runtime nativo.
 
-La CI no instala MyCompany, no inicia el Compose y no certifica periféricos, navegador ni una jornada POS completa.
+El primer supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. El smoke nativo se está incorporando a CI, pero todavía no hay una aceptación completa de venta sobre este runtime ni una certificación en tu Mac. No lo consideramos instalador final.
 
 ## Diferencia entre Intel y Apple Silicon
 
-| Equipo | Preparación y herramientas | Servidor MyCompany 6.2 local | Estado |
-|---|---|---|---|
-| Mac Intel (`x86_64`) | Bash, `curl` y `shasum`; staging Docker | La imagen de lógica `linux/amd64` coincide con la arquitectura de CPU del host | Preparación cubierta por CI macOS ARM64 y smoke test; runtime todavía pendiente de aceptación |
-| Mac Apple Silicon (`arm64`) | Bash, `curl` y `shasum`; staging Docker | La imagen `lsfusion/mycompany:6.2` sólo publica `linux/amd64`; requiere emulación para ejecutarla localmente | Preparación y staging cubiertos por CI ARM64; runtime emulado todavía no aceptado |
+El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. El JAR no necesita una imagen de contenedor AMD64: lo ejecuta la JVM compatible con el equipo. Lo que sí debe ser nativo para el sistema y la arquitectura es Java, PostgreSQL y el propio Tomcat/entorno del sistema operativo.
 
-Las imágenes `lsfusion/server:6.2` y `lsfusion/client:6.2` publican ARM64, pero eso no vuelve ARM64 al stack completo mientras la imagen de lógica MyCompany siga siendo AMD64.
+| Equipo | Runtime nativo esperado | Estado |
+|---|---|---|
+| Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Es el objetivo del primer ensayo local; todavía no certificado |
 
-Docker Desktop permite ejecutar contenedores AMD64 en Apple Silicon mediante emulación. Para Rubrova sigue siendo una modalidad experimental: sirve para que puedas abrir y probar el POS localmente, pero no equivale a soporte nativo ni a aceptación productiva. La vista previa usa un override temporal que fija las imágenes de aplicación en `linux/amd64`, y publica el navegador y RMI sólo en `127.0.0.1`. El Compose oficial descargado no se modifica. Para acelerar la emulación, Docker indica activar Rosetta bajo Apple Virtualization Framework; Docker VMM no admite actualmente Rosetta. Consultá [los ajustes de Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/) y [Virtual Machine Manager](https://docs.docker.com/desktop/features/vmm/).
+La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
-Referencias oficiales: [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners), [Docker Desktop para Mac](https://docs.docker.com/docker-for-mac/install/), [ajustes de Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/) y [Virtual Machine Manager](https://docs.docker.com/desktop/features/vmm/).
+## Requisitos para probarlo
 
-## Comprobaciones locales desde una MacBook
+Instalá o ubicá estos componentes en el equipo:
 
-No necesitás instalar MyCompany ni tener Docker para validar los archivos del proyecto. Con Git, Bash, Python 3 y Node.js 24:
+1. Java 21 para macOS en la arquitectura del Mac.
+2. PostgreSQL 18 con sus herramientas `initdb`, `pg_ctl`, `pg_isready`, `createdb` y `psql`. Postgres.app o Homebrew son opciones para el entorno de desarrollo.
+3. Python 3.
+4. Los artefactos compilados del fork: `server.jar`, `logics.jar` y `client.war`.
+5. Tomcat 9.0.124. El supervisor lo descarga del sitio oficial de Apache y valida SHA-512 la primera vez, o utiliza una instalación ya preparada y configurada.
 
-```bash
-git pull --ff-only
-bash -n scripts/platform/prepare-mycompany-6.2.sh
-bash -n scripts/platform/deploy-mycompany-6.2.sh
-node --test scripts/platform/validate-mycompany-extension.test.mjs
-bash scripts/platform/test-deploy-mycompany-6.2.sh
-```
+No se necesita Docker Desktop ni Docker Compose para esta modalidad. Tampoco se debe instalar el servidor de lógica MyCompany desde una imagen Docker.
 
-Para descargar el JAR y el Compose oficial y verificar el SHA-256 del JAR:
+## Preparar y ejecutar el runtime nativo
 
-```bash
-bash scripts/platform/prepare-mycompany-6.2.sh
-```
-
-Este comando no ejecuta el instalador, no instala MyCompany y no inicia Docker. Si no querés descargar todavía los artefactos, omitilo: la CI macOS hace esa comprobación de manera independiente.
-
-Para revisar la arquitectura del equipo:
+Desde la raíz del repositorio, confirmar la arquitectura:
 
 ```bash
 uname -m
+java -version
 ```
 
-`arm64` identifica Apple Silicon; `x86_64` identifica Intel.
-
-## Probar Rubrova localmente en Apple Silicon
-
-La vista previa está preparada en `scripts/platform/run-local-preview-macos.sh`. Necesita Docker Desktop, Docker Compose 2.24.4 o superior y los tres artefactos compilados en `vendor/platform/server/target`, `vendor/mycompany/target` y `vendor/platform/web-client/target`. También instala Chromium/Playwright en una caché del usuario; no instala MyCompany en macOS ni modifica los módulos versionados.
-
-Desde la raíz del repositorio:
+Para Postgres.app, la ruta habitual de herramientas para PostgreSQL 18 es:
 
 ```bash
-git pull --ff-only
-bash scripts/platform/run-local-preview-macos.sh
+export RUBROVA_POSTGRES_BIN="/Applications/Postgres.app/Contents/Versions/18/bin"
 ```
 
-El script construye las imágenes propias desde tus artefactos, descarga y verifica el Compose oficial, despliega la extensión en una carpeta temporal, crea una base nueva con una caja y un producto sintéticos, ejecuta el recorrido de aceptación, reinicia servidor y cliente y comprueba la persistencia de factura, pago, caja, stock y turno cerrado. Si termina correctamente, deja los contenedores y la base encendidos para que puedas seguir probando en `http://127.0.0.1:8080`. La captura inicial queda en el Escritorio como `rubrova-local-preview.png`.
+Si utilizás Homebrew, indicá el directorio `bin` de `postgresql@18`. El supervisor no toma posesión de una instancia personal que ya esté corriendo: crea y utiliza un clúster propio bajo los datos de Rubrova, y sólo detiene PostgreSQL cuando él mismo lo inició.
 
-El usuario inicial de la base sintética es `admin` sin contraseña, sólo para esta prueba aislada. No cargues datos reales ni habilites acceso desde la LAN. El simulador HTTP de fallos se ejecuta como un contenedor dentro de la misma red Docker interna que el runtime; esa red no tiene salida a Internet y el puerto del simulador no se publica en el host. La prueba comprueba también que los servicios no queden conectados a otra red con salida externa. La preparación (descarga de Compose, imágenes base y dependencias) todavía puede requerir Internet; esta prueba demuestra aislamiento durante la ejecución, no una instalación inicial offline.
+Crear la configuración no instala servicios ni migra datos:
 
-Al terminar, el propio script imprime un comando único para detener los contenedores, borrar los volúmenes y eliminar la carpeta temporal. No lo ejecutes hasta terminar de probar. Si faltan artefactos compilados, el script imprime los dos comandos Maven necesarios para generarlos.
+```bash
+python3 scripts/platform/runtime-config.py init
+python3 scripts/platform/runtime-config.py validate
+```
 
-En Apple Silicon el arranque puede ser lento y sigue siendo emulado; esta prueba no certifica rendimiento, soporte nativo ni producción. En Mac Intel, el mismo script funciona sin emulación ARM64.
+Compilar el servidor, la lógica y el cliente web desde las fuentes vendorizadas:
+
+```bash
+mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
+mvn -B -ntp -f vendor/platform/pom.xml -pl server,web-client -am -DskipTests package
+```
+
+El build Maven puede necesitar Internet la primera vez para descargar dependencias. Después, revisar las herramientas y el Tomcat:
+
+```bash
+python3 scripts/platform/run-local-native-preview.py doctor
+```
+
+Iniciar el servidor, la base y el cliente web:
+
+```bash
+python3 scripts/platform/run-local-native-preview.py --no-open start
+```
+
+La URL local es `http://127.0.0.1:8080/`. Presioná Ctrl+C para cerrar los procesos. La base de datos se conserva para el siguiente inicio; no se borra ni se recrea en cada ejecución. Los logs se guardan en la carpeta local de datos de Rubrova.
+
+### Primer inicio e inicio offline
+
+Si Tomcat 9.0.124 todavía no está disponible en la caché o en la ruta configurada, la primera ejecución necesita Internet para descargarlo y verificar su SHA-512. También hacen falta los artefactos ya compilados y las dependencias Maven. Con Tomcat y los artefactos preparados, se puede impedir cualquier descarga durante el arranque:
+
+```bash
+python3 scripts/platform/run-local-native-preview.py --offline doctor
+python3 scripts/platform/run-local-native-preview.py --offline --no-open start
+```
+
+Esto demuestra el inicio sin descargar dependencias que falten; **no significa que el instalador completo ni la primera instalación estén todavía disponibles offline**. Esa entrega requiere empaquetar PostgreSQL, Java, Tomcat, recursos, dependencias y migraciones en un instalador firmado y probado en un equipo limpio.
+
+La base de esta vista previa es de desarrollo. No debe cargarse información comercial real ni exponerse a la LAN. El clúster usa autenticación `trust` sólo en loopback para el entorno local de pruebas; el instalador productivo deberá configurar SCRAM, guardar credenciales en Keychain y aplicar firewall/permisos apropiados.
+
+## Validación en CI y estado de aceptación
+
+La CI mantiene las validaciones de fuentes y scripts en Linux, Windows y macOS. El nuevo camino funcional se está pasando a un runner Linux nativo sin Docker: prepara Java 21, PostgreSQL 18 y Tomcat 9, inicia Rubrova con el supervisor, bloquea salida a Internet y comprueba login y navegación. El primer paso no valida todavía la venta, pagos, arqueo ni restauración en native; ese recorrido debe migrarse después desde los fixtures que ya se usaron en el smoke Docker.
+
+La aceptación comercial completa anterior se realizó en Docker y demostró venta por ARS 1.250, pago, factura, stock, caja y turno cerrado. No se debe confundir esa evidencia con la aceptación del runtime nativo.
+
+## Ruta Docker secundaria
+
+La vista previa `scripts/platform/run-local-preview-macos.sh` mantiene el camino Docker. Requiere Docker Desktop, Docker Compose 2.24.4 o superior y los artefactos compilados en `vendor/platform/server/target`, `vendor/mycompany/target` y `vendor/platform/web-client/target`. En Apple Silicon, el contenedor de lógica AMD64 se ejecuta por emulación; sirve como alternativa de comprobación, no como sustituto del runtime nativo.
+
+El smoke Docker se activa manualmente en GitHub Actions con `run_docker_smoke=true`. La prueba usa PostgreSQL y un simulador HTTP dentro de una red interna sin salida externa. Los escenarios HTTP se ejecutan contra el simulador local; ya no se necesita Toxiproxy como proxy de paso.
 
 ## Usar una MacBook como equipo cliente
 
-Cuando MyCompany esté instalado y asegurado en el equipo anfitrión, se podrá abrir su cliente web desde el navegador de la MacBook mediante la dirección local del servidor. El acceso debe limitarse a la red privada, con contraseña de administración cambiada y firewall configurado. La aceptación final debe comprobar Safari/Chrome, lector, impresora, cajón, balanza y terminal que realmente vayamos a utilizar.
-
-Esto permite trabajar desde Mac aunque el servidor POS/ERP esté alojado en un equipo Windows x64 o Linux compatible. No requiere que el proceso de base de datos ni el servidor de lógica se ejecuten dentro de macOS.
+Una Mac también puede utilizarse como puesto cliente si el servidor se encuentra en otro equipo de la LAN. El navegador accede a la URL del anfitrión; el acceso debe limitarse a la red privada, con contraseñas cambiadas y firewall configurado. La aceptación final debe comprobar Safari/Chrome, lector, impresora, cajón, balanza y terminal que realmente vayamos a utilizar.
 
 ## Qué falta antes de declarar compatibilidad completa
 
-1. Verificar el Compose fijado en futuros entornos y revisar los tags/digests de sus imágenes antes de iniciar contenedores.
-2. Instalar MyCompany 6.2 en un anfitrión x64 compatible y demostrar que carga `RubrovaCustom`, `RubrovaPOSLocalization` y `es_AR`.
-3. Probar el stack completo en Apple Silicon mediante emulación, o confirmar que la Mac se usará como cliente de un anfitrión x64.
-4. Aceptar la operación real en navegador y periféricos, incluidos reinicio, backup y restauración.
+1. Completar el smoke nativo en CI con la venta, conciliación y reinicio, no sólo login.
+2. Ejecutar el mismo supervisor en tu Mac Apple Silicon con Java 21 ARM64 y PostgreSQL 18 ARM64.
+3. Repetir la aceptación en Windows x64, incluida la gestión de procesos y rutas.
+4. Empaquetar e instalar en una PC limpia sin Internet; verificar firma, permisos, secretos, actualizaciones y backup/restore.
+5. Aceptar navegador y periféricos reales, incluidos reinicio, contingencias y restauración.
 
-Hasta completar esos puntos, macOS queda cubierto como entorno de desarrollo/validación y como equipo cliente previsto; no se declara un servidor MyCompany ARM64 nativo.
+Hasta completar esos puntos, el runtime nativo es un prototipo de desarrollo prometedor, no una instalación productiva aprobada.
