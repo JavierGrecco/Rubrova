@@ -13,7 +13,7 @@ El camino previsto para macOS es nativo:
 - Python 3 supervisa el arranque, comprueba los procesos/puertos y los detiene sin borrar la base.
 - Docker queda como una alternativa secundaria para verificar el empaquetado en contenedores; no es requisito para el runtime nativo.
 
-El primer supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. El smoke nativo se está incorporando a CI, pero todavía no hay una aceptación completa de venta sobre este runtime ni una certificación en tu Mac. No lo consideramos instalador final.
+El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. La CI ejecuta automáticamente un smoke nativo en `macos-26` ARM64 después de compilar los artefactos de la misma revisión. Esa prueba no equivale todavía a una aceptación comercial completa ni a una certificación en tu Mac. No lo consideramos instalador final.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -22,7 +22,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Es el objetivo del primer ensayo local; todavía no certificado |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Smoke nativo automático en CI; primera ejecución de esta revisión pendiente. La prueba en un Mac de usuario sigue pendiente |
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
@@ -98,7 +98,12 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 
 ## Validación en CI y estado de aceptación
 
-La CI mantiene las validaciones de fuentes y scripts en Linux, Windows y macOS. El nuevo camino funcional se está pasando a un runner Linux nativo sin Docker: prepara Java 21, PostgreSQL 18 y Tomcat 9, inicia Rubrova con el supervisor, bloquea salida a Internet y comprueba login y navegación. El primer paso no valida todavía la venta, pagos, arqueo ni restauración en native; ese recorrido debe migrarse después desde los fixtures que ya se usaron en el smoke Docker.
+La CI valida el código en Linux y Windows y, en cada push a `main` o pull request que afecta a la plataforma, ejecuta dos arranques nativos sin Docker a partir de los mismos JAR/WAR compilados desde ese SHA:
+
+- **Linux x86_64:** Java 21, PostgreSQL 18, Tomcat 9 y Chromium. Comprueba loopback y bloquea la salida externa mientras la interfaz local sigue respondiendo.
+- **macOS ARM64:** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64 instalado con Homebrew, Tomcat 9 y Chromium. Comprueba la arquitectura real, los procesos nativos, los puertos de RMI/PostgreSQL enlazados exclusivamente a `127.0.0.1`, el acceso web y la navegación.
+
+El smoke de macOS no bloquea todavía toda la salida externa; esa comprobación de aislamiento se mantiene en Linux. Ninguno de los dos smoke nativos valida aún venta, pagos, arqueo, devolución o restauración: esos recorridos deben migrarse desde los fixtures ya usados en el smoke Docker.
 
 La aceptación comercial completa anterior se realizó en Docker y demostró venta por ARS 1.250, pago, factura, stock, caja y turno cerrado. No se debe confundir esa evidencia con la aceptación del runtime nativo.
 
@@ -114,8 +119,8 @@ Una Mac también puede utilizarse como puesto cliente si el servidor se encuentr
 
 ## Qué falta antes de declarar compatibilidad completa
 
-1. Completar el smoke nativo en CI con la venta, conciliación y reinicio, no sólo login.
-2. Ejecutar el mismo supervisor en tu Mac Apple Silicon con Java 21 ARM64 y PostgreSQL 18 ARM64.
+1. Completar el smoke nativo en CI con la venta, conciliación y reinicio, no sólo login; el nuevo job ARM64 primero debe terminar su primera ejecución.
+2. Ejecutar el mismo supervisor en tu Mac Apple Silicon con Java 21 ARM64 y PostgreSQL 18 ARM64, y comparar los resultados con la evidencia de CI.
 3. Repetir la aceptación en Windows x64, incluida la gestión de procesos y rutas.
 4. Empaquetar e instalar en una PC limpia sin Internet; verificar firma, permisos, secretos, actualizaciones y backup/restore.
 5. Aceptar navegador y periféricos reales, incluidos reinicio, contingencias y restauración.

@@ -22,14 +22,16 @@ for artifact in server.jar logics.jar client.war; do
   }
 done
 
-if [[ "$(uname -s)" != "Linux" ]]; then
-  echo "Este smoke de CI usa Linux nativo. macOS ARM64 se validará en un job específico." >&2
-  exit 2
-fi
-[[ "$(uname -m)" == "x86_64" ]] || {
-  echo "El runner Linux de aceptación debe ser x86_64." >&2
-  exit 2
-}
+HOST_OS="$(uname -s)"
+HOST_ARCH="$(uname -m)"
+case "$HOST_OS:$HOST_ARCH" in
+  Linux:x86_64|Darwin:arm64)
+    ;;
+  *)
+    echo "Arquitectura no admitida para el smoke nativo: $HOST_OS/$HOST_ARCH (se requiere Linux x86_64 o macOS ARM64)." >&2
+    exit 2
+    ;;
+esac
 
 WORK_DIR="${RUBROVA_NATIVE_SMOKE_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/rubrova-native-smoke.XXXXXX")}"
 mkdir -p "$WORK_DIR"
@@ -42,7 +44,7 @@ export RUBROVA_RUNTIME_CONFIG_PATH="${RUBROVA_RUNTIME_CONFIG_PATH:-$WORK_DIR/run
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$WORK_DIR/config}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$WORK_DIR/data}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$WORK_DIR/cache}"
-NATIVE_DATA_ROOT="$XDG_DATA_HOME/Rubrova/native-preview"
+NATIVE_DATA_ROOT="$WORK_DIR/data/Rubrova/native-preview"
 DIAGNOSTICS_FILE="$WORK_DIR/native-diagnostics.log"
 
 collect_native_diagnostics() {
@@ -51,7 +53,7 @@ collect_native_diagnostics() {
     echo "NATIVE_DATA_ROOT=$NATIVE_DATA_ROOT"
     echo "--- Archivos relevantes del contexto ROOT ---"
     if [[ -d "$NATIVE_DATA_ROOT/runtime/tomcat-base/webapps" ]]; then
-      find "$NATIVE_DATA_ROOT/runtime/tomcat-base/webapps" -maxdepth 4 -type f \
+      find "$NATIVE_DATA_ROOT/runtime/tomcat-base/webapps" -type f \
         \( -name web.xml -o -name main.jsp -o -name login.jsp -o -name index.html \) -print | sort
     else
       echo "No existe webapps en el CATALINA_BASE esperado."
@@ -121,6 +123,18 @@ trap cleanup EXIT
 
 echo "1/5 Validando configuración y artefactos del runtime nativo"
 python3 "$SCRIPT_DIR/runtime-config.py" init
+python3 - "$RUBROVA_RUNTIME_CONFIG_PATH" "$NATIVE_DATA_ROOT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+data_directory = Path(sys.argv[2])
+config = json.loads(config_path.read_text(encoding="utf-8"))
+config["local_runtime"]["data_directory"] = str(data_directory)
+config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+print(f"Directorio temporal de datos del smoke: {data_directory}")
+PY
 python3 "$SCRIPT_DIR/runtime-config.py" validate
 
 echo "2/5 Iniciando PostgreSQL, lsFusion/MyCompany y Tomcat sin Docker"
@@ -153,27 +167,36 @@ grep -Fq "Servidor Rubrova y PostgreSQL están listos." "$LOG_FILE" || {
   echo "El supervisor no confirmó que el servidor hubiera terminado su inicialización." >&2
   exit 1
 }
-command -v ss >/dev/null 2>&1 || {
-  echo "Falta ss (iproute2) para verificar las interfaces de escucha." >&2
-  exit 2
-}
-RMI_LISTENERS="$(ss -H -ltn 'sport = :7652' || true)"
-printf 'RMI listeners:\n%s\n' "$RMI_LISTENERS"
+if [[ "$HOST_OS" == "Linux" ]]; then
+  command -v ss >/dev/null 2>&1 || {
+    echo "Falta ss (iproute2) para verificar las interfaces de escucha." >&2
+    exit 2
+  }
+  RMI_LISTENERS="$(ss -H -ltn 'sport = :7652' || true)"
+  PG_LISTENERS="$(ss -H -ltn 'sport = :55432' || true)"
+else
+  command -v lsof >/dev/null 2>&1 || {
+    echo "Falta lsof para verificar las interfaces de escucha en macOS." >&2
+    exit 2
+  }
+  RMI_LISTENERS="$(lsof -nP -iTCP:7652 -sTCP:LISTEN || true)"
+  PG_LISTENERS="$(lsof -nP -iTCP:55432 -sTCP:LISTEN || true)"
+fi
+printf 'RMI listeners:\\n%s\\n' "$RMI_LISTENERS"
 grep -Eq '127[.]0[.]0[.]1:7652([[:space:]]|$)' <<< "$RMI_LISTENERS" || {
   echo "RMI no quedó enlazado exclusivamente al loopback 127.0.0.1:7652." >&2
   exit 1
 }
-if grep -Eq '(0[.]0[.]0[.]0|\[::\]|\*):7652([[:space:]]|$)' <<< "$RMI_LISTENERS"; then
+if grep -Eq '(0[.]0[.]0[.]0|\\[::\\]|\\*):7652([[:space:]]|$)' <<< "$RMI_LISTENERS"; then
   echo "RMI quedó expuesto en una interfaz no local." >&2
   exit 1
 fi
-PG_LISTENERS="$(ss -H -ltn 'sport = :55432' || true)"
-printf 'PostgreSQL listeners:\n%s\n' "$PG_LISTENERS"
+printf 'PostgreSQL listeners:\\n%s\\n' "$PG_LISTENERS"
 grep -Eq '127[.]0[.]0[.]1:55432([[:space:]]|$)' <<< "$PG_LISTENERS" || {
   echo "PostgreSQL no quedó enlazado al loopback configurado." >&2
   exit 1
 }
-if grep -Eq '(0[.]0[.]0[.]0|\[::\]|\*):55432([[:space:]]|$)' <<< "$PG_LISTENERS"; then
+if grep -Eq '(0[.]0[.]0[.]0|\\[::\\]|\\*):55432([[:space:]]|$)' <<< "$PG_LISTENERS"; then
   echo "PostgreSQL quedó expuesto en una interfaz no local." >&2
   exit 1
 fi

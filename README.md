@@ -116,7 +116,7 @@ Una plataforma que reúne en un solo lugar:
 
 ## Compatibilidad con macOS
 
-Rubrova tendrá un runtime nativo en macOS: el JAR de servidor y el JAR de lógica se ejecutan sobre Java 21 ARM64, PostgreSQL debe ser nativo para la arquitectura del equipo y Tomcat sirve el WAR localmente. Esto evita la emulación de la imagen Docker AMD64 de MyCompany. El supervisor ya existe como prototipo; falta aceptación real en Apple Silicon y empaquetado para usuarios. Ver [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
+Rubrova tendrá un runtime nativo en macOS: el servidor Java y el cliente web se ejecutan en el equipo local, junto con PostgreSQL. Esto evita depender de la imagen Docker AMD64 de MyCompany. Cada cambio de plataforma ejecuta un smoke nativo sobre un runner Apple Silicon `macos-26` con Java 21 ARM64 y PostgreSQL 18 ARM64. Esa prueba de CI no reemplaza todavía la aceptación comercial completa ni la verificación en un Mac de usuario. Ver [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
 
 ## Etapa actual y próximos resultados
 

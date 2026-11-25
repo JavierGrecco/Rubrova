@@ -273,11 +273,17 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-build-fork-${{ github.ref }}"));
   assert.equal(
     (runtimeWorkflowSource.match(/cancel-in-progress: true/g) || []).length,
-    3,
-    "El build, el smoke nativo y el smoke Docker manual deben cancelar ejecuciones obsoletas."
+    4,
+    "El build, los dos smoke nativos y el smoke Docker manual deben cancelar ejecuciones obsoletas."
   );
   assert.doesNotMatch(runtimeWorkflowSource, /cancel-in-progress: false/);
   assert.match(runtimeWorkflowSource, /native-runtime-smoke:/);
+  assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
+  assert.match(runtimeWorkflowSource, /runs-on: macos-26/);
+  assert.match(runtimeWorkflowSource, /RUBROVA_POSTGRES_BIN=.*postgresql@18/);
+  assert.match(runtimeWorkflowSource, /python-version: "3[.]13"/);
+  assert.match(runtimeWorkflowSource, /RUBROVA_BLOCK_EGRESS: "false"/);
+  assert.doesNotMatch(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]validate_macos/);
   assert.match(runtimeWorkflowSource, /RUBROVA_BLOCK_EGRESS: "true"/);
   assert.match(runtimeWorkflowSource, /RUBROVA_POSTGRES_BIN: \/usr\/lib\/postgresql\/18\/bin/);
   assert.match(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]run_docker_smoke/);
@@ -298,12 +304,15 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(sourcePatch, /System[.]getProperty\("lsfusion[.]rmi[.]bindAddress"\)/);
   assert.match(sourcePatch, /new InetSocketAddress\(InetAddress[.]getByName/);
   assert.match(nativeSmokeSource, /RMI_LISTENERS=.*ss -H -ltn/);
+  assert.match(nativeSmokeSource, /lsof -nP -iTCP:7652 -sTCP:LISTEN/);
+  assert.match(nativeSmokeSource, /Linux:x86_64\\|Darwin:arm64/);
+  assert.match(nativeSmokeSource, /config\\["local_runtime"\\]\\["data_directory"\\]/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RMI_LOOPBACK=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POSTGRES_LOOPBACK=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EXTERNAL_CONNECTIVITY=blocked/);
   assert.equal(
     (runtimeWorkflowSource.match(/CHECKED_OUT_SHA=/g) || []).length,
-    2,
+    3,
     "Build y smoke deben registrar y verificar el SHA exacto del checkout."
   );
 

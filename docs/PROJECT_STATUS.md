@@ -5,7 +5,7 @@
 **Última comprobación de plataforma anterior a este cambio:** [CI 45521425830](https://github.com/JavierGrecco/Rubrova/actions/runs/45521425830). Validación estática, compilación y Windows pasaron; el smoke nativo falla porque Tomcat devuelve 404 también en `/login`. El inicio de lsFusion y la carga de lógica sí terminan. La causa del 404 sigue abierta. 
 **Última aceptación funcional completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218)  
 **Commit funcional aceptado:** `e23acfc7bb3387ebd184b1aeed9e80c8994593c5`  
-**Transición a runtime nativo:** workflow de CI actualizado para compilar las mismas fuentes y probar PostgreSQL 18 + Java 21 + Tomcat 9 sin Docker. La aceptación nativa completa está pendiente; no hay todavía un resultado de venta nativa ni una aceptación en Mac/Windows.
+**Transición a runtime nativo:** Linux x86_64 ya tiene el smoke nativo; esta revisión incorpora también un smoke automático en macOS ARM64 usando `macos-26` y PostgreSQL 18 ARM64. La primera ejecución de ese nuevo job todavía debe aportar evidencia. No hay todavía un resultado de venta nativa ni una aceptación de uso diario en Mac/Windows.
 
 ## Resumen ejecutivo
 
@@ -42,10 +42,10 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
 | Runtime durante una caída de Internet | En validación nativa | El workflow nuevo bloquea la salida externa y comprueba que el servidor y la UI sigan respondiendo por loopback; falta que la ejecución completa termine correctamente |
 | Instalación inicial y paquete completo sin Internet | Pendiente | La prueba de runtime aislado no demuestra todavía que el instalador, los artefactos, las imágenes base y las dependencias puedan instalarse en una PC limpia sin conexión |
-| Ejecución local nativa sin Docker | Prototipo implementado; aceptación pendiente | Supervisor Python, instancia PostgreSQL propia, servidor `BusinessLogicsBootstrap`, cliente Tomcat y pruebas unitarias; el smoke nativo de CI está incorporado pero todavía no hay aceptación de venta nativa ni prueba en Mac/Windows |
+| Ejecución local nativa sin Docker | Prototipo implementado; aceptación pendiente | Supervisor Python, instancia PostgreSQL propia, servidor `BusinessLogicsBootstrap` y cliente Tomcat. CI ejecuta smoke de arranque en Linux x86_64 y, desde esta revisión, también en macOS ARM64; aún falta aceptar venta, pagos, stock, cierre y reinicio en ambos runtimes |
 | Configuración siempre disponible | En desarrollo inicial | Existe el esquema y el gestor CLI para `native-local`, `docker-local` y `remote-online`; falta el panel visual independiente y su integración con la administración del POS |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
-| Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
+| Windows y macOS ARM64 | Parcial | Windows: PowerShell pasa análisis sintáctico. macOS ARM64: job nativo automático agregado sobre runner Apple Silicon `macos-26`; primera ejecución pendiente. No equivale todavía a aceptación en un Mac de usuario ni a venta nativa |
 | ARCA, terminales/adquirentes, marketplaces y logística | Pendiente | La arquitectura y la base de configuración de terminales están documentadas; no hay adaptador bancario productivo ni homologación física. Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
 
 ## Terminales de pago
@@ -78,7 +78,7 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 
 ## Próximo orden de implementación
 
-1. **Aceptar el runtime nativo:** ejecutar el smoke CI sin Docker hasta completar login, menú y persistencia inicial; a continuación reutilizar el fixture comercial para venta, cobro, stock, cierre y reinicio con PostgreSQL local.
+1. **Aceptar el runtime nativo en Linux y Apple Silicon:** lograr que ambos smoke automáticos completen login, menú y persistencia inicial; a continuación reutilizar el fixture comercial para venta, cobro, stock, cierre y reinicio con PostgreSQL local.
 2. **Completar la aceptación comercial en nativo:** mover los fixtures sintéticos al harness compartido y repetir venta, pagos, caja, stock, cierre, reinicio y conciliación.
 3. **Completar caja y pagos:** arqueo contado, diferencias, ingresos/retiros, vuelto, pagos mixtos, tarjeta y cancelación.
 4. **Persistencia y recuperación:** reiniciar servidor y cliente sin borrar PostgreSQL y repetir consultas de factura, pago, turno y ledger. Probar además backup/restore y rollback sobre copias.
