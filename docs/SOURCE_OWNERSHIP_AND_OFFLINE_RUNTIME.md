@@ -50,15 +50,17 @@ No se aceptará como producto final un Dockerfile que use ADD con una URL remota
 
 El proyecto utiliza Maven y bibliotecas/plugins de terceros. No sería honesto afirmar que incorporar las fuentes elimina toda dependencia técnica. La solución correcta es fijar cada dependencia, auditar su licencia, resolverla una vez, conservar sus artefactos en un repositorio Maven local y probar una recompilación con mvn -o. Las dependencias de ejecución quedarán dentro de los JAR/WAR o imágenes Rubrova; no se descargarán al abrir el POS.
 
-El primer build desde fuentes está pendiente hasta que CI compile ambos proyectos desde vendor/. El build offline está pendiente hasta que compile sin acceso a repositorios remotos usando sólo el repositorio local preparado.
+El build desde las fuentes vendorizadas ya se ejecuta en CI y produce el servidor, la lógica MyCompany y el WAR del cliente desde el reactor Rubrova. Esto prueba que no necesitamos descargar JAR/WAR upstream para compilar el runtime. La compilación offline de Maven sigue pendiente: falta preparar y verificar el repositorio local de dependencias y repetir el build con `mvn -o` y salida de red bloqueada.
 
 ## 5. Ejecución local aislada de Internet
 
-El objetivo operativo es una PC. En ella se ejecutará un conjunto local: aplicación Rubrova y servidor propio; motor MyCompany/lsFusion compilado desde nuestras fuentes; PostgreSQL local y persistente; cliente web y todos sus CSS, JavaScript, fuentes, imágenes e informes; servicios auxiliares estrictamente necesarios, también locales.
+El objetivo operativo es una PC. El camino principal no usa Docker: un supervisor local inicia el servidor lsFusion/MyCompany, PostgreSQL 18 y Tomcat. La lógica y el servidor se ejecutan como JAR en Java 21; el cliente web se despliega desde el WAR. La carpeta de datos y los logs pertenecen a Rubrova. El primer prototipo está en `scripts/platform/run-local-native-preview.py` y ya tiene pruebas unitarias para arranque, aislamiento de PostgreSQL, versión Tomcat y configuración del cliente.
 
-Para el paquete Docker, los contenedores se construirán antes de instalar y se entregarán en un archivo de imágenes cargable en la PC. El Compose utilizará pull_policy: never; la prueba de aceptación usará una red Docker interna sin salida a Internet y verificará que la interfaz siga abriendo desde el navegador local.
+La ruta nativa necesita que Java 21, PostgreSQL 18, Tomcat 9.0.124, los JAR/WAR y los recursos estén disponibles localmente. El supervisor verifica Tomcat al descargarlo por primera vez, y puede ejecutarse en modo `--offline` cuando los artefactos y las dependencias ya están preparados. Sin embargo, **el paquete de instalación autónomo aún no existe** y la instalación inicial offline no está aceptada.
 
-La instalación inicial del sistema operativo o Docker puede ser una preparación del equipo. Una vez instalado Rubrova y cargadas las imágenes, la aplicación no debe consultar registros de contenedores ni repositorios Maven.
+Docker se conserva como modo secundario para comprobar empaquetado e aislamiento. Sus imágenes se construyen antes de instalar y pueden entregarse como un archivo cargable, con `pull_policy: never`. La prueba Docker no debe ser requisito para cada cambio funcional ni para iniciar el POS nativo.
+
+La aplicación debe continuar funcionando sin conexión a repositorios Maven, registros de contenedores o servicios externos una vez instalado Rubrova. Internet queda reservado para preparar por primera vez dependencias, actualizaciones controladas y proveedores que operan realmente en la nube.
 
 ## 6. Qué sí puede necesitar Internet
 
@@ -104,7 +106,7 @@ No incorporaremos una segunda suite ERP completa sólo para extraer una pantalla
 - [ ] Backup y restauración se prueban sin depender de un proveedor externo.
 - [ ] Se conserva el paquete estable anterior y se demuestra la recuperación.
 
-**Estado actual:** se fijaron las fuentes y se añadió la automatización para incorporarlas a main. La importación completa, el build desde fuentes, el paquete offline y la prueba real en PC son hitos distintos; no se declaran aprobados por haber escrito esta estrategia.
+**Estado actual:** las fuentes completas están vendorizadas y fijadas; el build de servidor, MyCompany y cliente desde esas fuentes ya se ejecuta en CI. Existe un supervisor nativo inicial y las pruebas unitarias de sus protecciones pasan. La aceptación de una venta completa sobre el runtime nativo, el build Maven offline, el instalador autónomo, la prueba en PC limpia y la restauración siguen pendientes.
 
 ## Referencias de origen
 
