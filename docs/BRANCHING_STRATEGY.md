@@ -9,7 +9,7 @@ Mantener una única línea de desarrollo fácil de revisar, probar, ejecutar loc
 
 ## Reglas operativas
 
-1. **`main` es la fuente de verdad.** Debe contener el último estado integrado y validado. No se desarrolla directamente sobre `main`.
+1. **`main` es la fuente de verdad.** Debe contener el último estado integrado y validado. El código funcional se desarrolla en una rama y entra por PR; sólo se permiten commits directos excepcionales para documentación de gobernanza y mantenimiento administrativo del repositorio, sin alterar código de aplicación.
 2. **Máximo dos ramas de trabajo activas en simultáneo.** Preferentemente una sola rama de funcionalidad. La segunda se reserva para una corrección urgente e independiente; no se crean ramas auxiliares por cada commit o ajuste.
 3. **Cada rama nace del `main` actualizado.** Antes de crearla se sincroniza `main`; no se apilan ramas de funcionalidades dependientes ni se abren PR encadenados.
 4. **Un PR por unidad coherente de trabajo.** Debe indicar objetivo, alcance, riesgos, pruebas ejecutadas, resultado y limitaciones conocidas. Los cambios deben apuntar directamente a `main`.
