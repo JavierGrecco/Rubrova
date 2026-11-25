@@ -57,9 +57,9 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                     (OVERRIDE Inventory.inQuantity(l, p), 0) (-) (OVERRIDE Inventory.outQuantity(l, p), 0))
                 (-) (OVERRIDE Inventory.planned(l, p), 0))
             WHERE Inventory.active(l) AND MasterData.active(p)
-                AND (Inventory.inQuantity(l, p) <> 0 OR Inventory.outQuantity(l, p) <> 0
-                    OR Inventory.reserved(l, p) <> 0 OR Inventory.planned(l, p) <> 0
-                    OR Inventory.expected(l, p) <> 0)
+                AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                    OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                    OR Inventory.expected(l, p) != 0)
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
