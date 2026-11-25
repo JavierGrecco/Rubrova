@@ -63,27 +63,26 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
-            sourceLineId = CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', BPSTRING[10](Sales.index(Sales.OrderLine ol)),
-            sourceDocumentId = Sales.number(Sales.order(Sales.OrderLine ol)),
-            sourceDocumentNumber = Sales.number(Sales.order(Sales.OrderLine ol)),
-            productId = MasterData.id(Sales.shippedProduct(Sales.OrderLine ol)),
-            productName = MasterData.name(Sales.shippedProduct(Sales.OrderLine ol)),
-            locationId = Inventory.id(Sales.location(Sales.order(Sales.OrderLine ol))),
-            locationName = Inventory.name(Sales.location(Sales.order(Sales.OrderLine ol))),
-            openQuantity = Sales.toShip(Sales.OrderLine ol),
+            sourceLineId = CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', BPSTRING[10](Sales.index(ol)),
+            sourceDocumentId = Sales.number(Sales.order(ol)),
+            sourceDocumentNumber = Sales.number(Sales.order(ol)),
+            productId = MasterData.id(Sales.shippedProduct(ol)),
+            productName = MasterData.name(Sales.shippedProduct(ol)),
+            locationId = Inventory.id(Sales.location(Sales.order(ol))),
+            locationName = Inventory.name(Sales.location(Sales.order(ol))),
+            openQuantity = Sales.toShip(ol),
             effectiveReserved = (OVERRIDE
                 (GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
                     IF Sales.orderLine(Inventory.line(rr)) = ol),
                 0),
-            scheduledDateTime = Sales.scheduledDateTime(Sales.order(Sales.OrderLine ol)),
-            scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(Sales.OrderLine ol))),
+            scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol)),
+            scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
             status = 'confirmed'
-            WHERE Sales.confirmed(Sales.order(Sales.OrderLine ol))
-                AND Sales.toShip(Sales.OrderLine ol) > 0
-                AND Sales.location(Sales.order(Sales.OrderLine ol))
-                AND Sales.shippedProduct(Sales.OrderLine ol) IS MasterData.Product
-            ORDER Sales.scheduledDateTime(Sales.order(Sales.OrderLine ol)), Sales.number(Sales.order(Sales.OrderLine ol)), Sales.index(Sales.OrderLine ol)
-        ),
+            WHERE Sales.confirmed(Sales.order(ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product
+            ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
         receipts = (JSON FROM
             lineId = CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', BPSTRING[10](Inventory.index(Inventory.line(rr))),
             receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
