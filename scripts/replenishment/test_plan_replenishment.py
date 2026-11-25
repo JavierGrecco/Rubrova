@@ -67,7 +67,8 @@ class ReplenishmentPlannerTests(unittest.TestCase):
         self.assertEqual(result["status"], "EXPEDITE_REQUIRED")
         self.assertEqual(result["reason"], "PROJECTED_SHORTAGE_BEFORE_NEW_SUPPLY")
         self.assertTrue(result["stockoutBeforeReplenishment"])
-        self.assertEqual(result["minimumProjectedStockBeforeReceiptsMilli"], -1000)
+        self.assertEqual(result["minimumProjectedStockBeforeReceiptsMilli"], -6000)
+        self.assertEqual(result["minimumProjectedStockBeforeNewSupplyMilli"], -1000)
         self.assertEqual(result["recommendedOrderQtyMilli"], 8000)
 
     def test_forecast_history_below_minimum_suppresses_purchase_suggestion(self) -> None:
