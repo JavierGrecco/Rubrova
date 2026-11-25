@@ -37,6 +37,8 @@ WORK_DIR="$(mktemp -d "$WORK_PARENT/rubrova-runtime.XXXXXX")"
 CACHE_DIR="${RUBROVA_CACHE_DIR:-$WORK_DIR/cache}"
 COMPOSE_DIR="$WORK_DIR/mycompany-6.2"
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-rubrova-smoke-${GITHUB_RUN_ID:-local}}"
+INGRESS_NETWORK="$PROJECT_NAME"_ingress
+RUNTIME_NETWORK="$PROJECT_NAME"_default
 COMPOSE_FILE="$COMPOSE_DIR/compose.yaml"
 EXTENSION_OVERRIDE_FILE="$COMPOSE_DIR/compose.rubrova.override.yaml"
 IMAGE_OVERRIDE_FILE="$COMPOSE_DIR/compose.images.override.yaml"
@@ -102,6 +104,72 @@ show_client_tomcat_logs() {
   ' >&2 || true
 }
 
+
+diagnose_client_web_connectivity() {
+  local client_container client_ip
+  client_container="$(compose ps -a -q client 2>/dev/null | head -n 1)"
+  if [[ -z "$client_container" ]]; then
+    echo "No hay contenedor cliente para inspeccionar." >&2
+    return 0
+  fi
+
+  client_ip="$(docker inspect --format "{{with index .NetworkSettings.Networks \"$INGRESS_NETWORK\"}}{{.IPAddress}}{{end}}" "$client_container" 2>/dev/null || true)"
+  echo "=== Diagnóstico de conectividad del cliente web ===" >&2
+  docker inspect --format 'HostConfig.PortBindings={{json .HostConfig.PortBindings}} NetworkSettings.Ports={{json .NetworkSettings.Ports}} Networks={{json .NetworkSettings.Networks}}' "$client_container" >&2 || true
+  docker port "$client_container" 8080/tcp >&2 || true
+
+  echo "--- Socket TCP 8080 dentro del contenedor (puerto hexadecimal 1F90) ---" >&2
+  docker exec "$client_container" sh -c '
+    for socket_table in /proc/net/tcp /proc/net/tcp6; do
+      [ -r "$socket_table" ] || continue
+      awk '\''NR == 1 || (toupper($2) ~ /:1F90$/ && $4 == "0A") { print }'\'' "$socket_table"
+    done
+  ' >&2 || true
+
+  if docker exec "$client_container" sh -c 'command -v jshell >/dev/null 2>&1'; then
+    echo "--- HTTP desde dentro del contenedor (loopback e IP Docker) ---" >&2
+    docker exec -i -e RUBROVA_CLIENT_IP="$client_ip" "$client_container" jshell --feedback concise <<'JAVA' >&2 || true
+import java.net.HttpURLConnection;
+import java.net.Proxy;
+import java.net.URL;
+String ip = System.getenv("RUBROVA_CLIENT_IP");
+String[] endpoints = new String[] {
+    "http://127.0.0.1:8080/login",
+    ip == null || ip.isBlank() ? "" : "http://" + ip + ":8080/login"
+};
+for (String endpoint : endpoints) {
+    if (endpoint.isBlank()) continue;
+    try {
+        HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection(Proxy.NO_PROXY);
+        connection.setConnectTimeout(3000);
+        connection.setReadTimeout(3000);
+        connection.setInstanceFollowRedirects(false);
+        System.out.println("CLIENT_INTERNAL_HTTP " + endpoint + " => " + connection.getResponseCode());
+        connection.disconnect();
+    } catch (Exception error) {
+        System.out.println("CLIENT_INTERNAL_HTTP " + endpoint + " => " + error.getClass().getSimpleName() + ": " + error.getMessage());
+    }
+}
+/exit
+JAVA
+  else
+    echo "JShell no está disponible en la imagen cliente; se conserva el diagnóstico de sockets." >&2
+  fi
+
+  echo "--- Listener publicado en el host ---" >&2
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnp 2>/dev/null | grep -E '(:8080[[:space:]]|:8080$)' >&2 || true
+  else
+    echo "ss no está instalado en el host." >&2
+  fi
+  echo "--- Variables de proxy presentes en el runner (sólo nombres) ---" >&2
+  env | cut -d= -f1 | grep -i 'proxy' >&2 || true
+  echo "--- Prueba HTTP directa desde el host, sin proxy ---" >&2
+  curl --verbose --noproxy '*' --silent --show-error --output /dev/null \
+    --write-out 'HOST_HTTP_STATUS=%{http_code} CONNECT_SECONDS=%{time_connect} TOTAL_SECONDS=%{time_total}\n' \
+    --connect-timeout 3 --max-time 8 "$WEB_URL" >&2 || true
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT
@@ -112,6 +180,8 @@ cleanup() {
       compose ps --all >&2
       echo "=== Últimos registros de MyCompany ===" >&2
       compose logs --no-color --tail=180 >&2
+      echo "=== Diagnóstico de conectividad del cliente web ===" >&2
+      diagnose_client_web_connectivity
       echo "=== Logs internos de Tomcat (cliente web) ===" >&2
       show_client_tomcat_logs
     fi
@@ -215,7 +285,10 @@ services:
         condition: service_healthy
     image: $CLIENT_IMAGE
     platform: linux/amd64
-    # Replace the upstream wildcard publication; expose only to this host.
+    networks:
+      - default
+      - ingress
+    # Publish through the non-internal ingress bridge, bound only to loopback.
     ports: !override
       - "127.0.0.1:8080:8080"
     pull_policy: never
@@ -235,8 +308,16 @@ services:
     platform: linux/amd64
     pull_policy: never
 networks:
+  # Database, logic and application communication stays on an isolated network.
   default:
     internal: true
+  # Tomcat needs a bridge with host-facing port publication. Disable outbound NAT
+  # and verify egress from the client container before accepting this topology.
+  ingress:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
+      com.docker.network.bridge.enable_ip_masquerade: "false"
 YAML
 
 grep -qx 'logics.topModule = RubrovaCustom' "$SETTINGS_FILE" || {
@@ -652,24 +733,43 @@ if actual != expected:
     )
 PY
 echo "RUBROVA_CLIENT_LOOPBACK_BINDING=127.0.0.1:8080"
+EFFECTIVE_CLIENT_PORT="$(docker port "$CLIENT_CONTAINER_ID" 8080/tcp 2>/dev/null | tr -d '\r' | sort -u)"
+if [[ "$EFFECTIVE_CLIENT_PORT" != "127.0.0.1:8080" ]]; then
+  echo "Docker no activó la publicación efectiva del cliente en 127.0.0.1:8080." >&2
+  printf 'Docker port reportó: %s\n' "$EFFECTIVE_CLIENT_PORT" >&2
+  exit 1
+fi
+echo "RUBROVA_CLIENT_PUBLISHED_PORT=127.0.0.1:8080"
 
-echo "4.0/7 Verificando que todo el runtime quedó en una red interna sin salida a Internet."
+echo "4.0/7 Verificando redes privada e ingress sin NAT de salida."
+RUNTIME_NETWORK="$PROJECT_NAME"_default
+INGRESS_NETWORK="$PROJECT_NAME"_ingress
 SERVER_CONTAINER_ID="$(compose ps -a -q server | head -n 1)"
 [[ -n "$SERVER_CONTAINER_ID" ]] || {
   echo "No se encontró el contenedor server para comprobar el aislamiento de red." >&2
   exit 1
 }
-RUNTIME_NETWORK="$(docker inspect --format '{{range $name, $config := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$SERVER_CONTAINER_ID" | head -n 1)"
-[[ -n "$RUNTIME_NETWORK" ]] || {
-  echo "El servidor no quedó conectado a una red Docker." >&2
+[[ "$(docker network inspect --format '{{.Internal}}' "$RUNTIME_NETWORK")" == "true" ]] || {
+  echo "La red privada del runtime debe permanecer internal=true." >&2
   exit 1
 }
-RUNTIME_NETWORK_INTERNAL="$(docker network inspect --format '{{.Internal}}' "$RUNTIME_NETWORK")"
-[[ "$RUNTIME_NETWORK_INTERNAL" == "true" ]] || {
-  echo "La red del runtime no está marcada como interna; no se acepta como prueba offline." >&2
+[[ "$(docker network inspect --format '{{.Internal}}' "$INGRESS_NETWORK")" == "false" ]] || {
+  echo "La red ingress debe ser una bridge normal para publicar el puerto web." >&2
   exit 1
 }
-for service_name in db logics server client mock-provider; do
+[[ "$(docker network inspect --format '{{.Driver}}' "$INGRESS_NETWORK")" == "bridge" ]] || {
+  echo "La red ingress no usa el driver bridge esperado." >&2
+  exit 1
+}
+INGRESS_MASQUERADE="$(docker network inspect --format '{{index .Options "com.docker.network.bridge.enable_ip_masquerade"}}' "$INGRESS_NETWORK")"
+INGRESS_HOST_BINDING="$(docker network inspect --format '{{index .Options "com.docker.network.bridge.host_binding_ipv4"}}' "$INGRESS_NETWORK")"
+[[ "$INGRESS_MASQUERADE" == "false" && "$INGRESS_HOST_BINDING" == "127.0.0.1" ]] || {
+  echo "La red ingress debe deshabilitar NAT de salida y enlazar publicaciones al loopback." >&2
+  printf 'enable_ip_masquerade=%s host_binding_ipv4=%s\n' "$INGRESS_MASQUERADE" "$INGRESS_HOST_BINDING" >&2
+  exit 1
+}
+
+for service_name in db logics server mock-provider; do
   service_container="$(compose ps -a -q "$service_name" | head -n 1)"
   [[ -n "$service_container" ]] || {
     echo "Falta el contenedor del servicio $service_name en la prueba offline." >&2
@@ -678,15 +778,46 @@ for service_name in db logics server client mock-provider; do
   service_networks="$(docker inspect --format '{{range $name, $config := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$service_container")"
   service_network_count="$(docker inspect --format '{{len .NetworkSettings.Networks}}' "$service_container")"
   if [[ "$service_network_count" != "1" ]] || ! grep -Fxq "$RUNTIME_NETWORK" <<< "$service_networks"; then
-    echo "El servicio $service_name no está confinado exclusivamente a la red interna $RUNTIME_NETWORK." >&2
+    echo "El servicio $service_name debe permanecer exclusivamente en la red privada $RUNTIME_NETWORK." >&2
     printf '%s\n' "$service_networks" >&2
     exit 1
   fi
 done
+
+CLIENT_NETWORKS="$(docker inspect --format '{{range $name, $config := .NetworkSettings.Networks}}{{println $name}}{{end}}' "$CLIENT_CONTAINER_ID")"
+CLIENT_NETWORK_COUNT="$(docker inspect --format '{{len .NetworkSettings.Networks}}' "$CLIENT_CONTAINER_ID")"
+if [[ "$CLIENT_NETWORK_COUNT" != "2" ]] || ! grep -Fxq "$RUNTIME_NETWORK" <<< "$CLIENT_NETWORKS" || ! grep -Fxq "$INGRESS_NETWORK" <<< "$CLIENT_NETWORKS"; then
+  echo "El cliente debe conectar a la red privada y a la red ingress, sin redes adicionales." >&2
+  printf '%s\n' "$CLIENT_NETWORKS" >&2
+  exit 1
+fi
+
+echo "Comprobando que el cliente no pueda abrir conexiones TCP hacia Internet."
+EGRESS_PROBE_OUTPUT="$(docker exec -i "$CLIENT_CONTAINER_ID" jshell --feedback concise 2>&1 <<'JAVA' || true
+import java.net.*;
+boolean reachable = false;
+try (Socket socket = new Socket()) {
+    socket.connect(new InetSocketAddress("1.1.1.1", 443), 2500);
+    reachable = true;
+} catch (Exception ignored) {
+}
+System.out.println("RUBROVA_CLIENT_EXTERNAL_EGRESS=" + (reachable ? "reachable" : "blocked"));
+if (reachable) System.exit(23);
+/exit
+JAVA
+)"
+if ! grep -Fq "RUBROVA_CLIENT_EXTERNAL_EGRESS=blocked" <<< "$EGRESS_PROBE_OUTPUT"; then
+  echo "El cliente web conserva salida TCP hacia un destino público; no se acepta como prueba offline." >&2
+  printf '%s\n' "$EGRESS_PROBE_OUTPUT" >&2
+  exit 1
+fi
+
 printf 'RUBROVA_RUNTIME_NETWORK=%s\n' "$RUNTIME_NETWORK"
+printf 'RUBROVA_INGRESS_NETWORK=%s\n' "$INGRESS_NETWORK"
 echo "RUBROVA_RUNTIME_NETWORK_INTERNAL=true"
+echo "RUBROVA_INGRESS_EGRESS_MASQUERADE=false"
 echo "RUBROVA_RUNTIME_EXTERNAL_EGRESS=blocked"
-echo "PostgreSQL, servidor, lógica, cliente y simulador sólo se comunican por la red interna."
+echo "PostgreSQL, lógica, servidor y simulador siguen sólo en la red privada; Tomcat publica en loopback por ingress sin NAT de salida."
 
 echo "4.0.1/7 Comprobando la ubicación y persistencia de PostgreSQL 18"
 DB_CONTAINER_ID="$(compose ps -q db)"
@@ -813,6 +944,8 @@ EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 5))
 MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
+HTTP_DIAGNOSTIC_GRACE_SECONDS="${RUBROVA_HTTP_DIAGNOSTIC_GRACE_SECONDS:-180}"
+MODULES_READY_AT=-1
 while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
   if (( SECONDS % 10 < 5 )); then
     STARTUP_LOGS="$(compose logs --no-color --tail=100 server 2>/dev/null || true)"
@@ -822,7 +955,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
       exit 1
     fi
   fi
-  HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
+  HTTP_STATUS="$(curl --noproxy '*' --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
   if [[ "$HTTP_STATUS" == "404" ]]; then
     CLIENT_STARTUP_LOGS="$(compose logs --no-color --tail=100 client 2>/dev/null || true)"
     if grep -Eiq 'One or more listeners failed to start|startup failed due to previous errors' <<< "$CLIENT_STARTUP_LOGS"; then
@@ -849,6 +982,18 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
       echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 4 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
       exit 1
     fi
+  fi
+
+  if [[ "$ALL_MODULES_READY" == "true" ]]; then
+    if (( MODULES_READY_AT < 0 )); then MODULES_READY_AT=$SECONDS; fi
+    if [[ "$HTTP_STATUS" == "000" ]] && (( SECONDS - MODULES_READY_AT >= HTTP_DIAGNOSTIC_GRACE_SECONDS )); then
+      if docker exec "$CLIENT_CONTAINER_ID" sh -c 'awk '\''NR > 1 && toupper($2) ~ /:1F90$/ && $4 == "0A" { found = 1 } END { exit !found }'\'' /proc/net/tcp /proc/net/tcp6 2>/dev/null' >/dev/null 2>&1; then
+        echo "Tomcat escucha en 8080 dentro del contenedor y la lógica terminó de cargar, pero el host no recibe HTTP tras ${HTTP_DIAGNOSTIC_GRACE_SECONDS}s. Se cancela la espera extendida para conservar evidencia de red." >&2
+        exit 1
+      fi
+    fi
+  else
+    MODULES_READY_AT=-1
   fi
 
   if [[ "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ && "$ALL_MODULES_READY" == "true" ]]; then
