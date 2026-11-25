@@ -38,11 +38,14 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             physicalIncoming = Inventory.inQuantity(l, p),
             physicalOutgoing = Inventory.outQuantity(l, p),
             onHand = Inventory.onHand(l, p),
+            grossReserved = Inventory.reserved(l, p),
             plannedNetReservation = Inventory.planned(l, p),
             expectedInbound = Inventory.expected(l, p),
             available = Inventory.available(l, p)
             WHERE Inventory.active(l) AND MasterData.active(p)
-                AND (Inventory.inQuantity(l, p) OR Inventory.outQuantity(l, p) OR Inventory.planned(l, p))
+                AND (Inventory.inQuantity(l, p) <> 0 OR Inventory.outQuantity(l, p) <> 0
+                    OR Inventory.reserved(l, p) <> 0 OR Inventory.planned(l, p) <> 0
+                    OR Inventory.expected(l, p) <> 0)
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
@@ -54,7 +57,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationId = Inventory.id(Sales.location(Sales.order(ol))),
             locationName = Inventory.name(Sales.location(Sales.order(ol))),
             openQuantity = Sales.toShip(ol),
-            effectiveReserved = GROUP SUM Inventory.reserved(Inventory.ShipmentResLedger rr)
+            effectiveReserved = GROUP SUM Inventory.lineReserved(Inventory.line(rr))
                 IF Sales.orderLine(Inventory.line(rr)) = ol,
             scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
             status = 'confirmed'
