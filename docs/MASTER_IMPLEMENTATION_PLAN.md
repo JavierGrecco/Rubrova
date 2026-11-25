@@ -1,8 +1,13 @@
 # Plan maestro de implementación de Rubrova
 
-**Revisión:** 24 de noviembre de 2026  
-**Estado:** MyCompany 6.2 + lsFusion 6.2 fijados y vendorizados como primer piloto integrado; Tryton 8.0 + tryton-ar 8.0 se conserva como contraste fiscal argentino.  
-**Estado real del software:** Rubrova compila desde sus fuentes propias el servidor, cliente web y lógica MyCompany; CI construye imágenes propias y las ejecuta en Linux x86_64. El run [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) aceptó una venta de ARS 1.250 en efectivo, factura/pago persistidos, salida de stock y cierre básico del turno. La prueba fue sintética y descartable; no existe aún aceptación para operar en una instalación productiva. Siguen pendientes devoluciones, reintegros, movimientos/arqueo de caja, pagos mixtos/vuelto, reinicio, instalación offline y backup/restore.
+**Revisión:** 25 de noviembre de 2026  
+**Base técnica:** MyCompany 6.2 + lsFusion 6.2, con fuentes completas fijadas en el repositorio; Tryton 8.0 + tryton-ar 8.0 se conserva como contraste fiscal argentino, no como segundo núcleo operativo.
+
+**Estado real:** el fork compila servidor, cliente web y lógica desde fuentes propias. Un ciclo POS básico con datos sintéticos fue aceptado anteriormente en CI ([45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959)); no existe todavía aceptación para uso productivo. El camino principal de desarrollo local es el runtime nativo con Java 21, PostgreSQL 18 y Tomcat 9.
+
+**Hito activo:** PR #8 agrega una exportación autenticada de reposición, estrictamente de solo lectura. La compilación y la suite del planificador aprobaron; el último smoke completado inició el runtime nativo y permitió login, pero la acción de exportación devolvió HTTP 500 por una operación de conjuntos incorrecta. La corrección de los identificadores de línea está en CI ([45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906)). El PR no está fusionado y no debe tratarse como aceptado.
+
+**Límites pendientes:** devoluciones/reintegros, arqueo y movimientos de caja completos, vuelto y pagos mixtos, integraciones ARCA/adquirentes reales, exportación conciliada contra una base MyCompany real, instalación limpia offline y backup/restore verificados.
 
 ## 1. Decisión ejecutiva
 
