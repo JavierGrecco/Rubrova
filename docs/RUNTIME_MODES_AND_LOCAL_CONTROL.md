@@ -75,21 +75,13 @@ El prototipo ya aplica varias protecciones: enlaza la web y PostgreSQL sólo a `
 
 Las pruebas unitarias de `scripts/platform/test_runtime_native_preview.py` cubren la espera de arranque, el aislamiento de PostgreSQL, el enlace a loopback y la validación de rutas del WAR. Estas pruebas validan el supervisor; **no demuestran todavía que toda la aplicación haya arrancado y completado una venta nativa**. No presentar el prototipo como producto aceptado ni como instalador listo para uso diario.
 
-Para desarrollar y probar primero usaremos Python como **supervisor de procesos**, no como reemplazo del servidor, de PostgreSQL ni de Tomcat. La biblioteca estándar de Python alcanza para iniciar procesos, vigilar puertos, capturar logs, manejar señales, validar rutas y escribir configuración de forma atómica.
+El prototipo actual ya realiza el ciclo de desarrollo: detecta Java 21 y PostgreSQL 18, valida Tomcat 9.0.124, crea el clúster privado, inicia PostgreSQL, ejecuta `BusinessLogicsBootstrap`, espera el marcador de inicio, RMI y finalización de `onStarted`, inicia Tomcat y espera la respuesta web. También supervisa los procesos mientras está abierto, detiene el árbol de Tomcat/Java y sólo detiene el clúster PostgreSQL si lo inició ese mismo proceso. La base queda persistida entre ejecuciones.
 
-El supervisor nativo deberá:
+El proceso de CI nativo ya está incorporado: compila los JAR/WAR en otro job, los entrega al smoke sin Docker, prepara PostgreSQL 18 y Java 21, bloquea la salida externa y comprueba el acceso con Chromium. La primera aceptación nativa se limita al arranque, login y navegación; **todavía falta mover el fixture comercial y probar venta, pago, stock, caja, cierre y reinicio**. Docker ya no debe ser requisito para avanzar en las pruebas del POS.
 
-- detectar Java 21, PostgreSQL 18 y Tomcat compatible;
-- preparar un directorio de ejecución y una base local aislada para desarrollo;
-- iniciar PostgreSQL y esperar a que acepte conexiones;
-- iniciar el servidor Rubrova y esperar a que complete el arranque real, no sólo a que abra el puerto RMI;
-- iniciar Tomcat y esperar a que el cliente web responda;
-- mostrar URL, estado, logs y errores en español;
-- cerrar en orden cliente, servidor y PostgreSQL, sin borrar datos;
-- recuperar procesos interrumpidos y verificar que los PID/puertos correspondan a Rubrova antes de detenerlos;
-- ejecutar el mismo flujo de aceptación contra runtime nativo y Docker, cuando las pruebas se hayan desacoplado del Compose.
+Para macOS, Postgres.app y Homebrew son opciones para disponer de las herramientas PostgreSQL 18 nativas. El supervisor admite indicar el directorio con `RUBROVA_POSTGRES_BIN` o `local_runtime.postgres_bin`; admite una ruta explícita de Tomcat en `local_runtime.tomcat_home` y verifica que sea la versión 9.0.124 fijada. La primera descarga de Tomcat requiere conexión; después se puede ejecutar con `--offline`.
 
-Para Mac, PostgreSQL 18 tiene binarios nativos/universales disponibles; Postgres.app y Homebrew son opciones adecuadas para el laboratorio. Para el instalador comercial se distribuirán las dependencias verificadas junto con Rubrova o un instalador propio, no se exigirá instalar herramientas de desarrollo. El servidor de pruebas usará una instancia y un directorio de datos propios de Rubrova, no la base personal de Postgres.app ni una base productiva.
+El prototipo sigue siendo sólo de desarrollo: PostgreSQL utiliza autenticación `trust` limitada a loopback. Para el instalador comercial hay que incorporar Java/PostgreSQL/Tomcat y todos los recursos, utilizar SCRAM y el almacén seguro del sistema operativo, y no exigir que el usuario instale Python ni herramientas de compilación.
 
 ## 5. Panel de configuración siempre disponible
 
@@ -145,9 +137,9 @@ La primera puerta de CI será el smoke funcional nativo en Linux. Después se re
 
 ## 9. Estado real y siguiente entrega
 
-**Implementado en este bloque:** esquema JSON de configuración, validador/CLI, prototipo de supervisor nativo y pruebas unitarias de sus controles principales. La validación estática del supervisor y las pruebas Windows/Ubuntu del workflow pasan; el runtime nativo completo todavía no se ha ejecutado en un runner ni en tu Mac.
+**Implementado:** esquema JSON y CLI de configuración, supervisor de procesos nativo, clúster PostgreSQL privado, validación de Tomcat/RMI, pruebas unitarias y job CI nativo sin Docker que bloquea la salida externa y comprueba login/navegación.
 
-**Todavía pendiente:** smoke de venta y persistencia sin Docker, panel visual independiente, empaquetado con PostgreSQL/JRE/Tomcat, instalador offline, migración entre bases y aceptación nativa macOS ARM64/Windows x64.
+**Pendiente:** resultado verde del smoke nativo integrado (build más arranque/login), migrar los fixtures de venta para aceptar factura/pago/stock/caja/cierre/reinicio en native, aceptación real en tu Mac y Windows, panel de control, empaquetado autónomo, instalación offline y migración segura entre bases.
 
 El primer objetivo de prueba será tu MacBook Air: ejecutar los mismos JAR/WAR del proyecto en Java 21 nativo ARM64, con PostgreSQL 18 y Tomcat local, sin Docker Desktop. Después incorporaremos el paquete autónomo para una PC limpia y Windows.
 
