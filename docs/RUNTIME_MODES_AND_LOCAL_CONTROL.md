@@ -1,7 +1,7 @@
 # Modos de ejecución y control local de Rubrova
 
 **Decisión de arquitectura:** separar el lugar donde corre el POS/ERP de la conectividad con proveedores externos. Ofrecer siempre un control independiente del servidor para consultar estado y cambiar el destino de ejecución.  
-**Estado:** contrato de configuración y CLI implementados; existe un primer prototipo de lanzador nativo y pruebas unitarias para sus protecciones principales. El runtime completo aún no superó una aceptación funcional nativa en macOS/Windows; panel visual, instalador offline y migración entre destinos siguen pendientes.
+**Estado:** contrato de configuración y CLI implementados; existe un supervisor nativo y el runtime macOS ARM64 ya pasó en CI el recorrido comercial básico. Falta verificarlo en un Mac de usuario y en Windows; panel visual, instalador offline y migración entre destinos siguen pendientes.
 
 ## 1. Decisión
 
@@ -73,11 +73,11 @@ Ya existe `scripts/platform/run-local-native-preview.py`. Usa Python estándar c
 
 El prototipo ya aplica varias protecciones: enlaza la web y PostgreSQL sólo a `127.0.0.1`, cambia el host/puerto RMI del `web.xml`, verifica que el clúster PostgreSQL corresponda al directorio privado de Rubrova, no detiene una instancia PostgreSQL que ya estaba en marcha y espera el mensaje de arranque, RMI y finalización de `onStarted` antes de iniciar Tomcat. La autenticación PostgreSQL `trust` queda limitada a este clúster local de desarrollo; **no es la configuración del instalador productivo**, que debe usar SCRAM y el almacén seguro del sistema operativo.
 
-Las pruebas unitarias de `scripts/platform/test_runtime_native_preview.py` cubren la espera de arranque, el aislamiento de PostgreSQL, el enlace a loopback y la validación de rutas del WAR. Estas pruebas validan el supervisor; **no demuestran todavía que toda la aplicación haya arrancado y completado una venta nativa**. No presentar el prototipo como producto aceptado ni como instalador listo para uso diario.
+Las pruebas unitarias de `scripts/platform/test_runtime_native_preview.py` cubren la espera de arranque, el aislamiento de PostgreSQL, el enlace a loopback y la validación de rutas del WAR. Por separado, el smoke CI `45548326798` demuestra que la aplicación nativa macOS ARM64 puede completar una venta, pago, conciliación de stock y cierre de turno. Es evidencia de un runner Apple Silicon, no de un Mac de usuario ni de una instalación productiva; aún faltan devoluciones, pagos restantes, recuperación y periféricos.
 
 El prototipo actual ya realiza el ciclo de desarrollo: detecta Java 21 y PostgreSQL 18, valida Tomcat 9.0.124, crea el clúster privado, inicia PostgreSQL, ejecuta `BusinessLogicsBootstrap`, espera el marcador de inicio, RMI y finalización de `onStarted`, inicia Tomcat y espera la respuesta web. También supervisa los procesos mientras está abierto, detiene el árbol de Tomcat/Java y sólo detiene el clúster PostgreSQL si lo inició ese mismo proceso. La base queda persistida entre ejecuciones.
 
-El proceso de CI nativo ya está incorporado: compila los JAR/WAR en otro job, los entrega al smoke sin Docker, prepara PostgreSQL 18 y Java 21, bloquea la salida externa y comprueba el acceso con Chromium. La primera aceptación nativa se limita al arranque, login y navegación; **todavía falta mover el fixture comercial y probar venta, pago, stock, caja, cierre y reinicio**. Docker ya no debe ser requisito para avanzar en las pruebas del POS.
+La CI separa tres puertas: el smoke nativo macOS ARM64 obligatorio ya completó el ciclo comercial básico; el smoke Docker/Linux pasa a ser una aceptación automática obligatoria de empaquetado y POS; y Linux nativo sin Docker queda como diagnóstico no bloqueante. La última ejecución Linux nativa dejó `PosDashboard` cargando bajo bloqueo de salida externa, así que esa comprobación offline todavía no está aprobada. El runtime local para desarrollar en Mac sigue siendo nativo y no necesita Docker.
 
 Para macOS, Postgres.app y Homebrew son opciones para disponer de las herramientas PostgreSQL 18 nativas. El supervisor admite indicar el directorio con `RUBROVA_POSTGRES_BIN` o `local_runtime.postgres_bin`; admite una ruta explícita de Tomcat en `local_runtime.tomcat_home` y verifica que sea la versión 9.0.124 fijada. La primera descarga de Tomcat requiere conexión; después se puede ejecutar con `--offline`.
 

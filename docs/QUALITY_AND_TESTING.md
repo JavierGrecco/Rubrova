@@ -17,18 +17,20 @@ Una capacidad no se considera terminada por mostrar una pantalla. Debe cumplir r
 
 ## Entorno de ejecución para pruebas
 
-El entorno por defecto de desarrollo y CI es el runtime nativo, sin Docker: Java 21, PostgreSQL 18 y Tomcat 9.0.124. El servidor debe terminar el bootstrap y la acción `onStarted` antes de iniciar el cliente. El supervisor utiliza una carpeta PostgreSQL exclusiva, no adopta ni detiene servicios personales de la máquina y conserva los datos al detener los procesos.
+Para el desarrollo local se prioriza el runtime nativo, sin Docker: Java 21, PostgreSQL 18 y Tomcat 9.0.124. En CI se exige la aceptación nativa macOS ARM64 y el smoke funcional Docker/Linux; el smoke Linux nativo independiente es diagnóstico no bloqueante. El servidor debe terminar el bootstrap y `onStarted` antes de iniciar el cliente. El supervisor utiliza una carpeta PostgreSQL exclusiva, no adopta ni detiene servicios personales de la máquina y conserva los datos al detener los procesos.
 
-Las pruebas nativas deben cubrir:
+El smoke nativo macOS ARM64 ya recorrió en CI login, apertura de turno, venta en efectivo, factura/pago, stock y cierre básico. La aceptación en el Mac físico y los siguientes escenarios siguen pendientes.
+
+La validación Docker/Linux es obligatoria y automática: comprueba el runtime empaquetado, la interfaz POS, la venta y las conciliaciones con PostgreSQL y un proveedor HTTP simulado en red interna. Debe seguir pasando con cada cambio de plataforma.
+
+El smoke Linux nativo separado conserva estos controles como diagnóstico:
 
 - Inicio desde una base vacía, verificación del servidor, RMI, `onStarted` y respuesta web.
 - Login y navegación en español mediante Chromium.
 - Salida a Internet bloqueada, con acceso local por loopback aún funcional.
-- Venta, factura/pago, stock, caja y turno conciliados desde los datos persistidos.
-- Reinicio de servidor y cliente sin borrar PostgreSQL, y nueva conciliación sin duplicados.
-- Limpieza limitada a los procesos y directorios temporales creados por el test.
+- Captura de errores del navegador, requests fallidos, HTTP y tiempos de respuesta de `dispatch`.
 
-Docker se conserva como smoke secundario y manual de empaquetado, compatibilidad de imágenes y aislamiento. Los tests unitarios del supervisor no sustituyen la aceptación funcional completa del runtime nativo.
+En la última ejecución, el servidor Linux inició y el navegador abrió `PosDashboard`, pero el contenido quedó cargando; por eso este escenario offline no se considera aprobado y no bloquea la aceptación macOS/Docker. Los tests unitarios del supervisor no sustituyen las pruebas funcionales.
 
 ## Flujos POS obligatorios
 

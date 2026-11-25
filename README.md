@@ -10,7 +10,7 @@ La disponibilidad legal de la denominación y de los dominios todavía no está 
 
 ## Probar el proyecto localmente
 
-**El camino principal de desarrollo es el runtime nativo, sin Docker.** lsFusion/MyCompany se ejecutan con Java 21; PostgreSQL 18 conserva los datos en el equipo y Tomcat 9 sirve el cliente web. Docker queda como alternativa de empaquetado y como smoke secundario/manual, no como requisito para levantar el POS.
+**El camino principal para desarrollar y usar Rubrova localmente es el runtime nativo, sin Docker.** En macOS Apple Silicon, Java 21, PostgreSQL 18 y Tomcat 9 ejecutan el servidor y el cliente en el propio equipo. Docker no es requisito para trabajar localmente. En CI, en cambio, el recorrido nativo de macOS y la aceptación del runtime Docker/Linux son pruebas automáticas obligatorias; el smoke Linux nativo queda como diagnóstico no bloqueante.
 
 Ya existe un primer supervisor en `scripts/platform/run-local-native-preview.py`. Puede preparar una base aislada, iniciar el servidor, esperar el fin de la inicialización y luego iniciar el cliente web. El prototipo requiere artefactos compilados y Java 21, las herramientas nativas de PostgreSQL 18, Python 3 y Tomcat 9.0.124. Si Tomcat no está en caché, la primera preparación lo descarga y verifica; por eso todavía no es un instalador offline ni una entrega lista para una PC limpia.
 
@@ -26,7 +26,7 @@ python3 scripts/platform/run-local-native-preview.py --no-open start
 
 El comando de inicio abre el POS en `http://127.0.0.1:8080`; se detiene con Ctrl+C y conserva la base local. Se puede usar `--offline` antes de `doctor` o `start` para impedir descargas: sólo funcionará cuando Tomcat y los artefactos ya estén disponibles en caché. En macOS, si PostgreSQL 18 está en Postgres.app, indicá su carpeta bin mediante `RUBROVA_POSTGRES_BIN=/Applications/Postgres.app/Contents/Versions/18/bin`.
 
-La CI está migrando sus pruebas de arranque al mismo runtime nativo. La aceptación completa de venta, pagos, caja y stock ya pasó anteriormente en el smoke Docker; todavía falta repetir ese ciclo sobre la ruta nativa antes de declararla aceptada. Consultá [Modos de ejecución y control local](docs/RUNTIME_MODES_AND_LOCAL_CONTROL.md), [Estado real del proyecto](docs/PROJECT_STATUS.md) y [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
+La aceptación nativa de macOS ARM64 ya completó en CI el ciclo sintético de apertura de turno, selección de artículo, venta en efectivo, factura/pago, conciliación de stock y cierre de caja (`45548326798`). Es evidencia de un runner Apple Silicon, no una prueba todavía realizada en tu Mac. La aceptación Docker/Linux ahora se ejecuta automáticamente y es obligatoria en CI; el smoke Linux nativo separado sigue en diagnóstico porque la pantalla POS queda cargando en ese runner. Esto no equivale a un instalador listo para producción ni demuestra todavía instalación limpia offline. Consultá [Modos de ejecución y control local](docs/RUNTIME_MODES_AND_LOCAL_CONTROL.md), [Estado real del proyecto](docs/PROJECT_STATUS.md) y [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
 
 ## Qué estamos construyendo
 
@@ -116,7 +116,7 @@ Una plataforma que reúne en un solo lugar:
 
 ## Compatibilidad con macOS
 
-Rubrova tendrá un runtime nativo en macOS: el servidor Java y el cliente web se ejecutan en el equipo local, junto con PostgreSQL. Esto evita depender de la imagen Docker AMD64 de MyCompany. Cada cambio de plataforma ejecuta un smoke nativo sobre un runner Apple Silicon `macos-26` con Java 21 ARM64 y PostgreSQL 18 ARM64. Esa prueba de CI no reemplaza todavía la aceptación comercial completa ni la verificación en un Mac de usuario. Ver [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
+Rubrova ya ejecutó en CI el runtime nativo sobre un runner Apple Silicon `macos-26`, con Java 21 ARM64 y PostgreSQL 18 ARM64. En `45548326798` el smoke completó el recorrido de venta, pago, stock y cierre; falta repetirlo en un Mac de usuario y validar periféricos. El runtime Docker/Linux se conserva como validación automática obligatoria del empaquetado y del despliegue. Ver [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
 
 ## Etapa actual y próximos resultados
 
@@ -126,9 +126,9 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
-- Preparar y validar los artefactos desde las fuentes vendorizadas. El camino de desarrollo y CI pasa a ser PostgreSQL + Java + Tomcat nativos; Docker se reserva para una validación manual secundaria de empaquetado y aislamiento.
-- La aceptación funcional completa anterior [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) probó en un entorno efímero una venta de ARS 1.250 en efectivo, factura/pago persistidos, stock (10 → 9), caja y cierre `CLOSED`, además de fallos HTTP simulados y recuperación. Esa evidencia corresponde al runtime Docker; no se debe presentar como aceptación nativa.
-- El nuevo smoke nativo comprueba PostgreSQL 18 local, servidor Java, RMI, final de `onStarted`, Tomcat, login y navegación española con la salida externa bloqueada. La CI ya pasa las pruebas estáticas/unitarias y la validación Windows; la compilación y el smoke nativo completo siguen siendo una puerta abierta hasta que termine el workflow actual.
+- Preparar y validar los artefactos desde las fuentes vendorizadas. El desarrollo local prioriza PostgreSQL + Java + Tomcat nativos en macOS. CI exige la aceptación nativa macOS y la aceptación Docker/Linux; el smoke Linux nativo independiente se conserva como diagnóstico no bloqueante.
+- La aceptación funcional [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) probó en Docker una venta de ARS 1.250 en efectivo, factura/pago persistidos, stock (10 → 9), caja, cierre `CLOSED` y resiliencia HTTP. Luego, [CI 45548326798](https://github.com/JavierGrecco/Rubrova/actions/runs/45548326798) repitió el recorrido comercial básico en el runtime nativo macOS ARM64. Son dos evidencias distintas y ninguna habilita por sí sola el uso diario.
+- El smoke nativo macOS comprobó PostgreSQL 18 local, servidor Java, RMI, Tomcat, login, navegación española y el recorrido comercial básico. El smoke Linux nativo, que además bloquea la salida externa, todavía falla al renderizar `PosDashboard`; queda como diagnóstico no bloqueante y no se considera prueba offline aprobada. La aceptación Docker/Linux automática es la puerta obligatoria de CI para contenedores.
 - El POS sigue en aceptación: faltan devoluciones/reintegros, vuelto, pagos mixtos y tarjeta, movimientos y arqueo de caja, permisos por perfil, backup/restore, periféricos y pruebas fiscales argentinas.
 - La localización aún es parcial. La navegación general y varios formularios heredados requieren revisión. La Mac Apple Silicon ya compila localmente, pero no ejecuta nativamente el stack completo: MyCompany 6.2 publica su lógica como `linux/amd64`.
 
@@ -159,5 +159,5 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 
 ---
 
-**Estado del producto:** piloto MyCompany 6.2 en evolución; el ciclo comercial básico está probado en el smoke Docker, pero aún no en el runtime nativo. No está aprobado para uso diario.  
-**Estado del software:** fuentes lsFusion/MyCompany fijadas y vendorizadas, extensiones propias, supervisor nativo inicial y pruebas unitarias. Siguen pendientes el smoke de venta nativo, el instalador offline, el panel de control, la aceptación en macOS ARM64/Windows y los circuitos comerciales restantes.
+**Estado del producto:** piloto MyCompany 6.2 en evolución; el ciclo comercial básico pasó en Docker y en el runtime nativo macOS ARM64 de CI. No está aprobado para uso diario.  
+**Estado del software:** fuentes lsFusion/MyCompany fijadas y vendorizadas, extensiones propias, supervisor nativo y aceptación comercial básica macOS ARM64 en CI. Siguen pendientes la prueba en un Mac físico, la aceptación Docker/Linux de esta nueva ejecución de CI, el instalador offline, el panel de control, Windows nativo y los circuitos comerciales restantes.
