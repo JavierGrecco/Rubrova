@@ -7,9 +7,9 @@
 ## Estado de la última validación
 
 - **Suite del planificador:** aprobada en [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825), sobre el commit `8777842`.
-- **Validación estática y Windows:** aprobadas en la ejecución de plataforma correspondiente al commit anterior; la nueva ejecución [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) está en curso.
-- **Compilación completa del fork lsFusion 6.2 + GWT + MyCompany 6.2:** aprobada en la ejecución anterior [45721155696](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696).
-- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. El diagnóstico apuntó a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. La nueva compilación y los smokes deben confirmar que la llamada autenticada ya devuelve JSON válido.
+- **Validación estática y Windows:** aprobadas en el commit `8777842`, dentro de [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906).
+- **Compilación completa del fork lsFusion 6.2 + GWT + MyCompany 6.2:** aprobada en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906); también pasaron la recompilación final de servidor/cliente y la publicación de artefactos. Los smokes macOS ARM64, Linux nativo y Docker/Linux están ahora en ejecución.
+- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. El diagnóstico apuntó a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. El nuevo smoke de macOS ARM64 y los diagnósticos Linux/Docker están en ejecución para confirmar que la llamada autenticada ya devuelve JSON válido.
 - **Docker/Linux:** el job de diagnóstico es no bloqueante. Una anotación reportó que el smoke de POS no llegó a aprobarse; su job en verde no debe interpretarse como aceptación del flujo.
 - **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
 
