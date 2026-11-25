@@ -5,6 +5,15 @@
 
 Para macOS, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
+## Estado actual de aceptación del runtime
+
+El supervisor nativo ya inicia PostgreSQL, el servidor lsFusion y Tomcat en runners macOS ARM64 y Linux; el cliente web llega al login y permite navegar después de autenticarse. La exportación nativa de reposición incorporada en el PR #8 aún está bajo validación: el último smoke completó el arranque y el login, pero la llamada autenticada respondió HTTP 500 con `Set operation is incorrect`.
+
+La expresión sospechosa que construía IDs a partir de índices de línea fue corregida quitando conversiones `BPSTRING[10]`; la nueva ejecución de plataforma [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) está en curso. La exportación no se considera aceptada hasta devolver JSON válido en los smokes nativos y conciliarse contra una base MyCompany local real.
+
+El runtime sigue siendo una vista previa de desarrollo. No equivale a instalador productivo, homologación ARCA/adquirentes, despliegue limpio offline ni aceptación de backup/restauración.
+
+
 ## Ruta recomendada de desarrollo: runtime nativo
 
 El servidor, la lógica y el interfaz web pueden ejecutarse directamente en el sistema operativo:
