@@ -398,8 +398,11 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /Servidor autónomo: API, logging y runtime están incluidos en server[.]jar/);
   assert.match(runtimeWorkflowSource, /vendor\/platform\/web-client\/target/);
   assert.match(runtimeWorkflowSource, /Diagnóstico POS sobre runtime Docker\/Linux \(no bloqueante\)/);
-  assert.match(runtimeWorkflowSource, /actions\/upload-artifact@v4/);
-  assert.match(runtimeWorkflowSource, /actions\/download-artifact@v4/);
+  assert.match(runtimeWorkflowSource, /actions\/setup-java@v6/);
+  assert.match(runtimeWorkflowSource, /actions\/upload-artifact@v7/);
+  assert.match(runtimeWorkflowSource, /actions\/download-artifact@v8/);
+  assert.doesNotMatch(runtimeWorkflowSource, /actions\/setup-java@v4/);
+  assert.doesNotMatch(runtimeWorkflowSource, /actions\/(upload|download)-artifact@v4/);
   assert.match(runtimeWorkflowSource, /rubrova-runtime-application/);
   assert.match(runtimeWorkflowSource, /cancel-in-progress: true/);
   assert.match(runtimeWorkflowSource, /after-login[.]png/);
