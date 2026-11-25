@@ -14,6 +14,8 @@ const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
+const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
+const nativePreviewSource = read("scripts/platform/run-local-native-preview.py");
 const localPreviewSource = read("scripts/platform/run-local-preview-macos.sh");
 const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
@@ -268,10 +270,19 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-build-fork-${{ github.ref }}"));
   assert.equal(
     (runtimeWorkflowSource.match(/cancel-in-progress: true/g) || []).length,
-    2,
-    "El build y el smoke deben cancelar ejecuciones obsoletas de main."
+    3,
+    "El build, el smoke nativo y el smoke Docker manual deben cancelar ejecuciones obsoletas."
   );
   assert.doesNotMatch(runtimeWorkflowSource, /cancel-in-progress: false/);
+  assert.match(runtimeWorkflowSource, /native-runtime-smoke:/);
+  assert.match(runtimeWorkflowSource, /RUBROVA_BLOCK_EGRESS: "true"/);
+  assert.match(runtimeWorkflowSource, /RUBROVA_POSTGRES_BIN: \/usr\/lib\/postgresql\/18\/bin/);
+  assert.match(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]run_docker_smoke/);
+  assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
+  assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
+  assert.doesNotMatch(nativeSmokeSource, /docker|compose/i);
+  assert.match(nativePreviewSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
   assert.equal(
     (runtimeWorkflowSource.match(/CHECKED_OUT_SHA=/g) || []).length,
     2,
