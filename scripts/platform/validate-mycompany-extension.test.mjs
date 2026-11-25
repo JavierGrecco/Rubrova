@@ -1058,12 +1058,12 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "OVERRIDE Inventory.available(l, p)",
     "OVERRIDE Inventory.planned(l, p)",
     "Inventory.planned(l, p)",
-    "Sales.toShip(Sales.OrderLine ol)",
+    "Sales.toShip(ol)",
     "Sales.order(Sales.OrderLine ol)",
-    "Sales.index(Sales.OrderLine ol)",
-    "Sales.shippedProduct(Sales.OrderLine ol)",
-    "Sales.scheduledDateTime(Sales.order(Sales.OrderLine ol))",
-    "Sales.index(Sales.OrderLine ol)",
+    "Sales.index(ol)",
+    "Sales.shippedProduct(ol)",
+    "Sales.scheduledDateTime(Sales.order(ol))",
+    "Sales.index(ol)",
     "Inventory.index(Inventory.line(rr))",
     "Purchase.index(Purchase.orderLine(Inventory.line(rr)))",
     "sourceLineId = CONCAT",
@@ -1089,6 +1089,12 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /readOnly = TRUE/);
   assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
   assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
+  const outgoingExportQuery = replenishmentExportSource.split("outgoingCommitments = (JSON FROM")[1]?.split("        receipts = (JSON FROM")[0] ?? "";
+  assert.equal(
+    (outgoingExportQuery.match(/Sales\\.OrderLine ol/g) ?? []).length,
+    1,
+    "Sales.OrderLine debe declararse una sola vez en la consulta de compromisos; el resto de campos reutiliza ol."
+  );
   assert.match(replenishmentExportSource, /effectiveReserved = \(OVERRIDE/);
   assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
