@@ -1051,6 +1051,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Inventory.available(l, p)",
     "Inventory.planned(l, p)",
     "Sales.toShip(ol)",
+    "Sales.scheduledDateTime(Sales.order(ol))",
+    "Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))",
     "Inventory.ShipmentResLedger",
     "Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))",
     "Inventory.expected(l, p)",
@@ -1065,6 +1067,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /snapshotType = 'mycompany-replenishment-source-export'/);
   assert.match(replenishmentExportSource, /quantityPrecision = 3/);
   assert.match(replenishmentExportSource, /readOnly = TRUE/);
+  assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) <> 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
