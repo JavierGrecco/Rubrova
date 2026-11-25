@@ -139,6 +139,72 @@ TAX_HISTORY_TARGETS = (
     ),
 )
 
+RMI_SERVER_SOCKET_TARGET = ROOT / "vendor/platform/api/src/main/java/lsfusion/base/remote/ZipServerSocket.java"
+RMI_SERVER_SOCKET_BEFORE = """    public ZipServerSocket(int port) throws IOException {
+        super(port, 500);
+    }"""
+RMI_SERVER_SOCKET_AFTER = """    public ZipServerSocket(int port) throws IOException {
+        super();
+        String bindAddress = System.getProperty("lsfusion.rmi.bindAddress");
+        if (bindAddress == null || bindAddress.trim().isEmpty()) {
+            bind(new InetSocketAddress(port), 500);
+        } else {
+            bind(new InetSocketAddress(InetAddress.getByName(bindAddress.trim()), port), 500);
+        }
+    }"""
+RMI_SERVER_SOCKET_MARKER = 'System.getProperty("lsfusion.rmi.bindAddress")'
+
+
+def apply_rmi_server_bind_address() -> bool:
+    target = RMI_SERVER_SOCKET_TARGET
+    if not target.is_file():
+        print(f"No se encontró el socket RMI fijado del motor: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    if RMI_SERVER_SOCKET_MARKER in source:
+        required = (
+            "new InetSocketAddress(port), 500",
+            "InetAddress.getByName(bindAddress.trim())",
+        )
+        missing = [marker for marker in required if marker not in source]
+        if missing:
+            print("El parche de bind RMI existe pero difiere del esperado: " + ", ".join(missing), file=sys.stderr)
+            return False
+        print("Configuración de bind RMI por interfaz ya aplicada.")
+        return True
+
+    count = source.count(RMI_SERVER_SOCKET_BEFORE)
+    if count != 1:
+        print(
+            "No se aplicó el bind RMI. Se esperaba exactamente una coincidencia "
+            f"del constructor original y se encontraron {count}.",
+            file=sys.stderr,
+        )
+        return False
+
+    source = source.replace(RMI_SERVER_SOCKET_BEFORE, RMI_SERVER_SOCKET_AFTER, 1)
+    if RMI_SERVER_SOCKET_MARKER not in source:
+        print("El parche de bind RMI quedó incompleto.", file=sys.stderr)
+        return False
+
+    imports = "import java.io.IOException;\\nimport java.net.ServerSocket;"
+    updated_imports = (
+        "import java.io.IOException;\\n"
+        "import java.net.InetAddress;\\n"
+        "import java.net.InetSocketAddress;\\n"
+        "import java.net.ServerSocket;"
+    )
+    if source.count(imports) != 1:
+        print("No se encontraron los imports originales esperados en ZipServerSocket.java.", file=sys.stderr)
+        return False
+    source = source.replace(imports, updated_imports, 1)
+
+    target.write_text(source, encoding="utf-8")
+    print("Bind RMI configurable aplicado: el modo nativo puede limitar el socket a loopback.")
+    return True
+
+
 GWT_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ClientMessages_es.properties"
 GWT_MESSAGES_TARGET = ROOT / "vendor/platform/web-client/src/main/java/lsfusion/gwt/client/ClientMessages_es.properties"
 SERVER_MESSAGES_SOURCE = ROOT / "patches/lsfusion/ServerResourceBundle_es.properties"
@@ -338,6 +404,9 @@ def apply_newsession_guards() -> bool:
 
 
 def main() -> int:
+    if not apply_rmi_server_bind_address():
+        return 1
+
     if not TARGET.is_file():
         print(f"No se encontró el fuente fijado del motor: {TARGET}", file=sys.stderr)
         return 2
