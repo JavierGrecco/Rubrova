@@ -69,7 +69,7 @@ Como referencias de diseño:
 
 #### Planificación temporal de stock y reposición (experimento separado)
 
-Para conectar demanda con compras sin automatizar transacciones, se abrió un planificador de solo lectura. Estudia existencia física, reservas, compromisos de salida abiertos, recepciones confirmadas, lead time, período de revisión, demanda diaria elegible, stock de seguridad, MOQ y múltiplo de compra. Las reservas son parte de los compromisos de salida: se descuentan para calcular disponible inmediato, pero no se suman como una segunda demanda en la proyección. Las recepciones borrador, enviadas sin confirmación, canceladas, recibidas, vencidas o fuera del horizonte se excluyen.
+Para conectar demanda con compras sin automatizar transacciones, Rubrova ya integra un primer planificador de solo lectura. Estudia existencia física, reservas, compromisos de salida abiertos, recepciones confirmadas, lead time, período de revisión, demanda diaria elegible, stock de seguridad, MOQ y múltiplo de compra. Las reservas son parte de los compromisos de salida: se descuentan para calcular disponible inmediato, pero no se suman como una segunda demanda en la proyección. Las recepciones borrador, enviadas sin confirmación, canceladas, recibidas, vencidas o fuera del horizonte se excluyen.
 
 El cálculo proyecta cada día hasta `lead time + período de revisión`, descuenta demanda no comprometida y salidas firmes antes de sumar las recepciones del día, y marca por separado un faltante anterior a la llegada del nuevo pedido. Si no hay al menos 12 períodos elegibles y un 50% de cobertura, suprime la sugerencia. El resultado es una cantidad propuesta redondeada por MOQ/múltiplo, nunca una orden de compra.
 
