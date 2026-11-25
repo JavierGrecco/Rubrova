@@ -429,14 +429,15 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
   assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES=712/);
   assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
-  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 5'));
+  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 6'));
   assert.match(runtimeSmokeSource, /RubrovaCISalesFixture[.]lsf/);
   assert.match(runtimeSmokeSource, /currency\(priceType\('retail'\)\) <- MasterData[.]defaultCurrency\(\)/);
   assert.match(runtimeSmokeSource, /RUBROVA_CI_SALES_LOG_EVIDENCE/);
   assert.match(uiSmokeSource, /UI_RECEIPT_PRODUCT_LINES/);
   assert.match(uiSmokeSource, /UI_RECEIPT_LINE_COUNT/);
   assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
-  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaCISalesFixture\|topModule/);
+  assert.match(runtimeSmokeSource, /RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaReplenishmentExport\|RubrovaCISalesFixture\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
   assert.match(runtimeSmokeSource, /Exception while starting logics instance/);
   assert.match(runtimeSmokeSource, /missing \.\+ at/);
@@ -1051,7 +1052,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Inventory.planned(l, p)",
     "Sales.toShip(ol)",
     "Inventory.ShipmentResLedger",
-    "Inventory.lineReserved(Inventory.line(rr))",
+    "Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))",
     "Inventory.expected(l, p)",
     "Inventory.reserved(l, p)",
     "Inventory.ReceiptResLedger",
