@@ -11,7 +11,7 @@ for command_name in python3 curl; do
   }
 done
 
-[[ -n "\${RUBROVA_BUILD_ARTIFACTS_DIR:-}" && -d "$RUBROVA_BUILD_ARTIFACTS_DIR" ]] || {
+[[ -n "${RUBROVA_BUILD_ARTIFACTS_DIR:-}" && -d "$RUBROVA_BUILD_ARTIFACTS_DIR" ]] || {
   echo "RUBROVA_BUILD_ARTIFACTS_DIR debe apuntar a server.jar, logics.jar y client.war compilados." >&2
   exit 2
 }
@@ -31,17 +31,17 @@ fi
   exit 2
 }
 
-WORK_DIR="\${RUBROVA_NATIVE_SMOKE_DIR:-$(mktemp -d "\${TMPDIR:-/tmp}/rubrova-native-smoke.XXXXXX")}"
+WORK_DIR="${RUBROVA_NATIVE_SMOKE_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/rubrova-native-smoke.XXXXXX")}"
 mkdir -p "$WORK_DIR"
 LOG_FILE="$WORK_DIR/native-runtime.log"
-WEB_URL="\${RUBROVA_NATIVE_WEB_URL:-http://127.0.0.1:8080/}"
-SCREENSHOT="\${RUBROVA_NATIVE_SCREENSHOT:-$WORK_DIR/rubrova-native-login.png}"
-PLAYWRIGHT_PYTHON="\${RUBROVA_PLAYWRIGHT_PYTHON:-}"
+WEB_URL="${RUBROVA_NATIVE_WEB_URL:-http://127.0.0.1:8080/}"
+SCREENSHOT="${RUBROVA_NATIVE_SCREENSHOT:-$WORK_DIR/rubrova-native-login.png}"
+PLAYWRIGHT_PYTHON="${RUBROVA_PLAYWRIGHT_PYTHON:-}"
 
-export RUBROVA_RUNTIME_CONFIG_PATH="\${RUBROVA_RUNTIME_CONFIG_PATH:-$WORK_DIR/runtime-config.json}"
-export XDG_CONFIG_HOME="\${XDG_CONFIG_HOME:-$WORK_DIR/config}"
-export XDG_DATA_HOME="\${XDG_DATA_HOME:-$WORK_DIR/data}"
-export XDG_CACHE_HOME="\${XDG_CACHE_HOME:-$WORK_DIR/cache}"
+export RUBROVA_RUNTIME_CONFIG_PATH="${RUBROVA_RUNTIME_CONFIG_PATH:-$WORK_DIR/runtime-config.json}"
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$WORK_DIR/config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$WORK_DIR/data}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$WORK_DIR/cache}"
 
 SUPERVISOR_PID=""
 EGRESS_RULES_INSTALLED=false
@@ -75,7 +75,7 @@ cleanup() {
     if [[ -s "$LOG_FILE" ]]; then tail -n 180 "$LOG_FILE" >&2; fi
   fi
 
-  if [[ "\${RUBROVA_KEEP_NATIVE_SMOKE_DATA:-false}" == "true" ]]; then
+  if [[ "${RUBROVA_KEEP_NATIVE_SMOKE_DATA:-false}" == "true" ]]; then
     echo "Datos de diagnóstico conservados: $WORK_DIR"
   else
     rm -rf "$WORK_DIR"
@@ -92,7 +92,7 @@ echo "2/5 Iniciando PostgreSQL, lsFusion/MyCompany y Tomcat sin Docker"
 python3 "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$LOG_FILE" 2>&1 &
 SUPERVISOR_PID=$!
 
-STARTUP_TIMEOUT="\${RUBROVA_NATIVE_STARTUP_TIMEOUT_SECONDS:-1200}"
+STARTUP_TIMEOUT="${RUBROVA_NATIVE_STARTUP_TIMEOUT_SECONDS:-1200}"
 SECONDS=0
 HTTP_STATUS=""
 while (( SECONDS < STARTUP_TIMEOUT )); do
@@ -106,12 +106,12 @@ while (( SECONDS < STARTUP_TIMEOUT )); do
     break
   fi
   if (( SECONDS % 30 < 3 )); then
-    echo "Esperando servidor local: HTTP=$HTTP_STATUS, tiempo=\${SECONDS}s."
+    echo "Esperando servidor local: HTTP=$HTTP_STATUS, tiempo=${SECONDS}s."
   fi
   sleep 3
 done
 if [[ ! "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
-  echo "El cliente local no respondió HTTP 2xx/3xx dentro de \${STARTUP_TIMEOUT}s (último: $HTTP_STATUS)." >&2
+  echo "El cliente local no respondió HTTP 2xx/3xx dentro de ${STARTUP_TIMEOUT}s (último: $HTTP_STATUS)." >&2
   exit 1
 fi
 grep -Fq "Servidor Rubrova y PostgreSQL están listos." "$LOG_FILE" || {
@@ -122,7 +122,7 @@ echo "RUBROVA_NATIVE_SERVER_READY=true"
 echo "RUBROVA_NATIVE_WEB_HTTP=$HTTP_STATUS"
 
 echo "3/5 Comprobando que la interfaz sigue disponible sin salida a Internet"
-if [[ "\${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
+if [[ "${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
   command -v iptables >/dev/null 2>&1 || {
     echo "Se solicitó bloquear Internet, pero iptables no está instalado." >&2
     exit 2
