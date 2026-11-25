@@ -31,6 +31,7 @@ def attach_browser_diagnostics(page: Any) -> dict[str, list[dict[str, Any]]]:
         "page_errors": [],
         "console_errors": [],
         "failed_requests": [],
+        "markdown_requests": [],
         "http_errors": [],
         "dispatch_responses": [],
     }
@@ -50,6 +51,11 @@ def attach_browser_diagnostics(page: Any) -> dict[str, list[dict[str, Any]]]:
             remember("console_errors", {"message": str(message.text)[:1200]})
 
     def on_request(request: Any) -> None:
+        if "cdn.jsdelivr.net/npm/marked" in request.url:
+            remember("markdown_requests", {
+                "method": request.method,
+                "url": request.url.split("?", 1)[0][:500],
+            })
         if request.method.upper() == "POST" and "/dispatch" in request.url:
             dispatch_started[id(request)] = time.monotonic()
 
@@ -952,6 +958,15 @@ def inspect_page(url: str) -> int:
                 print("UI_POS_SCREEN_AVAILABLE=true")
                 if not pos_text.strip():
                     raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
+
+                markdown_requests = browser_diagnostics["markdown_requests"]
+                print(f"UI_MARKDOWN_EXTERNAL_REQUESTS_DURING_POS={len(markdown_requests)}")
+                if markdown_requests:
+                    raise RuntimeError(
+                        "El inicio del POS descargó el visor Markdown externo: "
+                        + json.dumps(markdown_requests, ensure_ascii=False)
+                    )
+                print("UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true")
 
                 # Abrir un turno en la base efímera de CI; la venta sintética se confirmará explícitamente más adelante.
                 if not click_exact_action(page, "Abrir turno"):

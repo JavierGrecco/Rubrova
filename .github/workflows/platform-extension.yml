@@ -96,6 +96,10 @@ jobs:
           grep -q 'RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L' vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java
           grep -Fq 'CONSTRAINT account(Pos p) = cashAccount(p)' vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf
           grep -Fq 'System.getProperty("lsfusion.rmi.bindAddress")' vendor/platform/api/src/main/java/lsfusion/base/remote/ZipServerSocket.java
+          MARKDOWN_VIEWER_SOURCE=vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf
+          grep -Fq 'marked@18.3.0/lib/marked.umd.js' "$MARKDOWN_VIEWER_SOURCE"
+          grep -Fq 'marked-gfm-heading-id@4.1.4/lib/index.umd.js' "$MARKDOWN_VIEWER_SOURCE"
+          ! grep -Fq 'onWebClientLoad() +' "$MARKDOWN_VIEWER_SOURCE"
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
         run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
       - name: Recompilar servidor y cliente web con dependencias de runtime

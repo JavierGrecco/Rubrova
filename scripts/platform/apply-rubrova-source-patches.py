@@ -124,6 +124,25 @@ ITEM_ATTRIBUTE_NAVIGATION_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/ma
 ITEM_ATTRIBUTE_NAVIGATION_BEFORE = "FORM attributes 'Attributes'"
 ITEM_ATTRIBUTE_NAVIGATION_AFTER = "FORM attributes '{Attributes}'"
 
+# The Markdown renderer is a documentation-only feature. Never load its CDN
+# dependencies in SystemEvents.onWebClientLoad, which runs during POS startup.
+MARKDOWN_VIEWER_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf"
+MARKDOWN_VIEWER_CDN_BLOCK = """onWebClientLoad() + {
+    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked-gfm-heading-id/lib/index.umd.js';
+}"""
+MARKDOWN_VIEWER_SHOW_ANCHOR = """showMarkdownResourceViewer(STRING caption, STRING file) {
+    NEWSESSION {"""
+MARKDOWN_VIEWER_SHOW_LAZY = """showMarkdownResourceViewer(STRING caption, STRING file) {
+    // Markdown is only needed when a user opens Documentation, never to start POS.
+    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked@18.3.0/lib/marked.umd.js';
+    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked-gfm-heading-id@4.1.4/lib/index.umd.js';
+    NEWSESSION {"""
+MARKDOWN_VIEWER_REQUIRED_MARKERS = (
+    "marked@18.3.0/lib/marked.umd.js",
+    "marked-gfm-heading-id@4.1.4/lib/index.umd.js",
+)
+
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
 # Tax changes are part of the document-line audit trail, alongside quantity and amount.
 TAX_HISTORY_TARGETS = (
@@ -304,6 +323,49 @@ def apply_item_attribute_navigation_caption() -> bool:
     return True
 
 
+def apply_markdown_viewer_lazy_load() -> bool:
+    target = MARKDOWN_VIEWER_TARGET
+    if not target.is_file():
+        print(f"No se encontró el visor Markdown de MyCompany: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    if all(marker in source for marker in MARKDOWN_VIEWER_REQUIRED_MARKERS):
+        if MARKDOWN_VIEWER_CDN_BLOCK in source or "onWebClientLoad() +" in source:
+            print(
+                "El visor Markdown conserva una carga global aunque las URL estén fijadas.",
+                file=sys.stderr,
+            )
+            return False
+        print("Dependencias Markdown fijadas y cargadas bajo demanda.")
+        return True
+
+    remote_count = source.count(MARKDOWN_VIEWER_CDN_BLOCK)
+    action_count = source.count(MARKDOWN_VIEWER_SHOW_ANCHOR)
+    if remote_count != 1 or action_count != 1:
+        print(
+            "No se aisló la dependencia Markdown. Se esperaba exactamente una carga "
+            f"global y una acción pública; se encontraron {remote_count} y {action_count}.",
+            file=sys.stderr,
+        )
+        return False
+
+    updated = source.replace(MARKDOWN_VIEWER_CDN_BLOCK, "", 1)
+    updated = updated.replace(MARKDOWN_VIEWER_SHOW_ANCHOR, MARKDOWN_VIEWER_SHOW_LAZY, 1)
+    missing = [marker for marker in MARKDOWN_VIEWER_REQUIRED_MARKERS if marker not in updated]
+    if missing or "onWebClientLoad() +" in updated:
+        print(
+            "El cambio de carga diferida del visor Markdown quedó incompleto: "
+            + ", ".join(missing or ["onWebClientLoad() sigue presente"]),
+            file=sys.stderr,
+        )
+        return False
+
+    target.write_text(updated, encoding="utf-8")
+    print("Visor Markdown aislado: sus dependencias se descargan sólo al abrir Documentación.")
+    return True
+
+
 def apply_cash_movement_date_captions() -> bool:
     for target, before, after in CASH_MOVEMENT_DATE_CAPTION_TARGETS:
         if not target.is_file():
@@ -478,6 +540,9 @@ def main() -> int:
         return 1
 
     if not apply_item_attribute_navigation_caption():
+        return 1
+
+    if not apply_markdown_viewer_lazy_load():
         return 1
 
     if not GWT_MESSAGES_SOURCE.is_file():

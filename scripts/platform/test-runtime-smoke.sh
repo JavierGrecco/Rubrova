@@ -215,6 +215,9 @@ services:
         condition: service_healthy
     image: $CLIENT_IMAGE
     platform: linux/amd64
+    # Chromium runs on the host; publish only on loopback, never on the LAN.
+    ports:
+      - "127.0.0.1:8080:8080"
     pull_policy: never
   db:
     image: postgres:18@sha256:eb63372c1e05c755f55fa30cbd07aecc443676fc6c0fa90b9002d01537841e1a
@@ -620,6 +623,20 @@ printf 'Servicios definidos (%s):\n%s\n' "$SERVICE_COUNT" "$SERVICES"
 
 echo "4/7 Iniciando MyCompany 6.2 en un proyecto efímero"
 compose up -d --remove-orphans
+
+echo "4/7 Verificando que Tomcat sólo publique el cliente web en loopback"
+CLIENT_CONTAINER_ID="$(compose ps -a -q client | head -n 1)"
+[[ -n "$CLIENT_CONTAINER_ID" ]] || {
+  echo "No se encontró el contenedor del cliente web." >&2
+  exit 1
+}
+CLIENT_HOST_BINDING="$(docker inspect --format '{{range (index .HostConfig.PortBindings "8080/tcp")}}{{.HostIp}}:{{.HostPort}}{{end}}' "$CLIENT_CONTAINER_ID")"
+if [[ "$CLIENT_HOST_BINDING" != "127.0.0.1:8080" ]]; then
+  echo "El cliente web debe publicarse exclusivamente en 127.0.0.1:8080; binding recibido: ${CLIENT_HOST_BINDING:-ninguno}." >&2
+  docker inspect --format 'PortBindings={{json .HostConfig.PortBindings}}' "$CLIENT_CONTAINER_ID" >&2 || true
+  exit 1
+fi
+echo "RUBROVA_CLIENT_LOOPBACK_BINDING=127.0.0.1:8080"
 
 echo "4.0/7 Verificando que todo el runtime quedó en una red interna sin salida a Internet."
 SERVER_CONTAINER_ID="$(compose ps -a -q server | head -n 1)"

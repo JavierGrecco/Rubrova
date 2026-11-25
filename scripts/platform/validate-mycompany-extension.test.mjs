@@ -39,6 +39,7 @@ const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoice
 const incomingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf");
 const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf");
 const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
+const markdownViewerSource = read("vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
@@ -109,6 +110,9 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
+  assert.ok(runtimeSmokeSource.includes('    image: $CLIENT_IMAGE\n    platform: linux/amd64\n    # Chromium runs on the host; publish only on loopback, never on the LAN.\n    ports:\n      - "127.0.0.1:8080:8080"\n    pull_policy: never'));
+  assert.match(runtimeSmokeSource, /CLIENT_HOST_BINDING/);
+  assert.match(runtimeSmokeSource, /RUBROVA_CLIENT_LOOPBACK_BINDING=127[.]0[.]0[.]1:8080/);
   assert.match(runtimeSmokeSource, /build-rubrova-runtime-images[.]sh/);
   assert.match(runtimeSmokeSource, /pull_policy: never/);
   assert.match(runtimeSmokeSource, /rubrova\/server:6[.]2-/);
@@ -1082,4 +1086,19 @@ test("la arquitectura de terminales documenta los tres modos, diagramas y límit
     assert.ok(paymentArchitectureSource.toLowerCase().includes(rule.toLowerCase()), "Falta regla " + rule);
   }
   assert.ok(paymentArchitectureSource.includes("No hay todavía un adaptador productivo homologado"));
+});
+
+
+test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el turno", () => {
+  assert.match(markdownViewerSource, /onWebClientLoad\(\) \+/);
+  assert.match(markdownViewerSource, /cdn[.]jsdelivr[.]net\/npm\/marked\/marked[.]min[.]js/);
+  assert.ok(sourcePatch.includes("MARKDOWN_VIEWER_TARGET"));
+  assert.ok(sourcePatch.includes("MARKDOWN_VIEWER_CDN_BLOCK"));
+  assert.ok(sourcePatch.includes("def apply_markdown_viewer_lazy_load()"));
+  assert.ok(sourcePatch.includes("marked@18.3.0/lib/marked.umd.js"));
+  assert.ok(sourcePatch.includes("marked-gfm-heading-id@4.1.4/lib/index.umd.js"));
+  assert.ok(sourcePatch.includes("if not apply_markdown_viewer_lazy_load():"));
+  assert.match(uiSmokeSource, /"markdown_requests": \[\]/);
+  assert.match(uiSmokeSource, /UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true/);
+  assert.match(nativeSmokeSource, /UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true/);
 });
