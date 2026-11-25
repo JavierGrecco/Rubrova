@@ -59,6 +59,38 @@ class NativePreviewTests(unittest.TestCase):
             with self.assertRaisesRegex(native.RuntimeErrorRubrova, "código 17"):
                 native.wait_for_server_ready(process, Path(temporary), 7652, timeout=5)
 
+    def test_configured_tomcat_home_is_used_and_version_is_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tomcat_home = root / "configured-tomcat"
+            (tomcat_home / "bin").mkdir(parents=True)
+            (tomcat_home / "lib").mkdir(parents=True)
+            (tomcat_home / "bin" / "catalina.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+            with zipfile.ZipFile(tomcat_home / "lib" / "catalina.jar", "w") as archive:
+                archive.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nImplementation-Version: 9.0.124\n")
+            selected = native.download_tomcat(
+                root / "empty-cache",
+                allow_download=False,
+                configured_home=str(tomcat_home),
+            )
+            self.assertEqual(selected, tomcat_home.resolve())
+
+    def test_configured_tomcat_with_wrong_version_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tomcat_home = root / "wrong-tomcat"
+            (tomcat_home / "bin").mkdir(parents=True)
+            (tomcat_home / "lib").mkdir(parents=True)
+            (tomcat_home / "bin" / "catalina.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+            with zipfile.ZipFile(tomcat_home / "lib" / "catalina.jar", "w") as archive:
+                archive.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nImplementation-Version: 10.1.0\n")
+            with self.assertRaisesRegex(native.RuntimeErrorRubrova, "requiere Apache Tomcat 9.0.124"):
+                native.download_tomcat(
+                    root / "empty-cache",
+                    allow_download=False,
+                    configured_home=str(tomcat_home),
+                )
+
     def test_preexisting_postgres_is_never_stopped_by_preview_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary) / "postgres-data"
@@ -124,6 +156,26 @@ class NativePreviewTests(unittest.TestCase):
             self.assertIsNotNone(connector)
             self.assertEqual(connector.get("port"), "18080")
             self.assertEqual(connector.get("address"), "127.0.0.1")
+
+    def test_missing_rmi_parameters_in_client_war_are_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tomcat_home = root / "tomcat"
+            (tomcat_home / "conf").mkdir(parents=True)
+            (tomcat_home / "conf" / "server.xml").write_text(
+                '<Server><Service><Connector port="8080"/></Service></Server>',
+                encoding="utf-8",
+            )
+            war = root / "client.war"
+            with zipfile.ZipFile(war, "w") as archive:
+                archive.writestr("WEB-INF/web.xml", "<web-app/>")
+            with self.assertRaisesRegex(native.RuntimeErrorRubrova, "parámetros RMI requeridos"):
+                native.prepare_tomcat_base(
+                    tomcat_home,
+                    root / "tomcat-base",
+                    war,
+                    {"postgres": 55432, "rmi": 7652, "web": 8080},
+                )
 
     def test_invalid_war_path_is_rejected_before_extraction(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
