@@ -188,11 +188,11 @@ def apply_rmi_server_bind_address() -> bool:
         print("El parche de bind RMI quedó incompleto.", file=sys.stderr)
         return False
 
-    imports = "import java.io.IOException;\\nimport java.net.ServerSocket;"
+    imports = "import java.io.IOException;\nimport java.net.ServerSocket;"
     updated_imports = (
-        "import java.io.IOException;\\n"
-        "import java.net.InetAddress;\\n"
-        "import java.net.InetSocketAddress;\\n"
+        "import java.io.IOException;\n"
+        "import java.net.InetAddress;\n"
+        "import java.net.InetSocketAddress;\n"
         "import java.net.ServerSocket;"
     )
     if source.count(imports) != 1:
