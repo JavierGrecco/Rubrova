@@ -99,6 +99,7 @@ jobs:
           python3 scripts/platform/apply-rubrova-source-patches.py
           grep -q 'RUBROVA_DEFAULT_EXTERNAL_HTTP_TIMEOUT_MS = 10_000L' vendor/platform/server/src/main/java/lsfusion/server/physics/dev/integration/external/to/CallHTTPAction.java
           grep -Fq 'CONSTRAINT account(Pos p) = cashAccount(p)' vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf
+          grep -Fq 'System.getProperty("lsfusion.rmi.bindAddress")' vendor/platform/api/src/main/java/lsfusion/base/remote/ZipServerSocket.java
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
         run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
       - name: Recompilar servidor y cliente web con dependencias de runtime
@@ -179,7 +180,7 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" \
             | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update
-          sudo apt-get install -y postgresql-18 postgresql-client-18
+          sudo apt-get install -y postgresql-18 postgresql-client-18 iproute2
           test -x /usr/lib/postgresql/18/bin/initdb
           /usr/lib/postgresql/18/bin/pg_ctl --version
       - name: Preparar Chromium para la inspección de interfaz
