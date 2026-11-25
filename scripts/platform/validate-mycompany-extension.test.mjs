@@ -280,7 +280,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /native-runtime-smoke:/);
   assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
   assert.match(runtimeWorkflowSource, /runs-on: macos-26/);
-  assert.match(runtimeWorkflowSource, /RUBROVA_POSTGRES_BIN=.*postgresql@18/);
+  assert.match(runtimeWorkflowSource, /brew --prefix postgresql@18/);
   assert.match(runtimeWorkflowSource, /python-version: "3[.]13"/);
   assert.match(runtimeWorkflowSource, /RUBROVA_BLOCK_EGRESS: "false"/);
   assert.doesNotMatch(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]validate_macos/);
@@ -305,8 +305,8 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(sourcePatch, /new InetSocketAddress\(InetAddress[.]getByName/);
   assert.match(nativeSmokeSource, /RMI_LISTENERS=.*ss -H -ltn/);
   assert.match(nativeSmokeSource, /lsof -nP -iTCP:7652 -sTCP:LISTEN/);
-  assert.match(nativeSmokeSource, /Linux:x86_64\\|Darwin:arm64/);
-  assert.match(nativeSmokeSource, /config\\["local_runtime"\\]\\["data_directory"\\]/);
+  assert.match(nativeSmokeSource, /Linux:x86_64\|Darwin:arm64/);
+  assert.match(nativeSmokeSource, /config\["local_runtime"\]\["data_directory"\]/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RMI_LOOPBACK=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POSTGRES_LOOPBACK=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EXTERNAL_CONNECTIVITY=blocked/);

@@ -132,7 +132,7 @@ config_path = Path(sys.argv[1])
 data_directory = Path(sys.argv[2])
 config = json.loads(config_path.read_text(encoding="utf-8"))
 config["local_runtime"]["data_directory"] = str(data_directory)
-config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"Directorio temporal de datos del smoke: {data_directory}")
 PY
 python3 "$SCRIPT_DIR/runtime-config.py" validate
@@ -182,21 +182,21 @@ else
   RMI_LISTENERS="$(lsof -nP -iTCP:7652 -sTCP:LISTEN || true)"
   PG_LISTENERS="$(lsof -nP -iTCP:55432 -sTCP:LISTEN || true)"
 fi
-printf 'RMI listeners:\\n%s\\n' "$RMI_LISTENERS"
+printf 'RMI listeners:\n%s\n' "$RMI_LISTENERS"
 grep -Eq '127[.]0[.]0[.]1:7652([[:space:]]|$)' <<< "$RMI_LISTENERS" || {
   echo "RMI no quedó enlazado exclusivamente al loopback 127.0.0.1:7652." >&2
   exit 1
 }
-if grep -Eq '(0[.]0[.]0[.]0|\\[::\\]|\\*):7652([[:space:]]|$)' <<< "$RMI_LISTENERS"; then
+if grep -Eq '(0[.]0[.]0[.]0|\[::\]|\*):7652([[:space:]]|$)' <<< "$RMI_LISTENERS"; then
   echo "RMI quedó expuesto en una interfaz no local." >&2
   exit 1
 fi
-printf 'PostgreSQL listeners:\\n%s\\n' "$PG_LISTENERS"
+printf 'PostgreSQL listeners:\n%s\n' "$PG_LISTENERS"
 grep -Eq '127[.]0[.]0[.]1:55432([[:space:]]|$)' <<< "$PG_LISTENERS" || {
   echo "PostgreSQL no quedó enlazado al loopback configurado." >&2
   exit 1
 }
-if grep -Eq '(0[.]0[.]0[.]0|\\[::\\]|\\*):55432([[:space:]]|$)' <<< "$PG_LISTENERS"; then
+if grep -Eq '(0[.]0[.]0[.]0|\[::\]|\*):55432([[:space:]]|$)' <<< "$PG_LISTENERS"; then
   echo "PostgreSQL quedó expuesto en una interfaz no local." >&2
   exit 1
 fi
