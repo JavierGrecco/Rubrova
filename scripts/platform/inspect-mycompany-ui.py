@@ -765,7 +765,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
 
     from datetime import date
     try:
-        date.fromisoformat(str(payload.get("asOf", "")))
+        date.fromisoformat(str(payload.get("asOf", ""))[:10])
     except ValueError as error:
         raise RuntimeError("La fecha asOf de la exportación no usa YYYY-MM-DD.") from error
 
@@ -815,7 +815,10 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         available = numeric(row, "available", row_label)
         numeric(row, "physicalIncoming", row_label)
         numeric(row, "physicalOutgoing", row_label)
-        numeric(row, "expectedInbound", row_label)
+        gross_reserved = numeric(row, "grossReserved", row_label)
+        expected_inbound = numeric(row, "expectedInbound", row_label)
+        if gross_reserved < 0 or expected_inbound < 0:
+            raise RuntimeError(f"{row_label} contiene una reserva bruta o recepción prevista negativa.")
         if abs((on_hand - planned) - available) > 0.001:
             raise RuntimeError(
                 f"Inventory.available no concilia en {product_id}/{location_id}: "
