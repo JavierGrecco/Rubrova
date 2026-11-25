@@ -30,7 +30,7 @@ En macOS también podés hacer doble clic en `Iniciar Rubrova.command`, en la ra
 
 Para abrir una **demostración con una caja, un artículo y 10 unidades de stock**, usá `Iniciar Rubrova - Demo.command`. Este modo tiene una base de datos, una configuración y puertos separados del runtime normal; no agrega datos de muestra a tu base principal y no incorpora endpoints ni simuladores de CI. La venta de muestra es persistente dentro de esa base de demostración.
 
-En los runs verificados `45558057837` y `45637101959`, el recorrido funcional nativo pasó en macOS ARM64 y Linux x86_64 sin Docker: apertura de turno, venta sintética de ARS 1.250, pago en efectivo, factura/pago, stock (10 → 9), cierre y recuperación de integraciones. El smoke macOS se ejecutó con conectividad externa habilitada; el Linux nativo `45637101959` repitió el ciclo con la salida externa bloqueada. El diagnóstico Docker/Linux devolvió HTTP `000` durante 900 segundos aunque el servidor inicializó sus 717 módulos y Tomcat desplegó `ROOT.war`; permanece como advertencia no bloqueante. Son pruebas de CI, no una instalación en tu Mac ni un instalador listo para producción.
+En la ejecución CI más reciente `45641728845` (código `774387cae1876a2220091dea79c3df5a93023bd5`), el build completo, las validaciones, Windows y los recorridos POS nativos macOS ARM64 y Linux x86_64 pasaron. macOS se probó con conectividad externa habilitada; Linux completó el mismo ciclo con salida externa bloqueada. También pasaron las pruebas unitarias de configuración y ensamblado del modo Demo. El diagnóstico Docker/Linux continúa separado y no bloquea esta ruta; en la ejecución anterior el cliente Docker devolvió HTTP `000` tras cargar 717/717 módulos. Son pruebas de CI, no una instalación en tu Mac ni una autorización de producción.
 
 ## Qué estamos construyendo
 
@@ -120,7 +120,7 @@ Una plataforma que reúne en un solo lugar:
 
 ## Compatibilidad con macOS
 
-Rubrova ya ejecutó en CI el runtime nativo sobre un runner Apple Silicon `macos-26`, con Java 21 ARM64 y PostgreSQL 18 ARM64. El run `45637101959` completó venta, pago, stock y cierre en macOS; la prueba de ese runner mantuvo conectividad externa habilitada. Linux x86_64 nativo también pasó, y su run más reciente bloqueó la salida externa. Falta repetirlo en tu Mac y validar periféricos. Docker/Linux se conserva como diagnóstico automático no bloqueante.
+Rubrova ya ejecutó en CI el runtime nativo sobre un runner Apple Silicon `macos-26`, con Java 21 ARM64 y PostgreSQL 18 ARM64. En `45641728845` el POS completó venta, pago, stock y cierre. Linux x86_64 nativo completó el mismo recorrido con salida externa bloqueada. Falta repetirlo en tu Mac y validar periféricos. Docker/Linux se conserva como diagnóstico automático no bloqueante.
 
 ## Etapa actual y próximos resultados
 
@@ -132,7 +132,7 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
 - Preparar y validar los artefactos desde las fuentes vendorizadas. El desarrollo local prioriza PostgreSQL + Java + Tomcat nativos en macOS. CI exige la aceptación nativa macOS; Linux nativo y Docker/Linux se conservan como diagnósticos automáticos no bloqueantes.
 - La aceptación funcional [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) probó en Docker una venta de ARS 1.250 en efectivo, factura/pago persistidos, stock (10 → 9), caja, cierre `CLOSED` y resiliencia HTTP. Luego, [CI 45548326798](https://github.com/JavierGrecco/Rubrova/actions/runs/45548326798) repitió el recorrido comercial básico en el runtime nativo macOS ARM64. Son dos evidencias distintas y ninguna habilita por sí sola el uso diario.
-- En `45558057837` y `45637101959`, el smoke nativo macOS ARM64 completó el recorrido comercial básico con conectividad externa habilitada. En `45637101959`, el smoke Linux x86_64 nativo completó el mismo recorrido con la salida externa bloqueada. El diagnóstico Docker/Linux sigue sin obtener respuesta HTTP (`000`) después de cargar 717/717 módulos; se conserva como advertencia no bloqueante.
+- En `45641728845`, el smoke nativo macOS ARM64 completó el recorrido comercial básico con conectividad externa habilitada, y Linux x86_64 completó el mismo recorrido con la salida externa bloqueada. También pasaron las pruebas unitarias del modo Demo, que comprueban que su configuración y datos quedan separados del runtime normal. El diagnóstico Docker/Linux se conserva como advertencia no bloqueante.
 - El POS sigue en aceptación: faltan devoluciones/reintegros, vuelto, pagos mixtos y tarjeta, movimientos y arqueo de caja, permisos por perfil, backup/restore, periféricos y pruebas fiscales argentinas.
 - La localización aún es parcial. La navegación general y varios formularios heredados requieren revisión. El JAR de MyCompany 6.2 ya se ejecuta nativamente en Java ARM64; que la imagen Docker oficial publique `linux/amd64` sólo afecta al camino Docker en Apple Silicon, no al runtime nativo.
 
