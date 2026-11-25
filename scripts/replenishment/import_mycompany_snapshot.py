@@ -200,10 +200,10 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
                 "CANCELLED" if status == "cancelled" else "NOT_FIRM",
             )
             continue
-        if quantity == 0:
-            continue
         if reserved > quantity:
             raise ValueError(f"{prefix}.lineReservedMilli no puede superar openQuantityMilli.")
+        if quantity == 0:
+            continue
         key = (product_id, location_id)
         if key not in items:
             raise ValueError(f"{prefix} no tiene planningInputs para {product_id}/{location_id}.")
