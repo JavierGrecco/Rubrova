@@ -1,55 +1,49 @@
 # Política de ramas e integración
 
-**Vigencia:** 25 de noviembre de 2026  
-**Rama canónica:** `main`
+**Revisión:** 25 de noviembre de 2026  
+**Rama canónica:** `main`  
+**Límite operativo:** una rama de funcionalidad activa; una segunda sólo para una corrección urgente e independiente.
 
 ## Objetivo
 
-Mantener una única línea de desarrollo fácil de revisar, probar, ejecutar localmente y recuperar. Ninguna funcionalidad se considera integrada hasta que sus cambios estén en `main`.
+Mantener una línea principal fácil de revisar, probar, ejecutar localmente y recuperar. Ningún cambio de aplicación se considera integrado hasta que esté en `main`.
 
-## Reglas operativas
+## Reglas
 
-1. **`main` es la fuente de verdad.** Debe contener el último estado integrado y validado. El código funcional se desarrolla en una rama y entra por PR; sólo se permiten commits directos excepcionales para documentación de gobernanza y mantenimiento administrativo del repositorio, sin alterar código de aplicación.
-2. **Máximo dos ramas de trabajo activas en simultáneo.** Preferentemente una sola rama de funcionalidad. La segunda se reserva para una corrección urgente e independiente; no se crean ramas auxiliares por cada commit o ajuste.
-3. **Cada rama nace del `main` actualizado.** Antes de crearla se sincroniza `main`; no se apilan ramas de funcionalidades dependientes ni se abren PR encadenados.
-4. **Un PR por unidad coherente de trabajo.** Debe indicar objetivo, alcance, riesgos, pruebas ejecutadas, resultado y limitaciones conocidas. Los cambios deben apuntar directamente a `main`.
-5. **Integración por hitos, no por cada commit.** Se acumulan cambios relacionados en la rama activa, se ejecutan las validaciones correspondientes y se integra el hito completo cuando la evidencia es suficiente.
-6. **Preferir squash merge.** Cada hito queda representado por un commit legible en `main`, sin arrastrar una secuencia de commits de prueba, correcciones intermedias o merges de ramas.
-7. **Eliminar la rama de trabajo después de integrar.** No mantener ramas históricas como lugares alternativos de desarrollo. Antes de eliminar una rama, comprobar que su contenido útil está en `main` o preservado en otro PR activo.
-8. **No fusionar ramas obsoletas en bloque.** Comparar su contenido real con `main`; los commits divergentes no implican necesariamente trabajo pendiente. Recuperar selectivamente cualquier cambio que todavía aporte valor y no esté integrado.
-9. **No declarar aceptación por pruebas parciales.** Separar pruebas estáticas, unitarias, compilación, arranque, API autenticada y smoke funcional. Un resultado verde de una capa no sustituye las demás.
+1. **`main` es la fuente de verdad.** No se desarrolla directamente sobre ella. Los cambios funcionales entran mediante pull request.
+2. **Máximo dos ramas de trabajo activas.** La norma es una sola rama de funcionalidad. La segunda se reserva para un hotfix independiente; no se crean ramas auxiliares por cada corrección o commit.
+3. **Las ramas nacen de `main` actualizado.** No se apilan funcionalidades dependientes ni se abren PR encadenados.
+4. **Un PR por hito coherente.** Debe explicar objetivo, alcance, riesgos, evidencia, limitaciones y criterio de aceptación. Siempre apunta directamente a `main`.
+5. **Integrar por hitos.** Agrupar cambios relacionados, ejecutar las validaciones del alcance y revisar el diff completo antes del merge.
+6. **Preferir squash merge.** Cada hito queda como un commit claro en `main`, sin arrastrar commits intermedios de prueba.
+7. **Eliminar la rama después del merge.** Antes de borrarla, verificar que todo el contenido útil está integrado.
+8. **No revivir ramas históricas por su historial.** Comparar archivos contra `main` y recuperar selectivamente sólo cambios útiles que falten.
+9. **No confundir CI verde con aceptación funcional.** Distinguir pruebas estáticas, unitarias, compilación, arranque, login, API autenticada, smoke POS y conciliación con datos reales.
 
 ## Convención de nombres
 
-- `work/<area>-<objetivo>`: rama principal de la siguiente funcionalidad.
-- `fix/<area>-<problema>`: única rama secundaria, sólo para una corrección urgente e independiente.
+- `work/<area>-<objetivo>`: rama principal para una nueva funcionalidad.
+- `fix/<area>-<problema>`: segunda rama opcional para un hotfix urgente e independiente.
 
-Los nombres deben ser cortos, estables y representar un objetivo, no un experimento temporal.
+Los nombres describen un objetivo estable, no un experimento temporal.
 
 ## Puerta de aceptación
 
-La validación se adapta al alcance, pero para cambios del runtime MyCompany la aceptación debe incluir:
+Para cambios del runtime o de MyCompany, la puerta mínima contempla:
 
 - validaciones estáticas y pruebas de contrato;
-- suites Python y pruebas de regresión afectadas;
-- compilación del servidor, cliente GWT y lógica MyCompany desde las fuentes fijadas;
-- smoke de arranque y disponibilidad del cliente;
-- llamada autenticada a la API cuando se modifica su contrato;
-- ejecución en Linux y Apple Silicon, además de Windows cuando la extensión o el despliegue lo afecten;
-- evidencia de conciliación contra una base local real antes de declarar validada la exportación productiva.
+- suites Python y regresiones relacionadas;
+- compilación del servidor, cliente GWT y lógica MyCompany desde fuentes fijadas;
+- arranque, RMI, disponibilidad del cliente y login;
+- API autenticada cuando se modifica su contrato;
+- smokes de runtime nativo macOS ARM64 y Linux; Windows cuando la extensión o el despliegue lo afecten;
+- evidencia de conciliación contra una base local real antes de declarar aceptada una exportación productiva.
 
-Las fixtures sintéticas sirven para regresión, no reemplazan la conciliación con datos reales.
+Las fixtures sintéticas son regresión automatizada, no sustituyen datos reales.
 
-## Aplicación al estado actual
+## Estado del repositorio — 25 de noviembre de 2026
 
-- Los PR #5, #6 y #7 ya integraron el planificador, el adaptador inicial y la consolidación de compromisos por línea en `main`.
-- Las ramas antiguas de esos trabajos deben tratarse como históricas: no volver a fusionarlas sin una diferencia concreta y útil.
-- El PR #8 es la única integración funcional pendiente. Se acepta sólo después de completar la compilación, el arranque, la API autenticada y los smokes requeridos.
-- Una vez aceptado el PR #8, se debe limpiar el conjunto de ramas históricas y continuar con una sola rama de trabajo activa (dos sólo cuando exista un hotfix independiente).
-
-## Limpieza de las ramas históricas actuales
-
-La comparación de archivos contra `main` confirmó que las siguientes ramas contienen versiones anteriores o contenido ya integrado. No deben volver a usarse para desarrollo:
+Hay **9 ramas remotas**: `main`, una rama activa del PR #8 y siete ramas históricas. La comparación de contenido confirmó que estas siete últimas no deben volver a utilizarse para desarrollo; sus resultados útiles ya están incorporados en `main` o fueron superados por versiones posteriores:
 
 - `diagnostic/docker-client-connectivity`
 - `feature/mycompany-readonly-replenishment-adapter`
@@ -59,12 +53,17 @@ La comparación de archivos contra `main` confirmó que las siguientes ramas con
 - `fix/demo-pos-smoke-register-name`
 - `test/complete-ci-regression-coverage`
 
-La rama `feat/mycompany-readonly-replenishment-api` se conserva mientras el PR #8 siga abierto. Las otras siete ramas ya se verificaron como históricas y se pueden eliminar ahora, dejando sólo `main` y la rama del PR #8:
+La única rama funcional activa debe seguir siendo `feat/mycompany-readonly-replenishment-api` hasta que se acepte o descarte el PR #8. El PR todavía no está integrado: la compilación pasó y el login funciona en los smokes nativos, pero la API de exportación tiene pendiente resolver un HTTP 500 de lsFusion.
+
+### Limpieza de las siete ramas históricas
+
+Una vez sincronizado el clon local con `main`, se pueden eliminar las siete ramas históricas remotas sin tocar la rama activa del PR #8:
 
 ```bash
 git switch main
 git fetch origin --prune
 git pull --ff-only origin main
+
 git push origin --delete \
   diagnostic/docker-client-connectivity \
   feature/mycompany-readonly-replenishment-adapter \
@@ -73,11 +72,12 @@ git push origin --delete \
   feature/stockout-aware-demand-planning \
   fix/demo-pos-smoke-register-name \
   test/complete-ci-regression-coverage
+
 git fetch origin --prune
 git branch -r
 ```
 
-Después de fusionar y verificar el PR #8, retirar también su rama de trabajo:
+Después de integrar y verificar el PR #8, eliminar también su rama:
 
 ```bash
 git push origin --delete feat/mycompany-readonly-replenishment-api
@@ -85,30 +85,12 @@ git fetch origin --prune
 git branch -r
 ```
 
-Ejecutar cada borrado sólo después de comprobar el estado indicado. No crear ramas nuevas para revivir estos trabajos: toda continuación parte del `main` actualizado.
+La limpieza de las ramas históricas es administrativa: no se vuelven a fusionar ni se pierden cambios ya integrados. No se deben borrar las ramas hasta comprobar que el PR #8 se encuentra preservado y que el clon local está sincronizado.
 
-```bash
-git switch main
-git fetch origin --prune
-git pull --ff-only origin main
-git push origin --delete \
-  diagnostic/docker-client-connectivity \
-  feat/mycompany-readonly-replenishment-api \
-  feature/mycompany-readonly-replenishment-adapter \
-  feature/order-line-replenishment-contract \
-  feature/projected-stock-replenishment-planner \
-  feature/stockout-aware-demand-planning \
-  fix/demo-pos-smoke-register-name \
-  test/complete-ci-regression-coverage
-git fetch origin --prune
-git branch -r
-```
+## Rutina por hito
 
+**Inicio:** actualizar `main`, comprobar árbol limpio, crear una sola rama desde `main` y definir la aceptación.
 
-## Rutina de inicio y cierre de cada hito
+**Desarrollo:** mantener el alcance concentrado y ejecutar pruebas focalizadas. Corregir sobre la misma rama mientras el PR siga siendo el único trabajo activo.
 
-**Inicio:** actualizar `main`, revisar el estado limpio del árbol, crear una rama de trabajo desde `main` y definir criterios de aceptación.
-
-**Durante:** mantener el alcance concentrado, ejecutar pruebas focalizadas y evitar abrir ramas paralelas para correcciones menores.
-
-**Cierre:** ejecutar el conjunto de validaciones del hito, revisar el diff completo, integrar mediante PR a `main`, verificar el commit resultante y eliminar la rama de trabajo. Si la aceptación falla, la rama sigue siendo la única rama activa hasta resolverlo.
+**Cierre:** revisar el diff, ejecutar validaciones completas, integrar por squash, verificar el resultado en `main` y eliminar la rama. Si falla la aceptación, no se abre otra rama para el mismo trabajo.
