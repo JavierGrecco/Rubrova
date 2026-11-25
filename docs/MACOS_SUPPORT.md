@@ -4,6 +4,14 @@
 **Objetivo:** ejecutar el mismo runtime Rubrova en el equipo local sin Docker, sin confundir la compatibilidad del repositorio con la aceptación del servidor nativo.
 
 ## Decisión actual
+## Estado de la validación más reciente
+
+La aceptación comercial básica del runtime nativo en CI corresponde a revisiones anteriores (`45637101959` y `45641728845`) y no sustituye la aceptación del cambio actual.
+
+En el PR #8, el run [45721155696](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) volvió a iniciar PostgreSQL, servidor lsFusion y Tomcat en macOS ARM64 y Linux; Chromium completó el login y cargó la navegación. La llamada autenticada a la nueva exportación de reposición devolvió HTTP 500 (`Set operation is incorrect`). La compilación fue correcta; el fallo se produce al ejecutar la consulta de exportación.
+
+Se retiraron conversiones `BPSTRING[10]` de los índices usados en los identificadores de línea y se añadió una guarda estática. La nueva validación está en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906). Hasta que el endpoint devuelva JSON válido en macOS ARM64 y Linux, no se considera aceptada la integración de reposición. La prueba en un Mac físico, periféricos y una instalación limpia offline siguen siendo hitos separados.
+
 
 El camino previsto para macOS es nativo:
 
@@ -22,7 +30,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45637101959`; prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | POS base aceptado históricamente en CI; API de reposición del PR #8 sigue pendiente tras HTTP 500 en runtime. Prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
