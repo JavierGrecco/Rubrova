@@ -89,7 +89,7 @@ python3 "$SCRIPT_DIR/runtime-config.py" init
 python3 "$SCRIPT_DIR/runtime-config.py" validate
 
 echo "2/5 Iniciando PostgreSQL, lsFusion/MyCompany y Tomcat sin Docker"
-python3 "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$LOG_FILE" 2>&1 &
+python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$LOG_FILE" 2>&1 &
 SUPERVISOR_PID=$!
 
 STARTUP_TIMEOUT="${RUBROVA_NATIVE_STARTUP_TIMEOUT_SECONDS:-1200}"
@@ -128,9 +128,16 @@ if [[ "${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
     exit 2
   }
   sudo -n iptables -I OUTPUT 1 -o lo -j ACCEPT
-  sudo -n iptables -I OUTPUT 2 ! -o lo -j REJECT
   EGRESS_RULES_INSTALLED=true
+  sudo -n iptables -I OUTPUT 2 ! -o lo -j REJECT
+  sudo -n iptables -C OUTPUT ! -o lo -j REJECT
   echo "RUBROVA_NATIVE_EGRESS_BLOCKED=true"
+  if curl --insecure --fail --silent --show-error --connect-timeout 2 --max-time 5 \
+      https://1.1.1.1/ >/dev/null 2>&1; then
+    echo "La salida externa sigue disponible pese a la regla de aislamiento." >&2
+    exit 1
+  fi
+  echo "RUBROVA_NATIVE_EXTERNAL_CONNECTIVITY=blocked"
 else
   echo "RUBROVA_NATIVE_EGRESS_BLOCKED=false"
 fi
