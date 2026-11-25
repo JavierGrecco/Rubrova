@@ -82,7 +82,7 @@ jobs:
           printf 'GITHUB_SHA=%s\\nCHECKED_OUT_SHA=%s\\n' "$expected_sha" "$checked_out_sha"
           test "$checked_out_sha" = "$expected_sha"
       - name: Preparar Java 21 y caché Maven
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
@@ -137,7 +137,7 @@ jobs:
           echo "Cliente GWT: WEB-INF/lib/api-6.2.jar está incluido para el arranque de Spring/Tomcat."
           echo "Lógica MyCompany y cliente web salen del reactor de Rubrova."
       - name: Publicar artefactos del runtime para el smoke funcional
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rubrova-runtime-application
           path: ${{ runner.temp }}/rubrova-runtime-artifacts/
@@ -165,16 +165,15 @@ jobs:
           checked_out_sha="$(git rev-parse HEAD)"
           test "$checked_out_sha" = "$expected_sha"
       - name: Descargar artefactos compilados desde el mismo SHA
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: rubrova-runtime-application
           path: ${{ runner.temp }}/rubrova-runtime-artifacts
       - name: Preparar Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
-          package-manager-cache: false
       - name: Instalar PostgreSQL 18 nativo en el runner
         shell: bash
         run: |
@@ -226,7 +225,7 @@ jobs:
         run: bash scripts/platform/test-runtime-native-smoke.sh
       - name: Conservar evidencia del runtime nativo
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rubrova-native-runtime-smoke
           path: |
@@ -257,7 +256,7 @@ jobs:
           printf 'GITHUB_SHA=%s\\nCHECKED_OUT_SHA=%s\\n' "$expected_sha" "$checked_out_sha"
           test "$checked_out_sha" = "$expected_sha"
       - name: Descargar artefactos compilados desde el mismo SHA
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: rubrova-runtime-application
           path: ${{ runner.temp }}/rubrova-runtime-artifacts
@@ -314,7 +313,7 @@ jobs:
           echo "::warning title=Docker/Linux no aprobado::El cliente web no respondió durante el smoke Docker/Linux. Se conserva el fallo para investigación; no bloquea la aceptación del runtime nativo macOS/Linux."
       - name: Conservar capturas de acceso y pantalla autenticada
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rubrova-mycompany-ui
           path: |
@@ -389,16 +388,15 @@ jobs:
           bash -n scripts/platform/test-runtime-native-smoke.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
       - name: Descargar los artefactos compilados desde el mismo SHA
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: rubrova-runtime-application
           path: ${{ runner.temp }}/rubrova-runtime-artifacts
       - name: Preparar Java 21 ARM64
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
-          package-manager-cache: false
       - name: Verificar que Java se ejecuta nativamente en ARM64
         shell: bash
         run: |
@@ -467,7 +465,7 @@ jobs:
         run: bash scripts/platform/test-runtime-native-smoke.sh
       - name: Conservar evidencia de macOS ARM64
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rubrova-native-runtime-smoke-macos-arm64
           path: |
