@@ -188,6 +188,8 @@ def plan_replenishment(item: dict[str, Any]) -> dict[str, Any]:
         "projectedEndAfterRecommendedOrderMilli": None,
         "minimumProjectedStockBeforeReceiptsMilli": None,
         "minimumProjectedStockDate": None,
+        "minimumProjectedStockBeforeNewSupplyMilli": None,
+        "minimumProjectedStockBeforeNewSupplyDate": None,
         "stockoutBeforeReplenishment": None,
         "reorderGapMilli": None,
         "recommendedOrderQtyMilli": None,
@@ -274,6 +276,8 @@ def plan_replenishment(item: dict[str, Any]) -> dict[str, Any]:
     min_before_receipts = stock
     min_before_receipts_date = as_of
     stockout_before_replenishment = stock < 0
+    min_before_new_supply = stock
+    min_before_new_supply_date = as_of
     stock += incoming_by_day.get(0, 0)
     if stock < min_stock:
         min_stock = stock
@@ -285,8 +289,12 @@ def plan_replenishment(item: dict[str, Any]) -> dict[str, Any]:
         if stock < min_before_receipts:
             min_before_receipts = stock
             min_before_receipts_date = current_date
-        if day <= lead_days and stock < 0:
-            stockout_before_replenishment = True
+        if day <= lead_days:
+            if stock < min_before_new_supply:
+                min_before_new_supply = stock
+                min_before_new_supply_date = current_date
+            if stock < 0:
+                stockout_before_replenishment = True
 
         stock += incoming_by_day.get(day, 0)
         if stock < min_stock:
@@ -323,6 +331,8 @@ def plan_replenishment(item: dict[str, Any]) -> dict[str, Any]:
         "projectedEndAfterRecommendedOrderMilli": stock + recommended,
         "minimumProjectedStockBeforeReceiptsMilli": min_before_receipts,
         "minimumProjectedStockDate": min_before_receipts_date.isoformat(),
+        "minimumProjectedStockBeforeNewSupplyMilli": min_before_new_supply,
+        "minimumProjectedStockBeforeNewSupplyDate": min_before_new_supply_date.isoformat(),
         "minimumProjectedEndOfDayMilli": min_stock,
         "minimumProjectedEndOfDayDate": min_stock_date.isoformat(),
         "stockoutBeforeReplenishment": stockout_before_replenishment,
