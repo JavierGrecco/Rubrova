@@ -122,7 +122,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /CLIENT_INTERNAL_HTTP/);
   assert.match(runtimeSmokeSource, /RUBROVA_CLIENT_PUBLISHED_PORT=127[.]0[.]0[.]1:8080/);
   assert.match(runtimeSmokeSource, /enable_ip_masquerade: "false"/);
-  assert.match(runtimeSmokeSource, /networks:\\n      - default\\n      - ingress/);
+  assert.match(runtimeSmokeSource, /networks:\n      - default\n      - ingress/);
   assert.match(runtimeSmokeSource, /RUBROVA_CLIENT_EXTERNAL_EGRESS=blocked/);
   assert.match(runtimeSmokeSource, /RUBROVA_INGRESS_EGRESS_MASQUERADE=false/);
   assert.match(runtimeSmokeSource, /build-rubrova-runtime-images[.]sh/);
