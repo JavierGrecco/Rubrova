@@ -1095,6 +1095,11 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     1,
     "Sales.OrderLine debe declararse una sola vez en la consulta de compromisos; el resto de campos reutiliza ol."
   );
+  assert.doesNotMatch(
+    replenishmentExportSource,
+    /BPSTRING\\[10\\]/,
+    "Los índices de línea deben conservar su fuente de conjunto y no quedar ocultos tras BPSTRING."
+  );
   assert.match(replenishmentExportSource, /effectiveReserved = \(OVERRIDE/);
   assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
