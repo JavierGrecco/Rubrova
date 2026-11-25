@@ -22,7 +22,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45548326798`; prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45558057837`; prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
@@ -106,13 +106,13 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 
 La CI ejecuta tres verificaciones de runtime distintas, a partir de los artefactos compilados desde la misma revisión:
 
-- **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45548326798` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración.
+- **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45558057837` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración. Ese job usó `RUBROVA_BLOCK_EGRESS=false`; no certifica por sí solo el modo offline en macOS.
 - **Docker/Linux (diagnóstico no bloqueante):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. En `45558057837` el cliente no respondió HTTP (`000`) durante 900 segundos, aunque el servidor cargó los 717 módulos y Tomcat desplegó la aplicación. El fallo se conserva para investigación y no bloquea el runtime nativo.
 - **Linux x86_64 nativo (smoke complementario):** en `45558057837` inició Java, PostgreSQL y Tomcat, bloqueó la salida externa y completó el mismo ciclo POS: turno, venta, cobro, stock, cierre y pruebas de integración. No se necesita Docker para este recorrido.
 
-El smoke macOS exitoso no bloqueó toda la salida externa, por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. La verificación Linux nativa bajo bloqueo de salida todavía no completa el render del POS. No se debe confundir ninguna de estas pruebas con una instalación offline lista para una PC limpia.
+El smoke macOS se ejecutó con salida externa habilitada (`RUBROVA_BLOCK_EGRESS=false`), por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. En cambio, el smoke Linux nativo `45637101959` bloqueó la salida externa y completó el POS, pago, stock, cierre y recuperación de integraciones. La primera instalación completa offline sigue pendiente en ambos sistemas; no se debe confundir este smoke con un instalador listo para una PC limpia.
 
-La aceptación Docker histórica `45503956218` y la aceptación nativa macOS/Linux del run `45558057837` son evidencias separadas. Todas cubren venta por ARS 1.250, factura/pago, stock y cierre básico; faltan los restantes circuitos comerciales y la prueba de Docker bajo el nuevo diagnóstico.
+La aceptación Docker histórica `45503956218`, la aceptación nativa macOS `45558057837` y la aceptación Linux nativa `45637101959` son evidencias separadas. Cubren venta por ARS 1.250, factura/pago, stock y cierre básico; Linux nativo también se probó con salida externa bloqueada. Faltan los restantes circuitos comerciales y la prueba de Docker bajo el nuevo diagnóstico.
 
 ## Ruta Docker para empaquetado y validación CI
 
@@ -128,7 +128,7 @@ Una Mac también puede utilizarse como puesto cliente si el servidor se encuentr
 
 1. Repetir en tu Mac Apple Silicon el recorrido que ya pasó en CI, con Java 21 ARM64 y PostgreSQL 18 ARM64; verificar persistencia y logs locales.
 2. Investigar el HTTP `000` del cliente en Docker/Linux y conservar sus logs/capturas sin bloquear el runtime nativo.
-3. Investigar por separado el smoke Linux nativo: `PosDashboard` queda cargando cuando se bloquea la salida externa; revisar la dependencia de navegador que solicita `marked.min.js` y el error de registro del service worker sin asumir que ya son la causa.
+3. Repetir en macOS ARM64 una verificación del POS con la salida externa bloqueada. El smoke macOS actual deja esa condición abierta; Linux nativo ya completó el recorrido con egress bloqueado.
 4. Repetir la aceptación en Windows x64, incluida la gestión de procesos y rutas.
 5. Empaquetar e instalar en una PC limpia sin Internet; verificar firma, permisos, secretos, actualizaciones y backup/restore.
 6. Aceptar navegador y periféricos reales, incluidos lector, impresora, cajón, balanza, terminal, reinicio, contingencias y restauración.
