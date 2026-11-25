@@ -63,8 +63,8 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
-            sourceLineId = Sales.id(Sales.OrderLine ol),
-            sourceDocumentId = Sales.id(Sales.order(ol)),
+            sourceLineId = LONG(ol),
+            sourceDocumentId = LONG(Sales.order(ol)),
             sourceDocumentNumber = Sales.number(Sales.order(ol)),
             productId = MasterData.id(Sales.shippedProduct(ol)),
             productName = MasterData.name(Sales.shippedProduct(ol)),
@@ -85,11 +85,11 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.id(ol)
         ),
         receipts = (JSON FROM
-            lineId = Inventory.id(Inventory.line(Inventory.ReceiptResLedger rr)),
-            receiptId = Inventory.id(Inventory.receipt(Inventory.line(rr))),
+            lineId = LONG(Inventory.line(rr)),
+            receiptId = LONG(Inventory.receipt(Inventory.line(rr))),
             receiptNumber = Inventory.number(Inventory.receipt(Inventory.line(rr))),
-            purchaseOrderId = Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
-            purchaseOrderLineId = Purchase.id(Purchase.orderLine(Inventory.line(rr))),
+            purchaseOrderId = LONG(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+            purchaseOrderLineId = LONG(Purchase.orderLine(Inventory.line(rr))),
             productId = MasterData.id(Inventory.product(Inventory.line(rr))),
             productName = MasterData.name(Inventory.product(Inventory.line(rr))),
             locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
