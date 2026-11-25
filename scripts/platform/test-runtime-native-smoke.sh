@@ -55,6 +55,7 @@ DEMO_DATA_ROOT="$DEMO_USER_DATA_ROOT/demo-preview"
 DEMO_CONFIG_PATH="$DEMO_USER_DATA_ROOT/demo-runtime-config.json"
 DEMO_LOG_FILE="$WORK_DIR/demo-runtime.log"
 DEMO_UI_LOG_FILE="$WORK_DIR/demo-ui-smoke.log"
+DEMO_SCREENSHOT_BASE="$WORK_DIR/rubrova-native.png"
 DEMO_SCREENSHOT="$WORK_DIR/rubrova-native-demo.png"
 DIAGNOSTICS_FILE="$WORK_DIR/native-diagnostics.log"
 
@@ -359,7 +360,7 @@ grep -Fq "Servidor Rubrova y PostgreSQL están listos." "$DEMO_LOG_FILE" || {
   exit 1
 }
 
-RUBROVA_UI_SCREENSHOT="$DEMO_SCREENSHOT" \
+RUBROVA_UI_SCREENSHOT="$DEMO_SCREENSHOT_BASE" \
 RUBROVA_UI_TEST_LOGIN=true \
 RUBROVA_UI_TEST_USERNAME=admin \
 RUBROVA_UI_STOP_AFTER_LOGIN=false \
