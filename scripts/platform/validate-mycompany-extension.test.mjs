@@ -288,7 +288,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativePreviewSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
   assert.match(nativePreviewSource, /-Dlsfusion[.]rmi[.]bindAddress=127[.]0[.]0[.]1/);
   assert.match(nativePreviewSource, /def tomcat_startup_diagnostics/);
-  assert.match(nativePreviewSource, /HTTP 404 de forma sostenida/);
+  assert.match(nativePreviewSource, /HTTP 404 en el cliente/);
   assert.match(sourcePatch, /RMI_SERVER_SOCKET_TARGET/);
   assert.match(sourcePatch, /System[.]getProperty\("lsfusion[.]rmi[.]bindAddress"\)/);
   assert.match(sourcePatch, /new InetSocketAddress\(InetAddress[.]getByName/);
