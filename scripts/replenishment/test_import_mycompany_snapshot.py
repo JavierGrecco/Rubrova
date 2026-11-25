@@ -55,16 +55,17 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         # The completed original shipment is excluded; only the separately
         # exported open residual shipment remains in the planning horizon.
         self.assertEqual(result["firmOutgoingInHorizonMilli"], 4000)
-        self.assertEqual(result["excludedOutgoingByReason"]["ALREADY_SHIPPED"], 1)
+        self.assertEqual(report["excludedOutgoingByReason"]["ALREADY_SHIPPED"], 1)
 
     def test_only_ready_receipt_from_confirmed_purchase_order_is_included(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "COLA-2L")
         self.assertEqual(result["includedIncomingCount"], 1)
         self.assertEqual(result["confirmedIncomingInHorizonMilli"], 6000)
-        self.assertEqual(result["excludedIncomingByReason"], {
+        self.assertEqual(report["excludedIncomingByReason"], {
             "ALREADY_RECEIVED": 1,
-            "NOT_CONFIRMED_PURCHASE_ORDER": 1,
+            "CANCELLED": 1,
+            "NOT_CONFIRMED_PURCHASE_ORDER": 2,
             "NOT_READY": 1,
         })
 
