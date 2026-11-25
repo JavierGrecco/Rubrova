@@ -1,6 +1,6 @@
 # Plan de trabajo
 
-**Revisión:** 24 de noviembre de 2026  
+**Revisión:** 25 de noviembre de 2026  
 **Dirección prioritaria:** POS y operación comercial → ERP de gestión → contabilidad/fiscalidad → análisis y reportes → perfiles sectoriales y canales → logística avanzada.
 
 ## Estado real
@@ -11,7 +11,7 @@ Los árboles fuente completos están en `vendor/platform/` y `vendor/mycompany/`
 
 La capa de pagos presenciales ya tiene arquitectura documentada para terminal autónoma, integración local y cloud-to-cloud, además de una base inicial de cuentas de proveedor, terminales, asignaciones, intentos, eventos y liquidaciones. No es todavía un conector ni un cobro real: falta elegir equipo/proveedor, acceder al sandbox y homologar el flujo físico. Véase [Arquitectura de terminales de pago](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
 
-El validador del dataset mantiene sus 34 pruebas aprobadas y el benchmark de demanda con StatsForecast 2.1.1 conserva su aceptación previa. La prioridad inmediata es completar devoluciones/reintegros, caja con movimientos y arqueo, y casos de pago pendientes antes de ampliar fiscalidad o integraciones comerciales.
+El validador del dataset mantiene sus 34 pruebas aprobadas y el benchmark de demanda regular/intermitente con StatsForecast 2.1.1 conserva su aceptación. El primer experimento separado de demanda censurada por quiebres de stock ya está integrado en `main`: fixture sintético de 36 meses, 9/9 pruebas unitarias y benchmark aprobado en el run [45691772597](https://github.com/JavierGrecco/Rubrova/actions/runs/45691772597). Sólo 24/36 períodos superan los umbrales de disponibilidad. La comparación de WAPE se limita a la verdad sintética del fixture; no demuestra precisión comercial ni habilita compras automáticas. La prioridad operativa sigue siendo completar devoluciones/reintegros, caja con movimientos y arqueo, y casos de pago pendientes antes de ampliar fiscalidad o integraciones comerciales.
 
 La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
 
@@ -227,6 +227,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 - [x] Arquitectura de servicios de dominio, APIs/eventos, ownership, idempotencia, CAS, Outbox/Inbox y recuperación.
 - [x] Dataset de evaluación y validador automático: 34/34 pruebas de fixture aprobadas en CI (20/11/2026).
 - [x] Benchmark mensual de demanda regular e intermitente con StatsForecast 2.1.1 y baselines; CI aprobado sobre 48 meses sintéticos por serie (20/11/2026).
+- [x] Primer experimento aislado de demanda censurada por stockout: ajuste conservador por días disponibles, fixture de 36 meses, umbrales explícitos, cobertura/exclusiones y 9/9 pruebas en CI (25/11/2026); no usa datos reales ni escribe en el POS/ERP.
 - [x] Investigación de ERPNext, MyCompany/lsFusion, Tryton, Dolibarr y Posnic.
 - [x] Revisión de la localización argentina Odoo y de tryton-ar; se encontraron ocho ramas coordinadas 8.0 con manifiestos y tests; instalación y homologación pendientes.
 - [x] Shortlist de componentes para fiscalidad, importación, hardware, analítica, producción, ecommerce, backup y logística.
@@ -244,7 +245,7 @@ Ninguna capacidad se marca terminada porque exista una pantalla, documentación 
 3. Pasar Dolibarr 24.0.3 por el filtro corto y llevar como máximo dos finalistas a P01–P67.
 4. Resolver las puertas de licencia, API, localización argentina, exportación, backup/restore y límite de dominio. P49 añade la comprobación de historial comercial; P50–P57 validan temporalidad, caja, promociones, reclamos y exportaciones; P58–P60 validan el perfil 360; P61–P67 validan identidad de pagos, conciliación, privacidad, PCI e integraciones.
 5. Elegir la base del primer circuito y recién entonces implementar/adaptar las brechas concretas.
-6. Ampliar el benchmark con quiebres de stock censurados, promociones, cambios de precio, productos nuevos y más horizontes; preparar una entrada de datos reales una vez elegida la plataforma POS/ERP. Evaluar MLForecast y HierarchicalForecast sólo después de medir la mejora frente a baselines.
+6. Extender el experimento inicial de quiebres de stock —ya incorporado con datos sintéticos— con promociones, cambios de precio, productos nuevos, granularidad diaria/horaria y más horizontes. Después preparar una entrada de datos reales conciliados una vez elegida la plataforma POS/ERP. Evaluar MLForecast y HierarchicalForecast sólo después de medir la mejora frente a baselines.
 
 El requisito de copia portable y recuperación en PC nueva está en [Copias de seguridad y recuperación](BACKUP_AND_MIGRATION_STRATEGY.md). El backup de aplicación será portable y sin cifrado propio; se valida mediante checksums, reconciliación y restauración en PC nueva. El cifrado del disco completo puede habilitarse opcionalmente desde el sistema operativo.
 
