@@ -1063,6 +1063,10 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.doesNotMatch(replenishmentExportSource, /NEW\s+\w+\s*=|DELETE\s+/);
   assert.match(replenishmentExportSource, /snapshotType = 'mycompany-replenishment-source-export'/);
   assert.match(replenishmentExportSource, /quantityPrecision = 3/);
+  assert.match(replenishmentExportSource, /readOnly = TRUE/);
+  assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) <> 0/);
+  assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
+  assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
 });
 
 test("el modelo de terminales se carga desde el punto de entrada y el lock", () => {
