@@ -1,0 +1,52 @@
+name: Evaluación del planificador de reposición
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/fixtures/replenishment-planning.json"
+      - "docs/PROJECTED_STOCK_AND_REPLENISHMENT.md"
+      - "scripts/replenishment/**"
+      - ".github/workflows/replenishment-planner.yml"
+  pull_request:
+    paths:
+      - "docs/fixtures/replenishment-planning.json"
+      - "docs/PROJECTED_STOCK_AND_REPLENISHMENT.md"
+      - "scripts/replenishment/**"
+      - ".github/workflows/replenishment-planner.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validar planificación temporal de reposición
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Preparar Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Validar sintaxis del planificador
+        run: python -m py_compile scripts/replenishment/plan_replenishment.py scripts/replenishment/test_plan_replenishment.py
+
+      - name: Ejecutar pruebas de reposición proyectada
+        run: python -m unittest discover -s scripts/replenishment -p 'test_*.py'
+
+      - name: Evaluar escenarios sintéticos y reglas de reposición
+        run: python scripts/replenishment/plan_replenishment.py --fixture docs/fixtures/replenishment-planning.json --output /tmp/replenishment-planning.json
+
+      - name: Publicar resumen de evaluación
+        if: always()
+        run: |
+          if [ -f /tmp/replenishment-planning.json ]; then
+            cat /tmp/replenishment-planning.json >> "$GITHUB_STEP_SUMMARY"
+          fi

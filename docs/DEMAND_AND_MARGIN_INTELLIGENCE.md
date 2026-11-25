@@ -1,6 +1,6 @@
 # Inteligencia de demanda, rentabilidad y marcas
 
-**Revisión:** 20 de noviembre de 2026  
+**Revisión:** 25 de noviembre de 2026  
 **Estado:** diseño funcional y selección preliminar de herramientas; ninguna biblioteca de forecasting o BI está instalada ni aprobada para producción.
 
 Este documento es la referencia de implementación para que las capacidades de demanda, rentabilidad y preferencia entre marcas no se pierdan entre las fases del POS, ERP y analítica. Complementa el [Plan de trabajo](ROADMAP.md), el [Plan maestro](MASTER_IMPLEMENTATION_PLAN.md), la [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md) y el [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md).
@@ -65,6 +65,15 @@ Como referencias de diseño:
 - [Odoo — reglas de reabastecimiento](https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/warehouses_storage/replenishment/reordering_rules.html): mínimos/máximos, horizonte y plazos de proveedor.
 - [ERPNext — cantidad proyectada](https://docs.frappe.io/erpnext/projected-quantity): integra existencias, entradas previstas, pedidos y reservas.
 
+
+
+#### Planificación temporal de stock y reposición (experimento separado)
+
+Para conectar demanda con compras sin automatizar transacciones, se abrió un planificador de solo lectura. Estudia existencia física, reservas, compromisos de salida abiertos, recepciones confirmadas, lead time, período de revisión, demanda diaria elegible, stock de seguridad, MOQ y múltiplo de compra. Las reservas son parte de los compromisos de salida: se descuentan para calcular disponible inmediato, pero no se suman como una segunda demanda en la proyección. Las recepciones borrador, enviadas sin confirmación, canceladas, recibidas, vencidas o fuera del horizonte se excluyen.
+
+El cálculo proyecta cada día hasta `lead time + período de revisión`, descuenta demanda no comprometida y salidas firmes antes de sumar las recepciones del día, y marca por separado un faltante anterior a la llegada del nuevo pedido. Si no hay al menos 12 períodos elegibles y un 50% de cobertura, suprime la sugerencia. El resultado es una cantidad propuesta redondeada por MOQ/múltiplo, nunca una orden de compra.
+
+La especificación, el código y los seis escenarios sintéticos están en [Stock proyectado y planificación conservadora de reposición](PROJECTED_STOCK_AND_REPLENISHMENT.md), [plan_replenishment.py](../scripts/replenishment/plan_replenishment.py) y [fixture](fixtures/replenishment-planning.json). El prototipo aún debe conciliarse contra los ledgers reales de MyCompany y compararse con `PurchaseOrderShipmentAuto`; no está conectado a la base, no modifica existencias y no autoriza compras.
 
 ### 2.3 Costos y gastos
 
