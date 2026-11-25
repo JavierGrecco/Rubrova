@@ -1049,6 +1049,10 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   for (const field of [
     "Inventory.onHand(l, p)",
     "Inventory.available(l, p)",
+    "onHandNative = Inventory.onHand(l, p)",
+    "availableNative = Inventory.available(l, p)",
+    "OVERRIDE Inventory.available(l, p)",
+    "OVERRIDE Inventory.planned(l, p)",
     "Inventory.planned(l, p)",
     "Sales.toShip(ol)",
     "Sales.scheduledDateTime(Sales.order(ol))",
@@ -1068,6 +1072,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /quantityPrecision = 3/);
   assert.match(replenishmentExportSource, /readOnly = TRUE/);
   assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
+  assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
+  assert.match(replenishmentExportSource, /effectiveReserved = OVERRIDE/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) <> 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
