@@ -270,8 +270,8 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);
   assert.match(runtimeWorkflowSource, /playwright install chromium/);
   assert.equal((runtimeWorkflowSource.match(/PLAYWRIGHT_BROWSERS_PATH:/g) || []).length, 6, "Cada instalación y ejecución de Playwright debe declarar una caché de navegadores explícita.");
-  assert.equal((runtimeWorkflowSource.match(/PLAYWRIGHT_BROWSERS_PATH: \\$\\{\\{ runner[.]temp \\}\\}\\/rubrova-native-playwright-browsers/g) || []).length, 4, "Los smokes nativos deben compartir la misma caché de Chromium.");
-  assert.equal((runtimeWorkflowSource.match(/PLAYWRIGHT_BROWSERS_PATH: \\$\\{\\{ runner[.]temp \\}\\}\\/rubrova-playwright-browsers/g) || []).length, 2, "El smoke Docker debe compartir la caché de Chromium entre instalación y ejecución.");
+  assert.equal(runtimeWorkflowSource.split("PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers").length - 1, 4, "Los smokes nativos deben compartir la misma caché de Chromium.");
+  assert.equal(runtimeWorkflowSource.split("PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-playwright-browsers").length - 1, 2, "El smoke Docker debe compartir la caché de Chromium entre instalación y ejecución.");
   assert.equal((runtimeWorkflowSource.match(/RUBROVA_PLAYWRIGHT_BROWSER_READY=true/g) || []).length, 3, "Cada job que instala Chromium debe comprobar que el navegador realmente puede arrancar.");
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_READY_TIMEOUT_SECONDS: 180/);
