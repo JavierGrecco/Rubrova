@@ -18,6 +18,7 @@ printf '# Existing local settings\nlogics.topModule = OldModule\nuser.setLanguag
 printf 'previous module content\n' > "$MODULE_DIR/RubrovaPOSLocalization.lsf"
 printf 'previous resilience module content\n' > "$MODULE_DIR/RubrovaIntegrationResilience.lsf"
 printf 'previous payment terminal module content\n' > "$MODULE_DIR/RubrovaPaymentTerminals.lsf"
+printf 'previous replenishment export module content\n' > "$MODULE_DIR/RubrovaReplenishmentExport.lsf"
 printf 'previous override content\n' > "$INSTALL_DIR/compose.rubrova.override.yaml"
 
 FAKE_BIN="$TEMP_DIR/bin"
@@ -36,6 +37,7 @@ for file in \
   "RubrovaPOSLocalization.lsf" \
   "RubrovaIntegrationResilience.lsf" \
   "RubrovaPaymentTerminals.lsf" \
+  "RubrovaReplenishmentExport.lsf" \
   "MyCompanyResourceBundle_es_AR.properties"
 do
   cmp -s "$REPO_ROOT/extensions/lsfusion/$file" "$MODULE_DIR/$file" || {
@@ -80,6 +82,9 @@ resilience_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'Rubrova
 
 payment_terminal_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPaymentTerminals.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$payment_terminal_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de terminales existente." >&2; exit 1; }
+
+replenishment_export_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaReplenishmentExport.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$replenishment_export_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de exportación de reposición existente." >&2; exit 1; }
 
 settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$settings_backup_count" -eq 1 ]] || {
