@@ -187,10 +187,20 @@ jobs:
       - name: Preparar Chromium para la inspección de interfaz
         env:
           PLAYWRIGHT_VENV: ${{ runner.temp }}/rubrova-native-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers
         run: |
           python3 -m venv "$PLAYWRIGHT_VENV"
           "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
           "$PLAYWRIGHT_VENV/bin/python" -m playwright install chromium
+          "$PLAYWRIGHT_VENV/bin/python" - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch(headless=True)
+              browser.close()
+
+          print("RUBROVA_PLAYWRIGHT_BROWSER_READY=true")
+          PY
       - name: Validar sintaxis del runtime nativo
         run: |
           bash -n scripts/platform/test-runtime-native-smoke.sh
@@ -200,6 +210,7 @@ jobs:
           RUBROVA_BUILD_ARTIFACTS_DIR: ${{ runner.temp }}/rubrova-runtime-artifacts
           RUBROVA_POSTGRES_BIN: /usr/lib/postgresql/18/bin
           RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-native-playwright/bin/python
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers
           RUBROVA_NATIVE_SMOKE_DIR: ${{ runner.temp }}/rubrova-native-smoke
           RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
           RUBROVA_RUNTIME_CONFIG_PATH: ${{ runner.temp }}/rubrova-native-smoke/runtime-config.json
@@ -256,10 +267,20 @@ jobs:
       - name: Preparar Chromium para inspección de interfaz
         env:
           PLAYWRIGHT_VENV: ${{ runner.temp }}/rubrova-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-playwright-browsers
         run: |
           python3 -m venv "$PLAYWRIGHT_VENV"
           "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
           "$PLAYWRIGHT_VENV/bin/python" -m playwright install chromium
+          "$PLAYWRIGHT_VENV/bin/python" - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch(headless=True)
+              browser.close()
+
+          print("RUBROVA_PLAYWRIGHT_BROWSER_READY=true")
+          PY
       - name: Validar sintaxis de los scripts de runtime
         run: |
           bash -n scripts/platform/test-runtime-smoke.sh
@@ -270,6 +291,7 @@ jobs:
           RUBROVA_BUILD_ARTIFACTS_DIR: ${{ runner.temp }}/rubrova-runtime-artifacts
           RUBROVA_SKIP_OFFICIAL_LOGIC_JAR: "true"
           RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-playwright/bin/python
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-playwright-browsers
           RUBROVA_UI_SCREENSHOT: ${{ runner.temp }}/rubrova-mycompany-ui.png
           RUBROVA_UI_TEST_LOGIN: "true"
           RUBROVA_UI_TEST_USERNAME: "admin"
@@ -392,10 +414,20 @@ jobs:
         shell: bash
         env:
           PLAYWRIGHT_VENV: ${{ runner.temp }}/rubrova-native-playwright
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers
         run: |
           python3 -m venv "$PLAYWRIGHT_VENV"
           "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
           "$PLAYWRIGHT_VENV/bin/python" -m playwright install chromium
+          "$PLAYWRIGHT_VENV/bin/python" - <<'PY'
+          from playwright.sync_api import sync_playwright
+
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch(headless=True)
+              browser.close()
+
+          print("RUBROVA_PLAYWRIGHT_BROWSER_READY=true")
+          PY
       - name: Confirmar integridad de los artefactos compartidos
         shell: bash
         run: |
@@ -408,6 +440,7 @@ jobs:
         env:
           RUBROVA_BUILD_ARTIFACTS_DIR: ${{ runner.temp }}/rubrova-runtime-artifacts
           RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-native-playwright/bin/python
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers
           RUBROVA_NATIVE_SMOKE_DIR: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64
           RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/rubrova-native-login.png
           RUBROVA_RUNTIME_CONFIG_PATH: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/runtime-config.json
