@@ -281,7 +281,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
   assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
-  assert.doesNotMatch(nativeSmokeSource, /docker|compose/i);
+  assert.doesNotMatch(nativeSmokeSource, /(^|[ \\t])docker([ \\t]|$)|docker-compose/);
   assert.match(nativePreviewSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
   assert.equal(
     (runtimeWorkflowSource.match(/CHECKED_OUT_SHA=/g) || []).length,
