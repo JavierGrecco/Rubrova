@@ -146,7 +146,7 @@ jobs:
     needs: [validate, build-fork]
     timeout-minutes: 35
     concurrency:
-      group: rubrova-native-runtime-smoke-\${{ github.ref }}
+      group: rubrova-native-runtime-smoke-${{ github.ref }}
       cancel-in-progress: true
     steps:
       - name: Obtener el repositorio
@@ -154,14 +154,14 @@ jobs:
       - name: Confirmar la revisión exacta que se va a probar
         shell: bash
         run: |
-          expected_sha="\${GITHUB_SHA:?GitHub no informó el SHA esperado}"
+          expected_sha="${GITHUB_SHA:?GitHub no informó el SHA esperado}"
           checked_out_sha="$(git rev-parse HEAD)"
           test "$checked_out_sha" = "$expected_sha"
       - name: Descargar artefactos compilados desde el mismo SHA
         uses: actions/download-artifact@v4
         with:
           name: rubrova-runtime-application
-          path: \${{ runner.temp }}/rubrova-runtime-artifacts
+          path: ${{ runner.temp }}/rubrova-runtime-artifacts
       - name: Preparar Java 21
         uses: actions/setup-java@v4
         with:
@@ -184,7 +184,7 @@ jobs:
           /usr/lib/postgresql/18/bin/pg_ctl --version
       - name: Preparar Chromium para la inspección de interfaz
         env:
-          PLAYWRIGHT_VENV: \${{ runner.temp }}/rubrova-native-playwright
+          PLAYWRIGHT_VENV: ${{ runner.temp }}/rubrova-native-playwright
         run: |
           python3 -m venv "$PLAYWRIGHT_VENV"
           "$PLAYWRIGHT_VENV/bin/python" -m pip install --disable-pip-version-check playwright==1.65.2
@@ -195,12 +195,12 @@ jobs:
           python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py
       - name: Ejecutar servidor local y comprobar interfaz sin salida a Internet
         env:
-          RUBROVA_BUILD_ARTIFACTS_DIR: \${{ runner.temp }}/rubrova-runtime-artifacts
+          RUBROVA_BUILD_ARTIFACTS_DIR: ${{ runner.temp }}/rubrova-runtime-artifacts
           RUBROVA_POSTGRES_BIN: /usr/lib/postgresql/18/bin
-          RUBROVA_PLAYWRIGHT_PYTHON: \${{ runner.temp }}/rubrova-native-playwright/bin/python
-          RUBROVA_NATIVE_SMOKE_DIR: \${{ runner.temp }}/rubrova-native-smoke
-          RUBROVA_NATIVE_SCREENSHOT: \${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
-          RUBROVA_RUNTIME_CONFIG_PATH: \${{ runner.temp }}/rubrova-native-smoke/runtime-config.json
+          RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-native-playwright/bin/python
+          RUBROVA_NATIVE_SMOKE_DIR: ${{ runner.temp }}/rubrova-native-smoke
+          RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
+          RUBROVA_RUNTIME_CONFIG_PATH: ${{ runner.temp }}/rubrova-native-smoke/runtime-config.json
           RUBROVA_BLOCK_EGRESS: "true"
           RUBROVA_KEEP_NATIVE_SMOKE_DATA: "true"
           RUBROVA_NATIVE_STARTUP_TIMEOUT_SECONDS: 1200
@@ -211,8 +211,8 @@ jobs:
         with:
           name: rubrova-native-runtime-smoke
           path: |
-            \${{ runner.temp }}/rubrova-native-smoke/native-runtime.log
-            \${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
+            ${{ runner.temp }}/rubrova-native-smoke/native-runtime.log
+            ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
           if-no-files-found: warn
 
   runtime-smoke:
