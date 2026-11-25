@@ -193,10 +193,15 @@ def safe_extract_zip(archive: Path, destination: Path) -> None:
         bundle.extractall(destination)
 
 
-def download_tomcat(cache_root: Path, allow_download: bool) -> Path:
+def download_tomcat(
+    cache_root: Path,
+    allow_download: bool,
+    configured_home: str | None = None,
+) -> Path:
     target = cache_root / f"apache-tomcat-{TOMCAT_VERSION}"
     executable = "catalina.bat" if os.name == "nt" else "catalina.sh"
     candidates = [
+        Path(configured_home).expanduser() if configured_home else None,
         Path(os.environ.get("RUBROVA_TOMCAT_HOME", "")).expanduser()
         if os.environ.get("RUBROVA_TOMCAT_HOME")
         else None,
@@ -355,10 +360,14 @@ def prepare_tomcat_base(tomcat_home: Path, base: Path, war: Path, ports: dict[st
         value = item.find(f"{namespace}param-value")
         if name is not None and value is not None:
             params[name.text or ""] = value
-    if "host" in params:
-        params["host"].text = "127.0.0.1"
-    if "port" in params:
-        params["port"].text = str(ports["rmi"])
+    missing_params = {"host", "port"} - set(params)
+    if missing_params:
+        raise RuntimeErrorRubrova(
+            "El cliente web no declara los parámetros RMI requeridos: "
+            + ", ".join(sorted(missing_params))
+        )
+    params["host"].text = "127.0.0.1"
+    params["port"].text = str(ports["rmi"])
     tree.write(web_xml, encoding="UTF-8", xml_declaration=True)
 
     server_xml = base / "conf" / "server.xml"
@@ -549,6 +558,9 @@ def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> b
             conf.write("\nlisten_addresses = '127.0.0.1'\n")
             conf.write(f"port = {port}\n")
             conf.write("max_connections = 100\n")
+            # The private cluster uses TCP loopback only and does not depend on
+            # a system-wide Unix socket directory owned by another service.
+            conf.write("unix_socket_directories = ''\n")
         with (data_dir / "pg_hba.conf").open("a", encoding="utf-8") as hba:
             hba.write("\nhost all all 127.0.0.1/32 trust\n")
             hba.write("host all all ::1/128 trust\n")
@@ -648,7 +660,11 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
     artifacts = check_artifacts()
     java = find_java(local.get("java_home"))
     pg_bin = find_postgres_bin(local.get("postgres_bin"))
-    tomcat_home = download_tomcat(dependency_cache_root(), allow_download=allow_tomcat_download)
+    tomcat_home = download_tomcat(
+        dependency_cache_root(),
+        allow_download=allow_tomcat_download,
+        configured_home=local.get("tomcat_home"),
+    )
 
     data_root = Path(local["data_directory"]).expanduser() if local.get("data_directory") else user_data_root() / "native-preview"
     pg_data = data_root / "postgres-data"
@@ -792,7 +808,11 @@ def doctor(config_path: Path, allow_tomcat_download: bool) -> None:
     artifacts = check_artifacts()
     java = find_java(config["local_runtime"].get("java_home"))
     pg_bin = find_postgres_bin(config["local_runtime"].get("postgres_bin"))
-    tomcat = download_tomcat(dependency_cache_root(), allow_download=allow_tomcat_download)
+    tomcat = download_tomcat(
+        dependency_cache_root(),
+        allow_download=allow_tomcat_download,
+        configured_home=config["local_runtime"].get("tomcat_home"),
+    )
     print("Diagnóstico nativo correcto:")
     print(f"  Java: {java}")
     print(f"  PostgreSQL 18: {pg_bin}")
