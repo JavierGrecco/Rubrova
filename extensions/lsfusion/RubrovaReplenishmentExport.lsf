@@ -1,0 +1,87 @@
+MODULE RubrovaReplenishmentExport;
+REQUIRE MyCompany;
+
+NAMESPACE Rubrova;
+
+// Exportación de hechos nativos para reposición. No crea ni modifica documentos.
+// Se exportan por separado stock físico, disponible nativo y reservas efectivas.
+// Las cantidades conservan la precisión NUMERIC[16,3] de MyCompany (unidad del SKU).
+
+rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
+    EXPORT JSON FROM
+        schemaVersion = 1,
+        snapshotType = 'mycompany-replenishment-source-export',
+        sourceSystem = 'MyCompany',
+        sourceVersion = '6.2',
+        asOf = DATE(currentDateTime()),
+        quantityUnit = 'product-uom',
+        quantityPrecision = 3,
+        readOnly = TRUE,
+        sourceSemantics = (JSON FROM
+            inventoryOnHand = 'Inventory.onHand(Location, Product), ubicación exacta',
+            inventoryAvailable = 'Inventory.available(Location, Product), valor nativo MyCompany',
+            inventoryPlannedNet = 'Inventory.planned(Location, Product), reservas firmadas que participan en available',
+            outgoingIdentity = 'Sales.OrderLine.id',
+            outgoingOpenQuantity = 'Sales.toShip(OrderLine_confirmed)',
+            outgoingEffectiveReservation = 'SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)',
+            incomingIdentity = 'Inventory.ReceiptLine.id',
+            incomingExpectedQuantity = '0 - Inventory.ReceiptResLedger.reserved',
+            incomingEligibility = 'Receipt.ready AND NOT Receipt.done AND Purchase.Order.confirmed',
+            incomingAvailabilityPolicy = 'ReceiptType.increaseAvailableStock; skipAvailable is its inverse'
+        ),
+        inventory = (JSON FROM
+            productId = MasterData.id(p),
+            productName = MasterData.name(p),
+            productReference = MasterData.reference(p),
+            locationId = Inventory.id(l),
+            locationName = Inventory.name(l),
+            physicalIncoming = Inventory.inQuantity(l, p),
+            physicalOutgoing = Inventory.outQuantity(l, p),
+            onHand = Inventory.onHand(l, p),
+            plannedNetReservation = Inventory.planned(l, p),
+            expectedInbound = Inventory.expected(l, p),
+            available = Inventory.available(l, p)
+            WHERE Inventory.active(l) AND MasterData.active(p)
+                AND (Inventory.inQuantity(l, p) OR Inventory.outQuantity(l, p) OR Inventory.planned(l, p))
+            ORDER Inventory.id(l), MasterData.id(p)
+        ),
+        outgoingCommitments = (JSON FROM
+            sourceLineId = Sales.id(ol),
+            sourceDocumentId = Sales.id(Sales.order(ol)),
+            sourceDocumentNumber = Sales.number(Sales.order(ol)),
+            productId = MasterData.id(Sales.shippedProduct(ol)),
+            productName = MasterData.name(Sales.shippedProduct(ol)),
+            locationId = Inventory.id(Sales.location(Sales.order(ol))),
+            locationName = Inventory.name(Sales.location(Sales.order(ol))),
+            openQuantity = Sales.toShip(ol),
+            effectiveReserved = GROUP SUM Inventory.reserved(Inventory.ShipmentResLedger rr)
+                IF Sales.orderLine(Inventory.line(rr)) = ol,
+            scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
+            status = 'confirmed'
+            WHERE Sales.confirmed(Sales.order(ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product
+            ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.id(ol)
+        ),
+        receipts = (JSON FROM
+            lineId = Inventory.id(Inventory.line(rr)),
+            receiptId = Inventory.id(Inventory.receipt(Inventory.line(rr))),
+            receiptNumber = Inventory.number(Inventory.receipt(Inventory.line(rr))),
+            purchaseOrderId = Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+            purchaseOrderLineId = Purchase.id(Purchase.orderLine(Inventory.line(rr))),
+            productId = MasterData.id(Inventory.product(Inventory.line(rr))),
+            productName = MasterData.name(Inventory.product(Inventory.line(rr))),
+            locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
+            locationName = Inventory.name(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
+            expectedQuantity = 0 (-) Inventory.reserved(rr),
+            scheduledDate = DATE(Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))),
+            status = 'ready',
+            purchaseOrderStatus = 'confirmed',
+            increaseAvailableStock = Inventory.increaseAvailableStock(Inventory.type(Inventory.receipt(Inventory.line(rr))))
+            WHERE Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
+            ORDER Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
+                Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+                Purchase.id(Purchase.orderLine(Inventory.line(rr)))
+        );
+} @@api;
