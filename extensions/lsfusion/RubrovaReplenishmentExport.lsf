@@ -41,21 +41,21 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationId = Inventory.id(Inventory.Location l),
             locationName = Inventory.name(l),
             physicalIncomingNative = Inventory.inQuantity(l, p),
-            physicalIncoming = OVERRIDE Inventory.inQuantity(l, p), 0,
+            physicalIncoming = (OVERRIDE Inventory.inQuantity(l, p), 0),
             physicalOutgoingNative = Inventory.outQuantity(l, p),
-            physicalOutgoing = OVERRIDE Inventory.outQuantity(l, p), 0,
+            physicalOutgoing = (OVERRIDE Inventory.outQuantity(l, p), 0),
             onHandNative = Inventory.onHand(l, p),
-            onHand = OVERRIDE Inventory.onHand(l, p),
-                (OVERRIDE Inventory.inQuantity(l, p), 0) (-) (OVERRIDE Inventory.outQuantity(l, p), 0),
-            grossReserved = OVERRIDE Inventory.reserved(l, p), 0,
+            onHand = (OVERRIDE Inventory.onHand(l, p),
+                (OVERRIDE Inventory.inQuantity(l, p), 0) (-) (OVERRIDE Inventory.outQuantity(l, p), 0)), 
+            grossReserved = (OVERRIDE Inventory.reserved(l, p), 0),
             plannedNetReservationNative = Inventory.planned(l, p),
-            plannedNetReservation = OVERRIDE Inventory.planned(l, p), 0,
-            expectedInbound = OVERRIDE Inventory.expected(l, p), 0,
+            plannedNetReservation = (OVERRIDE Inventory.planned(l, p), 0),
+            expectedInbound = (OVERRIDE Inventory.expected(l, p), 0),
             availableNative = Inventory.available(l, p),
-            available = OVERRIDE Inventory.available(l, p),
+            available = (OVERRIDE Inventory.available(l, p),
                 (OVERRIDE Inventory.onHand(l, p),
                     (OVERRIDE Inventory.inQuantity(l, p), 0) (-) (OVERRIDE Inventory.outQuantity(l, p), 0))
-                (-) (OVERRIDE Inventory.planned(l, p), 0)
+                (-) (OVERRIDE Inventory.planned(l, p), 0))
             WHERE Inventory.active(l) AND MasterData.active(p)
                 AND (Inventory.inQuantity(l, p) <> 0 OR Inventory.outQuantity(l, p) <> 0
                     OR Inventory.reserved(l, p) <> 0 OR Inventory.planned(l, p) <> 0
@@ -71,10 +71,10 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationId = Inventory.id(Sales.location(Sales.order(ol))),
             locationName = Inventory.name(Sales.location(Sales.order(ol))),
             openQuantity = Sales.toShip(ol),
-            effectiveReserved = OVERRIDE
+            effectiveReserved = (OVERRIDE
                 (GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
                     IF Sales.orderLine(Inventory.line(rr)) = ol),
-                0,
+                0),
             scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol)),
             scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
             status = 'confirmed'
