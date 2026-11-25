@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Normalize a read-only MyCompany 6.2 export for the Rubrova planner.
+"""Normalize a validated, read-only MyCompany 6.2 snapshot for the Rubrova planner.
 
 This adapter reads a JSON snapshot only. It has no database driver, network
-client, lsFusion session, or write path. The native export that produces the
-snapshot is intentionally a separate, later integration step.
+client, lsFusion session, or write path. The native export is converted to this
+stable planning contract by adapt_mycompany_native_export.py.
 """
 
 from __future__ import annotations
@@ -20,13 +20,18 @@ from plan_replenishment import plan_replenishment
 
 SOURCE_SEMANTICS = {
     "inventory": "InvLedger.onHand_exact_location",
-    "outgoingIdentity": "Sales.OrderLine.id",
+    "inventoryAvailable": "InvLedger.onHand_minus_ResLedger.planned_exact_location",
+    "inventoryPlannedNetReservation": "ResLedger.planned_excluding_skipAvailable_exact_location",
+    "inventoryGrossReserved": "ResLedger.positive_reservations_exact_location_including_skipAvailable",
+    "inventoryExpectedInbound": "ResLedger.negative_reservations_exact_location_as_positive_quantity",
+    "outgoingIdentity": "Sales.number(Order)+Sales.index(OrderLine)",
     "outgoingQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingReservation": "SUM(ShipmentResLedger.lineReserved_by_OrderLine)",
     "outgoingDate": "Sales.Order.scheduledDateTime",
-    "incomingQuantity": "ReceiptResLedger.expectedRemaining",
+    "incomingIdentity": "Receipt.number+ReceiptLine.index",
+    "incomingQuantity": "0-ReceiptResLedger.reserved",
     "incomingDate": "Receipt.scheduledDateTime",
-    "incomingEligibility": "Receipt.ready_and_PurchaseOrder.confirmed",
+    "incomingEligibility": "Receipt.ready_AND_NOT_done_AND_NOT_canceled_AND_PurchaseOrder.confirmed",
 }
 
 OUTGOING_COMMITMENT_STATUSES = {"draft", "sent", "confirmed", "cancelled"}
