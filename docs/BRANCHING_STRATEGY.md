@@ -59,7 +59,33 @@ La comparación de archivos contra `main` confirmó que las siguientes ramas con
 - `fix/demo-pos-smoke-register-name`
 - `test/complete-ci-regression-coverage`
 
-La rama `feat/mycompany-readonly-replenishment-api` se conserva hasta que el PR #8 sea aceptado. Después de fusionarlo y verificar que `main` está correcto, se pueden retirar las ocho ramas remotas juntas:
+La rama `feat/mycompany-readonly-replenishment-api` se conserva mientras el PR #8 siga abierto. Las otras siete ramas ya se verificaron como históricas y se pueden eliminar ahora, dejando sólo `main` y la rama del PR #8:
+
+```bash
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
+git push origin --delete \
+  diagnostic/docker-client-connectivity \
+  feature/mycompany-readonly-replenishment-adapter \
+  feature/order-line-replenishment-contract \
+  feature/projected-stock-replenishment-planner \
+  feature/stockout-aware-demand-planning \
+  fix/demo-pos-smoke-register-name \
+  test/complete-ci-regression-coverage
+git fetch origin --prune
+git branch -r
+```
+
+Después de fusionar y verificar el PR #8, retirar también su rama de trabajo:
+
+```bash
+git push origin --delete feat/mycompany-readonly-replenishment-api
+git fetch origin --prune
+git branch -r
+```
+
+Ejecutar cada borrado sólo después de comprobar el estado indicado. No crear ramas nuevas para revivir estos trabajos: toda continuación parte del `main` actualizado.
 
 ```bash
 git switch main
@@ -78,7 +104,6 @@ git fetch origin --prune
 git branch -r
 ```
 
-Ejecutar el borrado únicamente después de confirmar que el PR #8 quedó fusionado. No crear ramas nuevas para revivir estos trabajos: toda continuación parte del `main` actualizado.
 
 ## Rutina de inicio y cierre de cada hito
 
