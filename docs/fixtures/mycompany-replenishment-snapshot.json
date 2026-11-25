@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "snapshotType": "read-only-replenishment-snapshot",
+  "sourceSystem": "MyCompany",
+  "sourceVersion": "6.2",
+  "asOf": "2026-11-25",
+  "sourceSemantics": {
+    "inventory": "InvLedger.onHand_exact_location",
+    "outgoingQuantity": "ShipmentLine.openRemaining",
+    "outgoingReservation": "ShipmentResLedger.lineReserved",
+    "incomingQuantity": "ReceiptResLedger.expectedRemaining",
+    "incomingDate": "Receipt.scheduledDateTime",
+    "incomingEligibility": "Receipt.ready_and_PurchaseOrder.confirmed"
+  },
+  "inventory": [
+    {
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "onHandMilli": 16000
+    },
+    {
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "onHandMilli": 8000
+    },
+    {
+      "productId": "PROD-ACEITE",
+      "locationId": "LOC-LOCAL",
+      "onHandMilli": 5000
+    }
+  ],
+  "shipments": [
+    {
+      "lineId": "SL-COLA-WAIT-1",
+      "shipmentId": "SH-COLA-WAIT",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "waiting",
+      "scheduledDate": "2026-11-27",
+      "openQuantityMilli": 4000,
+      "lineReservedMilli": 2500
+    },
+    {
+      "lineId": "SL-COLA-OLD-DONE",
+      "shipmentId": "SH-COLA-PARTIAL-ORIGINAL",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "done",
+      "scheduledDate": "2026-11-24",
+      "openQuantityMilli": 0,
+      "lineReservedMilli": 0
+    },
+    {
+      "lineId": "SL-COLA-CANCELLED",
+      "shipmentId": "SH-COLA-CANCELLED",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "cancelled",
+      "scheduledDate": "2026-11-28",
+      "openQuantityMilli": 2000,
+      "lineReservedMilli": 0
+    },
+    {
+      "lineId": "SL-PASTA-READY-1",
+      "shipmentId": "SH-PASTA-READY",
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "status": "ready",
+      "scheduledDate": "2026-11-26",
+      "openQuantityMilli": 4500,
+      "lineReservedMilli": 4500
+    },
+    {
+      "lineId": "SL-PASTA-DRAFT",
+      "shipmentId": "SH-PASTA-DRAFT",
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "status": "draft",
+      "scheduledDate": "2026-11-25",
+      "openQuantityMilli": 1000,
+      "lineReservedMilli": 0
+    }
+  ],
+  "receipts": [
+    {
+      "lineId": "RL-COLA-CONFIRMED",
+      "receiptId": "RC-COLA-1",
+      "purchaseOrderId": "PO-COLA-1",
+      "purchaseOrderLineId": "POL-COLA-1",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "ready",
+      "purchaseOrderStatus": "confirmed",
+      "scheduledDate": "2026-12-01",
+      "expectedQuantityMilli": 6000,
+      "increaseAvailableStock": false
+    },
+    {
+      "lineId": "RL-COLA-DRAFT",
+      "receiptId": "RC-COLA-DRAFT",
+      "purchaseOrderId": "PO-COLA-DRAFT",
+      "purchaseOrderLineId": "POL-COLA-DRAFT",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "draft",
+      "purchaseOrderStatus": "draft",
+      "scheduledDate": "2026-11-29",
+      "expectedQuantityMilli": 1000,
+      "increaseAvailableStock": false
+    },
+    {
+      "lineId": "RL-COLA-SENT",
+      "receiptId": "RC-COLA-SENT",
+      "purchaseOrderId": "PO-COLA-SENT",
+      "purchaseOrderLineId": "POL-COLA-SENT",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "ready",
+      "purchaseOrderStatus": "sent",
+      "scheduledDate": "2026-11-30",
+      "expectedQuantityMilli": 2000,
+      "increaseAvailableStock": false
+    },
+    {
+      "lineId": "RL-COLA-RECEIVED",
+      "receiptId": "RC-COLA-DONE",
+      "purchaseOrderId": "PO-COLA-DONE",
+      "purchaseOrderLineId": "POL-COLA-DONE",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "done",
+      "purchaseOrderStatus": "confirmed",
+      "scheduledDate": "2026-11-20",
+      "expectedQuantityMilli": 0,
+      "increaseAvailableStock": false
+    },
+    {
+      "lineId": "RL-PASTA-UNCONFIRMED",
+      "receiptId": "RC-PASTA-SENT",
+      "purchaseOrderId": "PO-PASTA-SENT",
+      "purchaseOrderLineId": "POL-PASTA-SENT",
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "status": "ready",
+      "purchaseOrderStatus": "sent",
+      "scheduledDate": "2026-11-28",
+      "expectedQuantityMilli": 7000,
+      "increaseAvailableStock": false
+    },
+    {
+      "lineId": "RL-PASTA-CANCELLED",
+      "receiptId": "RC-PASTA-CANCELLED",
+      "purchaseOrderId": "PO-PASTA-CANCELLED",
+      "purchaseOrderLineId": "POL-PASTA-CANCELLED",
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "status": "cancelled",
+      "purchaseOrderStatus": "cancelled",
+      "scheduledDate": "2026-11-30",
+      "expectedQuantityMilli": 5000,
+      "increaseAvailableStock": false
+    }
+  ],
+  "planningInputs": [
+    {
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "sku": "COLA-2L",
+      "locationName": "Local principal",
+      "dailyDemandMilli": 500,
+      "forecastEligiblePeriods": 24,
+      "forecastTotalPeriods": 36,
+      "supplierLeadTimeDays": 5,
+      "reviewPeriodDays": 5,
+      "safetyStockMilli": 5000,
+      "minimumOrderQuantityMilli": 1000,
+      "orderMultipleMilli": 1000,
+      "nativeAutoOrderQtyMilli": 3000
+    },
+    {
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "sku": "PASTA-500G",
+      "locationName": "Local principal",
+      "dailyDemandMilli": 500,
+      "forecastEligiblePeriods": 24,
+      "forecastTotalPeriods": 36,
+      "supplierLeadTimeDays": 3,
+      "reviewPeriodDays": 4,
+      "safetyStockMilli": 2000,
+      "minimumOrderQuantityMilli": 1000,
+      "orderMultipleMilli": 500,
+      "nativeAutoOrderQtyMilli": 1000
+    },
+    {
+      "productId": "PROD-ACEITE",
+      "locationId": "LOC-LOCAL",
+      "sku": "ACEITE-900ML",
+      "locationName": "Local principal",
+      "dailyDemandMilli": 100,
+      "forecastEligiblePeriods": 24,
+      "forecastTotalPeriods": 36,
+      "supplierLeadTimeDays": 4,
+      "reviewPeriodDays": 6,
+      "safetyStockMilli": 1000,
+      "minimumOrderQuantityMilli": 0,
+      "orderMultipleMilli": 500
+    }
+  ]
+}
