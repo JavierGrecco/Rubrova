@@ -21,12 +21,6 @@ on:
       - 'vendor/mycompany/**'
       - 'build/rubrova/**'
   workflow_dispatch:
-    inputs:
-      run_docker_smoke:
-        description: "Ejecutar manualmente el smoke secundario con contenedores Docker"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -144,8 +138,10 @@ jobs:
           retention-days: 1
 
   native-runtime-smoke:
-    name: Smoke de servidor nativo sin Docker (Linux x86_64)
+    name: Diagnóstico de servidor nativo sin Docker (Linux x86_64, no bloqueante)
     runs-on: ubuntu-24.04
+    # Linux nativo queda como diagnóstico; la validación obligatoria de Linux es Docker.
+    continue-on-error: true
     needs: [validate, build-fork]
     timeout-minutes: 35
     concurrency:
@@ -233,8 +229,7 @@ jobs:
           if-no-files-found: warn
 
   runtime-smoke:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_docker_smoke
-    name: Smoke POS sobre runtime Docker (validación secundaria y manual)
+    name: Aceptación funcional POS sobre runtime Docker (Linux)
     runs-on: ubuntu-latest
     needs: [validate, build-fork]
     timeout-minutes: 30
