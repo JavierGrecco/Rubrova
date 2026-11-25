@@ -10,7 +10,7 @@ La disponibilidad legal de la denominación y de los dominios todavía no está 
 
 ## Probar el proyecto localmente
 
-**El camino principal para desarrollar y usar Rubrova localmente es el runtime nativo, sin Docker.** En macOS Apple Silicon, Java 21, PostgreSQL 18 y Tomcat 9 ejecutan el servidor y el cliente en el propio equipo. Docker no es requisito para trabajar localmente. En CI, la aceptación principal y obligatoria es el runtime nativo macOS ARM64. También se ejecuta el POS nativo en Linux sin Docker; Docker/Linux se conserva como diagnóstico suplementario no bloqueante mientras se investiga un problema de acceso HTTP del cliente.
+**El camino principal para desarrollar y usar Rubrova localmente es el runtime nativo, sin Docker.** En macOS Apple Silicon, Java 21, PostgreSQL 18 y Tomcat 9 ejecutan el servidor y el cliente en el propio equipo. Docker no es requisito para trabajar localmente. CI exige la aceptación nativa macOS ARM64; Linux nativo y Docker/Linux se ejecutan como diagnósticos automáticos no bloqueantes y ambos pasaron en `45637101959`.
 
 Ya existe un primer supervisor en `scripts/platform/run-local-native-preview.py`. Puede preparar una base aislada, iniciar el servidor, esperar el fin de la inicialización y luego iniciar el cliente web. El prototipo requiere artefactos compilados y Java 21, las herramientas nativas de PostgreSQL 18, Python 3 y Tomcat 9.0.124. Si Tomcat no está en caché, la primera preparación lo descarga y verifica; por eso todavía no es un instalador offline ni una entrega lista para una PC limpia.
 
@@ -30,7 +30,7 @@ En macOS también podés hacer doble clic en `Iniciar Rubrova.command`, en la ra
 
 Para abrir una **demostración con una caja, un artículo y 10 unidades de stock**, usá `Iniciar Rubrova - Demo.command`. Este modo tiene una base de datos, una configuración y puertos separados del runtime normal; no agrega datos de muestra a tu base principal y no incorpora endpoints ni simuladores de CI. La venta de muestra es persistente dentro de esa base de demostración.
 
-En la ejecución CI más reciente `45641728845` (código `774387cae1876a2220091dea79c3df5a93023bd5`), el build completo, las validaciones, Windows y los recorridos POS nativos macOS ARM64 y Linux x86_64 pasaron. macOS se probó con conectividad externa habilitada; Linux completó el mismo ciclo con salida externa bloqueada. También pasaron las pruebas unitarias de configuración y ensamblado del modo Demo. El diagnóstico Docker/Linux continúa separado y no bloquea esta ruta; en la ejecución anterior el cliente Docker devolvió HTTP `000` tras cargar 717/717 módulos. Son pruebas de CI, no una instalación en tu Mac ni una autorización de producción.
+En la ejecución CI `45641728845` (código `774387cae1876a2220091dea79c3df5a93023bd5`), el build completo, las validaciones, Windows y los recorridos POS nativos macOS ARM64 y Linux x86_64 pasaron. macOS se probó con conectividad externa habilitada; Linux completó el mismo ciclo con salida externa bloqueada. También pasaron las pruebas unitarias del modo Demo. Docker/Linux había completado su aceptación en `45637101959`; el smoke del siguiente commit repetirá los tres entornos e incluirá el arranque integrado de la demostración aislada.
 
 ## Qué estamos construyendo
 
@@ -120,7 +120,7 @@ Una plataforma que reúne en un solo lugar:
 
 ## Compatibilidad con macOS
 
-Rubrova ya ejecutó en CI el runtime nativo sobre un runner Apple Silicon `macos-26`, con Java 21 ARM64 y PostgreSQL 18 ARM64. En `45641728845` el POS completó venta, pago, stock y cierre. Linux x86_64 nativo completó el mismo recorrido con salida externa bloqueada. Falta repetirlo en tu Mac y validar periféricos. Docker/Linux se conserva como diagnóstico automático no bloqueante.
+Rubrova ya ejecutó en CI el runtime nativo sobre un runner Apple Silicon `macos-26`, con Java 21 ARM64 y PostgreSQL 18 ARM64. En `45637101959` completó venta, pago, stock y cierre, y el diagnóstico Docker/Linux también pasó. En `45641728845` volvió a pasar la aceptación macOS y Linux nativo. Falta repetirlo en tu Mac y validar periféricos. Docker/Linux se conserva como diagnóstico automático no bloqueante.
 
 ## Etapa actual y próximos resultados
 
@@ -132,7 +132,7 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
 - Preparar y validar los artefactos desde las fuentes vendorizadas. El desarrollo local prioriza PostgreSQL + Java + Tomcat nativos en macOS. CI exige la aceptación nativa macOS; Linux nativo y Docker/Linux se conservan como diagnósticos automáticos no bloqueantes.
 - La aceptación funcional [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) probó en Docker una venta de ARS 1.250 en efectivo, factura/pago persistidos, stock (10 → 9), caja, cierre `CLOSED` y resiliencia HTTP. Luego, [CI 45548326798](https://github.com/JavierGrecco/Rubrova/actions/runs/45548326798) repitió el recorrido comercial básico en el runtime nativo macOS ARM64. Son dos evidencias distintas y ninguna habilita por sí sola el uso diario.
-- En `45641728845`, el smoke nativo macOS ARM64 completó el recorrido comercial básico con conectividad externa habilitada, y Linux x86_64 completó el mismo recorrido con la salida externa bloqueada. También pasaron las pruebas unitarias del modo Demo, que comprueban que su configuración y datos quedan separados del runtime normal. El diagnóstico Docker/Linux se conserva como advertencia no bloqueante.
+- En `45637101959`, el smoke nativo macOS ARM64, Linux nativo y Docker/Linux completaron el recorrido comercial básico; Linux además bloqueó la salida externa y mantuvo el POS operativo. En `45641728845`, la revisión posterior volvió a pasar build y los runtimes nativos macOS/Linux. El runtime físico del usuario, periféricos, pagos reales y la instalación offline siguen pendientes.
 - El POS sigue en aceptación: faltan devoluciones/reintegros, vuelto, pagos mixtos y tarjeta, movimientos y arqueo de caja, permisos por perfil, backup/restore, periféricos y pruebas fiscales argentinas.
 - La localización aún es parcial. La navegación general y varios formularios heredados requieren revisión. El JAR de MyCompany 6.2 ya se ejecuta nativamente en Java ARM64; que la imagen Docker oficial publique `linux/amd64` sólo afecta al camino Docker en Apple Silicon, no al runtime nativo.
 
@@ -163,5 +163,5 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 
 ---
 
-**Estado del producto:** piloto MyCompany 6.2 en evolución; el ciclo comercial básico pasó en Docker y en el runtime nativo macOS ARM64 de CI. No está aprobado para uso diario.  
-**Estado del software:** fuentes lsFusion/MyCompany fijadas y vendorizadas, extensiones propias, supervisor nativo y aceptación comercial básica en CI sobre macOS ARM64 y Linux x86_64 sin Docker. Siguen pendientes la prueba en un Mac físico, el instalador offline, el panel de control, Windows nativo y los circuitos comerciales restantes; el cliente Docker/Linux tiene un diagnóstico HTTP pendiente.
+**Estado del producto:** piloto MyCompany 6.2 en evolución; el ciclo comercial básico pasó en Docker y en los runtimes nativos macOS ARM64/Linux x86_64 de CI. No está aprobado para uso diario.
+**Estado del software:** fuentes lsFusion/MyCompany fijadas y vendorizadas, extensiones propias, supervisor nativo y aceptación comercial básica en CI sobre macOS ARM64, Linux nativo y Docker/Linux. Siguen pendientes la prueba en un Mac físico, el instalador offline, el panel de control, Windows nativo y los circuitos comerciales restantes. La modalidad de demostración local está incorporada con base aislada y validación automatizada de su arranque.

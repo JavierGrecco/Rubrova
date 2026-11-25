@@ -77,7 +77,7 @@ Las pruebas unitarias de `scripts/platform/test_runtime_native_preview.py` cubre
 
 El prototipo actual ya realiza el ciclo de desarrollo: detecta Java 21 y PostgreSQL 18, valida Tomcat 9.0.124, crea el clúster privado, inicia PostgreSQL, ejecuta `BusinessLogicsBootstrap`, espera el marcador de inicio, RMI y finalización de `onStarted`, inicia Tomcat y espera la respuesta web. También supervisa los procesos mientras está abierto, detiene el árbol de Tomcat/Java y sólo detiene el clúster PostgreSQL si lo inició ese mismo proceso. La base queda persistida entre ejecuciones.
 
-La CI usa el smoke nativo macOS ARM64 como puerta obligatoria. En el run `45558057837`, también pasó el ciclo funcional nativo Linux x86_64 sin Docker, con salida externa bloqueada. Docker/Linux se mantiene como diagnóstico automático no bloqueante: en esa ejecución el servidor cargó 717/717 módulos y Tomcat desplegó `ROOT.war`, pero el cliente no respondió HTTP (`000`) durante 900 segundos. Ese fallo queda aislado para investigación y no impide avanzar con el runtime Mac. El runtime local para desarrollar en Mac sigue siendo nativo y no necesita Docker.
+La CI usa el smoke nativo macOS ARM64 como puerta obligatoria. En `45637101959` también pasaron Linux x86_64 sin Docker y Docker/Linux; Linux lo hizo con salida externa bloqueada. El HTTP `000` observado en Docker en `45558057837` quedó resuelto en la ejecución posterior. La revisión `774387c` agregó una modalidad demo con base separada y sus pruebas unitarias ya están verdes. El runtime local para desarrollar en Mac sigue siendo nativo y no necesita Docker.
 
 Para macOS, Postgres.app y Homebrew son opciones para disponer de las herramientas PostgreSQL 18 nativas. El supervisor admite indicar el directorio con `RUBROVA_POSTGRES_BIN` o `local_runtime.postgres_bin`; admite una ruta explícita de Tomcat en `local_runtime.tomcat_home` y verifica que sea la versión 9.0.124 fijada. La primera descarga de Tomcat requiere conexión; después se puede ejecutar con `--offline`.
 
@@ -133,13 +133,13 @@ El smoke nativo debe:
 
 También simplificaremos el escenario de fallos externos: el smoke actual usa Toxiproxy como un proxy de paso hacia `mock-provider` (crea el proxy y consulta su API, pero no configura toxics). El servidor simulado ya expone directamente rutas lentas y respuestas HTTP 400/401/403/408/409/429/503. Para el camino nativo se lo consultará en `127.0.0.1`; dentro de Docker, en `mock-provider:18765`. Así eliminamos una dependencia innecesaria sin perder los escenarios que medimos.
 
-La puerta obligatoria actual es el smoke funcional nativo en macOS ARM64; el mismo ciclo ya pasó en Linux x86_64 sin Docker. La aceptación nativa debe repetirse en un Mac de usuario y en Windows x64. El diagnóstico Docker/Linux continúa separado hasta resolver el acceso HTTP del cliente. El runtime sólo se considerará aprobado para uso diario después de completar instalación, seguridad, periféricos, recuperación y circuitos comerciales pendientes.
+La puerta obligatoria actual es el smoke funcional nativo en macOS ARM64; el mismo ciclo pasó en Linux x86_64 sin Docker. Docker/Linux también completó su diagnóstico en `45637101959`. La aceptación nativa debe repetirse en un Mac de usuario y en Windows x64. El runtime sólo se considerará aprobado para uso diario después de completar instalación, seguridad, periféricos, recuperación y circuitos comerciales pendientes.
 
 ## 9. Estado real y siguiente entrega
 
 **Implementado:** esquema JSON y CLI de configuración, supervisor de procesos nativo, clúster PostgreSQL privado, validación de Tomcat/RMI, pruebas unitarias y job CI nativo sin Docker que bloquea la salida externa y comprueba login/navegación.
 
-**Pendiente:** aceptación en tu Mac físico y Windows, panel de control, empaquetado autónomo, instalación offline, migración segura entre bases y ampliación de los circuitos POS. El diagnóstico Docker/Linux conserva un fallo de acceso HTTP independiente del camino nativo.
+**Pendiente:** aceptación en tu Mac físico y Windows, panel de control, empaquetado autónomo, instalación offline, migración segura entre bases y ampliación de los circuitos POS. La modalidad demo está incorporada con base PostgreSQL, configuración y puertos propios; el smoke nativo comprueba ahora también ese segundo arranque aislado.
 
 El primer objetivo de prueba será tu MacBook Air: ejecutar los mismos JAR/WAR del proyecto en Java 21 nativo ARM64, con PostgreSQL 18 y Tomcat local, sin Docker Desktop. Después incorporaremos el paquete autónomo para una PC limpia y Windows.
 

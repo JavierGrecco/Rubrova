@@ -1012,7 +1012,12 @@ def inspect_page(url: str) -> int:
                             f"Falta el caption español en la búsqueda del POS: {required_caption!r}"
                         )
 
-                product_name = "Producto de prueba Rubrova"
+                demo_mode = os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() == "true"
+                product_name = (
+                    "Producto de demostración Rubrova"
+                    if demo_mode
+                    else "Producto de prueba Rubrova"
+                )
                 product_result = page.get_by_text(product_name, exact=True)
                 try:
                     product_result.first.wait_for(state="visible", timeout=15_000)
@@ -1052,6 +1057,18 @@ def inspect_page(url: str) -> int:
                         "La búsqueda debe devolver exactamente un artículo de prueba; "
                         f"devolvió {search_match_count}."
                     )
+
+                if demo_mode:
+                    demo_screenshot = screenshot_path.with_name(
+                        screenshot_path.stem + "-demo" + screenshot_path.suffix
+                    )
+                    print("UI_LOCAL_DEMO_SESSION_OPEN=true")
+                    print("UI_LOCAL_DEMO_PRODUCT_FOUND=true")
+                    print(f"UI_LOCAL_DEMO_PRODUCT_NAME={product_name}")
+                    visible_snapshot(page, "UI_LOCAL_DEMO_PRODUCT")
+                    page.screenshot(path=str(demo_screenshot), full_page=True)
+                    print(f"UI_LOCAL_DEMO_SCREENSHOT={demo_screenshot}")
+                    return 0
 
                 # MyCompany implementa la selección mediante selectPosSearch, expuesta
                 # como acción de toolbar "Select (DBLCLK)". Ver el artículo en searchItems

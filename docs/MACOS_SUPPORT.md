@@ -11,9 +11,9 @@ El camino previsto para macOS es nativo:
 - PostgreSQL 18 se ejecuta como proceso nativo y conserva los datos en una carpeta privada de Rubrova.
 - Apache Tomcat 9.0.124 sirve el WAR del cliente web desde `127.0.0.1`.
 - Python 3 supervisa el arranque, comprueba los procesos/puertos y los detiene sin borrar la base.
-- Docker no es requisito para el runtime nativo local en macOS. En CI, la aceptación nativa macOS ARM64 es obligatoria; el smoke Docker/Linux se conserva como diagnóstico suplementario no bloqueante de empaquetado y despliegue.
+- Docker no es requisito para el runtime nativo local en macOS. En CI, la aceptación nativa macOS ARM64 es obligatoria; Linux nativo y Docker/Linux se conservan como diagnósticos suplementarios no bloqueantes y pasaron en `45637101959`.
 
-El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. En el run CI `45641728845`, el smoke completó en `macos-26` ARM64 el ciclo de abrir turno, vender, cobrar, conciliar stock y cerrar caja. Ese job se ejecutó con conectividad externa habilitada; no sustituye la prueba en tu Mac ni es un instalador final.
+El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. En `45637101959`, el smoke completó en `macos-26` ARM64 el ciclo de abrir turno, vender, cobrar, conciliar stock, cerrar caja y registrar incidencias de integración. Confirma el runtime nativo en un runner Apple Silicon, pero no sustituye la prueba en tu Mac ni es un instalador final.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -22,7 +22,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45641728845`; prueba en tu Mac de usuario, periféricos e instalación limpia pendientes |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45637101959`; prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
@@ -107,18 +107,18 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 La CI ejecuta tres verificaciones de runtime distintas, a partir de los artefactos compilados desde la misma revisión:
 
 - **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45641728845` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración. Ese job usó `RUBROVA_BLOCK_EGRESS=false`; no certifica por sí solo el modo offline en macOS.
-- **Docker/Linux (diagnóstico no bloqueante):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. En `45637101959` el cliente no respondió HTTP (`000`) durante 900 segundos, aunque el servidor cargó los 717 módulos y Tomcat desplegó la aplicación. El fallo se conserva para investigación y no bloquea el runtime nativo.
+- **Docker/Linux (diagnóstico no bloqueante):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. La aceptación `45637101959` completó login, venta, pago, stock, cierre y resiliencia HTTP. El job sigue sin bloquear los runtimes nativos si vuelve a fallar.
 - **Linux x86_64 nativo (smoke complementario):** en `45641728845` inició Java, PostgreSQL y Tomcat, bloqueó la salida externa y completó el mismo ciclo POS: turno, venta, cobro, stock, cierre y pruebas de integración. No se necesita Docker para este recorrido.
 
 El smoke macOS `45641728845` se ejecutó con salida externa habilitada (`RUBROVA_BLOCK_EGRESS=false`), por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. En cambio, el smoke Linux nativo `45641728845` bloqueó la salida externa y completó el POS, pago, stock, cierre y recuperación de integraciones. Las pruebas unitarias también comprueban que el modo Demo utiliza una base separada y que sus fixtures no se mezclan con los de CI; todavía falta ejecutar esa demostración en un Mac de usuario. La primera instalación completa offline sigue pendiente.
 
-La aceptación Docker histórica `45503956218`, la aceptación nativa macOS y Linux del run `45641728845` son evidencias separadas. Cubren venta por ARS 1.250, factura/pago, stock y cierre básico; Linux nativo también se probó con salida externa bloqueada. Las pruebas del modo Demo verifican el aislamiento de configuración y el ensamblado de fixtures; faltan su ejecución en un Mac de usuario y los restantes circuitos comerciales.
+La aceptación Docker histórica `45503956218` y la aceptación nativa macOS/Linux del run `45637101959` son evidencias separadas. El run `45637101959` completó el smoke también en Docker/Linux. Todas cubren venta por ARS 1.250, factura/pago, stock y cierre básico; Linux nativo se probó además con salida externa bloqueada. Faltan los restantes circuitos comerciales y la prueba en un equipo físico.
 
 ## Ruta Docker para empaquetado y validación CI
 
 La vista previa `scripts/platform/run-local-preview-macos.sh` mantiene una opción Docker para reproducir el empaquetado localmente. Requiere Docker Desktop, Docker Compose 2.24.4 o superior y los artefactos compilados en `vendor/platform/server/target`, `vendor/mycompany/target` y `vendor/platform/web-client/target`. En Apple Silicon, el contenedor de lógica AMD64 se ejecuta por emulación; para desarrollar localmente se prioriza el runtime nativo descrito en esta guía.
 
-En GitHub Actions, el diagnóstico Docker/Linux se ejecuta automáticamente en cada push o pull request que activa el workflow, pero su fallo no bloquea la aceptación nativa. La prueba usa PostgreSQL y un simulador HTTP dentro de una red interna sin salida externa. Los escenarios HTTP se ejecutan contra el simulador local; no se necesita Toxiproxy como proxy de paso.
+En GitHub Actions, el diagnóstico Docker/Linux se ejecuta automáticamente en cada push o pull request que activa el workflow, pero su fallo no bloquea la aceptación nativa. En `45637101959` pasó el recorrido comercial. La prueba usa PostgreSQL y un simulador HTTP dentro de una red interna sin salida externa. No se necesita Toxiproxy como proxy de paso.
 
 ## Usar una MacBook como equipo cliente
 
@@ -127,7 +127,7 @@ Una Mac también puede utilizarse como puesto cliente si el servidor se encuentr
 ## Qué falta antes de declarar compatibilidad completa
 
 1. Repetir en tu Mac Apple Silicon el recorrido que ya pasó en CI, con Java 21 ARM64 y PostgreSQL 18 ARM64; verificar persistencia y logs locales.
-2. Investigar el HTTP `000` del cliente en Docker/Linux y conservar sus logs/capturas sin bloquear el runtime nativo.
+2. Verificar el modo Demo aislado en el smoke nativo y repetir el recorrido en tu Mac físico con periféricos reales.
 3. Repetir en macOS ARM64 una verificación del POS con la salida externa bloqueada. El smoke macOS actual deja esa condición abierta; Linux nativo ya completó el recorrido con egress bloqueado.
 4. Repetir la aceptación en Windows x64, incluida la gestión de procesos y rutas.
 5. Empaquetar e instalar en una PC limpia sin Internet; verificar firma, permisos, secretos, actualizaciones y backup/restore.

@@ -10,6 +10,7 @@ on:
       - 'vendor/platform/**'
       - 'vendor/mycompany/**'
       - 'build/rubrova/**'
+      - 'Iniciar Rubrova*.command'
       - '.github/workflows/platform-extension.yml'
   pull_request:
     paths:
@@ -20,6 +21,7 @@ on:
       - 'vendor/platform/**'
       - 'vendor/mycompany/**'
       - 'build/rubrova/**'
+      - 'Iniciar Rubrova*.command'
   workflow_dispatch:
 
 permissions:
@@ -57,6 +59,8 @@ jobs:
           bash scripts/platform/test-native-listener-check.sh
           bash -n scripts/platform/run-local-preview-macos.sh
           bash -n scripts/platform/build-rubrova-runtime-images.sh
+          bash -n "Iniciar Rubrova.command"
+          bash -n "Iniciar Rubrova - Demo.command"
           bash scripts/platform/test-deploy-mycompany-6.2.sh
 
   build-fork:
@@ -228,6 +232,8 @@ jobs:
           path: |
             ${{ runner.temp }}/rubrova-native-smoke/native-runtime.log
             ${{ runner.temp }}/rubrova-native-smoke/native-diagnostics.log
+            ${{ runner.temp }}/rubrova-native-smoke/demo-runtime.log
+            ${{ runner.temp }}/rubrova-native-smoke/demo-ui-smoke.log
             ${{ runner.temp }}/rubrova-native-smoke/*.png
             ${{ runner.temp }}/rubrova-native-smoke/ui-smoke.log
           if-no-files-found: warn
@@ -467,6 +473,8 @@ jobs:
           path: |
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/native-runtime.log
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/native-diagnostics.log
+            ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/demo-runtime.log
+            ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/demo-ui-smoke.log
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/*.png
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/ui-smoke.log
           if-no-files-found: warn

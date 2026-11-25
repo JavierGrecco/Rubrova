@@ -46,6 +46,16 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$WORK_DIR/config}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$WORK_DIR/data}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$WORK_DIR/cache}"
 NATIVE_DATA_ROOT="$WORK_DIR/data/Rubrova/native-preview"
+if [[ "$HOST_OS" == "Darwin" ]]; then
+  DEMO_USER_DATA_ROOT="$HOME/Library/Application Support/Rubrova"
+else
+  DEMO_USER_DATA_ROOT="$XDG_DATA_HOME/Rubrova"
+fi
+DEMO_DATA_ROOT="$DEMO_USER_DATA_ROOT/demo-preview"
+DEMO_CONFIG_PATH="$DEMO_USER_DATA_ROOT/demo-runtime-config.json"
+DEMO_LOG_FILE="$WORK_DIR/demo-runtime.log"
+DEMO_UI_LOG_FILE="$WORK_DIR/demo-ui-smoke.log"
+DEMO_SCREENSHOT="$WORK_DIR/rubrova-native-demo.png"
 DIAGNOSTICS_FILE="$WORK_DIR/native-diagnostics.log"
 
 collect_native_diagnostics() {
@@ -70,6 +80,11 @@ collect_native_diagnostics() {
       "$NATIVE_DATA_ROOT"/runtime/tomcat-base/logs/*.txt \
       "$NATIVE_DATA_ROOT"/runtime/lsfusion/logs/*.log \
       "$NATIVE_DATA_ROOT"/logs/*.log \
+      "$DEMO_DATA_ROOT"/runtime/tomcat-base/logs/*.log \
+      "$DEMO_DATA_ROOT"/runtime/lsfusion/logs/*.log \
+      "$DEMO_DATA_ROOT"/logs/*.log \
+      "$DEMO_LOG_FILE" \
+      "$DEMO_UI_LOG_FILE" \
       "$MOCK_PROVIDER_LOG_FILE"; do
       [[ -f "$log_file" ]] || continue
       echo "### $log_file ($(wc -c < "$log_file" | tr -d ' ') bytes)"
@@ -120,6 +135,8 @@ cleanup() {
     if [[ -s "$LOG_FILE" ]]; then tail -n 180 "$LOG_FILE" >&2; fi
     echo "=== Diagnóstico del cliente web nativo ===" >&2
     if [[ -s "$DIAGNOSTICS_FILE" ]]; then cat "$DIAGNOSTICS_FILE" >&2; fi
+    if [[ -s "$DEMO_LOG_FILE" ]]; then tail -n 180 "$DEMO_LOG_FILE" >&2; fi
+    if [[ -s "$DEMO_UI_LOG_FILE" ]]; then tail -n 100 "$DEMO_UI_LOG_FILE" >&2; fi
   fi
 
   if [[ "${RUBROVA_KEEP_NATIVE_SMOKE_DATA:-false}" == "true" ]]; then
@@ -287,6 +304,82 @@ curl --silent --output /dev/null --fail --connect-timeout 2 --max-time 8 "$WEB_U
 }
 echo "RUBROVA_NATIVE_RUNTIME_SURVIVED_OFFLINE_CHECK=true"
 
-echo "5/5 Finalizando: se conservan los datos hasta que termine el diagnóstico"
+echo "5/6 Cerrando la primera instancia y liberando sus puertos"
+if [[ -n "$SUPERVISOR_PID" ]] && kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
+  kill -TERM "$SUPERVISOR_PID" 2>/dev/null || true
+  wait "$SUPERVISOR_PID" 2>/dev/null || true
+fi
+SUPERVISOR_PID=""
+
+if [[ -n "$MOCK_PROVIDER_PID" ]] && kill -0 "$MOCK_PROVIDER_PID" 2>/dev/null; then
+  kill -TERM "$MOCK_PROVIDER_PID" 2>/dev/null || true
+  wait "$MOCK_PROVIDER_PID" 2>/dev/null || true
+fi
+MOCK_PROVIDER_PID=""
+
+echo "6/6 Iniciando una segunda instancia con datos de demostración y PostgreSQL separado"
+mkdir -p "$DEMO_USER_DATA_ROOT"
+export RUBROVA_RUNTIME_CONFIG_PATH="$DEMO_CONFIG_PATH"
+python3 "$SCRIPT_DIR/run-local-native-preview.py" init-demo
+
+RUBROVA_LOCAL_DEMO_DATA=true python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$DEMO_LOG_FILE" 2>&1 &
+SUPERVISOR_PID=$!
+DEMO_WEB_URL="http://127.0.0.1:8081/login"
+DEMO_STARTUP_TIMEOUT="${RUBROVA_NATIVE_DEMO_STARTUP_TIMEOUT_SECONDS:-900}"
+SECONDS=0
+DEMO_HTTP_STATUS=""
+while (( SECONDS < DEMO_STARTUP_TIMEOUT )); do
+  if ! kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
+    echo "El supervisor de demostración terminó antes de que la interfaz estuviera disponible." >&2
+    tail -n 180 "$DEMO_LOG_FILE" >&2 || true
+    exit 1
+  fi
+  DEMO_HTTP_STATUS="$(curl --silent --output "$WORK_DIR/demo-web-response.html" --write-out '%{http_code}' \
+    --connect-timeout 2 --max-time 8 "$DEMO_WEB_URL" 2>/dev/null || true)"
+  if [[ "$DEMO_HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
+    break
+  fi
+  if (( SECONDS % 30 < 3 )); then
+    echo "Esperando runtime demo: HTTP=$DEMO_HTTP_STATUS, tiempo=${SECONDS}s."
+  fi
+  sleep 3
+done
+if [[ ! "$DEMO_HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
+  echo "El runtime de demostración no respondió HTTP 2xx/3xx dentro de ${DEMO_STARTUP_TIMEOUT}s (último: $DEMO_HTTP_STATUS)." >&2
+  exit 1
+fi
+grep -Fq "Datos de demostración Rubrova activados en la base local aislada." "$DEMO_LOG_FILE" || {
+  echo "El supervisor no confirmó la activación de los módulos de demostración." >&2
+  tail -n 180 "$DEMO_LOG_FILE" >&2 || true
+  exit 1
+}
+grep -Fq "Servidor Rubrova y PostgreSQL están listos." "$DEMO_LOG_FILE" || {
+  echo "El servidor de demostración no confirmó su inicialización completa." >&2
+  tail -n 180 "$DEMO_LOG_FILE" >&2 || true
+  exit 1
+}
+
+RUBROVA_UI_SCREENSHOT="$DEMO_SCREENSHOT" \
+RUBROVA_UI_TEST_LOGIN=true \
+RUBROVA_UI_TEST_USERNAME=admin \
+RUBROVA_UI_STOP_AFTER_LOGIN=false \
+RUBROVA_UI_DEMO_MODE=true \
+"$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$DEMO_WEB_URL" 2>&1 | tee "$DEMO_UI_LOG_FILE"
+for marker in "UI_LOCAL_DEMO_SESSION_OPEN=true" "UI_LOCAL_DEMO_PRODUCT_FOUND=true"; do
+  grep -Fq "$marker" "$DEMO_UI_LOG_FILE" || {
+    echo "La aceptación de demostración no confirmó el resultado esperado: $marker" >&2
+    exit 1
+  }
+done
+[[ -s "$DEMO_SCREENSHOT" ]] || {
+  echo "La inspección de demostración no generó la captura esperada: $DEMO_SCREENSHOT" >&2
+  exit 1
+}
+curl --silent --output /dev/null --fail --connect-timeout 2 --max-time 8 "$DEMO_WEB_URL" || {
+  echo "El cliente web de demostración dejó de responder después de la inspección." >&2
+  exit 1
+}
+echo "RUBROVA_NATIVE_DEMO_ACCEPTANCE=passed"
 echo "RUBROVA_NATIVE_SMOKE=passed"
 echo "RUBROVA_NATIVE_DIAGNOSTICS_FILE=$DIAGNOSTICS_FILE"
+
