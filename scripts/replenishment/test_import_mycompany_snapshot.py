@@ -54,8 +54,14 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         result = self._result_for(report, "COLA-2L")
         # The completed original shipment is excluded; only the separately
         # exported open residual shipment remains in the planning horizon.
+        cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
         self.assertEqual(result["firmOutgoingInHorizonMilli"], 4000)
-        self.assertEqual(report["excludedOutgoingByReason"]["ALREADY_SHIPPED"], 1)
+        self.assertEqual(cola["sourceSalesOrderLineCount"], 1)
+        self.assertEqual(cola["underlyingShipmentDocumentCount"], 2)
+        self.assertEqual(report["excludedOutgoingByReason"], {
+            "CANCELLED": 1,
+            "NOT_FIRM": 1,
+        })
 
     def test_only_ready_receipt_from_confirmed_purchase_order_is_included(self) -> None:
         report = self._adapt()
@@ -97,10 +103,10 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "producto/ubicación duplicado"):
             adapt_snapshot(snapshot)
 
-    def test_duplicate_shipment_line_is_rejected(self) -> None:
+    def test_duplicate_sales_order_line_commitment_is_rejected(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["shipments"].append(copy.deepcopy(snapshot["shipments"][0]))
-        with self.assertRaisesRegex(ValueError, "lineId duplicado"):
+        snapshot["outgoingCommitments"].append(copy.deepcopy(snapshot["outgoingCommitments"][0]))
+        with self.assertRaisesRegex(ValueError, "sourceLineId duplicado"):
             adapt_snapshot(snapshot)
 
     def test_duplicate_active_receipt_for_same_purchase_order_line_is_rejected(self) -> None:
@@ -127,23 +133,24 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no tiene existencia física"):
             adapt_snapshot(snapshot)
 
-    def test_reservation_cannot_exceed_its_open_shipment_line(self) -> None:
+    def test_reservation_cannot_exceed_its_open_sales_order_line(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["shipments"][0]["lineReservedMilli"] = (
-            snapshot["shipments"][0]["openQuantityMilli"] + 1
+        snapshot["outgoingCommitments"][0]["lineReservedMilli"] = (
+            snapshot["outgoingCommitments"][0]["openQuantityMilli"] + 1
         )
         with self.assertRaisesRegex(ValueError, "no puede superar openQuantityMilli"):
             adapt_snapshot(snapshot)
 
-    def test_active_shipment_must_have_positive_open_quantity(self) -> None:
+    def test_zero_open_sales_order_line_is_ignored_as_fully_shipped(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["shipments"][0]["openQuantityMilli"] = 0
-        with self.assertRaisesRegex(ValueError, "debe ser positivo"):
-            adapt_snapshot(snapshot)
+        snapshot["outgoingCommitments"][0]["openQuantityMilli"] = 0
+        report = adapt_snapshot(snapshot)
+        cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
+        self.assertEqual(cola["result"]["firmOutgoingInHorizonMilli"], 0)
 
     def test_unknown_native_shipment_or_receipt_status_is_rejected(self) -> None:
         shipment = copy.deepcopy(self.snapshot)
-        shipment["shipments"][0]["status"] = "in_progress"
+        shipment["outgoingCommitments"][0]["status"] = "in_progress"
         with self.assertRaisesRegex(ValueError, "status no soportado"):
             adapt_snapshot(shipment)
 
@@ -154,7 +161,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
 
     def test_mismatched_source_semantics_are_rejected(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["sourceSemantics"]["outgoingReservation"] = "ShipmentLine.reserved_raw"
+        snapshot["sourceSemantics"]["outgoingReservation"] = "SUM(ShipmentLine.reserved_raw_by_OrderLine)"
         with self.assertRaisesRegex(ValueError, "sourceSemantics"):
             adapt_snapshot(snapshot)
 
