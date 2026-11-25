@@ -97,7 +97,7 @@ echo ""
 echo "Vista previa local de Rubrova."
 echo "Se crea una base sintética nueva, se realiza una venta de aceptación y se comprueba la persistencia tras reiniciar."
 echo "Si todo sale bien, los contenedores quedarán encendidos para seguir probando."
-echo "URL: http://127.0.0.1:8080"
+echo "URL: http://127.0.0.1:8080/login"
 echo "Captura: $RUBROVA_UI_SCREENSHOT"
 echo ""
 
