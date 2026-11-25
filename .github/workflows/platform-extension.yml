@@ -40,6 +40,8 @@ jobs:
           package-manager-cache: false
       - name: Validar lock, extensión y glosario
         run: node --test scripts/platform/validate-mycompany-extension.test.mjs
+      - name: Validar dataset de evaluación comercial y sus reglas
+        run: node --test scripts/evaluation/fixture-validator.test.mjs
       - name: Validar configuración de ejecución nativa, Docker y remota
         run: python3 scripts/platform/test_runtime_config.py
       - name: Validar supervisor nativo sin Docker
