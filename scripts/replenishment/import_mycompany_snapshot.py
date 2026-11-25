@@ -20,14 +20,16 @@ from plan_replenishment import plan_replenishment
 
 SOURCE_SEMANTICS = {
     "inventory": "InvLedger.onHand_exact_location",
-    "outgoingQuantity": "ShipmentLine.openRemaining",
-    "outgoingReservation": "ShipmentResLedger.lineReserved",
+    "outgoingIdentity": "Sales.OrderLine.id",
+    "outgoingQuantity": "Sales.toShip(OrderLine_confirmed)",
+    "outgoingReservation": "SUM(ShipmentResLedger.lineReserved_by_OrderLine)",
+    "outgoingDate": "Sales.Order.scheduledDateTime",
     "incomingQuantity": "ReceiptResLedger.expectedRemaining",
     "incomingDate": "Receipt.scheduledDateTime",
     "incomingEligibility": "Receipt.ready_and_PurchaseOrder.confirmed",
 }
 
-SHIPMENT_STATUSES = {"draft", "waiting", "ready", "done", "cancelled"}
+OUTGOING_COMMITMENT_STATUSES = {"draft", "sent", "confirmed", "cancelled"}
 RECEIPT_STATUSES = {"draft", "ready", "done", "cancelled"}
 PURCHASE_ORDER_STATUSES = {"draft", "sent", "confirmed", "cancelled"}
 
@@ -99,7 +101,7 @@ def _validate_snapshot(payload: Any) -> dict[str, Any]:
     _date(snapshot.get("asOf"), "asOf")
     if snapshot.get("sourceSemantics") != SOURCE_SEMANTICS:
         raise ValueError("sourceSemantics no coincide con el contrato MyCompany 6.2 documentado.")
-    for name in ("inventory", "shipments", "receipts", "planningInputs"):
+    for name in ("inventory", "outgoingCommitments", "receipts", "planningInputs"):
         _rows(snapshot.get(name), name)
     if not snapshot["inventory"]:
         raise ValueError("inventory no puede estar vacío.")
@@ -167,43 +169,53 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         )
         items[key] = item
 
-    seen_shipment_lines: set[str] = set()
+    seen_order_lines: set[str] = set()
     excluded_outgoing: Counter[str] = Counter()
-    for index, row in enumerate(snapshot["shipments"]):
-        prefix = f"shipments[{index}]"
-        line_id = _text(row.get("lineId"), f"{prefix}.lineId")
-        if line_id in seen_shipment_lines:
-            raise ValueError(f"shipments contiene lineId duplicado: {line_id}.")
-        seen_shipment_lines.add(line_id)
-        _text(row.get("shipmentId"), f"{prefix}.shipmentId")
+    source_line_counts: Counter[tuple[str, str]] = Counter()
+    source_shipment_counts: Counter[tuple[str, str]] = Counter()
+    for index, row in enumerate(snapshot["outgoingCommitments"]):
+        prefix = f"outgoingCommitments[{index}]"
+        line_id = _text(row.get("sourceLineId"), f"{prefix}.sourceLineId")
+        if line_id in seen_order_lines:
+            raise ValueError(
+                "outgoingCommitments debe contener una fila consolidada por Sales.OrderLine; "
+                f"sourceLineId duplicado: {line_id}."
+            )
+        seen_order_lines.add(line_id)
+        _text(row.get("sourceDocumentId"), f"{prefix}.sourceDocumentId")
         product_id = _text(row.get("productId"), f"{prefix}.productId")
         location_id = _text(row.get("locationId"), f"{prefix}.locationId")
-        status = _status(row.get("status"), f"{prefix}.status", SHIPMENT_STATUSES)
+        status = _status(
+            row.get("status"), f"{prefix}.status", OUTGOING_COMMITMENT_STATUSES
+        )
         due_date = _date(row.get("scheduledDate"), f"{prefix}.scheduledDate")
         quantity = _integer(row.get("openQuantityMilli"), f"{prefix}.openQuantityMilli")
         reserved = _integer(row.get("lineReservedMilli"), f"{prefix}.lineReservedMilli")
-        if status not in {"waiting", "ready"}:
-            reason = {
-                "draft": "NOT_FIRM",
-                "done": "ALREADY_SHIPPED",
-                "cancelled": "CANCELLED",
-            }[status]
-            _count(excluded_outgoing, reason)
+        shipment_document_count = _integer(
+            row.get("relatedShipmentCount", 1), f"{prefix}.relatedShipmentCount", minimum=1
+        )
+        if status != "confirmed":
+            _count(
+                excluded_outgoing,
+                "CANCELLED" if status == "cancelled" else "NOT_FIRM",
+            )
             continue
-        if quantity == 0:
-            raise ValueError(f"{prefix}.openQuantityMilli debe ser positivo para un despacho abierto.")
         if reserved > quantity:
             raise ValueError(f"{prefix}.lineReservedMilli no puede superar openQuantityMilli.")
+        if quantity == 0:
+            continue
         key = (product_id, location_id)
         if key not in items:
             raise ValueError(f"{prefix} no tiene planningInputs para {product_id}/{location_id}.")
         items[key]["outgoing"].append({
-            "id": f"shipment:{line_id}",
-            "status": status,
+            "id": f"sales-order-line:{line_id}",
+            "status": "confirmed",
             "dueDate": due_date.isoformat(),
             "quantityMilli": quantity,
             "reservedMilli": reserved,
         })
+        source_line_counts[key] += 1
+        source_shipment_counts[key] += shipment_document_count
 
     seen_receipt_lines: set[str] = set()
     seen_purchase_order_lines: set[str] = set()
@@ -288,6 +300,8 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         results.append({
             "productId": key[0],
             "locationId": key[1],
+            "sourceSalesOrderLineCount": source_line_counts[key],
+            "underlyingShipmentDocumentCount": source_shipment_counts[key],
             "result": result,
             "nativeComparison": comparison,
         })
@@ -307,10 +321,10 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         "items": results,
         "limitations": [
             "El adaptador sólo lee un JSON exportado; no abre conexiones ni ejecuta consultas contra MyCompany.",
-            "openQuantityMilli debe representar el remanente realmente abierto; no se debe copiar sin revisar initialDemand de documentos ya divididos.",
-            "lineReservedMilli debe ser ShipmentResLedger.lineReserved, no la reserva bruta ni una segunda demanda.",
+            "outgoingCommitments.openQuantityMilli debe ser Sales.toShip(OrderLine) y existir una sola fila por línea de pedido, aunque haya varios documentos de despacho parciales.",
+            "lineReservedMilli debe sumar ShipmentResLedger.lineReserved efectivo por OrderLine, no reserved bruto ni reservas repetidas por cada despacho.",
             "Sólo se importan recepciones ready vinculadas a órdenes de compra confirmadas y con increaseAvailableStock=false.",
-            "Las recepciones manuales, transferencias, devoluciones y órdenes no confirmadas no se incorporan en esta primera versión.",
+            "Los compromisos de salida se limitan a líneas de pedidos de venta confirmados; los despachos independientes, transferencias y devoluciones quedan fuera de esta versión.",
             "La comparación nativa es una lectura capturada de toOrderPeriodic; no ejecuta fillAuto ni crea órdenes.",
             "El pronóstico y las políticas de proveedor siguen siendo entradas externas al snapshot de inventario.",
         ],

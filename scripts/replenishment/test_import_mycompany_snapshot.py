@@ -40,7 +40,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
             {"NO_ORDER_NEEDED", "ORDER_RECOMMENDED"},
         )
 
-    def test_reservation_is_subset_of_open_shipment_and_deducted_only_once(self) -> None:
+    def test_reservation_is_subset_of_order_line_commitment_and_deducted_once(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "COLA-2L")
         self.assertEqual(result["onHandMilli"], 16000)
@@ -49,13 +49,19 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         self.assertEqual(result["firmOutgoingInHorizonMilli"], 4000)
         self.assertEqual(result["includedOutgoingCount"], 1)
 
-    def test_partial_shipment_residual_is_imported_without_recounting_completed_document(self) -> None:
+    def test_partial_shipments_collapse_to_one_remaining_sales_order_line(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "COLA-2L")
-        # The completed original shipment is excluded; only the separately
-        # exported open residual shipment remains in the planning horizon.
+        # Sales.toShip(OrderLine) already subtracts fulfilled quantities.
+        # Multiple shipment documents remain represented by one order-line event.
+        cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
         self.assertEqual(result["firmOutgoingInHorizonMilli"], 4000)
-        self.assertEqual(report["excludedOutgoingByReason"]["ALREADY_SHIPPED"], 1)
+        self.assertEqual(cola["sourceSalesOrderLineCount"], 1)
+        self.assertEqual(cola["underlyingShipmentDocumentCount"], 2)
+        self.assertEqual(report["excludedOutgoingByReason"], {
+            "CANCELLED": 1,
+            "NOT_FIRM": 1,
+        })
 
     def test_only_ready_receipt_from_confirmed_purchase_order_is_included(self) -> None:
         report = self._adapt()
@@ -69,7 +75,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
             "NOT_READY": 1,
         })
 
-    def test_ready_shipment_reservation_and_projected_commitment_are_not_double_counted(self) -> None:
+    def test_order_line_reservation_and_projected_commitment_are_not_double_counted(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "PASTA-500G")
         self.assertEqual(result["reservedMilli"], 4500)
@@ -97,10 +103,10 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "producto/ubicación duplicado"):
             adapt_snapshot(snapshot)
 
-    def test_duplicate_shipment_line_is_rejected(self) -> None:
+    def test_duplicate_sales_order_line_commitment_is_rejected(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["shipments"].append(copy.deepcopy(snapshot["shipments"][0]))
-        with self.assertRaisesRegex(ValueError, "lineId duplicado"):
+        snapshot["outgoingCommitments"].append(copy.deepcopy(snapshot["outgoingCommitments"][0]))
+        with self.assertRaisesRegex(ValueError, "sourceLineId duplicado"):
             adapt_snapshot(snapshot)
 
     def test_duplicate_active_receipt_for_same_purchase_order_line_is_rejected(self) -> None:
@@ -127,23 +133,32 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "no tiene existencia física"):
             adapt_snapshot(snapshot)
 
-    def test_reservation_cannot_exceed_its_open_shipment_line(self) -> None:
+    def test_reservation_cannot_exceed_its_open_sales_order_line(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["shipments"][0]["lineReservedMilli"] = (
-            snapshot["shipments"][0]["openQuantityMilli"] + 1
+        snapshot["outgoingCommitments"][0]["lineReservedMilli"] = (
+            snapshot["outgoingCommitments"][0]["openQuantityMilli"] + 1
         )
         with self.assertRaisesRegex(ValueError, "no puede superar openQuantityMilli"):
             adapt_snapshot(snapshot)
 
-    def test_active_shipment_must_have_positive_open_quantity(self) -> None:
+    def test_zero_open_sales_order_line_is_ignored_as_fully_shipped(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["shipments"][0]["openQuantityMilli"] = 0
-        with self.assertRaisesRegex(ValueError, "debe ser positivo"):
+        snapshot["outgoingCommitments"][0]["openQuantityMilli"] = 0
+        snapshot["outgoingCommitments"][0]["lineReservedMilli"] = 0
+        report = adapt_snapshot(snapshot)
+        cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
+        self.assertEqual(cola["result"]["firmOutgoingInHorizonMilli"], 0)
+
+
+    def test_fully_shipped_order_line_cannot_keep_an_effective_reservation(self) -> None:
+        snapshot = copy.deepcopy(self.snapshot)
+        snapshot["outgoingCommitments"][0]["openQuantityMilli"] = 0
+        with self.assertRaisesRegex(ValueError, "no puede superar openQuantityMilli"):
             adapt_snapshot(snapshot)
 
-    def test_unknown_native_shipment_or_receipt_status_is_rejected(self) -> None:
+    def test_unknown_native_commitment_or_receipt_status_is_rejected(self) -> None:
         shipment = copy.deepcopy(self.snapshot)
-        shipment["shipments"][0]["status"] = "in_progress"
+        shipment["outgoingCommitments"][0]["status"] = "in_progress"
         with self.assertRaisesRegex(ValueError, "status no soportado"):
             adapt_snapshot(shipment)
 
@@ -154,7 +169,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
 
     def test_mismatched_source_semantics_are_rejected(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
-        snapshot["sourceSemantics"]["outgoingReservation"] = "ShipmentLine.reserved_raw"
+        snapshot["sourceSemantics"]["outgoingReservation"] = "SUM(ShipmentLine.reserved_raw_by_OrderLine)"
         with self.assertRaisesRegex(ValueError, "sourceSemantics"):
             adapt_snapshot(snapshot)
 

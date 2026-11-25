@@ -11,7 +11,7 @@ Antes de proponer otro módulo se revisaron las fuentes vendorizadas de inventar
 
 - `InvLedger.lsf` calcula existencias físicas a partir de entradas y salidas activas, no aceptadas según corresponda (`onHand = inQuantity - outQuantity`).
 - `ResLedger.lsf` separa cantidades reservadas positivas y esperadas negativas. El disponible se calcula como existencia menos reservas que participan en `planned`.
-- `ShipmentRes.lsf` representa reservas asociadas a líneas de salida pendientes; `ShipmentWaiting.lsf` expone la demanda que aún espera despacho.
+- `ShipmentRes.lsf` representa reservas asociadas a líneas de salida pendientes; `ShipmentWaiting.lsf` expone la demanda que aún espera despacho. Para pedidos de venta, `SalesOrderShipment.lsf` aporta el agregado más seguro: `toShip(OrderLine) = max(shippedQuantity - done, 0)`, donde `done` suma lo efectivamente despachado en envíos activos.
 - `ReceiptRes.lsf` representa recepciones previstas como cantidades negativas. La propiedad `skipAvailable` permite que una recepción esperada no aumente `available` salvo que el tipo de recepción esté configurado para ello. Por eso no debemos asumir que todo lo que está en una orden de compra ya forma parte del stock disponible.
 - `PurchaseOrderShipmentAuto.lsf` ya tiene una rutina de auto pedido: compara disponibilidad previa, envíos pendientes y demanda despachada dentro del período configurado al proveedor; redondea por `purchasePackRatio` y `fillAuto` crea líneas de pedido.
 
@@ -122,13 +122,17 @@ El contrato de entrada exige MyCompany 6.2 y una declaración explícita de sem�
 | Campo del snapshot | Origen/semántica requerida |
 |---|---|
 | inventory.onHandMilli | InvLedger.onHand para una ubicación exacta, no un agregado jerárquico |
-| shipments.openQuantityMilli | Cantidad realmente pendiente de cumplir en la línea abierta |
-| shipments.lineReservedMilli | ShipmentResLedger.lineReserved, es decir, reserva efectiva después de ledgerReserved |
+| outgoingCommitments.sourceLineId | ID de Sales.OrderLine; identidad única del compromiso |
+| outgoingCommitments.sourceDocumentId | ID de Sales.Order |
+| outgoingCommitments.openQuantityMilli | Sales.toShip(OrderLine) de un pedido confirmado, neto de las cantidades ya despachadas |
+| outgoingCommitments.lineReservedMilli | Suma de ShipmentResLedger.lineReserved por OrderLine, es decir, reserva efectiva después de ledgerReserved |
+| outgoingCommitments.scheduledDate | Sales.Order.scheduledDateTime |
+| outgoingCommitments.relatedShipmentCount | Cantidad de documentos Shipment vinculados a la línea; metadato para auditar parciales, no cantidad a sumar |
 | receipts.expectedQuantityMilli | Cantidad aún pendiente de recepción representada por ReceiptResLedger |
 | receipts.scheduledDate | Receipt.scheduledDateTime |
 | planningInputs.nativeAutoOrderQtyMilli | Valor leído de PurchaseOrderShipmentAuto.toOrderPeriodic, si se exporta |
 
-**Despachos y parciales.** El snapshot importa únicamente despachos waiting o ready; draft, done y cancelled se excluyen. La reserva es una porción de openQuantityMilli, nunca una línea adicional de demanda. El flujo nativo shipPartially crea un nuevo documento con las líneas restantes derivadas de toReserve = initialDemand - reserved y utiliza una extensión abstracta para resolver el documento original. Por eso no es seguro reconstruir el remanente sumando initialDemand de todas las líneas sin conocer ese resultado: el exportador nativo debe entregar openQuantityMilli ya normalizado y excluir el tramo ya despachado. El adaptador rechaza reservas superiores a la cantidad abierta y evita reutilizar IDs de línea.
+**Despachos y parciales.** La unidad de exportación es una línea de pedido de venta, no cada `ShipmentLine`. En `SalesOrderShipment.lsf`, `done(OrderLine)` agrega las cantidades despachadas de envíos activos y `toShip(OrderLine)` calcula la cantidad aún pendiente. Además, `ShipmentReady.shipPartially` crea una línea residual en otro documento, mientras `SalesOrderShipment.overShipPartially` conserva el vínculo con la misma `OrderLine`. Por lo tanto, exportar cada documento como una demanda independiente puede duplicar la obligación de entrega. La extracción nativa debe emitir una sola fila por `Sales.OrderLine.id`, con `openQuantityMilli = Sales.toShip(OrderLine)` y `lineReservedMilli` como suma de `ShipmentResLedger.lineReserved` asociada a esa línea. `relatedShipmentCount` sólo ayuda a auditar cuántos documentos participan; no se suma como cantidad. El adaptador rechaza IDs de líneas de pedido duplicados y reservas superiores al remanente.
 
 **Compras y recepciones.** PurchaseOrderReceipt crea/actualiza una Receipt en estado ready para una orden confirmada, copia scheduledDateTime y establece la cantidad de cada línea en toReceive, que descuenta lo ya recibido. El adaptador incluye sólo líneas ready vinculadas a una orden confirmada y una vez por purchaseOrderLineId. Una Receipt done ya debe estar reflejada en onHand y se excluye; las órdenes en draft/sent/cancelled también se excluyen. Las recepciones cuyo tipo usa increaseAvailableStock=true se rechazan en esta versión, porque MyCompany puede incorporarlas al available antes de la recepción física y el planificador aún no reproduce esa política. No se oculta esa diferencia ni se aproxima con una cifra.
 
@@ -136,4 +140,4 @@ El contrato de entrada exige MyCompany 6.2 y una declaración explícita de sem�
 
 La CI compila ambos módulos, ejecuta las pruebas del adaptador y corre el CLI contra el snapshot de ejemplo. Las pruebas cubren reservas parciales, despacho residual, recepción confirmada, recepción ya hecha, borrador, orden enviada, IDs duplicados, líneas de compra duplicadas, semántica incompatible y el caso increaseAvailableStock.
 
-**Límite actual:** el archivo de ejemplo es sintético. Todavía no existe una exportación real desde MyCompany ni se ha conciliado una muestra tomada de su base. Por tanto, esta entrega valida el contrato de intercambio y sus protecciones, no afirma que el snapshot ya pueda extraerse del runtime productivo. El siguiente paso es implementar el endpoint/reporte nativo de sólo lectura y contrastar sus cantidades contra las propiedades originales, antes de usar el planificador en una decisión comercial.
+**Límite actual:** el archivo de ejemplo es sintético. El contrato ya consolida compromisos por línea de pedido usando las propiedades nativas identificadas, pero todavía no existe una exportación real desde MyCompany ni se ha conciliado una muestra tomada de su base. Por tanto, esta entrega valida el contrato de intercambio y sus protecciones, no afirma que el snapshot ya pueda extraerse del runtime productivo. El siguiente paso es implementar el endpoint/reporte nativo de sólo lectura y contrastar sus cantidades contra las propiedades originales, antes de usar el planificador en una decisión comercial.

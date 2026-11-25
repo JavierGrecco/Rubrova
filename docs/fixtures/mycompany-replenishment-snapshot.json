@@ -6,8 +6,10 @@
   "asOf": "2026-11-25",
   "sourceSemantics": {
     "inventory": "InvLedger.onHand_exact_location",
-    "outgoingQuantity": "ShipmentLine.openRemaining",
-    "outgoingReservation": "ShipmentResLedger.lineReserved",
+    "outgoingIdentity": "Sales.OrderLine.id",
+    "outgoingQuantity": "Sales.toShip(OrderLine_confirmed)",
+    "outgoingReservation": "SUM(ShipmentResLedger.lineReserved_by_OrderLine)",
+    "outgoingDate": "Sales.Order.scheduledDateTime",
     "incomingQuantity": "ReceiptResLedger.expectedRemaining",
     "incomingDate": "Receipt.scheduledDateTime",
     "incomingEligibility": "Receipt.ready_and_PurchaseOrder.confirmed"
@@ -27,58 +29,6 @@
       "productId": "PROD-ACEITE",
       "locationId": "LOC-LOCAL",
       "onHandMilli": 5000
-    }
-  ],
-  "shipments": [
-    {
-      "lineId": "SL-COLA-WAIT-1",
-      "shipmentId": "SH-COLA-WAIT",
-      "productId": "PROD-COLA",
-      "locationId": "LOC-LOCAL",
-      "status": "waiting",
-      "scheduledDate": "2026-11-27",
-      "openQuantityMilli": 4000,
-      "lineReservedMilli": 2500
-    },
-    {
-      "lineId": "SL-COLA-OLD-DONE",
-      "shipmentId": "SH-COLA-PARTIAL-ORIGINAL",
-      "productId": "PROD-COLA",
-      "locationId": "LOC-LOCAL",
-      "status": "done",
-      "scheduledDate": "2026-11-24",
-      "openQuantityMilli": 0,
-      "lineReservedMilli": 0
-    },
-    {
-      "lineId": "SL-COLA-CANCELLED",
-      "shipmentId": "SH-COLA-CANCELLED",
-      "productId": "PROD-COLA",
-      "locationId": "LOC-LOCAL",
-      "status": "cancelled",
-      "scheduledDate": "2026-11-28",
-      "openQuantityMilli": 2000,
-      "lineReservedMilli": 0
-    },
-    {
-      "lineId": "SL-PASTA-READY-1",
-      "shipmentId": "SH-PASTA-READY",
-      "productId": "PROD-PASTA",
-      "locationId": "LOC-LOCAL",
-      "status": "ready",
-      "scheduledDate": "2026-11-26",
-      "openQuantityMilli": 4500,
-      "lineReservedMilli": 4500
-    },
-    {
-      "lineId": "SL-PASTA-DRAFT",
-      "shipmentId": "SH-PASTA-DRAFT",
-      "productId": "PROD-PASTA",
-      "locationId": "LOC-LOCAL",
-      "status": "draft",
-      "scheduledDate": "2026-11-25",
-      "openQuantityMilli": 1000,
-      "lineReservedMilli": 0
     }
   ],
   "receipts": [
@@ -205,6 +155,52 @@
       "safetyStockMilli": 1000,
       "minimumOrderQuantityMilli": 0,
       "orderMultipleMilli": 500
+    }
+  ],
+  "outgoingCommitments": [
+    {
+      "sourceLineId": "SOL-COLA-001",
+      "sourceDocumentId": "SO-COLA-001",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "confirmed",
+      "scheduledDate": "2026-11-27",
+      "openQuantityMilli": 4000,
+      "lineReservedMilli": 2500,
+      "relatedShipmentCount": 2
+    },
+    {
+      "sourceLineId": "SOL-COLA-CANCELLED",
+      "sourceDocumentId": "SO-COLA-CANCELLED",
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "status": "cancelled",
+      "scheduledDate": "2026-11-28",
+      "openQuantityMilli": 2000,
+      "lineReservedMilli": 0,
+      "relatedShipmentCount": 1
+    },
+    {
+      "sourceLineId": "SOL-PASTA-001",
+      "sourceDocumentId": "SO-PASTA-001",
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "status": "confirmed",
+      "scheduledDate": "2026-11-26",
+      "openQuantityMilli": 4500,
+      "lineReservedMilli": 4500,
+      "relatedShipmentCount": 2
+    },
+    {
+      "sourceLineId": "SOL-PASTA-DRAFT",
+      "sourceDocumentId": "SO-PASTA-DRAFT",
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "status": "draft",
+      "scheduledDate": "2026-11-25",
+      "openQuantityMilli": 1000,
+      "lineReservedMilli": 0,
+      "relatedShipmentCount": 1
     }
   ]
 }
