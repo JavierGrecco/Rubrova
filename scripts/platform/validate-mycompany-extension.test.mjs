@@ -110,7 +110,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
-  assert.ok(runtimeSmokeSource.includes('    image: $CLIENT_IMAGE\n    platform: linux/amd64\n    # Replace the upstream wildcard publication; expose only to this host.\n    ports: !override\n      - "127.0.0.1:8080:8080"\n    pull_policy: never'));
+  assert.ok(runtimeSmokeSource.includes('    image: $CLIENT_IMAGE\n    platform: linux/amd64\n    networks:\n      - default\n      - ingress\n    # Publish through the non-internal ingress bridge, bound only to loopback.\n    ports: !override\n      - "127.0.0.1:8080:8080"\n    pull_policy: never'));
   assert.match(runtimeSmokeSource, /CLIENT_HOST_BINDINGS_JSON/);
   assert.match(runtimeSmokeSource, /HostIp/);
   assert.match(runtimeSmokeSource, /HostPort/);
