@@ -97,5 +97,67 @@ class StockoutAdjustmentTests(unittest.TestCase):
         self.assertEqual(report["sameEligiblePeriods"]["availabilityAdjustedVsSyntheticTruth"]["WAPE"], 0.0)
 
 
+    def test_min_available_days_must_be_a_positive_integer(self) -> None:
+        for threshold in (True, False, 0, -1, 10.5, "10"):
+            with self.subTest(threshold=threshold):
+                with self.assertRaises(ValueError):
+                    adjust_observation(
+                        {"units": 10, "openDays": 20, "stockoutDays": 0},
+                        min_available_days=threshold,
+                    )
+
+    def test_synthetic_truth_never_changes_the_demand_estimate(self) -> None:
+        low_truth = adjust_observation(
+            {"units": 80, "openDays": 25, "stockoutDays": 5, "latentDemandUnits": 80}
+        )
+        high_truth = adjust_observation(
+            {"units": 80, "openDays": 25, "stockoutDays": 5, "latentDemandUnits": 5000}
+        )
+        self.assertEqual(low_truth["estimatedDemandUnits"], 100.0)
+        self.assertEqual(high_truth["estimatedDemandUnits"], 100.0)
+        self.assertEqual(low_truth, high_truth)
+
+    def test_report_fails_when_no_period_is_eligible(self) -> None:
+        fixture = {
+            "observations": [
+                {
+                    "month": "2025-01-01",
+                    "units": 20,
+                    "openDays": 25,
+                    "stockoutDays": 25,
+                    "latentDemandUnits": 30,
+                }
+            ]
+        }
+        with self.assertRaisesRegex(ValueError, "No hay períodos"):
+            build_stockout_adjustment_report(fixture)
+
+    def test_fixture_rejects_non_month_start_and_duplicate_months(self) -> None:
+        from stockout_adjustment import load_stockout_fixture
+
+        valid_row = {
+            "units": 10,
+            "openDays": 26,
+            "stockoutDays": 0,
+            "latentDemandUnits": 10,
+        }
+        invalid_observations = (
+            [{**valid_row, "month": "2025-01-15"}],
+            [{**valid_row, "month": "2025-01-01"}, {**valid_row, "month": "2025-01-01"}],
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_path = Path(temp_dir) / "fixture.json"
+            for observations in invalid_observations:
+                with self.subTest(observations=observations):
+                    payload = {
+                        "schemaVersion": 1,
+                        "frequency": "MS",
+                        "observations": observations,
+                    }
+                    fixture_path.write_text(json.dumps(payload), encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "únicos|comenzar"):
+                        load_stockout_fixture(fixture_path)
+
+
 if __name__ == "__main__":
     unittest.main()
