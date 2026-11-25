@@ -4,14 +4,13 @@
 **Rama:** `main`  
 **Última aceptación funcional completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218)  
 **Commit funcional aceptado:** `e23acfc7bb3387ebd184b1aeed9e80c8994593c5`  
-**Validación de runtime sin salida externa:** [CI 45508387716](https://github.com/JavierGrecco/Rubrova/actions/runs/45508387716), en curso para el commit `acecfb58180508ffd02aea2876cded2ef0df8057`  
-**Revisión de idioma y experiencia en curso:** `891009e93c8ccca719a6d53f8fe14afaa39fe32b`
+**Transición a runtime nativo:** workflow de CI actualizado para compilar las mismas fuentes y probar PostgreSQL 18 + Java 21 + Tomcat 9 sin Docker. La aceptación nativa completa está pendiente; no hay todavía un resultado de venta nativa ni una aceptación en Mac/Windows.
 
 ## Resumen ejecutivo
 
-Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany; CI construye imágenes propias de Rubrova y las ejecuta sobre PostgreSQL 18 en un entorno descartable Linux x86_64.
+Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany desde las fuentes propias. La decisión de ejecución cambió: el camino principal de desarrollo y CI será nativo (Java 21, PostgreSQL 18 y Tomcat 9); Docker queda como comprobación secundaria y manual.
 
-La aceptación funcional [45461105823](https://github.com/JavierGrecco/Rubrova/actions/runs/45461105823) completó con Chromium una venta de prueba de ARS 1.250: una factura y un pago en efectivo persistidos, caja y turno conciliados, stock reducido de 10 a 9 y cierre nativo del turno `SM/000001`. El cierre quedó con estado `CLOSED`, total vendido ARS 1.250, neto del turno ARS 1.250 y efectivo en caja ARS 1.250. La aceptación consulta los documentos y ledgers guardados, no se limita a comprobar mensajes visuales.
+La aceptación funcional completa más reciente [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) completó con Chromium una venta sintética de ARS 1.250: factura y pago en efectivo persistidos, stock reducido de 10 a 9, caja conciliada y turno `CLOSED`. También comprobó reinicio de servidor/cliente sin borrar PostgreSQL y ocho resultados de integración simulados. **Esa aceptación corresponde al smoke Docker histórico**, no al nuevo runtime nativo. La lógica comercial ya se probó; ahora hay que repetirla en el entorno que será el principal.
 
 Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de CI que se destruye al terminar. Esta aprobación demuestra el primer recorrido venta → cobro → stock → cierre básico; no habilita aún el uso diario ni significa que el POS/ERP esté terminado.
 
@@ -21,7 +20,7 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 |---|---|---|
 | Fuentes originales lsFusion 6.2 + MyCompany 6.2 | Aprobado | Snapshots fijados en el lock y completos en `vendor/` |
 | Compilación del fork Rubrova | Aprobado en CI | Reactor Maven, servidor, cliente GWT y lógica MyCompany compilados desde fuentes propias |
-| Imágenes propias del runtime | Aprobado en CI | Servidor, lógica y cliente construidos y utilizados por el smoke |
+| Imágenes propias del runtime Docker | Aprobado en CI | Artefactos compilados desde fuentes Rubrova e incorporados a imágenes propias; validación Docker pasa a ser secundaria |
 | Arranque, RMI y cliente web | Aprobado en CI | PostgreSQL 18, lógica, RMI 7652, Tomcat y acceso Chromium |
 | Login y navegación al POS | Aprobado en CI | Chromium llega a Comercio → Punto de venta |
 | Apertura de turno | Aprobado en CI | Turno sintético `SM/000001` |
@@ -38,9 +37,9 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Vuelto, pagos mixtos y tarjeta | Pendiente | El primer circuito aceptado sólo cubre efectivo exacto, sin vuelto |
 | Reinicio conservando datos | Aprobado en CI | En `45503956218` se reiniciaron servidor y cliente sin borrar PostgreSQL y se volvieron a conciliar factura, pago, caja, stock y turno cerrado |
 | Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
-| Runtime durante una caída de Internet | Pendiente de aceptación | Se incorporó una prueba con red Docker interna sin salida externa. El primer ajuste falló por una aserción estática; la siguiente ejecución debe completar el smoke funcional antes de aceptar el resultado |
+| Runtime durante una caída de Internet | En validación nativa | El workflow nuevo bloquea la salida externa y comprueba que el servidor y la UI sigan respondiendo por loopback; falta que la ejecución completa termine correctamente |
 | Instalación inicial y paquete completo sin Internet | Pendiente | La prueba de runtime aislado no demuestra todavía que el instalador, los artefactos, las imágenes base y las dependencias puedan instalarse en una PC limpia sin conexión |
-| Ejecución local nativa sin Docker | En diseño / base inicial | lsFusion permite ejecución nativa con Java, PostgreSQL y Tomcat. Se definió el contrato de destinos y un gestor de configuración; falta implementar y probar el supervisor de procesos y el runtime completo en macOS/Windows |
+| Ejecución local nativa sin Docker | Prototipo implementado; aceptación pendiente | Supervisor Python, instancia PostgreSQL propia, servidor `BusinessLogicsBootstrap`, cliente Tomcat y pruebas unitarias; el smoke nativo de CI está incorporado pero todavía no hay aceptación de venta nativa ni prueba en Mac/Windows |
 | Configuración siempre disponible | En desarrollo inicial | Existe el esquema y el gestor CLI para `native-local`, `docker-local` y `remote-online`; falta el panel visual independiente y su integración con la administración del POS |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
 | Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
@@ -48,7 +47,7 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 
 ## Modos de ejecución y control local
 
-El contrato inicial está en `platform/runtime-config.schema.json`; `scripts/platform/runtime-config.py` valida y guarda preferencias sin credenciales. Los destinos separados son `native-local`, `docker-local` y `remote-online`. La conectividad de integraciones externas se configura aparte. Este selector todavía no inicia ni detiene procesos, no cambia la base activa y no migra datos. El supervisor nativo y el panel visual siguen pendientes. Ver [Modos de ejecución y control local](RUNTIME_MODES_AND_LOCAL_CONTROL.md).
+El contrato está en `platform/runtime-config.schema.json`; `scripts/platform/runtime-config.py` permite crear, validar y gestionar los destinos `native-local`, `docker-local` y `remote-online`. El prototipo nativo inicia y supervisa PostgreSQL, lsFusion y Tomcat, pero aún no cambia de destino ni migra datos de negocio. El panel visual independiente sigue pendiente. Ver [Modos de ejecución y control local](RUNTIME_MODES_AND_LOCAL_CONTROL.md).
 
 ## Código y propiedad de fuentes
 
@@ -72,16 +71,16 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 
 ## Próximo orden de implementación
 
-1. **Completar caja y arqueo:** probar fondo inicial, ingresos/retiros nativos, conteo esperado, diferencias y saldo por medio. El cierre básico después de una venta simple ya pasó.
-2. **Devolución y reintegro:** usar el circuito original de MyCompany, relacionar Bill con la factura, verificar el medio y monto efectivamente abonados, el OutgoingPayment y la reposición correspondiente de stock.
-3. **Completar los casos de pago:** vuelto, pagos parciales/mixtos, tarjeta y cancelación, con conciliación exacta por medio.
+1. **Aceptar el runtime nativo:** ejecutar el smoke CI sin Docker hasta completar login, menú y persistencia inicial; a continuación reutilizar el fixture comercial para venta, cobro, stock, cierre y reinicio con PostgreSQL local.
+2. **Completar la aceptación comercial en nativo:** mover los fixtures sintéticos al harness compartido y repetir venta, pagos, caja, stock, cierre, reinicio y conciliación.
+3. **Completar caja y pagos:** arqueo contado, diferencias, ingresos/retiros, vuelto, pagos mixtos, tarjeta y cancelación.
 4. **Persistencia y recuperación:** reiniciar servidor y cliente sin borrar PostgreSQL y repetir consultas de factura, pago, turno y ledger. Probar además backup/restore y rollback sobre copias.
 5. **Prueba del camino HTTP de navegador:** `EXTERNAL HTTP CLIENT` real desde Chromium, con timeout, CORS, abort, fallo de red y recuperación.
 6. **Instalación offline y plataformas:** paquete completo en PC limpia sin Internet; después validación real en Windows y macOS ARM64.
 7. **ERP y localización:** continuar compras, inventario, proveedores, reportes y experiencia visual sobre módulos originales, adaptando con extensiones propias.
 8. **Fiscalidad e integraciones externas:** ARCA, medios electrónicos, marketplaces y logística sólo después de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación probadas.
 
-La aceptación funcional 45461105823 demuestra el primer recorrido comercial integrado —venta, pago, salida de stock y cierre básico— en el runtime propio de Rubrova. No declara terminado el producto ni autoriza producción. La aceptación completa requiere devoluciones y reintegros conciliados, arqueo y movimientos de caja, casos de pago restantes, persistencia después de reiniciar, restauración desde backup y comportamiento seguro ante fallos externos.
+La aceptación funcional 45503956218 demuestra el primer recorrido comercial integrado —venta, pago, salida de stock y cierre básico— en el runtime Docker construido desde fuentes Rubrova. No demuestra todavía el mismo recorrido en el runtime nativo, no declara terminado el producto ni autoriza producción. La aceptación completa requiere devoluciones y reintegros conciliados, arqueo y movimientos de caja, casos de pago restantes, persistencia después de reiniciar, restauración desde backup y comportamiento seguro ante fallos externos.
 
 ## Política transversal de errores
 
