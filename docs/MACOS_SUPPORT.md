@@ -13,7 +13,7 @@ El camino previsto para macOS es nativo:
 - Python 3 supervisa el arranque, comprueba los procesos/puertos y los detiene sin borrar la base.
 - Docker no es requisito para el runtime nativo local en macOS. En CI, la aceptación nativa macOS ARM64 es obligatoria; el smoke Docker/Linux se conserva como diagnóstico suplementario no bloqueante de empaquetado y despliegue.
 
-El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. En el run CI `45637101959`, el smoke completó en `macos-26` ARM64 el ciclo de abrir turno, vender, cobrar, conciliar stock y cerrar caja. Ese job se ejecutó con conectividad externa habilitada; no sustituye la prueba en tu Mac ni es un instalador final.
+El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. En el run CI `45641728845`, el smoke completó en `macos-26` ARM64 el ciclo de abrir turno, vender, cobrar, conciliar stock y cerrar caja. Ese job se ejecutó con conectividad externa habilitada; no sustituye la prueba en tu Mac ni es un instalador final.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -22,7 +22,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45558057837`; prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Aceptación nativa comercial básica aprobada en CI `45641728845`;
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
@@ -106,13 +106,13 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 
 La CI ejecuta tres verificaciones de runtime distintas, a partir de los artefactos compilados desde la misma revisión:
 
-- **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45637101959` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración. Ese job usó `RUBROVA_BLOCK_EGRESS=false`; no certifica por sí solo el modo offline en macOS.
+- **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45641728845` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración. Ese job usó `RUBROVA_BLOCK_EGRESS=false`; no certifica por sí solo el modo offline en macOS.
 - **Docker/Linux (diagnóstico no bloqueante):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. En `45637101959` el cliente no respondió HTTP (`000`) durante 900 segundos, aunque el servidor cargó los 717 módulos y Tomcat desplegó la aplicación. El fallo se conserva para investigación y no bloquea el runtime nativo.
-- **Linux x86_64 nativo (smoke complementario):** en `45637101959` inició Java, PostgreSQL y Tomcat, bloqueó la salida externa y completó el mismo ciclo POS: turno, venta, cobro, stock, cierre y pruebas de integración. No se necesita Docker para este recorrido.
+- **Linux x86_64 nativo (smoke complementario):** en `45641728845` inició Java, PostgreSQL y Tomcat, bloqueó la salida externa y completó el mismo ciclo POS: turno, venta, cobro, stock, cierre y pruebas de integración. No se necesita Docker para este recorrido.
 
-El smoke macOS `45637101959` se ejecutó con salida externa habilitada (`RUBROVA_BLOCK_EGRESS=false`), por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. En cambio, el smoke Linux nativo `45637101959` bloqueó la salida externa y completó el POS, pago, stock, cierre y recuperación de integraciones. La primera instalación completa offline sigue pendiente en ambos sistemas; no se debe confundir este smoke con un instalador listo para una PC limpia.
+El smoke macOS `45641728845` se ejecutó con salida externa habilitada (`RUBROVA_BLOCK_EGRESS=false`), por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. En cambio, el smoke Linux nativo `45641728845` bloqueó la salida externa y completó el POS, pago, stock, cierre y recuperación de integraciones. Las pruebas unitarias también comprueban que el modo Demo utiliza una base separada y que sus fixtures no se mezclan con los de CI; todavía falta ejecutar esa demostración en un Mac de usuario. La primera instalación completa offline sigue pendiente.
 
-La aceptación Docker histórica `45503956218`, la aceptación nativa macOS `45637101959` y la aceptación Linux nativa `45637101959` son evidencias separadas. Cubren venta por ARS 1.250, factura/pago, stock y cierre básico; Linux nativo también se probó con salida externa bloqueada. Faltan los restantes circuitos comerciales y la prueba Docker bajo el nuevo diagnóstico.
+La aceptación Docker histórica `45503956218`, la aceptación nativa macOS y Linux del run `45641728845` son evidencias separadas. Cubren venta por ARS 1.250, factura/pago, stock y cierre básico; Linux nativo también se probó con salida externa bloqueada. Las pruebas del modo Demo verifican el aislamiento de configuración y el ensamblado de fixtures; faltan su ejecución en un Mac de usuario y los restantes circuitos comerciales.
 
 ## Ruta Docker para empaquetado y validación CI
 
