@@ -63,7 +63,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
-            sourceLineId = CONCAT '', Sales.number(Sales.order(ol)), '#', Sales.index(ol),
+            sourceLineId = CONCAT '', Sales.number(Sales.order(ol)), '#', BPSTRING[10](Sales.index(ol)),
             sourceDocumentId = Sales.number(Sales.order(ol)),
             sourceDocumentNumber = Sales.number(Sales.order(ol)),
             productId = MasterData.id(Sales.shippedProduct(ol)),
@@ -82,14 +82,14 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                 AND Sales.toShip(ol) > 0
                 AND Sales.location(Sales.order(ol))
                 AND Sales.shippedProduct(ol) IS MasterData.Product
-            ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.id(ol)
+            ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
         ),
         receipts = (JSON FROM
-            lineId = CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(rr))), '#', Inventory.index(Inventory.line(rr)),
+            lineId = CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(rr))), '#', BPSTRING[10](Inventory.index(Inventory.line(rr))),
             receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
             receiptNumber = Inventory.number(Inventory.receipt(Inventory.line(rr))),
             purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
-            purchaseOrderLineId = CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr))),
+            purchaseOrderLineId = CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', BPSTRING[10](Purchase.index(Purchase.orderLine(Inventory.line(rr)))),
             productId = MasterData.id(Inventory.product(Inventory.line(rr))),
             productName = MasterData.name(Inventory.product(Inventory.line(rr))),
             locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
@@ -105,7 +105,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                 AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
                 AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
             ORDER Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
-                Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
-                Purchase.id(Purchase.orderLine(Inventory.line(rr)))
+                Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+                Purchase.index(Purchase.orderLine(Inventory.line(rr)))
         );
 } @@api;
