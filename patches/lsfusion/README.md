@@ -9,4 +9,13 @@ Reglas:
 - Ningún parche puede integrarse a producción sin una comparación contra el árbol upstream y una ejecución completa de regresión.
 - La actualización de lsFusion se hace en una candidata aislada; si un parche no aplica o rompe una prueba, se mantiene la versión estable.
 
-Todavía no hay parches directos del motor aceptados. La existencia de este directorio establece el mecanismo y no significa que ya hayamos necesitado modificar el motor.
+## Parche activo
+
+`ZipServerSocket.java` incorpora la propiedad optativa `lsfusion.rmi.bindAddress`:
+
+- Si no se define, conserva el bind original de lsFusion (todas las interfaces), por lo que los despliegues Docker/LAN existentes mantienen su comportamiento.
+- En el runtime nativo local, el supervisor define `-Dlsfusion.rmi.bindAddress=127.0.0.1`; el socket RMI queda limitado al equipo local.
+- La compilación aplica el cambio mediante `scripts/platform/apply-rubrova-source-patches.py`, comprueba anclas exactas y vuelve a ejecutar el parche para demostrar idempotencia.
+- El smoke nativo inspecciona el socket en escucha y exige `127.0.0.1:7652`; un bind `0.0.0.0` o `[::]` hace fallar la prueba.
+
+Este parche es deliberadamente optativo. Un despliegue de sucursal que necesite acceso desde otras cajas deberá indicar una IP de interfaz privada y proteger el puerto con firewall y autenticación; nunca debe publicar RMI directamente en Internet.
