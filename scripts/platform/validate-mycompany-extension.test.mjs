@@ -1091,7 +1091,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
   const outgoingExportQuery = replenishmentExportSource.split("outgoingCommitments = (JSON FROM")[1]?.split("        receipts = (JSON FROM")[0] ?? "";
   assert.equal(
-    (outgoingExportQuery.match(/Sales\\.OrderLine ol/g) ?? []).length,
+    (outgoingExportQuery.match(/Sales\.OrderLine ol/g) ?? []).length,
     1,
     "Sales.OrderLine debe declararse una sola vez en la consulta de compromisos; el resto de campos reutiliza ol."
   );
