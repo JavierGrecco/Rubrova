@@ -121,7 +121,7 @@ La respuesta es un documento `mycompany-replenishment-source-export`, diferente 
 
 | Colección | Contenido |
 |---|---|
-| `inventory` | Una fila por producto/ubicación con movimientos o reservas: entradas/salidas físicas, `onHand`, `plannedNetReservation`, `expectedInbound` y `available` nativo. |
+| `inventory` | Una fila por producto/ubicación con movimientos o reservas: entradas/salidas físicas, `onHand`, `grossReserved`, `plannedNetReservation`, `expectedInbound` y `available` nativo. |
 | `outgoingCommitments` | Una fila por línea de pedido confirmada: `Sales.toShip(OrderLine)`, reserva efectiva agregada desde `ShipmentResLedger.lineReserved`, documento, ubicación y fecha. |
 | `receipts` | Filas de `ReceiptResLedger` listas, no realizadas y vinculadas a órdenes de compra confirmadas; incluye remanente, fecha e indicador `increaseAvailableStock`. |
 
