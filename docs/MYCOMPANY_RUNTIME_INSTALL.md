@@ -94,6 +94,7 @@ lsFusion permite cargar un módulo propio desde el classpath y establecer logics
 - RubrovaPOSLocalization.lsf, que contiene los captions y overrides de presentación del POS.
 - RubrovaIntegrationResilience.lsf, que concentra el manejo seguro de fallos de integraciones externas.
 - RubrovaPaymentTerminals.lsf, que registra cuentas de proveedor, terminales, asignaciones a caja/medio, intenciones, intentos, eventos, reintegros y líneas de liquidación. Es una base de configuración y trazabilidad; todavía no ejecuta cobros reales.
+- RubrovaReplenishmentExport.lsf, que publica una acción `@@api` autenticada y de sólo lectura para exportar saldos, compromisos y recepciones nativos de MyCompany 6.2.
 - MyCompanyResourceBundle_es_AR.properties, con traducciones de recursos base y los identificadores `rubrova.*`.
 
 Una limitación importante: varias cadenas del código 6.2 son literales ingleses en los módulos upstream. Los archivos ResourceBundle por sí solos sólo resuelven las cadenas que utilizan identificadores de localización. Por eso Rubrova cambia los captions necesarios mediante su propio `DESIGN` y claves entre llaves, sin editar los módulos originales. Los mensajes de error heredados y algunas etiquetas de filtros todavía no están traducidos; hay que registrarlos durante la prueba real y decidir si se resuelven con una extensión adicional o un parche de localización pequeño y mantenible.
@@ -155,12 +156,12 @@ La prueba nativa actual no realiza todavía la venta sintética ni la conciliaci
 El repositorio conserva `scripts/platform/test-runtime-smoke.sh`. Se activa manualmente en GitHub Actions con el input `run_docker_smoke=true`, en Linux x86_64 con Docker Engine y Compose:
 
 1. Descarga el JAR y el Compose oficiales y compara ambos SHA-256 con el lock.
-2. Copia `RubrovaCustom`, `RubrovaPOSLocalization`, `RubrovaIntegrationResilience`, `RubrovaPaymentTerminals` y el ResourceBundle a `docker-server` sin editar el código upstream.
+2. Copia `RubrovaCustom`, `RubrovaPOSLocalization`, `RubrovaIntegrationResilience`, `RubrovaPaymentTerminals`, `RubrovaReplenishmentExport` y el ResourceBundle a `docker-server` sin editar el código upstream.
 3. Valida la configuración con `docker compose config` y confirma al menos cuatro servicios.
 4. Inicia el stack con un nombre de proyecto efímero y utiliza el mismo `compose.rubrova.override.yaml` que se entrega en la instalación Docker normal.
 5. Añade un segundo override temporal que fija por digest las cuatro imágenes del runtime Linux x86_64, y compara cada imagen descargada contra el lock.
 6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada, el idioma y el país, y que `JAVA_OPTS` del overlay compartido llegó al proceso Java.
-7. Espera la respuesta web y el final de la inicialización de la lógica. MyCompany 6.2 inicializa 712 módulos base; el smoke exige 717: los cuatro módulos propios de Rubrova (`RubrovaIntegrationResilience`, `RubrovaPOSLocalization`, `RubrovaPaymentTerminals`, `RubrovaCustom`) y un fixture de venta que sólo se agrega al directorio temporal de CI.
+7. Espera la respuesta web y el final de la inicialización de la lógica. MyCompany 6.2 inicializa 712 módulos base; el smoke exige 718: los cinco módulos propios de Rubrova (`RubrovaIntegrationResilience`, `RubrovaPOSLocalization`, `RubrovaPaymentTerminals`, `RubrovaReplenishmentExport`, `RubrovaCustom`) y un fixture de venta que sólo se agrega al directorio temporal de CI.
 8. Espera a que el servidor escuche en TCP `7652` y complete `Executing onStarted action finished`; el puerto abierto y los módulos cargados no bastan si las acciones de inicio siguen corriendo.
 9. Abre la aplicación con Chromium en locale `es-AR`, reintenta la carga mientras aparezca `NotBoundException` y, sólo en la base efímera de CI, inicia sesión con el usuario inicial `admin` sin contraseña. El test espera la transición a `/main`, tolera el reemplazo temporal del DOM por GWT y confirma el acceso cuando el menú queda estable. Luego navega a `Comercio → Punto de venta`, abre el turno sintético, busca un producto de prueba y lo agrega al recibo mediante la acción nativa de MyCompany. Confirma una venta por ARS 1.250 en efectivo, verifica factura/pago persistidos, entrada de stock 10 → 9 y conciliación de caja; luego cierra el turno y exige estado `CLOSED`, venta y efectivo conciliados. Finalmente simula timeout y respuestas HTTP 400/401/403/408/409/429/503, valida la clasificación/persistencia de ocho incidencias y confirma recuperación del proveedor. El puesto, el producto, las cuentas, los módulos de fixture y el resto de los datos son exclusivos de la base efímera; no se modifica el despliegue ni se incorporan datos de demostración al producto. Las capturas se guardan sólo tras estabilizarse el contenido.
 10. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
@@ -176,7 +177,7 @@ El bloque sólo se declara completado después de guardar evidencia de:
 1. Instalación MyCompany 6.2 iniciada desde el artefacto verificado.
 2. Versión de plataforma, PostgreSQL, imágenes y arquitectura registradas.
 3. Contraseña inicial modificada y firewall configurado.
-4. Módulo superior RubrovaCustom y sus dependencias RubrovaPOSLocalization, RubrovaIntegrationResilience y RubrovaPaymentTerminals cargados con éxito sin parchear upstream.
+4. Módulo superior RubrovaCustom y sus dependencias RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals y RubrovaReplenishmentExport cargados con éxito sin parchear upstream.
 5. ResourceBundle es_AR detectado; los captions del POS y circuito crítico están traducidos y revisados, incluidos mensajes y filtros que se hayan identificado en la prueba.
 6. Backup y restauración en una instancia limpia comprobados.
 7. Reinicio de proceso y retorno a servicio documentados.
