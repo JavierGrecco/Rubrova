@@ -269,11 +269,20 @@ def download_tomcat(cache_root: Path, allow_download: bool) -> Path:
 
 
 def check_artifacts() -> dict[str, Path]:
-    artifacts = {
-        "server": REPO_ROOT / "vendor/platform/server/target/lsfusion-server-6.2.jar",
-        "logic": REPO_ROOT / "vendor/mycompany/target/lsfusion-server-6.2.jar",
-        "client": REPO_ROOT / "vendor/platform/web-client/target/lsfusion-client-6.2.war",
-    }
+    build_artifacts = os.environ.get("RUBROVA_BUILD_ARTIFACTS_DIR")
+    if build_artifacts:
+        artifact_dir = Path(build_artifacts).expanduser()
+        artifacts = {
+            "server": artifact_dir / "server.jar",
+            "logic": artifact_dir / "logics.jar",
+            "client": artifact_dir / "client.war",
+        }
+    else:
+        artifacts = {
+            "server": REPO_ROOT / "vendor/platform/server/target/lsfusion-server-6.2.jar",
+            "logic": REPO_ROOT / "vendor/mycompany/target/lsfusion-server-6.2.jar",
+            "client": REPO_ROOT / "vendor/platform/web-client/target/lsfusion-client-6.2.war",
+        }
     missing = [str(path) for path in artifacts.values() if not path.is_file() or path.stat().st_size == 0]
     if missing:
         raise RuntimeErrorRubrova(
