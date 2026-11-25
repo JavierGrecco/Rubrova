@@ -115,6 +115,11 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /HostIp/);
   assert.match(runtimeSmokeSource, /HostPort/);
   assert.match(runtimeSmokeSource, /RUBROVA_CLIENT_LOOPBACK_BINDING=127[.]0[.]0[.]1:8080/);
+  assert.match(runtimeSmokeSource, /diagnose_client_web_connectivity/);
+  assert.match(runtimeSmokeSource, /--noproxy ['"]\\*['"]/);
+  assert.match(runtimeSmokeSource, /RUBROVA_HTTP_DIAGNOSTIC_GRACE_SECONDS/);
+  assert.match(runtimeSmokeSource, /:1F90/);
+  assert.match(runtimeSmokeSource, /CLIENT_INTERNAL_HTTP/);
   assert.match(runtimeSmokeSource, /build-rubrova-runtime-images[.]sh/);
   assert.match(runtimeSmokeSource, /pull_policy: never/);
   assert.match(runtimeSmokeSource, /rubrova\/server:6[.]2-/);
