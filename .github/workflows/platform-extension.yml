@@ -213,6 +213,7 @@ jobs:
           name: rubrova-native-runtime-smoke
           path: |
             ${{ runner.temp }}/rubrova-native-smoke/native-runtime.log
+            ${{ runner.temp }}/rubrova-native-smoke/native-diagnostics.log
             ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
           if-no-files-found: warn
 

@@ -467,26 +467,124 @@ def wait_for_server_ready(
     )
 
 
-def wait_for_web(url: str, process: subprocess.Popen[Any], timeout: int = WEB_TIMEOUT_SECONDS) -> None:
-    import urllib.error
-    import urllib.request
+def tomcat_startup_diagnostics(tomcat_base: Path | None, last_http_body: str = "") -> str:
+    if tomcat_base is None:
+        return ""
 
+    details = ["Diagnóstico del despliegue web de Tomcat:"]
+    webapp = tomcat_base / "webapps" / "ROOT"
+    web_xml = webapp / "WEB-INF" / "web.xml"
+    details.append(f"Directorio ROOT presente: {webapp.is_dir()}.")
+    details.append(f"Descriptor ROOT/WEB-INF/web.xml presente: {web_xml.is_file()}.")
+
+    if web_xml.is_file():
+        try:
+            root = ET.parse(web_xml).getroot()
+            namespace = root.tag.split("}", 1)[0] + "}" if root.tag.startswith("{") else ""
+            welcome = root.find(f"{namespace}welcome-file-list/{namespace}welcome-file")
+            details.append(f"Página de bienvenida configurada: {(welcome.text or '').strip() if welcome is not None else 'no declarada'}.")
+        except (ET.ParseError, OSError) as exc:
+            details.append(f"No se pudo leer web.xml: {exc}.")
+
+    server_xml = tomcat_base / "conf" / "server.xml"
+    if server_xml.is_file():
+        try:
+            server_root = ET.parse(server_xml).getroot()
+            for host in server_root.findall(".//Host"):
+                details.append(
+                    "Tomcat Host: "
+                    f"name={host.get('name', '')}, appBase={host.get('appBase', '')}, "
+                    f"unpackWARs={host.get('unpackWARs', '')}, autoDeploy={host.get('autoDeploy', '')}."
+                )
+            for connector in server_root.findall(".//Connector"):
+                details.append(
+                    f"Tomcat Connector: port={connector.get('port', '')}, address={connector.get('address', '')}."
+                )
+        except (ET.ParseError, OSError) as exc:
+            details.append(f"No se pudo leer server.xml: {exc}.")
+
+    if last_http_body.strip():
+        body = re.sub(
+            r"(?i)((?:password|passwd|secret|token|api[_-]?key)\s*[=:]\s*)[^\s,;]+",
+            r"\1[redactado]",
+            last_http_body.strip(),
+        )
+        details.append(f"Respuesta HTTP (primeros 1200 caracteres): {body[:1200]}")
+
+    logs_dir = tomcat_base / "logs"
+    log_files = sorted(
+        (
+            path for path in logs_dir.iterdir()
+            if path.is_file() and (path.suffix.lower() == ".log" or path.name.endswith(".txt"))
+        ),
+        key=lambda path: (0 if path.name == "rubrova-console.log" else 1, path.name),
+    ) if logs_dir.is_dir() else []
+    if not log_files:
+        details.append(f"Tomcat todavía no generó archivos de log en {logs_dir}.")
+    for path in log_files[-8:]:
+        content = tail_file(path, 100)
+        content = re.sub(
+            r"(?i)((?:password|passwd|secret|token|api[_-]?key)\s*[=:]\s*)[^\s,;]+",
+            r"\1[redactado]",
+            content,
+        )
+        details.append(f"--- {path.name} (últimas 100 líneas) ---\n{content}")
+
+    return "\n".join(details)
+
+
+def wait_for_web(
+    url: str,
+    process: subprocess.Popen[Any],
+    tomcat_base: Path | None = None,
+    timeout: int = WEB_TIMEOUT_SECONDS,
+    not_found_grace_seconds: int = 60,
+) -> None:
     deadline = time.monotonic() + timeout
     last_error = "sin respuesta HTTP"
+    last_http_body = ""
+    not_found_since: float | None = None
+
+    def fail(message: str) -> RuntimeErrorRubrova:
+        diagnostics = tomcat_startup_diagnostics(tomcat_base, last_http_body)
+        if diagnostics:
+            message = f"{message}\n{diagnostics}"
+        return RuntimeErrorRubrova(message)
+
     while time.monotonic() < deadline:
         if process.poll() is not None:
-            raise RuntimeErrorRubrova(f"Tomcat terminó durante el arranque (código {process.returncode}).")
+            raise fail(f"Tomcat terminó durante el arranque (código {process.returncode}).")
         try:
             with urllib.request.urlopen(url, timeout=5) as response:
                 if 200 <= response.status < 400:
                     return
                 last_error = f"HTTP {response.status}"
+                not_found_since = None
         except urllib.error.HTTPError as exc:
             last_error = f"HTTP {exc.code}"
+            try:
+                last_http_body = exc.read(2048).decode("utf-8", errors="replace")
+            except OSError:
+                last_http_body = ""
+            if exc.code == 404:
+                if not_found_since is None:
+                    not_found_since = time.monotonic()
+            else:
+                not_found_since = None
         except (OSError, urllib.error.URLError) as exc:
             last_error = str(exc)
+            not_found_since = None
+
+        if not_found_since is not None:
+            missing_for = time.monotonic() - not_found_since
+            if missing_for >= not_found_grace_seconds:
+                raise fail(
+                    "Tomcat abrió el puerto HTTP, pero mantuvo HTTP 404 en el cliente "
+                    f"durante {int(missing_for)} segundos. El contexto ROOT no quedó disponible."
+                )
         time.sleep(2)
-    raise RuntimeErrorRubrova(f"El cliente web no respondió correctamente en {timeout} segundos: {last_error}")
+
+    raise fail(f"El cliente web no respondió correctamente en {timeout} segundos: {last_error}")
 
 
 def stop_process(process: subprocess.Popen[Any] | None, name: str, timeout: int = 30) -> None:
@@ -788,7 +886,7 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
         )
 
         web_url = f"http://127.0.0.1:{ports['web']}/"
-        wait_for_web(web_url, tomcat_process)
+        wait_for_web(web_url, tomcat_process, tomcat_base)
         print("")
         print("RUBROVA LOCAL ACTIVO (sin Docker)")
         print(f"URL: {web_url}")

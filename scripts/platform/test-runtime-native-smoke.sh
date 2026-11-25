@@ -42,6 +42,38 @@ export RUBROVA_RUNTIME_CONFIG_PATH="${RUBROVA_RUNTIME_CONFIG_PATH:-$WORK_DIR/run
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$WORK_DIR/config}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$WORK_DIR/data}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$WORK_DIR/cache}"
+NATIVE_DATA_ROOT="$XDG_DATA_HOME/Rubrova/native-preview"
+DIAGNOSTICS_FILE="$WORK_DIR/native-diagnostics.log"
+
+collect_native_diagnostics() {
+  {
+    echo "RUBROVA_NATIVE_DIAGNOSTICS=true"
+    echo "NATIVE_DATA_ROOT=$NATIVE_DATA_ROOT"
+    echo "--- Archivos relevantes del contexto ROOT ---"
+    if [[ -d "$NATIVE_DATA_ROOT/runtime/tomcat-base/webapps" ]]; then
+      find "$NATIVE_DATA_ROOT/runtime/tomcat-base/webapps" -maxdepth 4 -type f \
+        \( -name web.xml -o -name main.jsp -o -name login.jsp -o -name index.html \) -print | sort
+    else
+      echo "No existe webapps en el CATALINA_BASE esperado."
+    fi
+    echo "--- Configuración del conector y del Host Tomcat ---"
+    if [[ -f "$NATIVE_DATA_ROOT/runtime/tomcat-base/conf/server.xml" ]]; then
+      grep -E '(<Connector|<Host|appBase=|unpackWARs=|autoDeploy=)' \
+        "$NATIVE_DATA_ROOT/runtime/tomcat-base/conf/server.xml" || true
+    fi
+    echo "--- Registros de Tomcat, lsFusion y supervisor ---"
+    for log_file in \
+      "$NATIVE_DATA_ROOT"/runtime/tomcat-base/logs/*.log \
+      "$NATIVE_DATA_ROOT"/runtime/tomcat-base/logs/*.txt \
+      "$NATIVE_DATA_ROOT"/runtime/lsfusion/logs/*.log \
+      "$NATIVE_DATA_ROOT"/logs/*.log; do
+      [[ -f "$log_file" ]] || continue
+      echo "### $log_file ($(wc -c < "$log_file" | tr -d ' ') bytes)"
+      tail -n 120 "$log_file" | sed -E \
+        's/((password|passwd|secret|token|api[_-]?key)[[:space:]]*[=:][[:space:]]*)[^[:space:],;]+/\1[REDACTADO]/Ig'
+    done
+  } > "$DIAGNOSTICS_FILE"
+}
 
 SUPERVISOR_PID=""
 EGRESS_RULES_INSTALLED=false
@@ -70,9 +102,12 @@ cleanup() {
     wait "$SUPERVISOR_PID" 2>/dev/null || true
   fi
 
+  collect_native_diagnostics
   if [[ "$exit_code" -ne 0 ]]; then
     echo "=== Últimos registros del runtime nativo ===" >&2
     if [[ -s "$LOG_FILE" ]]; then tail -n 180 "$LOG_FILE" >&2; fi
+    echo "=== Diagnóstico del cliente web nativo ===" >&2
+    if [[ -s "$DIAGNOSTICS_FILE" ]]; then cat "$DIAGNOSTICS_FILE" >&2; fi
   fi
 
   if [[ "${RUBROVA_KEEP_NATIVE_SMOKE_DATA:-false}" == "true" ]]; then
@@ -201,3 +236,4 @@ echo "RUBROVA_NATIVE_RUNTIME_SURVIVED_OFFLINE_CHECK=true"
 
 echo "5/5 Finalizando: se conservan los datos hasta que termine el diagnóstico"
 echo "RUBROVA_NATIVE_SMOKE=passed"
+echo "RUBROVA_NATIVE_DIAGNOSTICS_FILE=$DIAGNOSTICS_FILE"

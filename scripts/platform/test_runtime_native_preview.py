@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import subprocess
 import tempfile
 import unittest
@@ -200,6 +201,71 @@ class NativePreviewTests(unittest.TestCase):
                     war,
                     {"postgres": 55432, "rmi": 7652, "web": 8080},
                 )
+
+
+    def test_tomcat_404_fails_fast_and_includes_deployment_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            logs = root / "logs"
+            logs.mkdir()
+            (logs / "rubrova-console.log").write_text(
+                "SEVERE: One or more listeners failed to start; password=never-print-this\n",
+                encoding="utf-8",
+            )
+            (logs / "localhost.2026-11-24.log").write_text(
+                "Context startup failed due to previous errors\n",
+                encoding="utf-8",
+            )
+            web_xml = root / "webapps" / "ROOT" / "WEB-INF" / "web.xml"
+            web_xml.parent.mkdir(parents=True)
+            web_xml.write_text(
+                '<web-app><welcome-file-list><welcome-file>main</welcome-file></welcome-file-list></web-app>',
+                encoding="utf-8",
+            )
+            error = native.urllib.error.HTTPError(
+                "http://127.0.0.1:18080/",
+                404,
+                "Not Found",
+                {},
+                io.BytesIO(b"<html>Not Found</html>"),
+            )
+            with (
+                patch.object(native.urllib.request, "urlopen", side_effect=error),
+                self.assertRaises(native.RuntimeErrorRubrova) as captured,
+            ):
+                native.wait_for_web(
+                    "http://127.0.0.1:18080/",
+                    FakeProcess(),
+                    tomcat_base=root,
+                    timeout=30,
+                    not_found_grace_seconds=0,
+                )
+
+            message = str(captured.exception)
+            self.assertIn("HTTP 404", message)
+            self.assertIn("One or more listeners failed to start", message)
+            self.assertIn("Página de bienvenida configurada: main", message)
+            self.assertIn("[redactado]", message)
+            self.assertNotIn("never-print-this", message)
+
+    def test_tomcat_web_startup_accepts_a_successful_response(self) -> None:
+        class SuccessfulResponse:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+        with patch.object(native.urllib.request, "urlopen", return_value=SuccessfulResponse()):
+            self.assertIsNone(
+                native.wait_for_web(
+                    "http://127.0.0.1:18080/",
+                    FakeProcess(),
+                    timeout=5,
+                )
+            )
 
 
 if __name__ == "__main__":

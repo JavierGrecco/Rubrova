@@ -282,9 +282,13 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
   assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
+  assert.match(nativeSmokeSource, /native-diagnostics[.]log/);
+  assert.match(runtimeWorkflowSource, /rubrova-native-smoke\/native-diagnostics[.]log/);
   assert.doesNotMatch(nativeSmokeSource, /(^|[ \\t])docker([ \\t]|$)|docker-compose/);
   assert.match(nativePreviewSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
   assert.match(nativePreviewSource, /-Dlsfusion[.]rmi[.]bindAddress=127[.]0[.]0[.]1/);
+  assert.match(nativePreviewSource, /def tomcat_startup_diagnostics/);
+  assert.match(nativePreviewSource, /HTTP 404 de forma sostenida/);
   assert.match(sourcePatch, /RMI_SERVER_SOCKET_TARGET/);
   assert.match(sourcePatch, /System[.]getProperty\("lsfusion[.]rmi[.]bindAddress"\)/);
   assert.match(sourcePatch, /new InetSocketAddress\(InetAddress[.]getByName/);
