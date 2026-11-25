@@ -31,7 +31,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             incomingIdentity = 'Inventory.ReceiptLine.id',
             incomingExpectedQuantity = '0 - Inventory.ReceiptResLedger.reserved',
             incomingScheduledDateTime = 'Receipt.scheduledDateTime',
-            incomingEligibility = 'Receipt.ready AND NOT Receipt.done AND Purchase.Order.confirmed',
+            incomingEligibility = 'Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed',
             incomingAvailabilityPolicy = 'ReceiptType.increaseAvailableStock; skipAvailable is its inverse'
         ),
         inventory = (JSON FROM
@@ -100,7 +100,10 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             status = 'ready',
             purchaseOrderStatus = 'confirmed',
             increaseAvailableStock = Inventory.increaseAvailableStock(Inventory.type(Inventory.receipt(Inventory.line(rr))))
-            WHERE Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
+            WHERE Inventory.ready(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+                AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
             ORDER Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
                 Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
                 Purchase.id(Purchase.orderLine(Inventory.line(rr)))
