@@ -102,6 +102,72 @@ show_client_tomcat_logs() {
   ' >&2 || true
 }
 
+
+diagnose_client_web_connectivity() {
+  local client_container client_ip
+  client_container="$(compose ps -a -q client 2>/dev/null | head -n 1)"
+  if [[ -z "$client_container" ]]; then
+    echo "No hay contenedor cliente para inspeccionar." >&2
+    return 0
+  fi
+
+  client_ip="$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$client_container" 2>/dev/null || true)"
+  echo "=== Diagnóstico de conectividad del cliente web ===" >&2
+  docker inspect --format 'HostConfig.PortBindings={{json .HostConfig.PortBindings}} NetworkSettings.Ports={{json .NetworkSettings.Ports}} Networks={{json .NetworkSettings.Networks}}' "$client_container" >&2 || true
+  docker port "$client_container" 8080/tcp >&2 || true
+
+  echo "--- Socket TCP 8080 dentro del contenedor (puerto hexadecimal 1F90) ---" >&2
+  docker exec "$client_container" sh -c '
+    for socket_table in /proc/net/tcp /proc/net/tcp6; do
+      [ -r "$socket_table" ] || continue
+      awk '\''NR == 1 || (toupper($2) ~ /:1F90$/ && $4 == "0A") { print }'\'' "$socket_table"
+    done
+  ' >&2 || true
+
+  if docker exec "$client_container" sh -c 'command -v jshell >/dev/null 2>&1'; then
+    echo "--- HTTP desde dentro del contenedor (loopback e IP Docker) ---" >&2
+    docker exec -i -e RUBROVA_CLIENT_IP="$client_ip" "$client_container" jshell --feedback concise <<'JAVA' >&2 || true
+import java.net.HttpURLConnection;
+import java.net.Proxy;
+import java.net.URL;
+String ip = System.getenv("RUBROVA_CLIENT_IP");
+String[] endpoints = new String[] {
+    "http://127.0.0.1:8080/login",
+    ip == null || ip.isBlank() ? "" : "http://" + ip + ":8080/login"
+};
+for (String endpoint : endpoints) {
+    if (endpoint.isBlank()) continue;
+    try {
+        HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection(Proxy.NO_PROXY);
+        connection.setConnectTimeout(3000);
+        connection.setReadTimeout(3000);
+        connection.setInstanceFollowRedirects(false);
+        System.out.println("CLIENT_INTERNAL_HTTP " + endpoint + " => " + connection.getResponseCode());
+        connection.disconnect();
+    } catch (Exception error) {
+        System.out.println("CLIENT_INTERNAL_HTTP " + endpoint + " => " + error.getClass().getSimpleName() + ": " + error.getMessage());
+    }
+}
+/exit
+JAVA
+  else
+    echo "JShell no está disponible en la imagen cliente; se conserva el diagnóstico de sockets." >&2
+  fi
+
+  echo "--- Listener publicado en el host ---" >&2
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltnp 2>/dev/null | grep -E '(:8080[[:space:]]|:8080$)' >&2 || true
+  else
+    echo "ss no está instalado en el host." >&2
+  fi
+  echo "--- Variables de proxy presentes en el runner (sólo nombres) ---" >&2
+  env | cut -d= -f1 | grep -i 'proxy' >&2 || true
+  echo "--- Prueba HTTP directa desde el host, sin proxy ---" >&2
+  curl --verbose --noproxy '*' --silent --show-error --output /dev/null \
+    --write-out 'HOST_HTTP_STATUS=%{http_code} CONNECT_SECONDS=%{time_connect} TOTAL_SECONDS=%{time_total}\n' \
+    --connect-timeout 3 --max-time 8 "$WEB_URL" >&2 || true
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT
@@ -112,6 +178,8 @@ cleanup() {
       compose ps --all >&2
       echo "=== Últimos registros de MyCompany ===" >&2
       compose logs --no-color --tail=180 >&2
+      echo "=== Diagnóstico de conectividad del cliente web ===" >&2
+      diagnose_client_web_connectivity
       echo "=== Logs internos de Tomcat (cliente web) ===" >&2
       show_client_tomcat_logs
     fi
@@ -813,6 +881,8 @@ EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 5))
 MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
+HTTP_DIAGNOSTIC_GRACE_SECONDS="${RUBROVA_HTTP_DIAGNOSTIC_GRACE_SECONDS:-180}"
+MODULES_READY_AT=-1
 while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
   if (( SECONDS % 10 < 5 )); then
     STARTUP_LOGS="$(compose logs --no-color --tail=100 server 2>/dev/null || true)"
@@ -822,7 +892,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
       exit 1
     fi
   fi
-  HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
+  HTTP_STATUS="$(curl --noproxy '*' --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' --connect-timeout 3 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
   if [[ "$HTTP_STATUS" == "404" ]]; then
     CLIENT_STARTUP_LOGS="$(compose logs --no-color --tail=100 client 2>/dev/null || true)"
     if grep -Eiq 'One or more listeners failed to start|startup failed due to previous errors' <<< "$CLIENT_STARTUP_LOGS"; then
@@ -849,6 +919,18 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
       echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 4 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
       exit 1
     fi
+  fi
+
+  if [[ "$ALL_MODULES_READY" == "true" ]]; then
+    if (( MODULES_READY_AT < 0 )); then MODULES_READY_AT=$SECONDS; fi
+    if [[ "$HTTP_STATUS" == "000" ]] && (( SECONDS - MODULES_READY_AT >= HTTP_DIAGNOSTIC_GRACE_SECONDS )); then
+      if docker exec "$CLIENT_CONTAINER_ID" sh -c 'awk '\''NR > 1 && toupper($2) ~ /:1F90$/ && $4 == "0A" { found = 1 } END { exit !found }'\'' /proc/net/tcp /proc/net/tcp6 2>/dev/null' >/dev/null 2>&1; then
+        echo "Tomcat escucha en 8080 dentro del contenedor y la lógica terminó de cargar, pero el host no recibe HTTP tras \${HTTP_DIAGNOSTIC_GRACE_SECONDS}s. Se cancela la espera extendida para conservar evidencia de red." >&2
+        exit 1
+      fi
+    fi
+  else
+    MODULES_READY_AT=-1
   fi
 
   if [[ "$HTTP_STATUS" =~ ^[23][0-9][0-9]$ && "$ALL_MODULES_READY" == "true" ]]; then
