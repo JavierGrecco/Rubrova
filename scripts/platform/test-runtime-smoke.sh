@@ -925,7 +925,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
     if (( MODULES_READY_AT < 0 )); then MODULES_READY_AT=$SECONDS; fi
     if [[ "$HTTP_STATUS" == "000" ]] && (( SECONDS - MODULES_READY_AT >= HTTP_DIAGNOSTIC_GRACE_SECONDS )); then
       if docker exec "$CLIENT_CONTAINER_ID" sh -c 'awk '\''NR > 1 && toupper($2) ~ /:1F90$/ && $4 == "0A" { found = 1 } END { exit !found }'\'' /proc/net/tcp /proc/net/tcp6 2>/dev/null' >/dev/null 2>&1; then
-        echo "Tomcat escucha en 8080 dentro del contenedor y la lógica terminó de cargar, pero el host no recibe HTTP tras \${HTTP_DIAGNOSTIC_GRACE_SECONDS}s. Se cancela la espera extendida para conservar evidencia de red." >&2
+        echo "Tomcat escucha en 8080 dentro del contenedor y la lógica terminó de cargar, pero el host no recibe HTTP tras ${HTTP_DIAGNOSTIC_GRACE_SECONDS}s. Se cancela la espera extendida para conservar evidencia de red." >&2
         exit 1
       fi
     fi
