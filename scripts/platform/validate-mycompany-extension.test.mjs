@@ -1120,7 +1120,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     assert.ok(replenishmentExportSource.includes(probe), "Falta la sonda de diagnóstico " + probe);
     assert.ok(uiSmokeSource.includes(probe), "El smoke debe ejecutar la sonda " + probe);
   }
-  assert.match(uiSmokeSource, /probe_replenishment_source_sections\\(context, url\\)/);
+  assert.ok(uiSmokeSource.includes("probe_replenishment_source_sections(context, url)"));
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
 });
 
