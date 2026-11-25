@@ -783,7 +783,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "incomingIdentity": "Inventory.ReceiptLine.id",
         "incomingExpectedQuantity": "0 - Inventory.ReceiptResLedger.reserved",
         "incomingScheduledDateTime": "Receipt.scheduledDateTime",
-        "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND Purchase.Order.confirmed",
+        "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed",
         "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
     }
     if payload.get("sourceSemantics") != expected_semantics:
