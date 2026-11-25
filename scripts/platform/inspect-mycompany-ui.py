@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 import time
@@ -724,6 +725,152 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
     return payload
 
 
+
+def verify_replenishment_source_export(context: Any, url: str) -> None:
+    """Validate the native MyCompany export without mutating the ERP."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(
+        endpoint + "rubrovaExportReplenishmentSource",
+        timeout=20_000,
+    )
+    if response.status != 200:
+        raise RuntimeError(
+            "La exportación nativa de reposición respondió HTTP "
+            f"{response.status}: {response.text()[:1200]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La exportación nativa de reposición no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError("La exportación nativa de reposición no devolvió un objeto JSON.")
+
+    expected_header = {
+        "schemaVersion": 1,
+        "snapshotType": "mycompany-replenishment-source-export",
+        "sourceSystem": "MyCompany",
+        "sourceVersion": "6.2",
+        "quantityUnit": "product-uom",
+        "quantityPrecision": 3,
+        "readOnly": True,
+    }
+    for field, expected in expected_header.items():
+        if payload.get(field) != expected:
+            raise RuntimeError(
+                f"Contrato de exportación inválido en {field}: "
+                f"esperado {expected!r}, recibido {payload.get(field)!r}."
+            )
+
+    from datetime import date
+    try:
+        date.fromisoformat(str(payload.get("asOf", "")))
+    except ValueError as error:
+        raise RuntimeError("La fecha asOf de la exportación no usa YYYY-MM-DD.") from error
+
+    expected_semantics = {
+        "inventoryOnHand": "Inventory.onHand(Location, Product), ubicación exacta",
+        "inventoryAvailable": "Inventory.available(Location, Product), valor nativo MyCompany",
+        "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
+        "outgoingIdentity": "Sales.OrderLine.id",
+        "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
+        "outgoingEffectiveReservation": "SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)",
+        "incomingIdentity": "Inventory.ReceiptLine.id",
+        "incomingExpectedQuantity": "0 - Inventory.ReceiptResLedger.reserved",
+        "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND Purchase.Order.confirmed",
+        "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
+    }
+    if payload.get("sourceSemantics") != expected_semantics:
+        raise RuntimeError("sourceSemantics no coincide con el contrato de exportación MyCompany 6.2.")
+
+    collections: dict[str, list[dict[str, Any]]] = {}
+    for field in ("inventory", "outgoingCommitments", "receipts"):
+        rows = payload.get(field)
+        if not isinstance(rows, list):
+            raise RuntimeError(f"La colección {field} debe ser una lista JSON.")
+        if any(not isinstance(row, dict) for row in rows):
+            raise RuntimeError(f"Todos los elementos de {field} deben ser objetos JSON.")
+        collections[field] = rows
+
+    def numeric(row: dict[str, Any], field: str, row_label: str) -> float:
+        value = row.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"{row_label}.{field} debe ser un número finito.")
+        return float(value)
+
+    inventory_keys: set[tuple[str, str]] = set()
+    for index, row in enumerate(collections["inventory"]):
+        row_label = f"inventory[{index}]"
+        product_id = str(row.get("productId") or "").strip()
+        location_id = str(row.get("locationId") or "").strip()
+        if not product_id or not location_id:
+            raise RuntimeError(f"{row_label} no identifica producto y ubicación.")
+        key = (product_id, location_id)
+        if key in inventory_keys:
+            raise RuntimeError(f"Inventario duplicado para producto/ubicación {product_id}/{location_id}.")
+        inventory_keys.add(key)
+        on_hand = numeric(row, "onHand", row_label)
+        planned = numeric(row, "plannedNetReservation", row_label)
+        available = numeric(row, "available", row_label)
+        numeric(row, "physicalIncoming", row_label)
+        numeric(row, "physicalOutgoing", row_label)
+        numeric(row, "expectedInbound", row_label)
+        if abs((on_hand - planned) - available) > 0.001:
+            raise RuntimeError(
+                f"Inventory.available no concilia en {product_id}/{location_id}: "
+                f"onHand={on_hand}, planned={planned}, available={available}."
+            )
+
+    outgoing_ids: set[str] = set()
+    for index, row in enumerate(collections["outgoingCommitments"]):
+        row_label = f"outgoingCommitments[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if not line_id or line_id in outgoing_ids:
+            raise RuntimeError(f"{row_label}.sourceLineId está vacío o duplicado.")
+        outgoing_ids.add(line_id)
+        open_quantity = numeric(row, "openQuantity", row_label)
+        reserved = numeric(row, "effectiveReserved", row_label)
+        if row.get("status") != "confirmed" or open_quantity <= 0 or reserved < 0 or reserved > open_quantity + 0.001:
+            raise RuntimeError(f"{row_label} viola la semántica de compromiso abierto/reserva efectiva.")
+        for field in ("sourceDocumentId", "productId", "locationId", "scheduledDate"):
+            if not str(row.get(field) or "").strip():
+                raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    receipt_ids: set[str] = set()
+    for index, row in enumerate(collections["receipts"]):
+        row_label = f"receipts[{index}]"
+        line_id = str(row.get("lineId") or "").strip()
+        if not line_id or line_id in receipt_ids:
+            raise RuntimeError(f"{row_label}.lineId está vacío o duplicado.")
+        receipt_ids.add(line_id)
+        quantity = numeric(row, "expectedQuantity", row_label)
+        if (
+            quantity <= 0
+            or row.get("status") != "ready"
+            or row.get("purchaseOrderStatus") != "confirmed"
+            or not isinstance(row.get("increaseAvailableStock"), bool)
+        ):
+            raise RuntimeError(f"{row_label} no respeta el contrato de recepción pendiente.")
+        for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate"):
+            if not str(row.get(field) or "").strip():
+                raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    print(
+        "UI_REPLENISHMENT_SOURCE_EXPORT_COUNTS="
+        + json.dumps(
+            {
+                "inventory": len(collections["inventory"]),
+                "outgoingCommitments": len(collections["outgoingCommitments"]),
+                "receipts": len(collections["receipts"]),
+            },
+            ensure_ascii=False,
+        )
+    )
+    print("UI_REPLENISHMENT_NATIVE_AVAILABLE_RECONCILED=true")
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true")
+
+
 def verify_restarted_persistence(context: Any, url: str) -> None:
     base = application_endpoint_url(url, "exec/")
 
@@ -931,6 +1078,7 @@ def inspect_page(url: str) -> int:
                         )
                 page.screenshot(path=str(after_login_screenshot), full_page=True)
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
+                verify_replenishment_source_export(context, url)
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
