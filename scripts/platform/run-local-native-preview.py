@@ -726,6 +726,7 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
         "-Xms512m",
         "-Xmx2048m",
         "-Djava.rmi.server.hostname=127.0.0.1",
+        "-Dlsfusion.rmi.bindAddress=127.0.0.1",
         f"-Ddb.server=127.0.0.1:{ports['postgres']}",
         "-Ddb.name=rubrova_dev",
         "-Ddb.user=postgres",
