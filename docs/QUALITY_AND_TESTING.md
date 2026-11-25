@@ -15,6 +15,21 @@ Una capacidad no se considera terminada por mostrar una pantalla. Debe cumplir r
 - Seguridad: permisos, aislamiento, abuso y datos sensibles.
 - Rendimiento: caja, búsqueda, sincronización y reportes.
 
+## Entorno de ejecución para pruebas
+
+El entorno por defecto de desarrollo y CI es el runtime nativo, sin Docker: Java 21, PostgreSQL 18 y Tomcat 9.0.124. El servidor debe terminar el bootstrap y la acción `onStarted` antes de iniciar el cliente. El supervisor utiliza una carpeta PostgreSQL exclusiva, no adopta ni detiene servicios personales de la máquina y conserva los datos al detener los procesos.
+
+Las pruebas nativas deben cubrir:
+
+- Inicio desde una base vacía, verificación del servidor, RMI, `onStarted` y respuesta web.
+- Login y navegación en español mediante Chromium.
+- Salida a Internet bloqueada, con acceso local por loopback aún funcional.
+- Venta, factura/pago, stock, caja y turno conciliados desde los datos persistidos.
+- Reinicio de servidor y cliente sin borrar PostgreSQL, y nueva conciliación sin duplicados.
+- Limpieza limitada a los procesos y directorios temporales creados por el test.
+
+Docker se conserva como smoke secundario y manual de empaquetado, compatibilidad de imágenes y aislamiento. Los tests unitarios del supervisor no sustituyen la aceptación funcional completa del runtime nativo.
+
 ## Flujos POS obligatorios
 
 Venta en efectivo con vuelto; venta con medios mixtos; descuentos por línea, carrito, cupón, combo y horario; reglas de acumulación; excepción autorizada; devolución parcial y total; anulación; productos pesables; caja compartida; apertura, arqueo, cierre y diferencia; impresión y recuperación ante impresora desconectada.
