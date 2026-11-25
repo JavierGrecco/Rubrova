@@ -1056,6 +1056,12 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Inventory.planned(l, p)",
     "Sales.toShip(ol)",
     "Sales.scheduledDateTime(Sales.order(ol))",
+    "sourceLineId = LONG(ol)",
+    "sourceDocumentId = LONG(Sales.order(ol))",
+    "lineId = LONG(Inventory.line(rr))",
+    "receiptId = LONG(Inventory.receipt(Inventory.line(rr)))",
+    "purchaseOrderId = LONG(Purchase.order(Purchase.orderLine(Inventory.line(rr))))",
+    "purchaseOrderLineId = LONG(Purchase.orderLine(Inventory.line(rr)))",
     "Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))",
     "Inventory.ShipmentResLedger",
     "Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))",
@@ -1081,6 +1087,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.doesNotMatch(replenishmentExportSource, /<>/);
+  assert.doesNotMatch(replenishmentExportSource, /(?:Sales|Purchase)\\.id\\(/);
+  assert.doesNotMatch(replenishmentExportSource, /Inventory\\.id\\(Inventory\\.line\\(/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) != 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
