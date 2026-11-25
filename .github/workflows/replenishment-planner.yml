@@ -14,6 +14,7 @@ on:
   pull_request:
     paths:
       - "docs/fixtures/replenishment-planning.json"
+      - "docs/fixtures/mycompany-replenishment-snapshot.json"
       - "docs/fixtures/mycompany-native-replenishment-export.json"
       - "docs/fixtures/replenishment-planning-policy.json"
       - "docs/PROJECTED_STOCK_AND_REPLENISHMENT.md"
