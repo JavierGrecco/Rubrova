@@ -57,6 +57,9 @@ jobs:
           bash -n scripts/platform/test-deploy-mycompany-6.2.sh
           bash -n scripts/platform/test-runtime-smoke.sh
           bash -n scripts/platform/test-runtime-native-smoke.sh
+          bash -n scripts/platform/native-listener-check.sh
+          bash -n scripts/platform/test-native-listener-check.sh
+          bash scripts/platform/test-native-listener-check.sh
           bash -n scripts/platform/run-local-preview-macos.sh
           bash -n scripts/platform/build-rubrova-runtime-images.sh
           bash scripts/platform/test-deploy-mycompany-6.2.sh
@@ -213,6 +216,7 @@ jobs:
             ${{ runner.temp }}/rubrova-native-smoke/native-runtime.log
             ${{ runner.temp }}/rubrova-native-smoke/native-diagnostics.log
             ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
+            ${{ runner.temp }}/rubrova-native-smoke/ui-smoke.log
           if-no-files-found: warn
 
   runtime-smoke:

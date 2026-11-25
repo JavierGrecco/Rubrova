@@ -17,6 +17,8 @@ const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.propertie
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
+const nativeListenerCheckSource = read("scripts/platform/native-listener-check.sh");
+const nativeListenerCheckTestsSource = read("scripts/platform/test-native-listener-check.sh");
 const nativePreviewSource = read("scripts/platform/run-local-native-preview.py");
 const nativeRuntimeTestsSource = read("scripts/platform/test_runtime_native_preview.py");
 const localPreviewSource = read("scripts/platform/run-local-preview-macos.sh");
@@ -317,6 +319,11 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /config\["local_runtime"\]\["data_directory"\]/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RMI_LOOPBACK=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POSTGRES_LOOPBACK=true/);
+  assert.match(nativeSmokeSource, /source "\$SCRIPT_DIR\/native-listener-check[.]sh"/);
+  assert.match(nativeListenerCheckSource, /\[::ffff:127[.]0[.]0[.]1\]/);
+  assert.match(nativeListenerCheckSource, /listener fuera del loopback permitido/);
+  assert.match(nativeListenerCheckTestsSource, /192[.]168[.]1[.]20:7652/);
+  assert.match(nativeListenerCheckTestsSource, /mixed loopback and external listeners/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EXTERNAL_CONNECTIVITY=blocked/);
   assert.equal(
     (runtimeWorkflowSource.match(/CHECKED_OUT_SHA=/g) || []).length,

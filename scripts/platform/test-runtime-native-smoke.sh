@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+source "$SCRIPT_DIR/native-listener-check.sh"
 
 for command_name in python3 curl; do
   command -v "$command_name" >/dev/null 2>&1 || {
@@ -183,23 +184,9 @@ else
   PG_LISTENERS="$(lsof -nP -iTCP:55432 -sTCP:LISTEN || true)"
 fi
 printf 'RMI listeners:\n%s\n' "$RMI_LISTENERS"
-grep -Eq '127[.]0[.]0[.]1:7652([[:space:]]|$)' <<< "$RMI_LISTENERS" || {
-  echo "RMI no quedó enlazado exclusivamente al loopback 127.0.0.1:7652." >&2
-  exit 1
-}
-if grep -Eq '(0[.]0[.]0[.]0|\[::\]|\*):7652([[:space:]]|$)' <<< "$RMI_LISTENERS"; then
-  echo "RMI quedó expuesto en una interfaz no local." >&2
-  exit 1
-fi
+rubrova_assert_loopback_listeners "$HOST_OS" "RMI" 7652 "$RMI_LISTENERS" || exit 1
 printf 'PostgreSQL listeners:\n%s\n' "$PG_LISTENERS"
-grep -Eq '127[.]0[.]0[.]1:55432([[:space:]]|$)' <<< "$PG_LISTENERS" || {
-  echo "PostgreSQL no quedó enlazado al loopback configurado." >&2
-  exit 1
-}
-if grep -Eq '(0[.]0[.]0[.]0|\[::\]|\*):55432([[:space:]]|$)' <<< "$PG_LISTENERS"; then
-  echo "PostgreSQL quedó expuesto en una interfaz no local." >&2
-  exit 1
-fi
+rubrova_assert_loopback_listeners "$HOST_OS" "PostgreSQL" 55432 "$PG_LISTENERS" || exit 1
 echo "RUBROVA_NATIVE_RMI_LOOPBACK=true"
 echo "RUBROVA_NATIVE_POSTGRES_LOOPBACK=true"
 echo "RUBROVA_NATIVE_SERVER_READY=true"
