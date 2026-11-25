@@ -1073,7 +1073,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /readOnly = TRUE/);
   assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
   assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
-  assert.match(replenishmentExportSource, /effectiveReserved = OVERRIDE/);
+  assert.match(replenishmentExportSource, /effectiveReserved = \(OVERRIDE/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) <> 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
