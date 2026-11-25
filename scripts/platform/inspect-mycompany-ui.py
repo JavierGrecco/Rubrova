@@ -726,8 +726,38 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
 
 
 
+def probe_replenishment_source_sections(context: Any, url: str) -> None:
+    """Locate the failing MyCompany source query before validating the combined export."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    probes = (
+        ("inventory", "rubrovaProbeInventory"),
+        ("outgoing_commitments", "rubrovaProbeOutgoingCommitments"),
+        ("receipts", "rubrovaProbeReceipts"),
+    )
+    failures: list[str] = []
+    for label, action in probes:
+        response = context.request.get(endpoint + action, timeout=20_000)
+        print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
+        if response.status != 200:
+            detail = response.text()[:1800].replace("\r", " ").replace("\n", " ")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ERROR={detail}")
+            failures.append(f"{label}: HTTP {response.status} ({detail[:500]})")
+        else:
+            try:
+                response.json()
+                print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
+            except ValueError:
+                print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
+                failures.append(f"{label}: HTTP 200 sin JSON válido")
+    if failures:
+        raise RuntimeError(
+            "Falló una consulta aislada de la exportación MyCompany: " + "; ".join(failures)
+        )
+
+
 def verify_replenishment_source_export(context: Any, url: str) -> None:
     """Validate the native MyCompany export without mutating the ERP."""
+    probe_replenishment_source_sections(context, url)
     endpoint = application_endpoint_url(url, "exec/Rubrova.")
     response = context.request.get(
         endpoint + "rubrovaExportReplenishmentSource",

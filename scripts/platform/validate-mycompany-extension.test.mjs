@@ -1112,6 +1112,15 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /expectedReservationSigned = Inventory\.reserved\(rr\)/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) != 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
+  for (const probe of [
+    "rubrovaProbeInventory",
+    "rubrovaProbeOutgoingCommitments",
+    "rubrovaProbeReceipts"
+  ]) {
+    assert.ok(replenishmentExportSource.includes(probe), "Falta la sonda de diagnóstico " + probe);
+    assert.ok(uiSmokeSource.includes(probe), "El smoke debe ejecutar la sonda " + probe);
+  }
+  assert.match(uiSmokeSource, /probe_replenishment_source_sections\\(context, url\\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
 });
 
