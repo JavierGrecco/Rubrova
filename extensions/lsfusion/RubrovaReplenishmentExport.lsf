@@ -29,7 +29,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             outgoingScheduledDateTime = 'Sales.scheduledDateTime(Order)',
             outgoingEffectiveReservation = 'SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)',
             incomingIdentity = 'Receipt.number + ReceiptLine.index',
-            incomingExpectedQuantity = '0 - Inventory.ReceiptResLedger.reserved',
+            incomingExpectedQuantity = '0 - ReceiptResLedger.reserved; signed reservation remains negative',
             incomingScheduledDateTime = 'Receipt.scheduledDateTime',
             incomingEligibility = 'Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed',
             incomingAvailabilityPolicy = 'ReceiptType.increaseAvailableStock; skipAvailable is its inverse'
@@ -94,6 +94,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             productName = MasterData.name(Inventory.product(Inventory.line(rr))),
             locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
             locationName = Inventory.name(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
+            expectedReservationSigned = Inventory.reserved(rr),
             expectedQuantity = 0 (-) Inventory.reserved(rr),
             scheduledDateTime = Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
             scheduledDate = DATE(Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))),
