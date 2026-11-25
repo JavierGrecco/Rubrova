@@ -92,6 +92,57 @@ class NativePreviewTests(unittest.TestCase):
                     configured_home=str(tomcat_home),
                 )
 
+    def test_ci_sales_fixture_is_added_to_a_temporary_runtime_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            logics_dir = Path(temporary)
+            entrypoint = logics_dir / "RubrovaCustom.lsf"
+            entrypoint.write_text(
+                "MODULE RubrovaCustom;\\n"
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;\\n",
+                encoding="utf-8",
+            )
+            previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
+            native.os.environ["RUBROVA_CI_MOCK_PROVIDER_PORT"] = "18766"
+            try:
+                native.ensure_ci_sales_fixture(logics_dir)
+                native.ensure_ci_sales_fixture(logics_dir)
+            finally:
+                if previous_port is None:
+                    native.os.environ.pop("RUBROVA_CI_MOCK_PROVIDER_PORT", None)
+                else:
+                    native.os.environ["RUBROVA_CI_MOCK_PROVIDER_PORT"] = previous_port
+
+            updated_entrypoint = entrypoint.read_text(encoding="utf-8")
+            self.assertEqual(updated_entrypoint.count("RubrovaCISalesFixture"), 1)
+            self.assertIn("RubrovaCIRetailFixture", updated_entrypoint)
+            self.assertIn("RubrovaCIIntegrationFixture", updated_entrypoint)
+            sales_fixture = (logics_dir / "RubrovaCISalesFixture.lsf").read_text(encoding="utf-8")
+            retail_fixture = (logics_dir / "RubrovaCIRetailFixture.lsf").read_text(encoding="utf-8")
+            integration_fixture = (logics_dir / "RubrovaCIIntegrationFixture.lsf").read_text(encoding="utf-8")
+            self.assertIn("rubrovaTestSalesReconciliationApi", sales_fixture)
+            self.assertIn("rubrovaTestSessionCloseApi", sales_fixture)
+            self.assertIn("Caja de prueba Rubrova", retail_fixture)
+            self.assertIn("http://127.0.0.1:18766/slow?delay=5", integration_fixture)
+
+    def test_ci_sales_fixture_rejects_invalid_mock_provider_port(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            logics_dir = Path(temporary)
+            (logics_dir / "RubrovaCustom.lsf").write_text(
+                "MODULE RubrovaCustom;\\n"
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;\\n",
+                encoding="utf-8",
+            )
+            previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
+            native.os.environ["RUBROVA_CI_MOCK_PROVIDER_PORT"] = "80"
+            try:
+                with self.assertRaisesRegex(native.RuntimeErrorRubrova, "entre 1024 y 65535"):
+                    native.ensure_ci_sales_fixture(logics_dir)
+            finally:
+                if previous_port is None:
+                    native.os.environ.pop("RUBROVA_CI_MOCK_PROVIDER_PORT", None)
+                else:
+                    native.os.environ["RUBROVA_CI_MOCK_PROVIDER_PORT"] = previous_port
+
     def test_preexisting_postgres_is_never_stopped_by_preview_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary) / "postgres-data"

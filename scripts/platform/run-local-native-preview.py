@@ -343,6 +343,54 @@ def ensure_extension_files(logics_dir: Path) -> None:
     )
 
 
+
+def ensure_ci_sales_fixture(logics_dir: Path) -> None:
+    """Install disposable CI-only sales, retail and integration fixtures."""
+    fixture_names = (
+        "RubrovaCISalesFixture.lsf",
+        "RubrovaCIRetailFixture.lsf",
+        "RubrovaCIIntegrationFixture.lsf",
+    )
+    try:
+        mock_port = int(os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT", "18765"))
+    except ValueError as exc:
+        raise RuntimeErrorRubrova("RUBROVA_CI_MOCK_PROVIDER_PORT debe ser un entero.") from exc
+    if not 1024 <= mock_port <= 65535:
+        raise RuntimeErrorRubrova("RUBROVA_CI_MOCK_PROVIDER_PORT debe estar entre 1024 y 65535.")
+
+    for filename in fixture_names:
+        template = SCRIPT_DIR / "fixtures" / filename
+        if not template.is_file():
+            raise RuntimeErrorRubrova(f"No se encontró el fixture comercial aislado: {template}")
+        content = template.read_text(encoding="utf-8")
+        content = content.replace("__RUBROVA_MOCK_PROVIDER_PORT__", str(mock_port))
+        if "__RUBROVA_MOCK_PROVIDER_PORT__" in content:
+            raise RuntimeErrorRubrova(f"Quedó un puerto sin sustituir en {filename}.")
+        (logics_dir / filename).write_text(content, encoding="utf-8")
+
+    entrypoint = logics_dir / "RubrovaCustom.lsf"
+    if not entrypoint.is_file():
+        raise RuntimeErrorRubrova(f"No se encontró el módulo de entrada Rubrova: {entrypoint}")
+    source = entrypoint.read_text(encoding="utf-8")
+    original_require = (
+        "REQUIRE MyCompany, RubrovaPOSLocalization, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals;"
+    )
+    fixture_require = (
+        "REQUIRE MyCompany, RubrovaPOSLocalization, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, "
+        "RubrovaCISalesFixture, RubrovaCIRetailFixture, RubrovaCIIntegrationFixture;"
+    )
+    if source.count(original_require) == 1:
+        entrypoint.write_text(source.replace(original_require, fixture_require, 1), encoding="utf-8")
+    elif source.count(fixture_require) != 1:
+        raise RuntimeErrorRubrova(
+            "No se encontró una única declaración REQUIRE compatible para agregar los fixtures CI."
+        )
+
+    print("Fixtures efímeros de POS, caja e integraciones activados sólo para CI.")
+    print(f"Proveedor HTTP de pruebas: 127.0.0.1:{mock_port}")
+
 def prepare_tomcat_base(tomcat_home: Path, base: Path, war: Path, ports: dict[str, int]) -> None:
     base.mkdir(parents=True, exist_ok=True)
     if not (base / "conf" / "server.xml").is_file():
@@ -836,6 +884,8 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
     shutil.copy2(artifacts["server"], server_jar)
     shutil.copy2(artifacts["logic"], logic_jar)
     ensure_extension_files(logics_dir)
+    if os.environ.get("RUBROVA_CI_SALES_FIXTURE", "false").lower() == "true":
+        ensure_ci_sales_fixture(logics_dir)
     prepare_tomcat_base(tomcat_home, tomcat_base, artifacts["client"], ports)
 
     if port_is_open("127.0.0.1", ports["rmi"]):

@@ -69,7 +69,8 @@ collect_native_diagnostics() {
       "$NATIVE_DATA_ROOT"/runtime/tomcat-base/logs/*.log \
       "$NATIVE_DATA_ROOT"/runtime/tomcat-base/logs/*.txt \
       "$NATIVE_DATA_ROOT"/runtime/lsfusion/logs/*.log \
-      "$NATIVE_DATA_ROOT"/logs/*.log; do
+      "$NATIVE_DATA_ROOT"/logs/*.log \
+      "$MOCK_PROVIDER_LOG_FILE"; do
       [[ -f "$log_file" ]] || continue
       echo "### $log_file ($(wc -c < "$log_file" | tr -d ' ') bytes)"
       tail -n 120 "$log_file" | sed -E \
@@ -79,6 +80,9 @@ collect_native_diagnostics() {
 }
 
 SUPERVISOR_PID=""
+MOCK_PROVIDER_PID=""
+MOCK_PROVIDER_PORT="${RUBROVA_CI_MOCK_PROVIDER_PORT:-18765}"
+MOCK_PROVIDER_LOG_FILE="$WORK_DIR/mock-provider.log"
 EGRESS_RULES_INSTALLED=false
 
 cleanup() {
@@ -103,6 +107,11 @@ cleanup() {
       kill -KILL "$SUPERVISOR_PID" 2>/dev/null || true
     fi
     wait "$SUPERVISOR_PID" 2>/dev/null || true
+  fi
+
+  if [[ -n "$MOCK_PROVIDER_PID" ]] && kill -0 "$MOCK_PROVIDER_PID" 2>/dev/null; then
+    kill -TERM "$MOCK_PROVIDER_PID" 2>/dev/null || true
+    wait "$MOCK_PROVIDER_PID" 2>/dev/null || true
   fi
 
   collect_native_diagnostics
@@ -138,8 +147,28 @@ print(f"Directorio temporal de datos del smoke: {data_directory}")
 PY
 python3 "$SCRIPT_DIR/runtime-config.py" validate
 
-echo "2/5 Iniciando PostgreSQL, lsFusion/MyCompany y Tomcat sin Docker"
-python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$LOG_FILE" 2>&1 &
+echo "2/5 Iniciando el proveedor simulado local y PostgreSQL, lsFusion/MyCompany y Tomcat sin Docker"
+python3 -u "$SCRIPT_DIR/mock-integration-provider.py" --host 127.0.0.1 --port "$MOCK_PROVIDER_PORT" >"$MOCK_PROVIDER_LOG_FILE" 2>&1 &
+MOCK_PROVIDER_PID=$!
+MOCK_PROVIDER_READY=false
+for _ in $(seq 1 30); do
+  if ! kill -0 "$MOCK_PROVIDER_PID" 2>/dev/null; then
+    echo "El proveedor HTTP local terminó antes de estar disponible." >&2
+    exit 1
+  fi
+  if curl --fail --silent --max-time 2 "http://127.0.0.1:$MOCK_PROVIDER_PORT/health" >/dev/null; then
+    MOCK_PROVIDER_READY=true
+    break
+  fi
+  sleep 1
+done
+if [[ "$MOCK_PROVIDER_READY" != "true" ]]; then
+  echo "El proveedor HTTP local no respondió en 30 segundos." >&2
+  exit 1
+fi
+echo "RUBROVA_NATIVE_MOCK_PROVIDER_READY=true"
+RUBROVA_CI_SALES_FIXTURE=true RUBROVA_CI_MOCK_PROVIDER_PORT="$MOCK_PROVIDER_PORT" \
+  python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$LOG_FILE" 2>&1 &
 SUPERVISOR_PID=$!
 
 STARTUP_TIMEOUT="${RUBROVA_NATIVE_STARTUP_TIMEOUT_SECONDS:-1200}"
@@ -221,12 +250,25 @@ UI_LOG_FILE="$WORK_DIR/ui-smoke.log"
 RUBROVA_UI_SCREENSHOT="$SCREENSHOT" \
 RUBROVA_UI_TEST_LOGIN=true \
 RUBROVA_UI_TEST_USERNAME=admin \
-RUBROVA_UI_STOP_AFTER_LOGIN=true \
+RUBROVA_UI_STOP_AFTER_LOGIN=false \
 "$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL" | tee "$UI_LOG_FILE"
-grep -Fq "UI_LOGIN_AND_LOCAL_NAVIGATION_VERIFIED=true" "$UI_LOG_FILE" || {
-  echo "El smoke visual no confirmó el acceso y la carga del menú." >&2
-  exit 1
-}
+for marker in \
+  "UI_LOGIN_STATUS=authenticated:admin" \
+  "UI_POS_SCREEN_AVAILABLE=true" \
+  "UI_SESSION_OPEN=true" \
+  "UI_SALE_DOCUMENT_CREATED=true" \
+  "UI_SALE_PAYMENT_RECONCILED=true" \
+  "UI_SALE_STOCK_DEDUCTED=true" \
+  "UI_SESSION_CLOSED=true" \
+  "UI_SESSION_SALES_RECONCILED=true" \
+  "UI_SESSION_CASH_RECONCILED=true" \
+  "UI_INTEGRATION_INCIDENT_PERSISTED=true"; do
+  grep -Fq "$marker" "$UI_LOG_FILE" || {
+    echo "La aceptación comercial nativa no confirmó el resultado esperado: $marker" >&2
+    exit 1
+  }
+done
+echo "RUBROVA_NATIVE_POS_ACCEPTANCE=passed"
 [[ -s "$SCREENSHOT" ]] || {
   echo "La inspección local no generó la captura de interfaz esperada: $SCREENSHOT" >&2
   exit 1

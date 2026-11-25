@@ -17,6 +17,9 @@ const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.propertie
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
+const nativeSalesFixtureSource = read("scripts/platform/fixtures/RubrovaCISalesFixture.lsf");
+const nativeRetailFixtureSource = read("scripts/platform/fixtures/RubrovaCIRetailFixture.lsf");
+const nativeIntegrationFixtureSource = read("scripts/platform/fixtures/RubrovaCIIntegrationFixture.lsf");
 const nativeListenerCheckSource = read("scripts/platform/native-listener-check.sh");
 const nativeListenerCheckTestsSource = read("scripts/platform/test-native-listener-check.sh");
 const nativePreviewSource = read("scripts/platform/run-local-native-preview.py");
@@ -297,6 +300,17 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
   assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
+  assert.match(nativeSmokeSource, /mock-integration-provider[.]py/);
+  assert.match(nativeSmokeSource, /RUBROVA_CI_SALES_FIXTURE=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POS_ACCEPTANCE=passed/);
+  assert.match(nativeSmokeSource, /UI_SALE_PAYMENT_RECONCILED=true/);
+  assert.match(nativeSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
+  assert.match(nativePreviewSource, /def ensure_ci_sales_fixture/);
+  assert.match(nativePreviewSource, /RUBROVA_CI_SALES_FIXTURE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestSalesReconciliationApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestSessionCloseApi/);
+  assert.match(nativeRetailFixtureSource, /Caja de prueba Rubrova/);
+  assert.match(nativeIntegrationFixtureSource, /rubrovaTestHttpRecovery/);
   assert.match(nativeSmokeSource, /native-diagnostics[.]log/);
   assert.match(runtimeWorkflowSource, /rubrova-native-smoke\/native-diagnostics[.]log/);
   assert.doesNotMatch(nativeSmokeSource, /(^|[ \\t])docker([ \\t]|$)|docker-compose/);

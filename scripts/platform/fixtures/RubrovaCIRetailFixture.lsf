@@ -1,0 +1,76 @@
+MODULE RubrovaCIRetailFixture;
+
+REQUIRE MyCompany, RubrovaPOSLocalization;
+
+NAMESPACE Retail;
+
+// Datos descartables para la aceptación visual del POS en CI.
+// Este bloque se agrega sólo al archivo temporal de docker-server; no está en el despliegue.
+loadDefaultData () + {
+    IF NOT defaultCurrency() THEN
+        NEW currencyCI = Currency {
+            id(currencyCI) <- 'ARS';
+            name(currencyCI) <- 'Peso argentino';
+            defaultCurrency() <- currencyCI;
+        }
+
+    IF NOT pos('rubrova-ci') THEN {
+        NEW centralAccountCI = CashAccount {
+            name(centralAccountCI) <- 'Cuenta central CI';
+            holder(centralAccountCI) <- defaultCompany();
+            currency(centralAccountCI) <- defaultCurrency();
+
+            NEW cashAccountCI = CashAccount {
+                name(cashAccountCI) <- 'Efectivo CI';
+                holder(cashAccountCI) <- defaultCompany();
+                currency(cashAccountCI) <- defaultCurrency();
+
+                NEW cardAccountCI = CashAccount {
+                    name(cardAccountCI) <- 'Tarjeta CI';
+                    holder(cardAccountCI) <- defaultCompany();
+                    currency(cardAccountCI) <- defaultCurrency();
+
+                    NEW cashRegisterCI = Pos {
+                        id(cashRegisterCI) <- 'rubrova-ci';
+                        name(cashRegisterCI) <- 'Caja de prueba Rubrova';
+                        company(cashRegisterCI) <- defaultCompany();
+                        // MyCompany exige un tipo de comprobante para habilitar el puesto POS.
+                        invoiceType(cashRegisterCI) <- invoiceType('retail');
+                        account(cashRegisterCI) <- centralAccountCI;
+                        account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
+                        account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
+                    }
+                }
+            }
+        }
+    }
+
+    // Producto unitario y código de barras sintéticos para la siguiente prueba del circuito de venta.
+    IF NOT uom('1') THEN
+        NEW unitCI = Uom {
+            id(unitCI) <- '1';
+            name(unitCI) <- 'Unidad';
+        }
+
+    IF NOT rootCategory() THEN
+        NEW rootCategoryCI = Category {
+            id(rootCategoryCI) <- 'rubrova-ci-root';
+            name(rootCategoryCI) <- 'Productos de prueba Rubrova';
+        }
+
+    IF NOT item('rubrova-ci-product') THEN
+        NEW productCI = Product {
+            id(productCI) <- 'rubrova-ci-product';
+            dataName(productCI) <- 'Producto de prueba Rubrova';
+            category(productCI) <- rootCategory();
+            uom(productCI) <- uom('1');
+            salesPrice(productCI) <- 1250;
+        }
+
+    IF NOT itemBarCode('7790000000013') THEN
+        NEW barcodeCI = BarCode {
+            id(barcodeCI) <- '7790000000013';
+            item(barcodeCI) <- item('rubrova-ci-product');
+        }
+}
+

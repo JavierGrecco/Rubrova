@@ -1,0 +1,112 @@
+MODULE RubrovaCISalesFixture;
+REQUIRE MyCompany, RubrovaPOSLocalization;
+NAMESPACE Sales;
+
+// El POS convierte el precio de lista usando la moneda de la organización.
+loadDefaultData () + {
+    currency(priceType('retail')) <- MasterData.defaultCurrency();
+    priceType(Invoicing.invoiceType('retail')) <- priceType('retail');
+    Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency();
+}
+
+// Identidades y stock sintéticos del depósito de CI.
+rubrovaCITestLocation() = GROUP MAX Inventory.Location l
+    IF Inventory.id(l) = 'rubrova-ci-location';
+rubrovaCITestProduct() = GROUP MAX MasterData.Product p
+    IF MasterData.id(p) = 'rubrova-ci-product';
+rubrovaCITestStockSeeded = DATA BOOLEAN ();
+
+loadDefaultData () + {
+    IF NOT rubrovaCITestLocation() THEN
+        NEW locationCI = Inventory.Location {
+            Inventory.id(locationCI) <- 'rubrova-ci-location';
+            Inventory.name(locationCI) <- 'Depósito de prueba Rubrova';
+            Inventory.company(locationCI) <- MasterData.defaultCompany();
+        }
+
+    Inventory.positiveOnHand(rubrovaCITestLocation()) <- TRUE;
+
+    IF NOT rubrovaCITestStockSeeded() THEN {
+        NEW adjustmentCI = Inventory.Adjustment {
+            Inventory.type(adjustmentCI) <- Inventory.AdjustmentType.all;
+            Inventory.location(adjustmentCI) <- rubrovaCITestLocation();
+            Inventory.inProgress(adjustmentCI) <- TRUE;
+
+            NEW adjustmentLineCI = Inventory.AdjustmentLine {
+                Inventory.adjustment(adjustmentLineCI) <- adjustmentCI;
+                Inventory.product(adjustmentLineCI) <- rubrovaCITestProduct();
+                Inventory.location(adjustmentLineCI) <- rubrovaCITestLocation();
+                Inventory.realQuantity(adjustmentLineCI) <- 10;
+            }
+
+            Inventory.done(adjustmentCI) <- TRUE;
+        }
+        rubrovaCITestStockSeeded() <- TRUE;
+    }
+
+    // MyCompany ya incorpora SessionShipment: sólo enlazamos la caja al depósito CI.
+    Retail.location(Retail.pos('rubrova-ci')) <- rubrovaCITestLocation();
+}
+
+rubrovaTestInventoryApi () {
+    EXPORT JSON FROM
+        incomingQuantity = Inventory.inQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        outgoingQuantity = Inventory.outQuantity(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+rubrovaCISaleCount() = GROUP SUM 1
+    IF Retail.session(Invoicing.Invoice i)
+       AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIPaidSaleCount() = GROUP SUM 1
+    IF Retail.session(Invoicing.Invoice i)
+       AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0 AND Invoicing.done(i);
+
+rubrovaCISalesAmount() = GROUP SUM Invoicing.amount(Invoicing.Invoice i)
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIPaidAmount() = GROUP SUM Invoicing.paid(Invoicing.Invoice i)
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCICashPaymentAmount() = GROUP SUM Retail.paid(Invoicing.Invoice i, Retail.cashPaymentMethod())
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIIncomingPaymentCount() = GROUP SUM Invoicing.countIncomingPayment(Invoicing.Invoice i)
+    IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaTestSalesReconciliationApi () {
+    EXPORT JSON FROM
+        salesCount = rubrovaCISaleCount(),
+        paidSalesCount = rubrovaCIPaidSaleCount(),
+        invoiceAmount = rubrovaCISalesAmount(),
+        paidAmount = rubrovaCIPaidAmount(),
+        cashPaidAmount = rubrovaCICashPaymentAmount(),
+        incomingPaymentCount = rubrovaCIIncomingPaymentCount(),
+        sessionCashPaid = Retail.paid(Retail.openedSession(Retail.pos('rubrova-ci')), Retail.cashPaymentMethod()),
+        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci'));
+} @@api;
+
+rubrovaCITestSession() = GROUP MAX Retail.Session s
+    IF Retail.pos(s) = Retail.pos('rubrova-ci');
+
+rubrovaTestSessionCloseApi () {
+    EXPORT JSON FROM
+        sessionNumber = Retail.number(rubrovaCITestSession()),
+        openingDateTime = Retail.openingDateTime(rubrovaCITestSession()),
+        closingDateTime = Retail.closingDateTime(rubrovaCITestSession()),
+        sessionStatus = CASE WHEN Retail.opened(rubrovaCITestSession()) THEN 'OPEN' ELSE 'CLOSED',
+        salesCount = Retail.countInvoices(rubrovaCITestSession()),
+        salesAmount = Retail.totalAmountInvoice(rubrovaCITestSession()),
+        returnsCount = Retail.countBills(rubrovaCITestSession()),
+        returnsAmount = Retail.totalAmountBill(rubrovaCITestSession()),
+        netAmount = Retail.amount(rubrovaCITestSession()),
+        cashPaid = Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod()),
+        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci'));
+} @@api;

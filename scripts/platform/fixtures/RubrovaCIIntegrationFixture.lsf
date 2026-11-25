@@ -1,0 +1,141 @@
+MODULE RubrovaCIIntegrationFixture;
+
+REQUIRE MyCompany, RubrovaIntegrationResilience;
+
+NAMESPACE Rubrova;
+
+// Endpoints exclusivos de la base efímera CI: nunca se instalan en Rubrova.
+rubrovaTestHttpTimeout () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de timeout', 'ci-timeout-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/slow?delay=5', 1000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'failure-captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        retryAfter = rubrovaHttpRetryAfter(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaHttp408IncidentCount() = GROUP SUM 1
+    IF correlationId(IntegrationIncident i) = 'ci-http-408-001';
+
+rubrovaHttp408RetryableIncidentCount() = GROUP SUM 1
+    IF correlationId(IntegrationIncident i) = 'ci-http-408-001' AND safeToRetry(i);
+
+rubrovaTestHttpTransientStatus () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de respuesta transitoria 408', 'ci-http-408-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/408', 4000);
+    // EXPORT JSON debe exponer un escalar: se cuenta el valor BOOLEAN persistido.
+    // Antes del cambio, incidentRetryable = safeToRetry(IntegrationIncident i) no agregaba las filas.
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        incidentCount = rubrovaHttp408IncidentCount(),
+        incidentRetryable = rubrovaHttp408RetryableIncidentCount() = 1;
+} @@api;
+
+rubrovaHttp429RetryAfterIncidentCount() = GROUP SUM 1
+    IF correlationId(IntegrationIncident i) = 'ci-rate-limit-001' AND retryAfterHeader(i) = '2';
+
+rubrovaTestHttpRateLimit () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de límite de solicitudes', 'ci-rate-limit-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/429', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        retryAfter = rubrovaHttpRetryAfter(),
+        incidentRetryAfterPersisted = rubrovaHttp429RetryAfterIncidentCount() = 1,
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttpServerError () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error 503', 'ci-server-error-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/503', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp400 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 400', 'ci-http-400-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/400', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp401 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 401', 'ci-http-401-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/401', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp403 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 403', 'ci-http-403-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/403', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttp409 () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de error HTTP 409', 'ci-http-409-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/status/409', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'unexpected-success' ELSE 'captured',
+        category = rubrovaHttpFailureCategory(),
+        retryable = rubrovaHttpCanRetry(),
+        httpStatus = statusHttp(),
+        userMessage = rubrovaHttpFailureMessage();
+} @@api;
+
+rubrovaTestHttpRecovery () {
+    rubrovaHttpGet('Rubrova Mock Provider', 'Prueba de recuperación', 'ci-recovery-001',
+        'http://127.0.0.1:__RUBROVA_MOCK_PROVIDER_PORT__/ok', 4000);
+    EXPORT JSON FROM
+        outcome = IF rubrovaHttpSucceeded() THEN 'success' ELSE 'failure',
+        category = rubrovaHttpFailureCategory();
+} @@api;
+
+rubrovaMockIncidentCount () = GROUP SUM 1
+    IF provider(IntegrationIncident i) = 'Rubrova Mock Provider';
+
+rubrovaTestIncidentCountApi () {
+    EXPORT JSON FROM incidentCount = rubrovaMockIncidentCount();
+} @@api;
+
+rubrovaTestPosConfigurationApi () {
+    EXPORT JSON FROM
+        defaultCurrencyName = name(defaultCurrency()),
+        retailInvoiceCurrencyName = Invoicing.nameCurrency(Invoicing.invoiceType('retail')),
+        retailInvoicePriceTypeName = Sales.namePriceType(Invoicing.invoiceType('retail')),
+        retailPriceTypeCurrencyName = Sales.nameCurrency(Sales.priceType('retail')),
+        cashMethodName = name(Retail.cashPaymentMethod()),
+        centralCashAccountName = Retail.nameAccount(Retail.pos('rubrova-ci')),
+        cardMethodName = name(Retail.paymentMethod('card')),
+        cashAccountName = Retail.nameAccount(Retail.pos('rubrova-ci'), Retail.cashPaymentMethod()),
+        cardAccountName = Retail.nameAccount(Retail.pos('rubrova-ci'), Retail.paymentMethod('card')),
+        cashDisabled = Retail.disabled(Retail.pos('rubrova-ci'), Retail.cashPaymentMethod()),
+        cardDisabled = Retail.disabled(Retail.pos('rubrova-ci'), Retail.paymentMethod('card')),
+        openSessionNumber = Retail.number(Retail.openedSession(Retail.pos('rubrova-ci')));
+} @@api;
+
