@@ -284,6 +284,14 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
   assert.doesNotMatch(nativeSmokeSource, /(^|[ \\t])docker([ \\t]|$)|docker-compose/);
   assert.match(nativePreviewSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
+  assert.match(nativePreviewSource, /-Dlsfusion[.]rmi[.]bindAddress=127[.]0[.]0[.]1/);
+  assert.match(sourcePatch, /RMI_SERVER_SOCKET_TARGET/);
+  assert.match(sourcePatch, /System[.]getProperty\("lsfusion[.]rmi[.]bindAddress"\)/);
+  assert.match(sourcePatch, /new InetSocketAddress\(InetAddress[.]getByName/);
+  assert.match(nativeSmokeSource, /RMI_LISTENERS=.*ss -H -ltn/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RMI_LOOPBACK=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POSTGRES_LOOPBACK=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EXTERNAL_CONNECTIVITY=blocked/);
   assert.equal(
     (runtimeWorkflowSource.match(/CHECKED_OUT_SHA=/g) || []).length,
     2,
