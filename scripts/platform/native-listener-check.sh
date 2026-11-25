@@ -27,7 +27,7 @@ rubrova_assert_loopback_listeners() {
   esac
 
   if [[ -z "$endpoints" ]]; then
-    printf '%s: no se encontró ningún listener TCP en el puerto \${port}.\n' "$service" >&2
+    printf '%s: no se encontró ningún listener TCP en el puerto $port.\n' "$service" >&2
     return 1
   fi
 
@@ -35,10 +35,10 @@ rubrova_assert_loopback_listeners() {
     [[ -n "$endpoint" ]] || continue
     count=$((count + 1))
     case "$endpoint" in
-      "127.0.0.1:\${port}"|"[::ffff:127.0.0.1]:\${port}")
+      "127.0.0.1:$port"|"[::ffff:127.0.0.1]:$port")
         ;;
       *)
-        printf '%s: listener fuera del loopback permitido en el puerto \${port}: %s\n' \
+        printf '%s: listener fuera del loopback permitido en el puerto $port: %s\n' \
           "$service" "$endpoint" >&2
         return 1
         ;;
@@ -46,7 +46,7 @@ rubrova_assert_loopback_listeners() {
   done <<< "$endpoints"
 
   if (( count == 0 )); then
-    printf '%s: no se pudo interpretar ningún listener del puerto \${port}.\n' "$service" >&2
+    printf '%s: no se pudo interpretar ningún listener del puerto $port.\n' "$service" >&2
     return 1
   fi
 
