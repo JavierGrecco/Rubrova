@@ -193,6 +193,25 @@ def safe_extract_zip(archive: Path, destination: Path) -> None:
         bundle.extractall(destination)
 
 
+def validate_tomcat_home(candidate: Path) -> Path:
+    executable = "catalina.bat" if os.name == "nt" else "catalina.sh"
+    manifest_path = candidate / "lib" / "catalina.jar"
+    if not (candidate / "bin" / executable).is_file() or not manifest_path.is_file():
+        raise RuntimeErrorRubrova(f"El directorio configurado no contiene una instalación Tomcat válida: {candidate}")
+    try:
+        with zipfile.ZipFile(manifest_path) as archive:
+            manifest = archive.read("META-INF/MANIFEST.MF").decode("utf-8", errors="replace")
+    except (OSError, KeyError, zipfile.BadZipFile) as exc:
+        raise RuntimeErrorRubrova(f"No se pudo leer la versión de Tomcat en {manifest_path}: {exc}") from exc
+    match = re.search(r"(?mi)^Implementation-Version:\s*([^\r\n]+)", manifest)
+    version = match.group(1).strip() if match else ""
+    if version != TOMCAT_VERSION:
+        raise RuntimeErrorRubrova(
+            f"Rubrova requiere Apache Tomcat {TOMCAT_VERSION}; se encontró {version or 'versión desconocida'} en {candidate}."
+        )
+    return candidate.resolve()
+
+
 def download_tomcat(
     cache_root: Path,
     allow_download: bool,
@@ -209,7 +228,7 @@ def download_tomcat(
     ]
     for candidate in candidates:
         if candidate and (candidate / "bin" / executable).is_file():
-            return candidate.resolve()
+            return validate_tomcat_home(candidate)
 
     if not allow_download:
         raise RuntimeErrorRubrova(
@@ -270,7 +289,7 @@ def download_tomcat(
         shutil.rmtree(target)
     shutil.move(str(extracted), str(target))
     shutil.rmtree(extraction_root, ignore_errors=True)
-    return target.resolve()
+    return validate_tomcat_home(target)
 
 
 def check_artifacts() -> dict[str, Path]:
