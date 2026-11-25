@@ -1,0 +1,70 @@
+MODULE RubrovaLocalDemoRetail;
+REQUIRE MyCompany, RubrovaPOSLocalization;
+
+NAMESPACE Retail;
+
+loadDefaultData () + {
+    IF NOT defaultCurrency() THEN
+        NEW currencyDemo = Currency {
+            id(currencyDemo) <- 'ARS';
+            name(currencyDemo) <- 'Peso argentino';
+            defaultCurrency() <- currencyDemo;
+        }
+
+    IF NOT pos('rubrova-demo') THEN {
+        NEW centralAccountDemo = CashAccount {
+            name(centralAccountDemo) <- 'Cuenta central demostración Rubrova';
+            holder(centralAccountDemo) <- defaultCompany();
+            currency(centralAccountDemo) <- defaultCurrency();
+
+            NEW cashAccountDemo = CashAccount {
+                name(cashAccountDemo) <- 'Efectivo demostración Rubrova';
+                holder(cashAccountDemo) <- defaultCompany();
+                currency(cashAccountDemo) <- defaultCurrency();
+
+                NEW cardAccountDemo = CashAccount {
+                    name(cardAccountDemo) <- 'Tarjeta demostración Rubrova';
+                    holder(cardAccountDemo) <- defaultCompany();
+                    currency(cardAccountDemo) <- defaultCurrency();
+
+                    NEW cashRegisterDemo = Pos {
+                        id(cashRegisterDemo) <- 'rubrova-demo';
+                        name(cashRegisterDemo) <- 'Caja de demostración Rubrova';
+                        company(cashRegisterDemo) <- defaultCompany();
+                        invoiceType(cashRegisterDemo) <- invoiceType('retail');
+                        account(cashRegisterDemo) <- centralAccountDemo;
+                        account(cashRegisterDemo, PaymentMethod pm) <- cashAccountDemo WHERE pm = cashPaymentMethod();
+                        account(cashRegisterDemo, PaymentMethod pm) <- cardAccountDemo WHERE id(pm) = 'card';
+                    }
+                }
+            }
+        }
+    }
+
+    IF NOT uom('1') THEN
+        NEW unitDemo = Uom {
+            id(unitDemo) <- '1';
+            name(unitDemo) <- 'Unidad';
+        }
+
+    IF NOT rootCategory() THEN
+        NEW rootCategoryDemo = Category {
+            id(rootCategoryDemo) <- 'rubrova-demo-root';
+            name(rootCategoryDemo) <- 'Productos de demostración Rubrova';
+        }
+
+    IF NOT item('rubrova-demo-product') THEN
+        NEW productDemo = Product {
+            id(productDemo) <- 'rubrova-demo-product';
+            dataName(productDemo) <- 'Producto de demostración Rubrova';
+            category(productDemo) <- rootCategory();
+            uom(productDemo) <- uom('1');
+            salesPrice(productDemo) <- 1250;
+        }
+
+    IF NOT itemBarCode('7790000000099') THEN
+        NEW barcodeDemo = BarCode {
+            id(barcodeDemo) <- '7790000000099';
+            item(barcodeDemo) <- item('rubrova-demo-product');
+        }
+}

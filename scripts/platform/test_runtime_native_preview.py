@@ -144,6 +144,57 @@ class NativePreviewTests(unittest.TestCase):
                 else:
                     native.os.environ["RUBROVA_CI_MOCK_PROVIDER_PORT"] = previous_port
 
+    def test_local_demo_fixture_is_added_to_temporary_runtime_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            logics_dir = Path(temporary)
+            entrypoint = logics_dir / "RubrovaCustom.lsf"
+            entrypoint.write_text(
+                "MODULE RubrovaCustom;\\n"
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;\\n",
+                encoding="utf-8",
+            )
+
+            native.ensure_local_demo_fixture(logics_dir)
+            native.ensure_local_demo_fixture(logics_dir)
+
+            updated_entrypoint = entrypoint.read_text(encoding="utf-8")
+            self.assertEqual(updated_entrypoint.count("RubrovaLocalDemoRetail"), 1)
+            self.assertEqual(updated_entrypoint.count("RubrovaLocalDemoInventory"), 1)
+            retail_fixture = (logics_dir / "RubrovaLocalDemoRetail.lsf").read_text(encoding="utf-8")
+            inventory_fixture = (logics_dir / "RubrovaLocalDemoInventory.lsf").read_text(encoding="utf-8")
+            self.assertIn("Caja de demostración Rubrova", retail_fixture)
+            self.assertIn("Producto de demostración Rubrova", retail_fixture)
+            self.assertIn("rubrova-demo", retail_fixture)
+            self.assertIn("Inventory.realQuantity(adjustmentLineDemo) <- 10", inventory_fixture)
+            self.assertIn("rubrova-demo-location", inventory_fixture)
+            self.assertNotIn("@@api", retail_fixture + inventory_fixture)
+            self.assertNotIn("rubrovaTest", retail_fixture + inventory_fixture)
+            self.assertNotIn("mock-provider", retail_fixture + inventory_fixture)
+
+    def test_demo_config_uses_an_isolated_database_and_distinct_ports(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config_path = root / "demo-runtime-config.json"
+            with patch.object(native, "user_data_root", return_value=root):
+                config = native.runtime_config.default_config()
+                config["local_runtime"]["java_home"] = "/example/jdk-21"
+                native.runtime_config.write_config(config_path, config)
+
+                native.initialize_demo_config(config_path)
+                result = native.load_config(config_path)
+
+            self.assertEqual(result["execution"]["target"], "native-local")
+            self.assertEqual(result["local_runtime"]["data_directory"], str(root / "demo-preview"))
+            self.assertEqual(result["local_runtime"]["ports"], {"postgres": 55433, "rmi": 17653, "web": 8081})
+            self.assertEqual(result["local_runtime"]["java_home"], "/example/jdk-21")
+
+    def test_demo_config_refuses_to_modify_the_normal_runtime_config(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            with patch.object(native, "user_data_root", return_value=root):
+                with self.assertRaisesRegex(native.RuntimeErrorRubrova, "demo-runtime-config.json separado"):
+                    native.initialize_demo_config(root / "runtime-config.json")
+
     def test_preexisting_postgres_is_never_stopped_by_preview_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary) / "postgres-data"

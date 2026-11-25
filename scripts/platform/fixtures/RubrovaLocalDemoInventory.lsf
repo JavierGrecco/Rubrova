@@ -1,0 +1,45 @@
+MODULE RubrovaLocalDemoInventory;
+REQUIRE MyCompany, RubrovaLocalDemoRetail;
+
+NAMESPACE Sales;
+
+rubrovaLocalDemoLocation() = GROUP MAX Inventory.Location l
+    IF Inventory.id(l) = 'rubrova-demo-location';
+rubrovaLocalDemoProduct() = GROUP MAX MasterData.Product p
+    IF MasterData.id(p) = 'rubrova-demo-product';
+rubrovaLocalDemoStockSeeded = DATA BOOLEAN ();
+
+loadDefaultData () + {
+    currency(priceType('retail')) <- MasterData.defaultCurrency();
+    priceType(Invoicing.invoiceType('retail')) <- priceType('retail');
+    Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency();
+
+    IF NOT rubrovaLocalDemoLocation() THEN
+        NEW locationDemo = Inventory.Location {
+            Inventory.id(locationDemo) <- 'rubrova-demo-location';
+            Inventory.name(locationDemo) <- 'Depósito de demostración Rubrova';
+            Inventory.company(locationDemo) <- MasterData.defaultCompany();
+        }
+
+    Inventory.positiveOnHand(rubrovaLocalDemoLocation()) <- TRUE;
+
+    IF NOT rubrovaLocalDemoStockSeeded() THEN {
+        NEW adjustmentDemo = Inventory.Adjustment {
+            Inventory.type(adjustmentDemo) <- Inventory.AdjustmentType.all;
+            Inventory.location(adjustmentDemo) <- rubrovaLocalDemoLocation();
+            Inventory.inProgress(adjustmentDemo) <- TRUE;
+
+            NEW adjustmentLineDemo = Inventory.AdjustmentLine {
+                Inventory.adjustment(adjustmentLineDemo) <- adjustmentDemo;
+                Inventory.product(adjustmentLineDemo) <- rubrovaLocalDemoProduct();
+                Inventory.location(adjustmentLineDemo) <- rubrovaLocalDemoLocation();
+                Inventory.realQuantity(adjustmentLineDemo) <- 10;
+            }
+
+            Inventory.done(adjustmentDemo) <- TRUE;
+        }
+        rubrovaLocalDemoStockSeeded() <- TRUE;
+    }
+
+    Retail.location(Retail.pos('rubrova-demo')) <- rubrovaLocalDemoLocation();
+}

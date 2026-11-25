@@ -391,6 +391,68 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     print("Fixtures efímeros de POS, caja e integraciones activados sólo para CI.")
     print(f"Proveedor HTTP de pruebas: 127.0.0.1:{mock_port}")
 
+
+
+def ensure_local_demo_fixture(logics_dir: Path) -> None:
+    """Add opt-in, persistent demo data to Rubrova's dedicated local preview runtime."""
+    modules = (
+        "RubrovaLocalDemoRetail.lsf",
+        "RubrovaLocalDemoInventory.lsf",
+    )
+    for filename in modules:
+        template = SCRIPT_DIR / "fixtures" / filename
+        if not template.is_file():
+            raise RuntimeErrorRubrova(f"No se encontró el módulo de demostración local: {template}")
+        shutil.copy2(template, logics_dir / filename)
+
+    entrypoint = logics_dir / "RubrovaCustom.lsf"
+    if not entrypoint.is_file():
+        raise RuntimeErrorRubrova(f"No se encontró el módulo de entrada Rubrova: {entrypoint}")
+    source = entrypoint.read_text(encoding="utf-8")
+    original_require = (
+        "REQUIRE MyCompany, RubrovaPOSLocalization, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals;"
+    )
+    demo_require = (
+        "REQUIRE MyCompany, RubrovaPOSLocalization, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, "
+        "RubrovaLocalDemoRetail, RubrovaLocalDemoInventory;"
+    )
+    if source.count(original_require) == 1:
+        entrypoint.write_text(source.replace(original_require, demo_require, 1), encoding="utf-8")
+    elif source.count(demo_require) != 1:
+        raise RuntimeErrorRubrova(
+            "No se encontró una única declaración REQUIRE compatible para activar la demostración local."
+        )
+
+    print("Datos de demostración Rubrova activados en la base local aislada.")
+    print("No se instalaron APIs de prueba ni simuladores de integraciones.")
+
+
+def initialize_demo_config(config_path: Path) -> None:
+    """Create/update only the dedicated demo config; never redirect the normal local database."""
+    config_path = config_path.expanduser()
+    expected_path = user_data_root() / "demo-runtime-config.json"
+    if config_path.resolve() != expected_path.resolve():
+        raise RuntimeErrorRubrova(
+            "La demostración requiere su archivo demo-runtime-config.json separado; "
+            "no se modificará la configuración normal de Rubrova."
+        )
+
+    config = load_config(config_path) if config_path.exists() else runtime_config.default_config()
+    if config["execution"]["target"] != "native-local":
+        raise RuntimeErrorRubrova(
+            "La configuración de demostración debe usar native-local. No se cambiará un destino remoto automáticamente."
+        )
+
+    local = config["local_runtime"]
+    local["data_directory"] = str(user_data_root() / "demo-preview")
+    local["ports"] = {"postgres": 55433, "rmi": 17653, "web": 8081}
+    runtime_config.write_config(config_path, config)
+    print(f"Configuración de demostración aislada: {config_path}")
+    print(f"Base de demostración separada: {local['data_directory']}")
+    print("Puertos exclusivos: PostgreSQL 55433, RMI 17653 y web 8081.")
+
 def prepare_tomcat_base(tomcat_home: Path, base: Path, war: Path, ports: dict[str, int]) -> None:
     base.mkdir(parents=True, exist_ok=True)
     if not (base / "conf" / "server.xml").is_file():
@@ -886,6 +948,8 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
     ensure_extension_files(logics_dir)
     if os.environ.get("RUBROVA_CI_SALES_FIXTURE", "false").lower() == "true":
         ensure_ci_sales_fixture(logics_dir)
+    elif os.environ.get("RUBROVA_LOCAL_DEMO_DATA", "false").lower() == "true":
+        ensure_local_demo_fixture(logics_dir)
     prepare_tomcat_base(tomcat_home, tomcat_base, artifacts["client"], ports)
 
     if port_is_open("127.0.0.1", ports["rmi"]):
@@ -1036,10 +1100,13 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("doctor", help="Comprobar Java, PostgreSQL, Tomcat y artefactos.")
     sub.add_parser("start", help="Iniciar PostgreSQL, el servidor Rubrova y el cliente web.")
+    sub.add_parser("init-demo", help="Preparar una configuración y una base separadas para la demostración local.")
     args = parser.parse_args()
 
     try:
-        if args.command == "doctor":
+        if args.command == "init-demo":
+            initialize_demo_config(args.config.expanduser())
+        elif args.command == "doctor":
             doctor(args.config.expanduser(), allow_tomcat_download=not args.offline)
         else:
             run_preview(

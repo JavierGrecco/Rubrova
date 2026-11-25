@@ -28,6 +28,8 @@ El comando de inicio abre el POS en `http://127.0.0.1:8080`; se detiene con Ctrl
 
 En macOS también podés hacer doble clic en `Iniciar Rubrova.command`, en la raíz del repositorio. Comprueba Java 21 y PostgreSQL 18, prepara la configuración, recompila si faltan artefactos o cambió la revisión, ejecuta el diagnóstico y abre el POS en el navegador. No instala dependencias del sistema por su cuenta; la primera preparación puede necesitar Maven e Internet para Tomcat.
 
+Para abrir una **demostración con una caja, un artículo y 10 unidades de stock**, usá `Iniciar Rubrova - Demo.command`. Este modo tiene una base de datos, una configuración y puertos separados del runtime normal; no agrega datos de muestra a tu base principal y no incorpora endpoints ni simuladores de CI. La venta de muestra es persistente dentro de esa base de demostración.
+
 En el último push verificado (CI `45558057837`, commit `e979e15aece4befa6c6c253e1ca463b345396fe5`), el recorrido funcional nativo pasó tanto en macOS ARM64 como en Linux x86_64 sin Docker: apertura de turno, venta sintética de ARS 1.250, pago en efectivo, factura/pago, stock (10 → 9), cierre y pruebas de fallos/recuperación de integraciones con la salida externa bloqueada. El diagnóstico Docker/Linux separado no obtuvo respuesta HTTP (estado `000`) durante 900 segundos, aunque el servidor inicializó sus 717 módulos y Tomcat desplegó `ROOT.war`; queda no bloqueante para el runtime nativo y abierto para investigación. Estos resultados provienen de runners de CI, no de una instalación en tu Mac ni de un instalador listo para producción.
 
 ## Qué estamos construyendo

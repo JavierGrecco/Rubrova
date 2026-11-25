@@ -42,6 +42,8 @@ No se necesita Docker Desktop ni Docker Compose para esta modalidad. Tampoco se 
 
 **Inicio sencillo:** desde Finder, hacé doble clic en `Iniciar Rubrova.command`, en la raíz del repositorio. El acceso directo verifica que Java 21 y PostgreSQL 18 coincidan con la arquitectura del Mac, detecta si hay que reconstruir los artefactos de la revisión actual, prepara la configuración local, ejecuta `doctor` e inicia el supervisor nativo. Abre el navegador cuando el cliente web está listo. No instala paquetes del sistema ni usa Docker. Si faltan Java o PostgreSQL, muestra el requisito que hay que instalar; la primera compilación necesita Maven y puede descargar dependencias, y Tomcat puede necesitar una descarga inicial.
 
+**Demostración aislada:** hacé doble clic en `Iniciar Rubrova - Demo.command`. Prepara `demo-runtime-config.json`, usa la carpeta de datos `demo-preview` y los puertos 55433/17653/8081. En esa base separada agrega una caja, un artículo de muestra y un stock inicial de 10 unidades, con identificadores `rubrova-demo`. No toca la base normal ni activa los fixtures de aceptación de CI. Las ventas realizadas en esta demostración se conservan en esa base de demostración.
+
 También se puede hacer todo manualmente:
 
 Desde la raíz del repositorio, confirmar la arquitectura:
