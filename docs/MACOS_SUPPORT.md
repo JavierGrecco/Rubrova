@@ -124,6 +124,59 @@ En GitHub Actions, el diagnóstico Docker/Linux se ejecuta automáticamente en c
 
 Una Mac también puede utilizarse como puesto cliente si el servidor se encuentra en otro equipo de la LAN. El navegador accede a la URL del anfitrión; el acceso debe limitarse a la red privada, con contraseñas cambiadas y firewall configurado. La aceptación final debe comprobar Safari/Chrome, lector, impresora, cajón, balanza y terminal que realmente vayamos a utilizar.
 
+## Prueba local de esta revisión en Apple Silicon
+
+Para probar esta rama del PR en tu MacBook Air, primero actualizá el clon sin perder cambios locales. Desde la raíz del repositorio:
+
+```bash
+git status --short
+git fetch origin feat/mycompany-readonly-replenishment-api
+git switch feat/mycompany-readonly-replenishment-api 2>/dev/null || \
+  git switch --track -c feat/mycompany-readonly-replenishment-api origin/feat/mycompany-readonly-replenishment-api
+git pull --ff-only
+```
+
+Comprobá que el equipo y la JVM sean ARM64 y Java 21:
+
+```bash
+uname -m
+export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+export PATH="$JAVA_HOME/bin:$PATH"
+java -version
+mvn -version
+python3 --version
+```
+
+El supervisor necesita las herramientas de PostgreSQL 18. Si usás Homebrew y todavía no las instalaste:
+
+```bash
+brew list --versions postgresql@18 >/dev/null 2>&1 || brew install postgresql@18
+export RUBROVA_POSTGRES_BIN="$(brew --prefix postgresql@18)/bin"
+"$RUBROVA_POSTGRES_BIN/pg_ctl" --version
+```
+
+Con Postgres.app, en lugar de la ruta de Homebrew, usá:
+
+```bash
+export RUBROVA_POSTGRES_BIN="/Applications/Postgres.app/Contents/Versions/18/bin"
+```
+
+Antes de abrir el POS, ejecutar el diagnóstico:
+
+```bash
+python3 scripts/platform/run-local-native-preview.py doctor
+```
+
+Si el diagnóstico no informa bloqueos, iniciar la vista previa:
+
+```bash
+bash "Iniciar Rubrova.command"
+```
+
+El supervisor compila cuando los artefactos no corresponden al commit actual, prepara el clúster privado, verifica Tomcat 9.0.124 y abre el cliente en `http://127.0.0.1:8080/login`. La primera preparación puede descargar Tomcat y dependencias Maven. Cerrá el proceso con Ctrl+C; la base de datos de desarrollo se conserva para el próximo inicio.
+
+**Alcance de esta primera prueba:** validar arranque, login, persistencia entre reinicios, apertura de turno, alta/consulta de artículos y el circuito de venta de muestra cuando el modo Demo aislado esté habilitado. No cargar datos comerciales reales ni exponer el servidor a la LAN. La base local de desarrollo usa autenticación `trust` restringida a loopback; no es una configuración productiva.
+
 ## Qué falta antes de declarar compatibilidad completa
 
 1. Repetir en tu Mac Apple Silicon el recorrido que ya pasó en CI, con Java 21 ARM64 y PostgreSQL 18 ARM64; verificar persistencia y logs locales.
