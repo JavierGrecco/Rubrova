@@ -139,11 +139,16 @@ fi
   echo "Definí RUBROVA_PLAYWRIGHT_PYTHON con el intérprete que tiene Playwright y Chromium instalados." >&2
   exit 2
 }
+UI_LOG_FILE="$WORK_DIR/ui-smoke.log"
 RUBROVA_UI_SCREENSHOT="$SCREENSHOT" \
 RUBROVA_UI_TEST_LOGIN=true \
 RUBROVA_UI_TEST_USERNAME=admin \
 RUBROVA_UI_STOP_AFTER_LOGIN=true \
-"$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
+"$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL" | tee "$UI_LOG_FILE"
+grep -Fq "UI_LOGIN_AND_LOCAL_NAVIGATION_VERIFIED=true" "$UI_LOG_FILE" || {
+  echo "El smoke visual no confirmó el acceso y la carga del menú." >&2
+  exit 1
+}
 [[ -s "$SCREENSHOT" ]] || {
   echo "La inspección local no generó la captura de interfaz esperada: $SCREENSHOT" >&2
   exit 1
