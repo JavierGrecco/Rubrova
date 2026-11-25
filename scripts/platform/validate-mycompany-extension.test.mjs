@@ -1120,7 +1120,9 @@ test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no conc
   ]) {
     assert.ok(replenishmentBridgeSource.includes(fragment), "El puente debe validar " + fragment);
   }
-  assert.doesNotMatch(replenishmentBridgeSource, /psycopg|psycopg2|sqlalchemy|requests\\.|urllib\\./i);
+  for (const forbidden of ["psycopg", "psycopg2", "sqlalchemy", "requests.", "urllib."]) {
+    assert.equal(replenishmentBridgeSource.includes(forbidden), false, "El puente no debe conectarse directamente a bases o servicios externos.");
+  }
   assert.ok(replenishmentBridgeTestsSource.includes("test_unmodeled_planned_reservations_block_planning_even_when_available_matches"));
   assert.ok(replenishmentBridgeTestsSource.includes("test_unrepresented_negative_reservations_block_planning"));
   assert.ok(replenishmentBridgeTestsSource.includes("test_quantities_with_more_than_three_decimals_are_rejected_not_rounded"));
