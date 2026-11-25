@@ -998,6 +998,10 @@ test("el modelo de terminales se carga desde el punto de entrada y el lock", () 
   assert.ok(paymentTerminalSource.includes("attemptNeedsReconciliation"));
   assert.ok(paymentTerminalSource.includes("providerEventSignatureVerified"));
   assert.ok(paymentTerminalSource.includes("settlementNetAmount"));
+  assert.match(paymentTerminalSource, /NEW FOLDER paymentConfiguration 'Configuración de pagos'/);
+  assert.match(paymentTerminalSource, /NEW FOLDER paymentOperations 'Operaciones de pago'/);
+  assert.doesNotMatch(paymentTerminalSource, /^\\s*(settings|operations)\\s*\\{/m);
+
 });
 
 test("el módulo de terminales no contiene credenciales ni datos sensibles de tarjeta", () => {

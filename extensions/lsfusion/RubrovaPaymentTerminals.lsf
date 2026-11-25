@@ -251,12 +251,12 @@ FORM rubrovaPaymentSettlements 'Liquidaciones de proveedores'
 ;
 
 NAVIGATOR {
-    settings {
+    NEW FOLDER paymentConfiguration 'Configuración de pagos' {
         NEW rubrovaPaymentProviderAccounts;
         NEW rubrovaPaymentTerminals;
         NEW rubrovaPaymentTerminalAssignments;
     }
-    operations {
+    NEW FOLDER paymentOperations 'Operaciones de pago' {
         NEW rubrovaPaymentIntents;
         NEW rubrovaPaymentAttempts;
         NEW rubrovaPaymentRefunds;

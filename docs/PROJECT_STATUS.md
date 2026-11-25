@@ -2,7 +2,7 @@
 
 **Corte:** 24 de noviembre de 2026  
 **Rama:** `main`  
-**Última comprobación de plataforma anterior a este cambio:** [CI 45521425830](https://github.com/JavierGrecco/Rubrova/actions/runs/45521425830). Validación estática, compilación y Windows pasaron; el smoke nativo falla porque Tomcat devuelve 404 también en `/login`. El inicio de lsFusion y la carga de lógica sí terminan. La causa del 404 sigue abierta. 
+**Última comprobación de plataforma antes del arreglo de navegación:** [CI 45535887947](https://github.com/JavierGrecco/Rubrova/actions/runs/45535887947). Validación estática, compilación y Windows pasaron; el smoke nativo descubrió que `RubrovaPaymentTerminals.lsf` declaraba grupos `settings` y `operations` sin identificadores nuevos, ambiguos frente a los grupos de MyCompany. lsFusion se detuvo al cargar el módulo y el cliente web no llegó a iniciar. Este error sustituye al diagnóstico anterior de HTTP 404; primero debe corregirse y repetirse el arranque. 
 **Última aceptación funcional completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218)  
 **Commit funcional aceptado:** `e23acfc7bb3387ebd184b1aeed9e80c8994593c5`  
 **Transición a runtime nativo:** Linux x86_64 ya tiene el smoke nativo; esta revisión incorpora también un smoke automático en macOS ARM64 usando `macos-26` y PostgreSQL 18 ARM64. La primera ejecución de ese nuevo job todavía debe aportar evidencia. No hay todavía un resultado de venta nativa ni una aceptación de uso diario en Mac/Windows.
