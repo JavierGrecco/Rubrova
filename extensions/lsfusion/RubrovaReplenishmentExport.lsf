@@ -83,6 +83,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                 AND Sales.location(Sales.order(ol))
                 AND Sales.shippedProduct(ol) IS MasterData.Product
             ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
+        ),
         receipts = (JSON FROM
             lineId = CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', BPSTRING[10](Inventory.index(Inventory.line(rr))),
             receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
