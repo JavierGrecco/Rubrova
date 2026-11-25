@@ -12,6 +12,7 @@ const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
 const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
 const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
+const replenishmentExportSource = read("extensions/lsfusion/RubrovaReplenishmentExport.lsf");
 const paymentArchitectureSource = read("docs/PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
@@ -509,7 +510,7 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
-  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
@@ -1039,13 +1040,39 @@ test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () =
 });
 
 
+test("la API nativa de reposición sólo exporta hechos MyCompany y conserva magnitudes distintas", () => {
+  assert.match(replenishmentExportSource, /^MODULE RubrovaReplenishmentExport;/m);
+  assert.match(replenishmentExportSource, /^REQUIRE MyCompany;/m);
+  assert.match(replenishmentExportSource, /rubrovaExportReplenishmentSource/);
+  assert.match(replenishmentExportSource, /} @@api;/);
+  for (const field of [
+    "Inventory.onHand(l, p)",
+    "Inventory.available(l, p)",
+    "Inventory.planned(l, p)",
+    "Sales.toShip(ol)",
+    "Inventory.ShipmentResLedger",
+    "Inventory.ReceiptResLedger",
+    "Inventory.increaseAvailableStock"
+  ]) {
+    assert.ok(replenishmentExportSource.includes(field), "La extracción debe incluir " + field);
+  }
+  assert.doesNotMatch(replenishmentExportSource, /fillAuto\\s*\\(/);
+  assert.doesNotMatch(replenishmentExportSource, /NEW\\s+\\w+\\s*=|DELETE\\s+/);
+  assert.match(replenishmentExportSource, /snapshotType = 'mycompany-replenishment-source-export'/);
+  assert.match(replenishmentExportSource, /quantityPrecision = 3/);
+});
+
 test("el modelo de terminales se carga desde el punto de entrada y el lock", () => {
   assert.ok(entrypointSource.includes("RubrovaPaymentTerminals"));
+  assert.ok(entrypointSource.includes("RubrovaReplenishmentExport"));
   const terminalModule = lock.extension.modules.find((item) => item.name === "RubrovaPaymentTerminals");
   assert.ok(terminalModule, "El módulo debe estar incluido en el lock reproducible.");
   const customModule = lock.extension.modules.find((item) => item.name === "RubrovaCustom");
   assert.ok(customModule.requires.includes("RubrovaIntegrationResilience"));
   assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
+  const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
+  assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
+  assert.ok(customModule.requires.includes("RubrovaReplenishmentExport"));
   assert.ok(terminalModule.requires.includes("RubrovaIntegrationResilience"));
   for (const entity of [
     "PaymentProviderAccount",
@@ -1086,12 +1113,18 @@ test("el módulo de terminales no contiene credenciales ni datos sensibles de ta
 
 test("la configuración de terminales se despliega en todas las rutas de ejecución", () => {
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(nativePreviewSource.includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaPaymentTerminals.lsf"));
-  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 5))"));
-  assert.ok(runtimeSmokeSource.includes("4 módulos propios de Rubrova + 1 fixture temporal de CI"));
+  assert.ok(runtimeSmokeSource.includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 6))"));
+  assert.ok(runtimeSmokeSource.includes("5 módulos propios de Rubrova + 1 fixture temporal de CI"));
   assert.ok(deploySmokeSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(deploySmokeSource.includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(deploySmokeSource.includes("replenishment_export_backup_count"));
   assert.ok(deploySmokeSource.includes("payment_terminal_backup_count"));
 });
 
