@@ -11,9 +11,9 @@ El camino previsto para macOS es nativo:
 - PostgreSQL 18 se ejecuta como proceso nativo y conserva los datos en una carpeta privada de Rubrova.
 - Apache Tomcat 9.0.124 sirve el WAR del cliente web desde `127.0.0.1`.
 - Python 3 supervisa el arranque, comprueba los procesos/puertos y los detiene sin borrar la base.
-- Docker no es requisito para el runtime nativo local en macOS. En CI, el smoke Docker/Linux sí es una validación automática obligatoria de empaquetado y despliegue.
+- Docker no es requisito para el runtime nativo local en macOS. En CI, la aceptación nativa macOS ARM64 es obligatoria; el smoke Docker/Linux se conserva como diagnóstico suplementario no bloqueante de empaquetado y despliegue.
 
-El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. Además, el smoke CI `45548326798` completó en `macos-26` ARM64 el recorrido sintético de abrir turno, vender, cobrar, conciliar stock y cerrar caja. Confirma el runtime nativo en un runner Apple Silicon, pero no sustituye la prueba en tu Mac ni es un instalador final.
+El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. En el run CI `45558057837`, el smoke completó en `macos-26` ARM64 el ciclo de abrir turno, vender, cobrar, conciliar stock, cerrar caja y simular fallos de integraciones con salida externa bloqueada. Confirma el runtime nativo en un runner Apple Silicon, pero no sustituye la prueba en tu Mac ni es un instalador final.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -101,18 +101,18 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 La CI ejecuta tres verificaciones de runtime distintas, a partir de los artefactos compilados desde la misma revisión:
 
 - **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45548326798` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración.
-- **Docker/Linux (obligatorio):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. Verifica el recorrido comercial y el empaquetado de imágenes Rubrova; ya no requiere activar un input manual.
-- **Linux x86_64 nativo (diagnóstico no bloqueante):** inicia Java, PostgreSQL y Tomcat, bloquea la salida externa y captura logs/capturas. En la última ejecución el navegador llegó a `PosDashboard` pero la pantalla quedó cargando; el origen de esa diferencia sigue en investigación y no bloquea el avance del runtime Mac/Docker.
+- **Docker/Linux (diagnóstico no bloqueante):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. En `45558057837` el cliente no respondió HTTP (`000`) durante 900 segundos, aunque el servidor cargó los 717 módulos y Tomcat desplegó la aplicación. El fallo se conserva para investigación y no bloquea el runtime nativo.
+- **Linux x86_64 nativo (smoke complementario):** en `45558057837` inició Java, PostgreSQL y Tomcat, bloqueó la salida externa y completó el mismo ciclo POS: turno, venta, cobro, stock, cierre y pruebas de integración. No se necesita Docker para este recorrido.
 
 El smoke macOS exitoso no bloqueó toda la salida externa, por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. La verificación Linux nativa bajo bloqueo de salida todavía no completa el render del POS. No se debe confundir ninguna de estas pruebas con una instalación offline lista para una PC limpia.
 
-La aceptación funcional Docker histórica `45503956218` y la aceptación nativa macOS `45548326798` son evidencias separadas. Ambas cubren venta por ARS 1.250, factura/pago, stock y cierre básico; faltan los restantes circuitos comerciales y la prueba de Docker bajo el nuevo job automático.
+La aceptación Docker histórica `45503956218` y la aceptación nativa macOS/Linux del run `45558057837` son evidencias separadas. Todas cubren venta por ARS 1.250, factura/pago, stock y cierre básico; faltan los restantes circuitos comerciales y la prueba de Docker bajo el nuevo diagnóstico.
 
 ## Ruta Docker para empaquetado y validación CI
 
 La vista previa `scripts/platform/run-local-preview-macos.sh` mantiene una opción Docker para reproducir el empaquetado localmente. Requiere Docker Desktop, Docker Compose 2.24.4 o superior y los artefactos compilados en `vendor/platform/server/target`, `vendor/mycompany/target` y `vendor/platform/web-client/target`. En Apple Silicon, el contenedor de lógica AMD64 se ejecuta por emulación; para desarrollar localmente se prioriza el runtime nativo descrito en esta guía.
 
-En GitHub Actions, el smoke Docker/Linux ya se ejecuta automáticamente en cada push o pull request que activa el workflow. La prueba usa PostgreSQL y un simulador HTTP dentro de una red interna sin salida externa. Los escenarios HTTP se ejecutan contra el simulador local; no se necesita Toxiproxy como proxy de paso.
+En GitHub Actions, el diagnóstico Docker/Linux se ejecuta automáticamente en cada push o pull request que activa el workflow, pero su fallo no bloquea la aceptación nativa. La prueba usa PostgreSQL y un simulador HTTP dentro de una red interna sin salida externa. Los escenarios HTTP se ejecutan contra el simulador local; no se necesita Toxiproxy como proxy de paso.
 
 ## Usar una MacBook como equipo cliente
 
@@ -121,7 +121,7 @@ Una Mac también puede utilizarse como puesto cliente si el servidor se encuentr
 ## Qué falta antes de declarar compatibilidad completa
 
 1. Repetir en tu Mac Apple Silicon el recorrido que ya pasó en CI, con Java 21 ARM64 y PostgreSQL 18 ARM64; verificar persistencia y logs locales.
-2. Confirmar que la aceptación Docker/Linux automática pase con el nuevo workflow y conservar sus artefactos.
+2. Investigar el HTTP `000` del cliente en Docker/Linux y conservar sus logs/capturas sin bloquear el runtime nativo.
 3. Investigar por separado el smoke Linux nativo: `PosDashboard` queda cargando cuando se bloquea la salida externa; revisar la dependencia de navegador que solicita `marked.min.js` y el error de registro del service worker sin asumir que ya son la causa.
 4. Repetir la aceptación en Windows x64, incluida la gestión de procesos y rutas.
 5. Empaquetar e instalar en una PC limpia sin Internet; verificar firma, permisos, secretos, actualizaciones y backup/restore.

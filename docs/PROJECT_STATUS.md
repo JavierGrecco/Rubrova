@@ -2,15 +2,15 @@
 
 **Corte:** 25 de noviembre de 2026  
 **Rama:** `main`  
-**Última aceptación comercial nativa:** [CI 45548326798](https://github.com/JavierGrecco/Rubrova/actions/runs/45548326798), commit `1f560fbce43d3f9c6512ed2654728cd6250dbe89`. El job macOS ARM64 completó login, apertura de turno, venta en efectivo, factura/pago, conciliación de stock, cierre de turno/caja e incidencia de integración. El job Linux nativo inició el servidor, pero Chromium dejó `PosDashboard` cargando; queda como diagnóstico no bloqueante.  
+**Última aceptación funcional nativa:** [CI 45558057837](https://github.com/JavierGrecco/Rubrova/actions/runs/45558057837), commit `e979e15aece4befa6c6c253e1ca463b345396fe5`. Los jobs macOS ARM64 y Linux x86_64 sin Docker completaron login, apertura de turno, venta en efectivo, factura/pago, conciliación de stock, cierre e incidencias de integración con la salida externa bloqueada. El job Docker/Linux falló antes de la UI: el cliente devolvió HTTP `000` durante 900 segundos, aunque los 717 módulos cargaron y Tomcat desplegó `ROOT.war`.
 **Última aceptación funcional Docker completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218).  
-**Estado:** la nueva política de CI hace obligatoria la aceptación Docker/Linux y conserva macOS nativo como puerta obligatoria; el nuevo run [45553489598](https://github.com/JavierGrecco/Rubrova/actions/runs/45553489598) está en curso al momento de este corte. No hay aceptación en un Mac físico ni autorización para uso diario.
+**Estado:** la aceptación nativa macOS ARM64 es la puerta obligatoria. Linux nativo y Docker/Linux son diagnósticos suplementarios no bloqueantes; el primero pasó y el segundo requiere investigar el acceso HTTP del cliente. No hay aceptación todavía en un Mac físico ni autorización para uso diario.
 
 ## Resumen ejecutivo
 
-Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany desde las fuentes propias. El desarrollo local prioriza el runtime nativo (Java 21, PostgreSQL 18 y Tomcat 9), especialmente en macOS. CI exige tanto la aceptación nativa macOS ARM64 como la aceptación funcional Docker/Linux; Linux nativo sin Docker queda como diagnóstico no bloqueante.
+Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany desde las fuentes propias. El desarrollo local prioriza el runtime nativo (Java 21, PostgreSQL 18 y Tomcat 9), especialmente en macOS. CI exige la aceptación nativa macOS ARM64; Linux nativo y Docker/Linux se ejecutan como diagnósticos suplementarios no bloqueantes.
 
-La aceptación Docker [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) completó con Chromium una venta sintética de ARS 1.250, factura/pago, stock reducido de 10 a 9, caja conciliada y turno `CLOSED`; también comprobó reinicio y escenarios HTTP simulados. Después, la aceptación nativa macOS ARM64 [45548326798](https://github.com/JavierGrecco/Rubrova/actions/runs/45548326798) completó venta, pago, stock y cierre en el runner Apple Silicon. La segunda evidencia confirma el runtime nativo, pero no reemplaza la prueba en un Mac de usuario. El nuevo job Docker/Linux automático debe confirmar otra vez el empaquetado y el ciclo POS.
+La aceptación Docker histórica [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) completó una venta sintética de ARS 1.250, factura/pago, stock 10 → 9, caja `CLOSED`, reinicio y escenarios HTTP simulados. En el último push [45558057837](https://github.com/JavierGrecco/Rubrova/actions/runs/45558057837), tanto macOS ARM64 como Linux x86_64 nativo sin Docker repitieron el recorrido POS completo y las pruebas de fallos/recuperación con salida externa bloqueada. La nueva prueba Docker/Linux no alcanzó la interfaz: el chequeo HTTP devolvió `000` durante 900 segundos después de la inicialización de los módulos y del despliegue de Tomcat. Se mantiene como diagnóstico no bloqueante. Ninguna de estas ejecuciones reemplaza la prueba en un Mac de usuario.
 
 Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de CI que se destruye al terminar. Esta aprobación demuestra el primer recorrido venta → cobro → stock → cierre básico; no habilita aún el uso diario ni significa que el POS/ERP esté terminado.
 
@@ -20,9 +20,9 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 |---|---|---|
 | Fuentes originales lsFusion 6.2 + MyCompany 6.2 | Aprobado | Snapshots fijados en el lock y completos en `vendor/` |
 | Compilación del fork Rubrova | Aprobado en CI | Reactor Maven, servidor, cliente GWT y lógica MyCompany compilados desde fuentes propias |
-| Imágenes propias del runtime Docker | Construcción previa aprobada; nueva aceptación obligatoria en CI | Artefactos compilados desde fuentes Rubrova e incorporados a imágenes propias; el job Docker/Linux ahora es automático y obligatorio |
-| Arranque, RMI y cliente web | Aprobado en macOS ARM64 CI y Docker histórico | En `45548326798` macOS inició PostgreSQL, servidor, RMI, Tomcat y cliente web; el diagnóstico Linux nativo es la única ruta que no renderizó el POS |
-| Login y navegación al POS | Aprobado en macOS ARM64 CI y Docker histórico | Chromium llegó a Comercio → Punto de venta y el POS abrió turno en el runtime nativo macOS; Linux nativo separado queda en diagnóstico |
+| Imágenes propias del runtime Docker | Construcción aprobada; aceptación de ejecución pendiente | Los artefactos compilados desde fuentes Rubrova se incorporan a imágenes propias; el diagnóstico Docker/Linux del último push no alcanzó HTTP del cliente y no bloquea el runtime nativo |
+| Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45558057837`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux actualizó servidor y desplegó Tomcat, pero el acceso HTTP desde el runner quedó en `000` |
+| Login y navegación al POS | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | Chromium abrió Comercio → Punto de venta y ejecutó el recorrido de venta tanto en macOS ARM64 como en Linux x86_64 sin Docker |
 | Apertura de turno | Aprobado en Docker y macOS ARM64 CI | Turno sintético `SM/000001` en Docker y turno de prueba de Rubrova en macOS nativo |
 | Búsqueda y selección de artículo | Aprobado en Docker y macOS ARM64 CI | Un producto sintético; línea de recibo, cantidad 1 y precio ARS 1.250 |
 | Confirmación del cobro en efectivo | Aprobado en Docker y macOS ARM64 CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |
@@ -41,7 +41,7 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
 | Runtime durante una caída de Internet | No aceptado | Linux nativo bloquea la salida externa, pero el navegador queda cargando en `PosDashboard`; macOS nativo pasó el recorrido comercial con conectividad normal, no una prueba offline. Investigar dependencias de navegador antes de aprobar este escenario |
 | Instalación inicial y paquete completo sin Internet | Pendiente | La prueba de runtime aislado no demuestra todavía que el instalador, los artefactos, las imágenes base y las dependencias puedan instalarse en una PC limpia sin conexión |
-| Ejecución local nativa sin Docker | Aceptación comercial básica en macOS ARM64 CI; prueba en equipo real pendiente | Supervisor Python, instancia PostgreSQL propia, servidor `BusinessLogicsBootstrap` y cliente Tomcat. El recorrido de venta, pago, stock y cierre pasó en el runner Apple Silicon; falta repetir en un Mac de usuario y ampliar la cobertura. Linux nativo es un diagnóstico no bloqueante |
+| Ejecución local nativa sin Docker | Aceptación comercial básica en macOS ARM64 y Linux x86_64 CI; prueba en equipo real pendiente | Supervisor Python, instancia PostgreSQL propia, servidor `BusinessLogicsBootstrap` y cliente Tomcat. El recorrido de venta, pago, stock, cierre y fallos de integración pasó en ambos runners nativos; falta repetir en tu Mac y ampliar la cobertura |
 | Configuración siempre disponible | En desarrollo inicial | Existe el esquema y el gestor CLI para `native-local`, `docker-local` y `remote-online`; falta el panel visual independiente y su integración con la administración del POS |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
 | Windows y macOS ARM64 | Parcial | macOS ARM64: venta y cierre básicos aprobados en runner `macos-26`; prueba en Mac físico y periféricos pendientes. Windows: sólo validación sintáctica hasta ahora; falta runtime y aceptación funcional |
@@ -77,7 +77,7 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 
 ## Próximo orden de implementación
 
-1. **Confirmar Docker/Linux en la nueva CI:** exigir que el job automático complete la venta sintética, pagos, stock, caja, cierre y pruebas de integraciones con las imágenes Rubrova.
+1. **Investigar Docker/Linux sin detener el camino nativo:** reproducir el HTTP `000` del cliente después de que Tomcat inicia y los módulos se cargan. Mantener el job como diagnóstico visible, no como requisito para probar Rubrova localmente en macOS.
 2. **Verificar el runtime nativo en el Mac de usuario:** repetir el recorrido que ya pasó en CI con PostgreSQL 18 y Java 21 ARM64, revisar persistencia, logs y estabilidad.
 3. **Completar la cobertura del POS:** arqueo contado, diferencias, ingresos/retiros, vuelto, pagos mixtos, tarjeta, devoluciones y cancelaciones.
 4. **Investigar Linux nativo sin bloquear el producto:** reproducir el `PosDashboard` que queda cargando bajo bloqueo de salida externa y localizar la dependencia de navegador; no cambiar reglas comerciales para compensar el entorno CI.
@@ -86,7 +86,7 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 7. **ERP y localización:** continuar compras, inventario, proveedores, reportes y experiencia visual sobre módulos originales, adaptando con extensiones propias.
 8. **Fiscalidad e integraciones externas:** ARCA, medios electrónicos, marketplaces y logística sólo después de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación probadas.
 
-La evidencia `45503956218` demuestra el recorrido comercial básico en Docker y `45548326798` demuestra ese recorrido en el runtime nativo macOS ARM64 de CI. Ninguna de las dos ejecuciones declara terminado el producto ni autoriza producción. La aceptación completa requiere devoluciones y reintegros conciliados, arqueo y movimientos de caja, vuelto, pagos mixtos/tarjeta, persistencia tras reiniciar el runtime nativo, restauración desde backup y comportamiento seguro ante fallos externos.
+La evidencia `45503956218` demuestra el recorrido comercial básico en Docker histórico; `45558057837` demuestra que macOS ARM64 y Linux nativo sin Docker completan ese recorrido, incluso con salida externa bloqueada. Ninguna ejecución declara terminado el producto ni autoriza producción.
 
 ## Política transversal de errores
 
