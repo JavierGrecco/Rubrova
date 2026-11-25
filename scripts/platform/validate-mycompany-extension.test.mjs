@@ -1087,12 +1087,12 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.doesNotMatch(replenishmentExportSource, /<>/);
-  assert.doesNotMatch(replenishmentExportSource, /(?:Sales|Purchase)\\.id\\(/);
-  assert.doesNotMatch(replenishmentExportSource, /Inventory\\.id\\(Inventory\\.line\\(/);
-  assert.doesNotMatch(replenishmentExportSource, /LONG\\((?:ol|Sales\\.order|Inventory\\.line|Inventory\\.receipt|Purchase\\.order|Purchase\\.orderLine)/);
-  assert.match(replenishmentExportSource, /outgoingIdentity = 'Sales\\.number\\(Order\\) \\+ Sales\\.index\\(OrderLine\\)'/);
-  assert.match(replenishmentExportSource, /incomingIdentity = 'Receipt\\.number \\+ ReceiptLine\\.index'/);
-  assert.match(replenishmentExportSource, /expectedReservationSigned = Inventory\\.reserved\\(rr\\)/);
+  assert.doesNotMatch(replenishmentExportSource, /(?:Sales|Purchase)\.id\(/);
+  assert.doesNotMatch(replenishmentExportSource, /Inventory\.id\(Inventory\.line\(/);
+  assert.doesNotMatch(replenishmentExportSource, /LONG\((?:ol|Sales\.order|Inventory\.line|Inventory\.receipt|Purchase\.order|Purchase\.orderLine)/);
+  assert.match(replenishmentExportSource, /outgoingIdentity = 'Sales\.number\(Order\) \+ Sales\.index\(OrderLine\)'/);
+  assert.match(replenishmentExportSource, /incomingIdentity = 'Receipt\.number \+ ReceiptLine\.index'/);
+  assert.match(replenishmentExportSource, /expectedReservationSigned = Inventory\.reserved\(rr\)/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) != 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
