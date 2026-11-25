@@ -221,6 +221,18 @@
             "status": "cancelled",
             "dueDate": "2026-11-26",
             "quantityMilli": 3000
+          },
+          {
+            "id": "oc-ya-recibida-006",
+            "status": "received",
+            "dueDate": "2026-11-25",
+            "quantityMilli": 1000
+          },
+          {
+            "id": "oc-fuera-de-horizonte-006",
+            "status": "confirmed",
+            "dueDate": "2026-12-10",
+            "quantityMilli": 7000
           }
         ]
       }
