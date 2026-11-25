@@ -10,7 +10,7 @@ Rubrova es una plataforma de gestión comercial en desarrollo. Busca reunir la o
 >
 > Rubrova está en etapa de piloto integrado POS + ERP. El código fuente de lsFusion 6.2 y MyCompany 6.2 está fijado dentro del repositorio y la compilación propia de servidor, cliente GWT y lógica está probada en CI. Un ciclo POS básico con datos sintéticos fue aceptado anteriormente. La integración nueva de exportación nativa de reposición es de solo lectura y continúa en validación: el servidor ya arranca y permite autenticarse en CI, pero la llamada de exportación todavía presentó un error de ejecución “Set operation is incorrect”. **No es una versión productiva ni está aprobada para operar con datos comerciales reales.**
 >
-> Seguimiento: [PR #8 — exportación nativa MyCompany](https://github.com/JavierGrecco/Rubrova/pull/8) · [diagnóstico de runtime](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
+> Seguimiento: [PR #8 — exportación nativa MyCompany](https://github.com/JavierGrecco/Rubrova/pull/8) · [último diagnóstico completado](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) · [revalidación en curso](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
 
 ## Propuesta de producto
 
