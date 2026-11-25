@@ -9,10 +9,7 @@ onWebClientInit() + {
     onWebClientInit(r'markdownviewer.js') <- 2;
 }
 
-onWebClientLoad() + {
-    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
-    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked-gfm-heading-id/lib/index.umd.js';
-}
+
 
 markdown = DATA LOCAL TEXT();
 imageData = DATA LOCAL TEXT(STRING);
@@ -97,6 +94,9 @@ EXTEND FORM markdownResourceViewer
 ;
 
 showMarkdownResourceViewer(STRING caption, STRING file) {
+    // Markdown is only needed when a user opens Documentation, never to start POS.
+    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked@18.3.0/lib/marked.umd.js';
+    INTERNAL CLIENT WAIT r'https://cdn.jsdelivr.net/npm/marked-gfm-heading-id@4.1.4/lib/index.umd.js';
     NEWSESSION {
         SHOW markdownResourceViewer OBJECTS c = caption, f = file DOCKED NOWAIT;
     }
