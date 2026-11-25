@@ -144,9 +144,17 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
     def test_zero_open_sales_order_line_is_ignored_as_fully_shipped(self) -> None:
         snapshot = copy.deepcopy(self.snapshot)
         snapshot["outgoingCommitments"][0]["openQuantityMilli"] = 0
+        snapshot["outgoingCommitments"][0]["lineReservedMilli"] = 0
         report = adapt_snapshot(snapshot)
         cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
         self.assertEqual(cola["result"]["firmOutgoingInHorizonMilli"], 0)
+
+
+    def test_fully_shipped_order_line_cannot_keep_an_effective_reservation(self) -> None:
+        snapshot = copy.deepcopy(self.snapshot)
+        snapshot["outgoingCommitments"][0]["openQuantityMilli"] = 0
+        with self.assertRaisesRegex(ValueError, "no puede superar openQuantityMilli"):
+            adapt_snapshot(snapshot)
 
     def test_unknown_native_commitment_or_receipt_status_is_rejected(self) -> None:
         shipment = copy.deepcopy(self.snapshot)
