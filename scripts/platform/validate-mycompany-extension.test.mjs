@@ -307,6 +307,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
   assert.match(nativePreviewSource, /def ensure_ci_sales_fixture/);
   assert.match(nativePreviewSource, /RUBROVA_CI_SALES_FIXTURE/);
+  assert.match(nativeSalesFixtureSource, /REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaCIRetailFixture/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestSalesReconciliationApi/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestSessionCloseApi/);
   assert.match(nativeRetailFixtureSource, /Caja de prueba Rubrova/);

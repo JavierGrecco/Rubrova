@@ -1,5 +1,5 @@
 MODULE RubrovaCISalesFixture;
-REQUIRE MyCompany, RubrovaPOSLocalization;
+REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaCIRetailFixture;
 NAMESPACE Sales;
 
 // El POS convierte el precio de lista usando la moneda de la organización.

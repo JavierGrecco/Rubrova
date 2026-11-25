@@ -379,7 +379,7 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     fixture_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
         "RubrovaIntegrationResilience, RubrovaPaymentTerminals, "
-        "RubrovaCISalesFixture, RubrovaCIRetailFixture, RubrovaCIIntegrationFixture;"
+        "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture;"
     )
     if source.count(original_require) == 1:
         entrypoint.write_text(source.replace(original_require, fixture_require, 1), encoding="utf-8")

@@ -119,6 +119,7 @@ class NativePreviewTests(unittest.TestCase):
             sales_fixture = (logics_dir / "RubrovaCISalesFixture.lsf").read_text(encoding="utf-8")
             retail_fixture = (logics_dir / "RubrovaCIRetailFixture.lsf").read_text(encoding="utf-8")
             integration_fixture = (logics_dir / "RubrovaCIIntegrationFixture.lsf").read_text(encoding="utf-8")
+            self.assertIn("REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaCIRetailFixture;", sales_fixture)
             self.assertIn("rubrovaTestSalesReconciliationApi", sales_fixture)
             self.assertIn("rubrovaTestSessionCloseApi", sales_fixture)
             self.assertIn("Caja de prueba Rubrova", retail_fixture)
