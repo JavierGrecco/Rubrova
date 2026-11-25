@@ -1,0 +1,265 @@
+{
+  "schemaVersion": 1,
+  "purpose": "synthetic-stockout-censored-monthly-demand-sanity-check",
+  "dataClassification": "synthetic-no-personal-data",
+  "locale": "es-AR",
+  "timeZone": "America/Argentina/Cordoba",
+  "frequency": "MS",
+  "startMonth": "2023-01",
+  "endMonth": "2025-12",
+  "notes": "latentDemandUnits es verdad sintética sólo para puntuar el experimento; el estimador no la lee.",
+  "observations": [
+    {
+      "month": "2023-01-01",
+      "units": 84,
+      "openDays": 26,
+      "stockoutDays": 0,
+      "latentDemandUnits": 84
+    },
+    {
+      "month": "2023-02-01",
+      "units": 77,
+      "openDays": 26,
+      "stockoutDays": 2,
+      "latentDemandUnits": 83
+    },
+    {
+      "month": "2023-03-01",
+      "units": 69,
+      "openDays": 26,
+      "stockoutDays": 4,
+      "latentDemandUnits": 82
+    },
+    {
+      "month": "2023-04-01",
+      "units": 54,
+      "openDays": 26,
+      "stockoutDays": 8,
+      "latentDemandUnits": 78
+    },
+    {
+      "month": "2023-05-01",
+      "units": 35,
+      "openDays": 26,
+      "stockoutDays": 14,
+      "latentDemandUnits": 76
+    },
+    {
+      "month": "2023-06-01",
+      "units": 25,
+      "openDays": 26,
+      "stockoutDays": 17,
+      "latentDemandUnits": 73
+    },
+    {
+      "month": "2023-07-01",
+      "units": 12,
+      "openDays": 26,
+      "stockoutDays": 22,
+      "latentDemandUnits": 76
+    },
+    {
+      "month": "2023-08-01",
+      "units": 66,
+      "openDays": 26,
+      "stockoutDays": 5,
+      "latentDemandUnits": 82
+    },
+    {
+      "month": "2023-09-01",
+      "units": 89,
+      "openDays": 26,
+      "stockoutDays": 0,
+      "latentDemandUnits": 89
+    },
+    {
+      "month": "2023-10-01",
+      "units": 84,
+      "openDays": 26,
+      "stockoutDays": 3,
+      "latentDemandUnits": 95
+    },
+    {
+      "month": "2023-11-01",
+      "units": 60,
+      "openDays": 26,
+      "stockoutDays": 10,
+      "latentDemandUnits": 98
+    },
+    {
+      "month": "2023-12-01",
+      "units": 39,
+      "openDays": 26,
+      "stockoutDays": 16,
+      "latentDemandUnits": 101
+    },
+    {
+      "month": "2024-01-01",
+      "units": 101,
+      "openDays": 26,
+      "stockoutDays": 0,
+      "latentDemandUnits": 101
+    },
+    {
+      "month": "2024-02-01",
+      "units": 92,
+      "openDays": 26,
+      "stockoutDays": 2,
+      "latentDemandUnits": 100
+    },
+    {
+      "month": "2024-03-01",
+      "units": 84,
+      "openDays": 26,
+      "stockoutDays": 4,
+      "latentDemandUnits": 99
+    },
+    {
+      "month": "2024-04-01",
+      "units": 66,
+      "openDays": 26,
+      "stockoutDays": 8,
+      "latentDemandUnits": 95
+    },
+    {
+      "month": "2024-05-01",
+      "units": 42,
+      "openDays": 26,
+      "stockoutDays": 14,
+      "latentDemandUnits": 92
+    },
+    {
+      "month": "2024-06-01",
+      "units": 31,
+      "openDays": 26,
+      "stockoutDays": 17,
+      "latentDemandUnits": 90
+    },
+    {
+      "month": "2024-07-01",
+      "units": 14,
+      "openDays": 26,
+      "stockoutDays": 22,
+      "latentDemandUnits": 93
+    },
+    {
+      "month": "2024-08-01",
+      "units": 80,
+      "openDays": 26,
+      "stockoutDays": 5,
+      "latentDemandUnits": 99
+    },
+    {
+      "month": "2024-09-01",
+      "units": 106,
+      "openDays": 26,
+      "stockoutDays": 0,
+      "latentDemandUnits": 106
+    },
+    {
+      "month": "2024-10-01",
+      "units": 98,
+      "openDays": 26,
+      "stockoutDays": 3,
+      "latentDemandUnits": 111
+    },
+    {
+      "month": "2024-11-01",
+      "units": 71,
+      "openDays": 26,
+      "stockoutDays": 10,
+      "latentDemandUnits": 115
+    },
+    {
+      "month": "2024-12-01",
+      "units": 45,
+      "openDays": 26,
+      "stockoutDays": 16,
+      "latentDemandUnits": 118
+    },
+    {
+      "month": "2025-01-01",
+      "units": 118,
+      "openDays": 26,
+      "stockoutDays": 0,
+      "latentDemandUnits": 118
+    },
+    {
+      "month": "2025-02-01",
+      "units": 108,
+      "openDays": 26,
+      "stockoutDays": 2,
+      "latentDemandUnits": 117
+    },
+    {
+      "month": "2025-03-01",
+      "units": 97,
+      "openDays": 26,
+      "stockoutDays": 4,
+      "latentDemandUnits": 115
+    },
+    {
+      "month": "2025-04-01",
+      "units": 78,
+      "openDays": 26,
+      "stockoutDays": 8,
+      "latentDemandUnits": 112
+    },
+    {
+      "month": "2025-05-01",
+      "units": 50,
+      "openDays": 26,
+      "stockoutDays": 14,
+      "latentDemandUnits": 109
+    },
+    {
+      "month": "2025-06-01",
+      "units": 37,
+      "openDays": 26,
+      "stockoutDays": 17,
+      "latentDemandUnits": 107
+    },
+    {
+      "month": "2025-07-01",
+      "units": 17,
+      "openDays": 26,
+      "stockoutDays": 22,
+      "latentDemandUnits": 110
+    },
+    {
+      "month": "2025-08-01",
+      "units": 93,
+      "openDays": 26,
+      "stockoutDays": 5,
+      "latentDemandUnits": 115
+    },
+    {
+      "month": "2025-09-01",
+      "units": 123,
+      "openDays": 26,
+      "stockoutDays": 0,
+      "latentDemandUnits": 123
+    },
+    {
+      "month": "2025-10-01",
+      "units": 113,
+      "openDays": 26,
+      "stockoutDays": 3,
+      "latentDemandUnits": 128
+    },
+    {
+      "month": "2025-11-01",
+      "units": 81,
+      "openDays": 26,
+      "stockoutDays": 10,
+      "latentDemandUnits": 132
+    },
+    {
+      "month": "2025-12-01",
+      "units": 52,
+      "openDays": 26,
+      "stockoutDays": 16,
+      "latentDemandUnits": 135
+    }
+  ]
+}
