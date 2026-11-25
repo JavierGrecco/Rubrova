@@ -76,7 +76,7 @@
           "MyCompany",
           "RubrovaIntegrationResilience"
         ]
-      }
+      },
       {
         "name": "RubrovaReplenishmentExport",
         "path": "extensions/lsfusion/RubrovaReplenishmentExport.lsf",
@@ -84,7 +84,7 @@
         "requires": [
           "MyCompany"
         ]
-      },
+      }
     ]
   },
   "acceptance": [
