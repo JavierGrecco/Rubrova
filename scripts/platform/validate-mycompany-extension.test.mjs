@@ -295,7 +295,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.equal(
     (runtimeWorkflowSource.match(/cancel-in-progress: true/g) || []).length,
     4,
-    "El build, los dos smoke nativos y el smoke Docker manual deben cancelar ejecuciones obsoletas."
+    "El build, los dos smoke nativos y la aceptación Docker deben cancelar ejecuciones obsoletas."
   );
   assert.doesNotMatch(runtimeWorkflowSource, /cancel-in-progress: false/);
   assert.match(runtimeWorkflowSource, /native-runtime-smoke:/);
@@ -307,7 +307,9 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.doesNotMatch(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]validate_macos/);
   assert.match(runtimeWorkflowSource, /RUBROVA_BLOCK_EGRESS: "true"/);
   assert.match(runtimeWorkflowSource, /RUBROVA_POSTGRES_BIN: \/usr\/lib\/postgresql\/18\/bin/);
-  assert.match(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]run_docker_smoke/);
+  assert.doesNotMatch(runtimeWorkflowSource, /if: github[.]event_name == 'workflow_dispatch' && inputs[.]run_docker_smoke/);
+  assert.match(runtimeWorkflowSource, /continue-on-error: true/);
+  assert.match(runtimeWorkflowSource, /Aceptación funcional POS sobre runtime Docker \(Linux\)/);
   assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
   assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
@@ -374,7 +376,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /org\/apache\/log4j\/rolling\/RollingFileAppender[.]class/);
   assert.match(runtimeWorkflowSource, /Servidor autónomo: API, logging y runtime están incluidos en server[.]jar/);
   assert.match(runtimeWorkflowSource, /vendor\/platform\/web-client\/target/);
-  assert.match(runtimeWorkflowSource, /Smoke POS sobre runtime Docker \(validación secundaria y manual\)/);
+  assert.match(runtimeWorkflowSource, /Aceptación funcional POS sobre runtime Docker \(Linux\)/);
   assert.match(runtimeWorkflowSource, /actions\/upload-artifact@v4/);
   assert.match(runtimeWorkflowSource, /actions\/download-artifact@v4/);
   assert.match(runtimeWorkflowSource, /rubrova-runtime-application/);
