@@ -261,6 +261,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /className: typeof element.className/);
   assert.match(uiSmokeSource, /UI_INITIAL/);
   assert.match(uiSmokeSource, /UI_AFTER_LOGIN/);
+  assert.match(uiSmokeSource, /RUBROVA_UI_STOP_AFTER_LOGIN/);
   assert.match(runtimeWorkflowSource, /playwright==1[.]65[.]2/);
   assert.match(runtimeWorkflowSource, /playwright install chromium/);
   assert.match(runtimeWorkflowSource, /RUBROVA_UI_TEST_LOGIN: "true"/);
@@ -302,7 +303,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /org\/apache\/log4j\/rolling\/RollingFileAppender[.]class/);
   assert.match(runtimeWorkflowSource, /Servidor autónomo: API, logging y runtime están incluidos en server[.]jar/);
   assert.match(runtimeWorkflowSource, /vendor\/platform\/web-client\/target/);
-  assert.match(runtimeWorkflowSource, /Smoke POS sobre runtime construido desde fuentes Rubrova/);
+  assert.match(runtimeWorkflowSource, /Smoke POS sobre runtime Docker \(validación secundaria y manual\)/);
   assert.match(runtimeWorkflowSource, /actions\/upload-artifact@v4/);
   assert.match(runtimeWorkflowSource, /actions\/download-artifact@v4/);
   assert.match(runtimeWorkflowSource, /rubrova-runtime-application/);
