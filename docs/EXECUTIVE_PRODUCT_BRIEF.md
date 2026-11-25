@@ -91,7 +91,7 @@ El código de la plataforma y de MyCompany está en vendor; las extensiones y lo
 | Windows | CI de extensión | Validaciones estáticas y de despliegue; no equivale a aceptación funcional completa de Windows |
 | Terminales bancarias y ARCA | Diseño/documentación | Sin adquirente homologado ni conexión fiscal productiva |
 
-La ejecución del PR #8 que falló no demuestra una caída general del runtime: sus artefactos muestran que PostgreSQL, el servidor, Tomcat y el login llegaron a funcionar. El punto pendiente es la acción autenticada de exportación nativa. Se está corrigiendo la expresión que construye los identificadores de línea y se repiten las pruebas sobre la misma rama del PR.
+La ejecución fallida del PR #8 no demuestra una caída general del runtime: sus artefactos muestran que PostgreSQL, el servidor, Tomcat y el login llegaron a funcionar. El punto pendiente es la acción autenticada de exportación nativa. La última corrección eliminó conversiones `BPSTRING[10]` sobre los índices de línea y añadió una regresión estática. En el run [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) aprobaron validaciones, Windows, compilación completa, recompilación de servidor/cliente y publicación de artefactos; los smokes macOS ARM64, Linux nativo y Docker/Linux siguen en ejecución. El PR #8 permanece abierto.
 
 ## 8. Qué no está terminado
 
