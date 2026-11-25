@@ -45,6 +45,27 @@ Además se registran, por producto y ubicación y con granularidad operativa suf
 
 La ausencia de ventas durante un faltante no se interpreta como ausencia de demanda. Los cambios de precio, inflación, empaque, mix, horario, canal y surtido se distinguen del crecimiento real de unidades.
 
+#### Períodos con quiebres: ajuste conservador de demanda censurada
+
+El registro debe separar días de apertura, días con existencia vendible y días sin stock por SKU y ubicación. Las ventas observadas durante un faltante son demanda censurada: no deben interpretarse como la demanda total ni como una pérdida automática de preferencia.
+
+Como primer control reproducible, Rubrova incorpora un estimador sencillo para evaluar períodos con disponibilidad suficiente:
+
+\[
+\widehat{D}=U_{\mathrm{obs}}\times\frac{D_{\mathrm{abiertos}}}{D_{\mathrm{disponibles}}}
+\]
+
+Donde los días disponibles son días de apertura menos días sin stock. La regla inicial sólo calcula una estimación cuando hay al menos 10 días disponibles y la disponibilidad representa al menos el 50% de los días abiertos. Los períodos por debajo de esos límites se marcan como insuficientes y no se extrapolan. La estimación se etiqueta como tal y jamás modifica ventas, inventario, caja ni contabilidad.
+
+El nuevo fixture [stockout-censored-demand.json](fixtures/stockout-censored-demand.json) contiene 36 meses sintéticos y una verdad latente conocida sólo para puntuar el experimento. El benchmark compara ventas observadas y estimación ajustada sobre exactamente los mismos períodos elegibles. Este control valida la implementación de la fórmula y su comportamiento ante faltantes; **no demuestra precisión con datos reales ni sustituye un pronóstico temporal**. Supone que la tasa de demanda de los días disponibles representa los días agotados, supuesto que puede fallar ante promociones, estacionalidad intramensual, sustitución o quiebres concentrados en fines de semana.
+
+La capacidad futura debe mejorar esta primera regla con granularidad diaria/horaria, demanda no satisfecha registrada, sustitución entre SKU, precio, promociones, calendario y backtesting sobre períodos reales conciliados. Los datos sintéticos nunca se mezclan con entrenamiento productivo.
+
+Como referencias de diseño:
+- [Odoo — reglas de reabastecimiento](https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/warehouses_storage/replenishment/reordering_rules.html): mínimos/máximos, horizonte y plazos de proveedor.
+- [ERPNext — cantidad proyectada](https://docs.frappe.io/erpnext/projected-quantity): integra existencias, entradas previstas, pedidos y reservas.
+
+
 ### 2.3 Costos y gastos
 
 Se conservan las recepciones y costos de proveedor por fecha, cantidades, descuentos, bonificaciones, flete, seguro, impuestos no recuperables y demás costos atribuibles. También se registran comisiones de adquirentes/billeteras, costos variables de canal, embalaje, preparación, entrega y otros gastos que puedan vincularse de forma consistente.
@@ -216,7 +237,8 @@ La capacidad no se considera terminada hasta demostrar en dataset sintético y d
 - [x] Límites de DemandSense, DemandOS y notebooks exploratorios documentados.
 - [ ] Revisar versiones fijadas, dependencias y compatibilidad del stack elegido.
 - [ ] Comparar los métodos de stock valuation y rentabilidad de los finalistas POS/ERP.
-- [ ] Ampliar el dataset sintético con escenarios de stockout, marcas, presentaciones, promociones y costos históricos.
+- [x] Añadir un fixture sintético separado de quiebres de stock y un ajuste conservador de demanda censurada, con cobertura, umbrales, exclusiones y métricas reproducibles.
+- [ ] Ampliar el dataset con marcas, presentaciones, promociones, cambios de precio y costos históricos; incorporar escenarios de quiebres más complejos.
 - [x] Preparar benchmark reproducible StatsForecast frente a baselines sobre 48 meses sintéticos y demanda regular/intermitente; CI registra MAE, WAPE y sesgo en backtesting walk-forward.
 - [x] Ejecutar y revisar la primera corrida CI del benchmark (20/11/2026); resultados sintéticos registrados, sin selección productiva.
 - [ ] Comparar estabilidad y coste en datos reales conciliados antes de aprobar cualquier motor productivo.
@@ -224,4 +246,4 @@ La capacidad no se considera terminada hasta demostrar en dataset sintético y d
 - [ ] Probar el modelo de datos de segmentos de marca y métricas de sustitución con casos controlados.
 - [ ] Aprobar dependencias, licencias, versiones y pruebas antes de incorporarlas.
 
-**Estado real:** esta especificación y la investigación no constituyen una integración ejecutable. No se agregó ninguna biblioteca ni se declaró terminada una capacidad de Rubrova.
+**Estado real:** existe un experimento ejecutable separado para ajustar demanda censurada con una regla de disponibilidad y fixture 100% sintético. No está conectado al POS ni a compras, no usa datos reales y no autoriza decisiones automáticas. Ninguna biblioteca nueva de forecasting o BI fue añadida ni se declaró terminada una capacidad productiva.
