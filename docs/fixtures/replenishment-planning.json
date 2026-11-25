@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "purpose": "synthetic-read-only-replenishment-planning",
+  "quantityUnit": "milli-units (1 unit = 1000)",
+  "scenarios": [
+    {
+      "id": "reponer-con-compromiso-y-recepcion-confirmada",
+      "expectedStatus": "ORDER_RECOMMENDED",
+      "expectedOrderQtyMilli": 6000,
+      "item": {
+        "sku": "BEB-001",
+        "location": "LOCAL-01",
+        "asOf": "2026-11-25",
+        "onHandMilli": 12000,
+        "dailyDemandMilli": 900,
+        "forecastEligiblePeriods": 24,
+        "forecastTotalPeriods": 36,
+        "supplierLeadTimeDays": 5,
+        "reviewPeriodDays": 7,
+        "safetyStockMilli": 3000,
+        "minimumOrderQuantityMilli": 5000,
+        "orderMultipleMilli": 2000,
+        "outgoing": [
+          {
+            "id": "venta-abierta-001",
+            "status": "waiting",
+            "dueDate": "2026-11-27",
+            "quantityMilli": 4000,
+            "reservedMilli": 2500
+          }
+        ],
+        "incoming": [
+          {
+            "id": "oc-confirmada-001",
+            "status": "confirmed",
+            "dueDate": "2026-11-29",
+            "quantityMilli": 2500
+          },
+          {
+            "id": "oc-borrador-002",
+            "status": "draft",
+            "dueDate": "2026-11-27",
+            "quantityMilli": 6000
+          }
+        ]
+      }
+    },
+    {
+      "id": "sin-reposicion-necesaria",
+      "expectedStatus": "NO_ORDER_NEEDED",
+      "expectedOrderQtyMilli": 0,
+      "item": {
+        "sku": "ALM-002",
+        "location": "LOCAL-01",
+        "asOf": "2026-11-25",
+        "onHandMilli": 25000,
+        "dailyDemandMilli": 500,
+        "forecastEligiblePeriods": 24,
+        "forecastTotalPeriods": 36,
+        "supplierLeadTimeDays": 7,
+        "reviewPeriodDays": 7,
+        "safetyStockMilli": 4000,
+        "minimumOrderQuantityMilli": 2000,
+        "orderMultipleMilli": 1000,
+        "outgoing": [
+          {
+            "id": "venta-abierta-002",
+            "status": "ready",
+            "dueDate": "2026-11-29",
+            "quantityMilli": 1000,
+            "reservedMilli": 500
+          }
+        ],
+        "incoming": [
+          {
+            "id": "oc-en-transito-002",
+            "status": "in_transit",
+            "dueDate": "2026-11-28",
+            "quantityMilli": 3000
+          }
+        ]
+      }
+    },
+    {
+      "id": "riesgo-de-quiebre-antes-de-la-nueva-entrega",
+      "expectedStatus": "EXPEDITE_REQUIRED",
+      "expectedOrderQtyMilli": 8000,
+      "item": {
+        "sku": "PAP-003",
+        "location": "LOCAL-01",
+        "asOf": "2026-11-25",
+        "onHandMilli": 5000,
+        "dailyDemandMilli": 1000,
+        "forecastEligiblePeriods": 24,
+        "forecastTotalPeriods": 36,
+        "supplierLeadTimeDays": 5,
+        "reviewPeriodDays": 7,
+        "safetyStockMilli": 2000,
+        "minimumOrderQuantityMilli": 3000,
+        "orderMultipleMilli": 1000,
+        "outgoing": [
+          {
+            "id": "pedido-firme-003",
+            "status": "confirmed",
+            "dueDate": "2026-11-27",
+            "quantityMilli": 2000,
+            "reservedMilli": 2000
+          }
+        ],
+        "incoming": [
+          {
+            "id": "oc-confirmada-tardia-003",
+            "status": "confirmed",
+            "dueDate": "2026-11-29",
+            "quantityMilli": 3000
+          }
+        ]
+      }
+    },
+    {
+      "id": "pronostico-insuficiente",
+      "expectedStatus": "SUPPRESSED",
+      "expectedOrderQtyMilli": null,
+      "item": {
+        "sku": "NVO-004",
+        "location": "LOCAL-01",
+        "asOf": "2026-11-25",
+        "onHandMilli": 3000,
+        "dailyDemandMilli": 500,
+        "forecastEligiblePeriods": 11,
+        "forecastTotalPeriods": 24,
+        "supplierLeadTimeDays": 5,
+        "reviewPeriodDays": 7,
+        "safetyStockMilli": 2000,
+        "minimumOrderQuantityMilli": 1000,
+        "orderMultipleMilli": 500,
+        "outgoing": [],
+        "incoming": []
+      }
+    },
+    {
+      "id": "reservas-superan-existencia",
+      "expectedStatus": "DATA_REVIEW",
+      "expectedOrderQtyMilli": null,
+      "item": {
+        "sku": "BEB-005",
+        "location": "LOCAL-01",
+        "asOf": "2026-11-25",
+        "onHandMilli": 1000,
+        "dailyDemandMilli": 200,
+        "forecastEligiblePeriods": 24,
+        "forecastTotalPeriods": 36,
+        "supplierLeadTimeDays": 5,
+        "reviewPeriodDays": 7,
+        "safetyStockMilli": 1000,
+        "minimumOrderQuantityMilli": 1000,
+        "orderMultipleMilli": 500,
+        "outgoing": [
+          {
+            "id": "reserva-inconsistente-005",
+            "status": "ready",
+            "dueDate": "2026-11-27",
+            "quantityMilli": 2000,
+            "reservedMilli": 1500
+          }
+        ],
+        "incoming": []
+      }
+    },
+    {
+      "id": "se-excluyen-recepciones-no-confirmadas-o-vencidas",
+      "expectedStatus": "NO_ORDER_NEEDED",
+      "expectedOrderQtyMilli": 0,
+      "item": {
+        "sku": "LIM-006",
+        "location": "LOCAL-01",
+        "asOf": "2026-11-25",
+        "onHandMilli": 10000,
+        "dailyDemandMilli": 500,
+        "forecastEligiblePeriods": 24,
+        "forecastTotalPeriods": 36,
+        "supplierLeadTimeDays": 5,
+        "reviewPeriodDays": 5,
+        "safetyStockMilli": 1000,
+        "minimumOrderQuantityMilli": 1000,
+        "orderMultipleMilli": 500,
+        "outgoing": [],
+        "incoming": [
+          {
+            "id": "oc-firme-006",
+            "status": "confirmed",
+            "dueDate": "2026-11-28",
+            "quantityMilli": 2000
+          },
+          {
+            "id": "oc-transito-006",
+            "status": "in_transit",
+            "dueDate": "2026-12-03",
+            "quantityMilli": 500
+          },
+          {
+            "id": "oc-borrador-006",
+            "status": "draft",
+            "dueDate": "2026-11-27",
+            "quantityMilli": 9000
+          },
+          {
+            "id": "oc-enviada-no-confirmada-006",
+            "status": "sent",
+            "dueDate": "2026-11-26",
+            "quantityMilli": 1000
+          },
+          {
+            "id": "oc-vencida-006",
+            "status": "confirmed",
+            "dueDate": "2026-11-24",
+            "quantityMilli": 4000
+          },
+          {
+            "id": "oc-cancelada-006",
+            "status": "cancelled",
+            "dueDate": "2026-11-26",
+            "quantityMilli": 3000
+          }
+        ]
+      }
+    }
+  ]
+}
