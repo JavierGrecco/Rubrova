@@ -118,6 +118,32 @@ grep -Fq "Servidor Rubrova y PostgreSQL están listos." "$LOG_FILE" || {
   echo "El supervisor no confirmó que el servidor hubiera terminado su inicialización." >&2
   exit 1
 }
+command -v ss >/dev/null 2>&1 || {
+  echo "Falta ss (iproute2) para verificar las interfaces de escucha." >&2
+  exit 2
+}
+RMI_LISTENERS="$(ss -H -ltn 'sport = :7652' || true)"
+printf 'RMI listeners:\n%s\n' "$RMI_LISTENERS"
+grep -Eq '127[.]0[.]0[.]1:7652([[:space:]]|$)' <<< "$RMI_LISTENERS" || {
+  echo "RMI no quedó enlazado exclusivamente al loopback 127.0.0.1:7652." >&2
+  exit 1
+}
+if grep -Eq '(0[.]0[.]0[.]0|\\[::\\]|\\*):7652([[:space:]]|$)' <<< "$RMI_LISTENERS"; then
+  echo "RMI quedó expuesto en una interfaz no local." >&2
+  exit 1
+fi
+PG_LISTENERS="$(ss -H -ltn 'sport = :55432' || true)"
+printf 'PostgreSQL listeners:\n%s\n' "$PG_LISTENERS"
+grep -Eq '127[.]0[.]0[.]1:55432([[:space:]]|$)' <<< "$PG_LISTENERS" || {
+  echo "PostgreSQL no quedó enlazado al loopback configurado." >&2
+  exit 1
+}
+if grep -Eq '(0[.]0[.]0[.]0|\\[::\\]|\\*):55432([[:space:]]|$)' <<< "$PG_LISTENERS"; then
+  echo "PostgreSQL quedó expuesto en una interfaz no local." >&2
+  exit 1
+fi
+echo "RUBROVA_NATIVE_RMI_LOOPBACK=true"
+echo "RUBROVA_NATIVE_POSTGRES_LOOPBACK=true"
 echo "RUBROVA_NATIVE_SERVER_READY=true"
 echo "RUBROVA_NATIVE_WEB_HTTP=$HTTP_STATUS"
 
