@@ -361,7 +361,6 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   const postgresDigest = lock.dockerImages.postgres.digest;
   assert.match(postgresDigest, /^sha256:[0-9a-f]{64}$/);
   assert.ok(runtimeSmokeSource.includes(`image: postgres:18@${postgresDigest}`));
-  assert.ok(runtimeSmokeSource.includes(lock.testTools.toxiproxy.digest));
   assert.doesNotMatch(runtimeSmokeSource, /image: lsfusion\/(mycompany|server|client):/);
   assert.equal(lock.dockerImages.postgres.volumeMount, "/var/lib/postgresql");
   assert.equal(lock.dockerImages.postgres.dataDirectory, "/var/lib/postgresql/18/docker");
@@ -377,11 +376,6 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /PG_VERSION/);
   assert.match(runtimeSmokeSource, /DB_CONTAINER_ID/);
   assert.equal(lock.dockerImages.digestPlatform, "linux/amd64");
-  assert.equal(lock.testTools.toxiproxy.scope, "ci-only");
-  assert.equal(lock.testTools.toxiproxy.license, "MIT");
-  assert.match(lock.testTools.toxiproxy.digest, /^sha256:[0-9a-f]{64}$/);
-  assert.equal(lock.testTools.toxiproxy.platform, "linux/amd64");
-  assert.ok(runtimeSmokeSource.includes(`image: ${lock.testTools.toxiproxy.image}@${lock.testTools.toxiproxy.digest}`), "Toxiproxy debe usar la imagen CI fijada en el lock.");
   assert.match(runtimeSmokeSource, /docker-server\/logs/);
   assert.match(runtimeSmokeSource, /compose logs --no-color --tail=180 server/);
   assert.match(runtimeSmokeSource, /tail -n 80/);
@@ -571,9 +565,9 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
     "El navegador no debe intentar abrir un segundo turno en la comprobación de persistencia."
   );
   assert.equal(
-    runtimeSmokeSource.split("4.1/7 Preparando los proxies de fallos de red dentro de la red interna").length - 1,
+    runtimeSmokeSource.split("4.1/7 El servidor usa directamente mock-provider:").length - 1,
     1,
-    "La configuración de Toxiproxy debe ejecutarse una sola vez por instancia efímera."
+    "El servidor debe acceder directamente al simulador HTTP dentro de la red interna."
   );
   const timeoutEndpoint = runtimeSmokeSource.split("rubrovaTestHttpTimeout () {")[1]?.split("} @@api;")[0] || "";
   const rateLimitEndpoint = runtimeSmokeSource.split("rubrovaTestHttpRateLimit () {")[1]?.split("} @@api;")[0] || "";
@@ -585,17 +579,11 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(runtimeSmokeSource, /internal: true/);
   assert.match(runtimeSmokeSource, /RUBROVA_RUNTIME_EXTERNAL_EGRESS=blocked/);
   assert.doesNotMatch(runtimeSmokeSource, /host[.]docker[.]internal:host-gateway/);
-  assert.match(runtimeSmokeSource, /ghcr[.]io\/shopify\/toxiproxy:2[.]13[.]0/);
-  assert.match(runtimeSmokeSource, /9941f0357759e6c9bfe0ad45e20c415100505113da0f5c436cfd0a4d27579fdc/);
-  assert.match(runtimeSmokeSource, /127[.]0[.]0[.]1:18474:8474/);
-  assert.match(runtimeSmokeSource, /rubrova_ci_normal/);
+  assert.match(runtimeSmokeSource, /MOCK_PROVIDER_URL="http:\/\/mock-provider:\$MOCK_PROVIDER_PORT"/);
+  assert.match(runtimeSmokeSource, /mock-provider:[^\n]+within the internal network|4[.]1\/7 El servidor usa directamente mock-provider/);
+  assert.doesNotMatch(runtimeSmokeSource, /toxiproxy|TOXIPROXY|18474|rubrova_ci_normal/i);
   assert.doesNotMatch(runtimeSmokeSource, /rubrova_ci_timeout|drop-response|MOCK_PROVIDER_TIMEOUT_URL/);
-  assert.match(runtimeSmokeSource, /MOCK_PROVIDER_URL="http:\/\/toxiproxy:8666"/);
   assert.match(runtimeSmokeSource, /\/slow\?delay=5/);
-  assert.match(runtimeSmokeSource, /Toxiproxy listo: proxy HTTP hacia mock-provider dentro de la red sin Internet/);
-  assert.match(runtimeSmokeSource, /TOXIPROXY_AUTH_TOKEN/);
-  assert.match(runtimeSmokeSource, /secrets[.]token_urlsafe\(32\)/);
-  assert.ok(runtimeSmokeSource.includes('Authorization: Bearer $TOXIPROXY_AUTH_TOKEN'));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpTimeout/);
   assert.ok(runtimeSmokeSource.includes("userMessage = rubrovaHttpFailureMessage()"));
   assert.match(runtimeSmokeSource, /rubrovaTestHttpRecovery/);
