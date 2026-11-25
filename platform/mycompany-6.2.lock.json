@@ -46,7 +46,9 @@
         "role": "top-level entry point",
         "requires": [
           "MyCompany",
-          "RubrovaPOSLocalization"
+          "RubrovaPOSLocalization",
+          "RubrovaIntegrationResilience",
+          "RubrovaPaymentTerminals"
         ]
       },
       {
@@ -63,6 +65,15 @@
         "role": "shared durable incident register and safe error-handling helper for provider adapters",
         "requires": [
           "MyCompany"
+        ]
+      },
+      {
+        "name": "RubrovaPaymentTerminals",
+        "path": "extensions/lsfusion/RubrovaPaymentTerminals.lsf",
+        "role": "provider accounts, terminal configuration, caja/payment-method assignments, payment intents/attempts, refunds, provider events and settlement lines",
+        "requires": [
+          "MyCompany",
+          "RubrovaIntegrationResilience"
         ]
       }
     ]
@@ -129,4 +140,5 @@
     "buildAggregator": "build/rubrova/pom.xml",
     "patchDirectory": "patches/lsfusion",
     "status": "source-import-automation-added-build-and-offline-acceptance-pending"
-  }}
+  }
+}

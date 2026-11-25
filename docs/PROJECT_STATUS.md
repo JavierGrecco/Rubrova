@@ -2,6 +2,7 @@
 
 **Corte:** 24 de noviembre de 2026  
 **Rama:** `main`  
+**Última comprobación de plataforma anterior a este cambio:** [CI 45521425830](https://github.com/JavierGrecco/Rubrova/actions/runs/45521425830). Validación estática, compilación y Windows pasaron; el smoke nativo falla porque Tomcat devuelve 404 también en `/login`. El inicio de lsFusion y la carga de lógica sí terminan. La causa del 404 sigue abierta. 
 **Última aceptación funcional completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218)  
 **Commit funcional aceptado:** `e23acfc7bb3387ebd184b1aeed9e80c8994593c5`  
 **Transición a runtime nativo:** workflow de CI actualizado para compilar las mismas fuentes y probar PostgreSQL 18 + Java 21 + Tomcat 9 sin Docker. La aceptación nativa completa está pendiente; no hay todavía un resultado de venta nativa ni una aceptación en Mac/Windows.
@@ -21,8 +22,8 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Fuentes originales lsFusion 6.2 + MyCompany 6.2 | Aprobado | Snapshots fijados en el lock y completos en `vendor/` |
 | Compilación del fork Rubrova | Aprobado en CI | Reactor Maven, servidor, cliente GWT y lógica MyCompany compilados desde fuentes propias |
 | Imágenes propias del runtime Docker | Aprobado en CI | Artefactos compilados desde fuentes Rubrova e incorporados a imágenes propias; validación Docker pasa a ser secundaria |
-| Arranque, RMI y cliente web | Aprobado en CI | PostgreSQL 18, lógica, RMI 7652, Tomcat y acceso Chromium |
-| Login y navegación al POS | Aprobado en CI | Chromium llega a Comercio → Punto de venta |
+| Arranque, RMI y cliente web | Aprobado en smoke Docker histórico; nativo pendiente | El smoke nativo actual inicia lsFusion y completa `onStarted`, pero Tomcat devuelve 404 en `/login`; no se acepta aún el cliente web nativo |
+| Login y navegación al POS | Aprobado en smoke Docker histórico; nativo pendiente | Chromium llegó a Comercio → Punto de venta en la aceptación Docker; la ruta nativa actual sigue bloqueada por el 404 web |
 | Apertura de turno | Aprobado en CI | Turno sintético `SM/000001` |
 | Búsqueda y selección de artículo | Aprobado en CI | Un único producto sintético; una línea de recibo, cantidad 1 y precio ARS 1.250 |
 | Confirmación del cobro en efectivo | Aprobado en CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |
@@ -31,6 +32,8 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Movimiento de stock | Aprobado en CI | Ledger de inventario: entrada 10, salida 1, existencia 9 |
 | Resiliencia HTTP GET | Aprobado en escenarios CI | Timeout, clasificación de 408/429/503 y errores definitivos, persistencia de incidencias y recuperación del proveedor simulado |
 | `HEADERSTO` / `Retry-After` | Aprobado en escenario CI | El 429 devuelve y persiste `Retry-After: 2` con el mecanismo nativo de lsFusion |
+| Configuración y trazabilidad de terminales | Base inicial incorporada; validación CI pendiente | Cuentas de proveedor, equipos, asignación a caja/medio, intenciones, intentos, eventos, reintegros y líneas de liquidación con claves idempotentes únicas. No procesa tarjetas ni ejecuta cobros reales |
+| Adaptadores físicos y cloud-to-cloud | Pendiente | Falta seleccionar un proveedor/modelo, conseguir SDK/API y credenciales de sandbox y homologar la operación con terminal real |
 | Timeout de `EXTERNAL HTTP CLIENT` desde navegador | Pendiente | Falta una prueba real en Chromium con endpoint lento/CORS, abort, error de red y recuperación |
 | Cierre básico después de venta en efectivo exacto | Aprobado en CI | Turno `SM/000001` quedó `CLOSED`; venta/neta y saldo de caja ARS 1.250 conciliados. Faltan arqueo contado, diferencias, ingresos y retiros |
 | Devolución y reintegro | Pendiente | Falta comprobar Bill, OutgoingPayment, medio original y movimiento inverso de stock |
@@ -43,7 +46,11 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Configuración siempre disponible | En desarrollo inicial | Existe el esquema y el gestor CLI para `native-local`, `docker-local` y `remote-online`; falta el panel visual independiente y su integración con la administración del POS |
 | Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
 | Windows y macOS ARM64 | Parcial | PowerShell pasa análisis sintáctico; macOS ARM64 no se ejecutó en #172 y no hay aceptación runtime nativa en esas plataformas |
-| ARCA, adquirentes, marketplaces y logística | Pendiente | Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
+| ARCA, terminales/adquirentes, marketplaces y logística | Pendiente | La arquitectura y la base de configuración de terminales están documentadas; no hay adaptador bancario productivo ni homologación física. Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
+
+## Terminales de pago
+
+La responsabilidad del cobro bancario permanece en la terminal y en el proveedor (PSP/adquirente). Rubrova contempla tres modalidades: terminal autónoma con registro manual, integración local por SDK/puente e integración cloud-to-cloud. Se incorporó una base de configuración y trazabilidad, pero no un adaptador real ni una autorización de cobro. La liquidación bancaria se concilia por separado del pago confirmado. Véase [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
 
 ## Modos de ejecución y control local
 

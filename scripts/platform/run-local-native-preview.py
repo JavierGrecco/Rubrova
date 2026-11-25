@@ -324,6 +324,7 @@ def ensure_extension_files(logics_dir: Path) -> None:
         "RubrovaCustom.lsf",
         "RubrovaPOSLocalization.lsf",
         "RubrovaIntegrationResilience.lsf",
+        "RubrovaPaymentTerminals.lsf",
         "MyCompanyResourceBundle_es_AR.properties",
     ]
     for name in module_names:

@@ -17,6 +17,7 @@ printf 'services: {}\n' > "$INSTALL_DIR/compose.yaml"
 printf '# Existing local settings\nlogics.topModule = OldModule\nuser.setLanguage = ru\nuser.setCountry = RU\ncustom.setting = preserve-me\n' > "$MODULE_DIR/settings.properties"
 printf 'previous module content\n' > "$MODULE_DIR/RubrovaPOSLocalization.lsf"
 printf 'previous resilience module content\n' > "$MODULE_DIR/RubrovaIntegrationResilience.lsf"
+printf 'previous payment terminal module content\n' > "$MODULE_DIR/RubrovaPaymentTerminals.lsf"
 printf 'previous override content\n' > "$INSTALL_DIR/compose.rubrova.override.yaml"
 
 FAKE_BIN="$TEMP_DIR/bin"
@@ -34,6 +35,7 @@ for file in \
   "RubrovaCustom.lsf" \
   "RubrovaPOSLocalization.lsf" \
   "RubrovaIntegrationResilience.lsf" \
+  "RubrovaPaymentTerminals.lsf" \
   "MyCompanyResourceBundle_es_AR.properties"
 do
   cmp -s "$REPO_ROOT/extensions/lsfusion/$file" "$MODULE_DIR/$file" || {
@@ -75,6 +77,9 @@ module_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPOSL
 
 resilience_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaIntegrationResilience.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$resilience_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de resiliencia existente." >&2; exit 1; }
+
+payment_terminal_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaPaymentTerminals.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$payment_terminal_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de terminales existente." >&2; exit 1; }
 
 settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$settings_backup_count" -eq 1 ]] || {

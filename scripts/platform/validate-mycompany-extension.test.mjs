@@ -11,6 +11,8 @@ const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
 const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
 const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
+const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
+const paymentArchitectureSource = read("docs/PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
@@ -427,7 +429,7 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
-  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
@@ -954,4 +956,70 @@ test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () =
   assert.ok(externalHttpCalls > 0, "No se inspeccionaron llamadas HTTP de los módulos integrados.");
   const unsafe = numericOverrides.filter(item => item.value < 1 || item.value > 60_000);
   assert.deepEqual(unsafe, [], "Hay módulos que exceden el máximo global de timeout HTTP.");
+});
+
+
+test("el modelo de terminales se carga desde el punto de entrada y el lock", () => {
+  assert.ok(entrypointSource.includes("RubrovaPaymentTerminals"));
+  const terminalModule = lock.extension.modules.find((item) => item.name === "RubrovaPaymentTerminals");
+  assert.ok(terminalModule, "El módulo debe estar incluido en el lock reproducible.");
+  const customModule = lock.extension.modules.find((item) => item.name === "RubrovaCustom");
+  assert.ok(customModule.requires.includes("RubrovaIntegrationResilience"));
+  assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
+  assert.ok(terminalModule.requires.includes("RubrovaIntegrationResilience"));
+  for (const entity of [
+    "PaymentProviderAccount",
+    "PaymentTerminal",
+    "PaymentTerminalAssignment",
+    "PaymentTerminalIntent",
+    "PaymentTerminalAttempt",
+    "PaymentProviderEvent",
+    "PaymentRefund",
+    "PaymentSettlement",
+    "PaymentSettlementLine"
+  ]) {
+    assert.ok(paymentTerminalSource.includes("CLASS " + entity), "Falta entidad " + entity);
+  }
+  assert.ok(paymentTerminalSource.includes("credentialReference"));
+  assert.ok(paymentTerminalSource.includes("attemptIdempotencyKey"));
+  assert.ok(paymentTerminalSource.includes("intentIdempotencyKey"));
+  assert.ok(paymentTerminalSource.includes("providerEventKey"));
+  assert.ok(paymentTerminalSource.includes("refundIdempotencyKey"));
+  assert.ok(paymentTerminalSource.includes("settlementLineIncomingPayment"));
+  assert.ok(paymentTerminalSource.includes("attemptNeedsReconciliation"));
+  assert.ok(paymentTerminalSource.includes("providerEventSignatureVerified"));
+  assert.ok(paymentTerminalSource.includes("settlementNetAmount"));
+});
+
+test("el módulo de terminales no contiene credenciales ni datos sensibles de tarjeta", () => {
+  assert.ok(paymentTerminalSource.includes("credentialReference"));
+  assert.ok(paymentTerminalSource.includes("Deliberadamente no existe una columna para guardar el cuerpo HTTP completo."));
+  assert.ok(!paymentTerminalSource.includes("cardNumber"));
+  assert.ok(!paymentTerminalSource.includes("cardholderData"));
+  assert.ok(!paymentTerminalSource.includes("trackData"));
+  assert.ok(!paymentTerminalSource.includes("rawPayload"));
+});
+
+test("la configuración de terminales se despliega en todas las rutas de ejecución", () => {
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(nativePreviewSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(runtimeSmokeSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 5))"));
+  assert.ok(runtimeSmokeSource.includes("4 módulos propios de Rubrova + 1 fixture temporal de CI"));
+  assert.ok(deploySmokeSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(deploySmokeSource.includes("payment_terminal_backup_count"));
+});
+
+test("la arquitectura de terminales documenta los tres modos, diagramas y límites de red", () => {
+  for (const diagram of ["flowchart TD", "sequenceDiagram", "erDiagram"]) {
+    assert.ok(paymentArchitectureSource.includes(diagram), "Falta diagrama " + diagram);
+  }
+  for (const mode of ["Terminal autónoma", "Integración local", "Integración cloud-to-cloud"]) {
+    assert.ok(paymentArchitectureSource.includes(mode), "Falta modalidad " + mode);
+  }
+  for (const rule of ["idempotente", "resultado incierto", "liquidación acreditada", "127.0.0.1"]) {
+    assert.ok(paymentArchitectureSource.toLowerCase().includes(rule.toLowerCase()), "Falta regla " + rule);
+  }
+  assert.ok(paymentArchitectureSource.includes("No hay todavía un adaptador productivo homologado"));
 });

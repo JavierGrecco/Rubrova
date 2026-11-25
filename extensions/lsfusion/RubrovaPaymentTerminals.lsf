@@ -1,0 +1,267 @@
+MODULE RubrovaPaymentTerminals;
+REQUIRE MyCompany, RubrovaIntegrationResilience;
+
+NAMESPACE Rubrova;
+
+// Esta capa describe la configuración y la trazabilidad de terminales.
+// No captura tarjeta/PIN/CVV y todavía no ejecuta cobros en un dispositivo.
+// Los adaptadores futuros deben mantener la titularidad de pagos contables
+// en MyCompany: sólo una confirmación verificada puede alimentar IncomingPayment.
+
+CLASS PaymentProviderAccount 'Cuenta de proveedor de pagos';
+
+providerCode 'Código de proveedor' = DATA STRING[40] (PaymentProviderAccount);
+providerName 'Proveedor' = DATA ISTRING[100] (PaymentProviderAccount);
+providerEnvironment 'Ambiente' = DATA STRING[20] (PaymentProviderAccount);
+merchantReference 'Referencia del comercio' = DATA STRING[120] (PaymentProviderAccount);
+// Sólo referencia lógica a Keychain/Credential Manager/Secret Service.
+// Nunca almacenar Access Token, password ni certificado privado en esta propiedad.
+credentialReference 'Referencia al secreto del sistema' = DATA STRING[160] (PaymentProviderAccount);
+providerAccountEnabled 'Habilitada' = DATA BOOLEAN (PaymentProviderAccount);
+
+
+CLASS PaymentTerminal 'Terminal de pago';
+
+terminalName 'Nombre de la terminal' = DATA ISTRING[100] (PaymentTerminal);
+providerAccount 'Cuenta del proveedor' = DATA PaymentProviderAccount (PaymentTerminal);
+terminalExternalReference 'Identificador externo' = DATA STRING[120] (PaymentTerminal);
+terminalModel 'Modelo' = DATA ISTRING[100] (PaymentTerminal);
+terminalFirmware 'Firmware' = DATA STRING[60] (PaymentTerminal);
+terminalConnectionMode 'Modo de integración' = DATA STRING[20] (PaymentTerminal);
+terminalTransport 'Conexión' = DATA STRING[20] (PaymentTerminal);
+terminalBridgeHost 'Host del adaptador local' = DATA STRING[120] (PaymentTerminal);
+terminalBridgePort 'Puerto del adaptador local' = DATA INTEGER (PaymentTerminal);
+terminalEnabled 'Habilitada' = DATA BOOLEAN (PaymentTerminal);
+terminalLastHealthCheck 'Última comprobación' = DATA DATETIME (PaymentTerminal);
+terminalHealthStatus 'Estado de conexión' = DATA STRING[30] (PaymentTerminal);
+
+
+CLASS PaymentTerminalAssignment 'Asignación de terminal';
+
+assignedPos 'Caja' = DATA Retail.Pos (PaymentTerminalAssignment) NONULL;
+assignedPaymentMethod 'Medio de pago' = DATA Retail.PaymentMethod (PaymentTerminalAssignment) NONULL;
+assignedTerminal 'Terminal' = DATA PaymentTerminal (PaymentTerminalAssignment) NONULL;
+assignmentEnabled 'Habilitada' = DATA BOOLEAN (PaymentTerminalAssignment);
+assignmentCreatedAt 'Fecha de asignación' = DATA DATETIME (PaymentTerminalAssignment);
+
+
+CLASS PaymentTerminalIntent 'Intención de cobro';
+
+intentInvoice 'Venta' = DATA Invoicing.Invoice (PaymentTerminalIntent) NONULL;
+intentPos 'Caja' = DATA Retail.Pos (PaymentTerminalIntent) NONULL;
+intentPaymentMethod 'Medio de pago' = DATA Retail.PaymentMethod (PaymentTerminalIntent) NONULL;
+intentTerminalAssignment 'Asignación de terminal' = DATA PaymentTerminalAssignment (PaymentTerminalIntent);
+intentProviderAccount 'Cuenta del proveedor' = DATA PaymentProviderAccount (PaymentTerminalIntent);
+intentLocalReference 'Referencia local' = DATA STRING[100] (PaymentTerminalIntent) NONULL;
+intentIdempotencyKey 'Clave idempotente' = DATA STRING[100] (PaymentTerminalIntent) NONULL IN id;
+intentAmount 'Importe' = DATA NUMERIC[14,2] (PaymentTerminalIntent) NONULL;
+intentCurrencyCode 'Moneda' = DATA STRING[3] (PaymentTerminalIntent) NONULL;
+intentStatus 'Estado' = DATA STRING[40] (PaymentTerminalIntent) NONULL;
+intentCreatedAt 'Creada' = DATA DATETIME (PaymentTerminalIntent);
+intentFrozenAt 'Checkout congelado' = DATA DATETIME (PaymentTerminalIntent);
+intentExpiresAt 'Vencimiento' = DATA DATETIME (PaymentTerminalIntent);
+intentNeedsReconciliation 'Requiere conciliación' = DATA BOOLEAN (PaymentTerminalIntent);
+
+
+CLASS PaymentTerminalAttempt 'Intento de pago externo';
+
+attemptIntent 'Intención de cobro' = DATA PaymentTerminalIntent (PaymentTerminalAttempt) NONULL;
+attemptAssignment 'Asignación' = DATA PaymentTerminalAssignment (PaymentTerminalAttempt);
+attemptInvoice 'Venta' = DATA Invoicing.Invoice (PaymentTerminalAttempt);
+attemptPos 'Caja' = DATA Retail.Pos (PaymentTerminalAttempt);
+attemptPaymentMethod 'Medio de pago' = DATA Retail.PaymentMethod (PaymentTerminalAttempt);
+attemptTerminal 'Terminal' = DATA PaymentTerminal (PaymentTerminalAttempt);
+attemptProviderAccount 'Cuenta del proveedor' = DATA PaymentProviderAccount (PaymentTerminalAttempt);
+
+attemptLocalReference 'Referencia local' = DATA STRING[100] (PaymentTerminalAttempt);
+attemptIdempotencyKey 'Clave idempotente' = DATA STRING[100] (PaymentTerminalAttempt) NONULL IN id;
+attemptExternalReference 'Referencia externa opaca' = DATA STRING[100] (PaymentTerminalAttempt);
+attemptProviderOperationId 'Identificador de operación' = DATA STRING[140] (PaymentTerminalAttempt);
+attemptProviderOrderId 'Identificador de orden' = DATA STRING[140] (PaymentTerminalAttempt);
+attemptAmount 'Importe' = DATA NUMERIC[14,2] (PaymentTerminalAttempt) NONULL;
+attemptCurrencyCode 'Moneda' = DATA STRING[3] (PaymentTerminalAttempt) NONULL;
+attemptStatus 'Estado' = DATA STRING[40] (PaymentTerminalAttempt) NONULL;
+attemptStatusDetail 'Detalle de estado saneado' = DATA ISTRING[200] (PaymentTerminalAttempt);
+attemptCreatedAt 'Creado' = DATA DATETIME (PaymentTerminalAttempt);
+attemptUpdatedAt 'Actualizado' = DATA DATETIME (PaymentTerminalAttempt);
+attemptConfirmedAt 'Confirmado por el proveedor' = DATA DATETIME (PaymentTerminalAttempt);
+attemptNeedsReconciliation 'Requiere conciliación' = DATA BOOLEAN (PaymentTerminalAttempt);
+attemptSafeToRetry 'Reintento seguro confirmado' = DATA BOOLEAN (PaymentTerminalAttempt);
+attemptFailureCategory 'Categoría de error' = DATA STRING[40] (PaymentTerminalAttempt);
+
+
+CLASS PaymentProviderEvent 'Evento de proveedor de pagos';
+
+providerEventAccount 'Cuenta del proveedor' = DATA PaymentProviderAccount (PaymentProviderEvent);
+providerEventKey 'Clave idempotente del evento' = DATA STRING[240] (PaymentProviderEvent) NONULL IN id;
+providerEventId 'Identificador del evento' = DATA STRING[140] (PaymentProviderEvent);
+providerEventType 'Tipo de evento' = DATA STRING[80] (PaymentProviderEvent);
+providerEventOperationId 'Operación externa' = DATA STRING[140] (PaymentProviderEvent);
+providerEventAttempt 'Intento relacionado' = DATA PaymentTerminalAttempt (PaymentProviderEvent);
+providerEventSignatureVerified 'Firma verificada' = DATA BOOLEAN (PaymentProviderEvent);
+providerEventReceivedAt 'Recibido' = DATA DATETIME (PaymentProviderEvent);
+providerEventProcessedAt 'Procesado' = DATA DATETIME (PaymentProviderEvent);
+providerEventProcessingStatus 'Estado de procesamiento' = DATA STRING[40] (PaymentProviderEvent);
+// Deliberadamente no existe una columna para guardar el cuerpo HTTP completo.
+
+
+CLASS PaymentSettlement 'Liquidación del proveedor';
+
+settlementProviderAccount 'Cuenta del proveedor' = DATA PaymentProviderAccount (PaymentSettlement);
+settlementExternalReference 'Referencia de liquidación' = DATA STRING[140] (PaymentSettlement);
+settlementCurrencyCode 'Moneda' = DATA STRING[3] (PaymentSettlement);
+settlementGrossAmount 'Importe bruto' = DATA NUMERIC[14,2] (PaymentSettlement);
+settlementFees 'Comisiones' = DATA NUMERIC[14,2] (PaymentSettlement);
+settlementTaxes 'Impuestos y retenciones' = DATA NUMERIC[14,2] (PaymentSettlement);
+settlementNetAmount 'Importe neto' = DATA NUMERIC[14,2] (PaymentSettlement);
+settlementStatus 'Estado de liquidación' = DATA STRING[40] (PaymentSettlement);
+settlementExpectedAt 'Acreditación prevista' = DATA DATETIME (PaymentSettlement);
+settlementSettledAt 'Acreditado' = DATA DATETIME (PaymentSettlement);
+
+CLASS PaymentRefund 'Reintegro de terminal';
+
+refundOriginalAttempt 'Intento de pago original' = DATA PaymentTerminalAttempt (PaymentRefund) NONULL;
+refundBill 'Devolución' = DATA Invoicing.Bill (PaymentRefund);
+refundOutgoingPayment 'Egreso contable' = DATA Invoicing.OutgoingPayment (PaymentRefund);
+refundIdempotencyKey 'Clave idempotente del reintegro' = DATA STRING[100] (PaymentRefund) NONULL IN id;
+refundLocalReference 'Referencia local de reintegro' = DATA STRING[100] (PaymentRefund);
+refundExternalReference 'Referencia externa de reintegro' = DATA STRING[140] (PaymentRefund);
+refundAmount 'Importe reintegrado' = DATA NUMERIC[14,2] (PaymentRefund) NONULL;
+refundCurrencyCode 'Moneda' = DATA STRING[3] (PaymentRefund) NONULL;
+refundStatus 'Estado del reintegro' = DATA STRING[40] (PaymentRefund) NONULL;
+refundReason 'Motivo' = DATA ISTRING[200] (PaymentRefund);
+refundRequestedAt 'Solicitado' = DATA DATETIME (PaymentRefund);
+refundConfirmedAt 'Confirmado por el proveedor' = DATA DATETIME (PaymentRefund);
+
+
+CLASS PaymentSettlementLine 'Línea de liquidación';
+
+settlementLineSettlement 'Liquidación' = DATA PaymentSettlement (PaymentSettlementLine) NONULL;
+settlementLineAttempt 'Intento de pago' = DATA PaymentTerminalAttempt (PaymentSettlementLine);
+settlementLineIncomingPayment 'Cobro contable' = DATA Invoicing.IncomingPayment (PaymentSettlementLine);
+settlementLineExternalReference 'Referencia externa' = DATA STRING[140] (PaymentSettlementLine);
+settlementLineGrossAmount 'Bruto' = DATA NUMERIC[14,2] (PaymentSettlementLine) NONULL;
+settlementLineFees 'Comisiones' = DATA NUMERIC[14,2] (PaymentSettlementLine);
+settlementLineTaxes 'Impuestos y retenciones' = DATA NUMERIC[14,2] (PaymentSettlementLine);
+settlementLineNetAmount 'Neto' = DATA NUMERIC[14,2] (PaymentSettlementLine) NONULL;
+settlementLineReconciled 'Conciliada' = DATA BOOLEAN (PaymentSettlementLine);
+settlementLineReconciliationNote 'Detalle de conciliación' = DATA ISTRING[300] (PaymentSettlementLine);
+
+
+// Cuentas de proveedor: no se permite guardar credenciales dentro del modelo.
+FORM rubrovaPaymentProviderAccount 'Cuenta de proveedor de pagos'
+    OBJECTS a = PaymentProviderAccount PANEL
+    PROPERTIES(a) providerCode, providerName, providerEnvironment, merchantReference,
+        credentialReference, providerAccountEnabled
+    EDIT PaymentProviderAccount OBJECT a
+;
+
+FORM rubrovaPaymentProviderAccounts 'Cuentas de proveedores de pago'
+    OBJECTS a = PaymentProviderAccount
+    PROPERTIES(a) READONLY providerCode, providerName, providerEnvironment,
+        merchantReference, providerAccountEnabled
+    PROPERTIES(a) NEWSESSION NEW, EDIT, DELETE
+    LIST PaymentProviderAccount OBJECT a
+;
+
+FORM rubrovaPaymentTerminal 'Terminal de pago'
+    OBJECTS t = PaymentTerminal PANEL
+    PROPERTIES(t) terminalName, providerAccount, terminalExternalReference, terminalModel,
+        terminalFirmware, terminalConnectionMode, terminalTransport, terminalBridgeHost,
+        terminalBridgePort, terminalEnabled, terminalLastHealthCheck, terminalHealthStatus
+    EDIT PaymentTerminal OBJECT t
+;
+
+FORM rubrovaPaymentTerminals 'Terminales de pago'
+    OBJECTS t = PaymentTerminal
+    PROPERTIES(t) READONLY terminalName, providerAccount, terminalModel, terminalFirmware,
+        terminalConnectionMode, terminalTransport, terminalEnabled, terminalHealthStatus
+    PROPERTIES(t) NEWSESSION NEW, EDIT, DELETE
+    LIST PaymentTerminal OBJECT t
+;
+
+FORM rubrovaPaymentTerminalAssignment 'Asignación de terminal'
+    OBJECTS a = PaymentTerminalAssignment PANEL
+    PROPERTIES(a) assignedPos, assignedPaymentMethod, assignedTerminal,
+        assignmentEnabled, assignmentCreatedAt
+    EDIT PaymentTerminalAssignment OBJECT a
+;
+
+FORM rubrovaPaymentTerminalAssignments 'Asignaciones de terminales'
+    OBJECTS a = PaymentTerminalAssignment
+    PROPERTIES(a) READONLY assignedPos, assignedPaymentMethod, assignedTerminal,
+        assignmentEnabled, assignmentCreatedAt
+    PROPERTIES(a) NEWSESSION NEW, EDIT, DELETE
+    LIST PaymentTerminalAssignment OBJECT a
+;
+
+FORM rubrovaPaymentIntents 'Intenciones de cobro'
+    OBJECTS i = PaymentTerminalIntent
+    PROPERTIES(i) READONLY intentInvoice, intentPos, intentPaymentMethod,
+        intentTerminalAssignment, intentProviderAccount, intentLocalReference,
+        intentIdempotencyKey, intentAmount, intentCurrencyCode, intentStatus,
+        intentCreatedAt, intentFrozenAt, intentExpiresAt, intentNeedsReconciliation
+    LIST PaymentTerminalIntent OBJECT i
+;
+
+FORM rubrovaPaymentAttempts 'Intentos de pago externos'
+    OBJECTS a = PaymentTerminalAttempt
+    PROPERTIES(a) READONLY attemptLocalReference, attemptExternalReference,
+        attemptProviderOperationId, attemptProviderOrderId, attemptInvoice,
+        attemptPos, attemptPaymentMethod, attemptTerminal, attemptAmount,
+        attemptCurrencyCode, attemptStatus, attemptStatusDetail,
+        attemptCreatedAt, attemptConfirmedAt, attemptNeedsReconciliation,
+        attemptSafeToRetry, attemptFailureCategory
+    LIST PaymentTerminalAttempt OBJECT a
+;
+
+FORM rubrovaPaymentRefunds 'Reintegros de terminales'
+    OBJECTS r = PaymentRefund
+    PROPERTIES(r) READONLY refundOriginalAttempt, refundBill, refundOutgoingPayment,
+        refundLocalReference, refundExternalReference, refundAmount, refundCurrencyCode,
+        refundStatus, refundReason, refundRequestedAt, refundConfirmedAt
+    LIST PaymentRefund OBJECT r
+;
+
+FORM rubrovaPaymentProviderEvents 'Eventos de proveedores de pago'
+    OBJECTS e = PaymentProviderEvent
+    PROPERTIES(e) READONLY providerEventAccount, providerEventId, providerEventType,
+        providerEventOperationId, providerEventAttempt, providerEventSignatureVerified,
+        providerEventReceivedAt, providerEventProcessedAt, providerEventProcessingStatus
+    LIST PaymentProviderEvent OBJECT e
+;
+
+FORM rubrovaPaymentSettlementLines 'Líneas de liquidación'
+    OBJECTS l = PaymentSettlementLine
+    PROPERTIES(l) READONLY settlementLineSettlement, settlementLineAttempt,
+        settlementLineIncomingPayment, settlementLineExternalReference,
+        settlementLineGrossAmount, settlementLineFees, settlementLineTaxes,
+        settlementLineNetAmount, settlementLineReconciled,
+        settlementLineReconciliationNote
+    LIST PaymentSettlementLine OBJECT l
+;
+
+FORM rubrovaPaymentSettlements 'Liquidaciones de proveedores'
+    OBJECTS s = PaymentSettlement
+    PROPERTIES(s) READONLY settlementProviderAccount, settlementExternalReference,
+        settlementCurrencyCode, settlementGrossAmount, settlementFees,
+        settlementTaxes, settlementNetAmount, settlementStatus,
+        settlementExpectedAt, settlementSettledAt
+    LIST PaymentSettlement OBJECT s
+;
+
+NAVIGATOR {
+    settings {
+        NEW rubrovaPaymentProviderAccounts;
+        NEW rubrovaPaymentTerminals;
+        NEW rubrovaPaymentTerminalAssignments;
+    }
+    operations {
+        NEW rubrovaPaymentIntents;
+        NEW rubrovaPaymentAttempts;
+        NEW rubrovaPaymentRefunds;
+        NEW rubrovaPaymentProviderEvents;
+        NEW rubrovaPaymentSettlements;
+        NEW rubrovaPaymentSettlementLines;
+    }
+}

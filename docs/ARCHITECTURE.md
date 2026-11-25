@@ -139,6 +139,8 @@ Dos cajas aisladas no conocen los movimientos mutuos. El inventario local debe c
 
 La interfaz POS se comunica con una capa de dispositivos independiente. Los protocolos y controladores de impresoras, lectores, balanzas, cajones, pantallas y terminales se aíslan detrás de adaptadores. Se prioriza una pasarela local cuando sea necesaria para acceso USB, serie o red y para mantener la caja desacoplada de los servicios externos.
 
+Para pagos presenciales, la terminal y el PSP/adquirente siguen siendo responsables de capturar tarjeta/PIN/QR y procesar la operación. Rubrova coordina el importe y registra el resultado. Se distinguen terminal autónoma/manual, integración local y cloud-to-cloud; pago confirmado y liquidación acreditada son estados diferentes. La implementación y los diagramas están en [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
+
 No se afirma compatibilidad por marca genérica: cada modelo, conexión y sistema operativo se registra en una matriz de pruebas físicas.
 
 ## Observabilidad

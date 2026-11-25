@@ -72,6 +72,7 @@ Una plataforma que reúne en un solo lugar:
 | [Inteligencia del negocio](docs/BUSINESS_INTELLIGENCE.md) | Métricas, rentabilidad, estacionalidad, tendencias y pronósticos |
 | [Perfil 360 e inteligencia por cliente](docs/CUSTOMER_360_AND_INTELLIGENCE.md) | Preferencias, marcas, productos, RFM, retención, CLV y rentabilidad por cliente |
 | [Identidad del pagador y conciliación](docs/PAYMENT_IDENTITY_AND_RECONCILIATION.md) | Datos de QR, tarjeta, transferencia y efectivo; integraciones de cobro, privacidad e identidad transversal |
+| [Arquitectura de terminales de pago](docs/PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md) | Terminal autónoma e integrada, adaptadores, entidades, estados, idempotencia, webhooks y conciliación |
 | [Implementación de demanda, rentabilidad y marcas](docs/DEMAND_AND_MARGIN_INTELLIGENCE.md) | Datos fuente, herramientas reutilizables, costos, pronósticos, primeras/segundas marcas y pruebas de aceptación |
 | [Benchmark de demanda](scripts/forecasting/benchmark.py) | Comparación reproducible de baselines y StatsForecast sobre datos mensuales sintéticos |
 | [Canales e integraciones](docs/CHANNELS_AND_INTEGRATIONS.md) | Omnicanalidad, ARCA, Mercado Libre y pagos |

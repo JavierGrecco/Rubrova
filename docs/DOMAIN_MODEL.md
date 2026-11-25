@@ -43,6 +43,19 @@
 - CashTender / CashChange / CashMovement / RegisterShift: efectivo recibido, vuelto, libro de caja y turno.
 - Invoice / CreditNote / FiscalDocument: factura, nota de crédito y documento fiscal separado.
 
+## Terminales y pagos presenciales
+
+- PaymentProviderAccount: cuenta del comercio en un PSP/adquirente y referencia segura a sus credenciales.
+- PaymentTerminal: dispositivo físico, proveedor, modelo, firmware y modalidad de conexión.
+- PaymentTerminalAssignment: asociación temporal entre caja, medio de pago y terminal.
+- PaymentIntent / PaymentAttempt: intención comercial e intento concreto enviado a una terminal/proveedor.
+- ProviderOperation / ProviderWebhookEvent: referencia externa, estado y notificación autenticada.
+- Payment / PaymentAllocation: pago confirmado y su aplicación a la venta.
+- PaymentRefund / PaymentReversal / Chargeback: efectos posteriores vinculados a la operación original.
+- PaymentSettlement / SettlementLine: liquidación, bruto, comisiones, impuestos, retenciones y neto.
+
+La terminal captura el medio de pago; el proveedor procesa la autorización. El pago confirmado no equivale a liquidación acreditada. Las asignaciones de pago mixto permanecen independientes. Véase [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
+
 ## Fulfillment y logística
 
 - FulfillmentOrder: tareas de preparación derivadas de un pedido/venta.

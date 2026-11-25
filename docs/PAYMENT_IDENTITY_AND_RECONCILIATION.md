@@ -1,7 +1,9 @@
 # Identidad del pagador, pagos y conciliación
 
-**Revisión:** 20 de noviembre de 2026  
-**Estado:** diseño de dominio e integraciones; los conectores y la resolución de identidad todavía no están implementados.
+**Revisión:** 24 de noviembre de 2026  
+**Estado:** modelo de identidad y pagos definido; se incorporó la primera base de configuración/trazabilidad de terminales. Los conectores y la resolución de identidad todavía no están implementados.
+
+Para el flujo físico de terminal, modos de integración, entidades, estados y seguridad, consultar [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
 
 ## 1. Decisión central
 
@@ -211,3 +213,12 @@ La arquitectura, investigación y pruebas están especificadas. Aún no se conec
 - [S-Tech — transformación de comercios](https://s-tech.com.ar/transformacion-de-comercios/), [CashFore y CashSchedule](https://s-tech.com.ar/sistema-inteligente-de-operacion-y-transporte/).
 
 Los contratos, manuales de comercio, matrices de campos y políticas de tratamiento prevalecen sobre esta síntesis. Antes de activar un conector, Rubrova debe registrar por versión los campos disponibles, su finalidad y retención, además del estado de homologación.
+
+
+## 10. Terminal, intento de cobro y liquidación
+
+La terminal no es una identidad de cliente ni un medio contable. Es un dispositivo asignado a una caja y a un medio de pago. La cuenta del proveedor identifica la relación comercial con el adquirente/PSP. Un intento es una operación de pago remota o local que aún no debe crear un movimiento contable por sí sola.
+
+Las entidades `PaymentProviderAccount`, `PaymentTerminal`, `PaymentTerminalAssignment`, `PaymentTerminalAttempt`, `PaymentProviderEvent` y `PaymentSettlement` se detallan en [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md). La primera implementación persiste configuración y trazabilidad; aún no contiene un conector de proveedor ni autoriza cobros reales.
+
+**Aprobación y acreditación son estados diferentes.** Una operación puede estar confirmada por el proveedor y todavía no haber sido incluida en una liquidación o acreditada en la cuenta bancaria del comercio. El pago se asocia a la venta cuando existe una confirmación válida; la liquidación se concilia después, con sus comisiones, impuestos, retenciones y neto.

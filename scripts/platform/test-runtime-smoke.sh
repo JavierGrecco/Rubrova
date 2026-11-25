@@ -363,14 +363,14 @@ import sys
 
 path = Path(sys.argv[1])
 source = path.read_text(encoding="utf-8")
-old = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience;"
-new = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaCISalesFixture;"
+old = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;"
+new = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaCISalesFixture;"
 if source.count(old) != 1:
     raise SystemExit("No se encontró una única lista de REQUIRE esperada en RubrovaCustom.lsf.")
 path.write_text(source.replace(old, new, 1), encoding="utf-8")
 PY
 
-for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf RubrovaCISalesFixture.lsf MyCompanyResourceBundle_es_AR.properties; do
+for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf RubrovaPaymentTerminals.lsf RubrovaCISalesFixture.lsf MyCompanyResourceBundle_es_AR.properties; do
   [[ -s "$COMPOSE_DIR/docker-server/$module_file" ]] || {
     echo "No se preparó el archivo de extensión: $module_file" >&2
     exit 1
@@ -777,7 +777,7 @@ LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 START_LOG="$LOG_DIR/start.log"
 STDOUT_LOG="$LOG_DIR/stdout.log"
 EXPECTED_UPSTREAM_MODULES=712
-EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 4))
+EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 5))
 MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
@@ -814,7 +814,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
     if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
       ALL_MODULES_READY=true
     elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
-      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 3 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
+      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 4 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
       exit 1
     fi
   fi
@@ -841,7 +841,7 @@ fi
 }
 if [[ "$MODULES_READY" != "true" ]]; then
   echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
-  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 3 módulos Rubrova + 1 fixture temporal de CI)." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 4 módulos Rubrova + 1 fixture temporal de CI)." >&2
   echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
   exit 1
 fi
@@ -1149,7 +1149,7 @@ if [[ -d "$LOG_DIR" ]]; then
         tail -n 80 "$log_file"
         ;;
     esac
-    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|RubrovaCISalesFixture|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|RubrovaPaymentTerminals|RubrovaCISalesFixture|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
     if [[ -n "$matches" ]]; then
       printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
       if grep -Fq 'RubrovaCustom' <<< "$matches"; then

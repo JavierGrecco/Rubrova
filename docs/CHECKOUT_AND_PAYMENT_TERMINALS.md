@@ -1,7 +1,9 @@
 # Checkout, caja y terminales de pago
 
-**Revisión:** 19 de noviembre de 2026  
-**Estado:** requerimiento funcional definido; integraciones por proveedor pendientes de homologación y prueba con terminal física.
+**Revisión:** 24 de noviembre de 2026  
+**Estado:** requerimiento y arquitectura definidos; modelo inicial de configuración y trazabilidad incorporado. Los adaptadores reales y la homologación física siguen pendientes.
+
+La explicación completa de los flujos autónomo, local y cloud-to-cloud, los diagramas, entidades, estados, seguridad, conciliación y criterios de aceptación está en [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
 
 ## Objetivo
 
@@ -32,6 +34,15 @@ La pantalla muestra total asignado a efectivo, campo grande para ingresar el imp
 - En pagos mixtos, no se registra el total de la venta como efectivo si parte se cobró por otro medio.
 
 ## Terminal bancaria integrada
+
+Hay tres modalidades y no se deben mezclar:
+
+- **Autónoma/manual:** el cajero cobra en el postnet y después registra el resultado en Rubrova. No hay una confirmación técnica entre terminal y POS; el registro queda atribuido al operador y requiere conciliación.
+- **Integrada local:** Rubrova envía importe y referencia mediante un adaptador/SDK/puente del fabricante. El postnet captura tarjeta/PIN/QR y procesa el cobro.
+- **Cloud-to-cloud:** Rubrova crea una orden en la API del proveedor; el equipo la recibe desde el proveedor y Rubrova recupera el resultado por consulta HTTPS o notificación firmada a un relay. Un proveedor externo no puede enviar un webhook directamente a `127.0.0.1`.
+
+En los tres casos, la tarjeta, el PIN, el CVV y la autorización financiera permanecen bajo el control de la terminal y del proveedor. Rubrova no implementa un procesador de tarjetas. La documentación completa está en [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
+
 
 Rubrova necesita un adaptador por adquirente/proveedor y modelo de terminal. No todos los dispositivos soportan la misma API, impresión, cancelación o modo desconectado.
 
