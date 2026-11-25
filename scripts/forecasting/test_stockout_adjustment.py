@@ -26,7 +26,7 @@ class StockoutAdjustmentTests(unittest.TestCase):
         self.assertEqual(result["estimatedDemandUnits"], 80.0)
 
     def test_low_availability_and_too_few_days_are_suppressed(self) -> None:
-        low_ratio = adjust_observation({"units": 30, "openDays": 20, "stockoutDays": 11})
+        low_ratio = adjust_observation({"units": 30, "openDays": 40, "stockoutDays": 22})
         too_few = adjust_observation({"units": 30, "openDays": 20, "stockoutDays": 11}, min_available_days=10)
         self.assertIsNone(low_ratio["estimatedDemandUnits"])
         self.assertEqual(low_ratio["reason"], "LOW_AVAILABILITY")
