@@ -10,9 +10,23 @@ La disponibilidad legal de la denominación y de los dominios todavía no está 
 
 ## Probar el proyecto localmente
 
-El objetivo de desarrollo es poder iniciar Rubrova de forma nativa, sin Docker, y conservar Docker como una alternativa de ejecución aislada. La configuración ya distingue los destinos `native-local`, `docker-local` y `remote-online`; el supervisor nativo y el panel visual todavía están en construcción. Consultá [Modos de ejecución y control local](docs/RUNTIME_MODES_AND_LOCAL_CONTROL.md).
+**El camino principal de desarrollo es el runtime nativo, sin Docker.** lsFusion/MyCompany se ejecutan con Java 21; PostgreSQL 18 conserva los datos en el equipo y Tomcat 9 sirve el cliente web. Docker queda como alternativa de empaquetado y como smoke secundario/manual, no como requisito para levantar el POS.
 
-La vista previa experimental que existe hoy en Mac Apple Silicon sigue necesitando Docker Desktop. **No la ejecutes en una Mac sin Docker**: todavía no es el lanzador nativo que estamos preparando. La guía de esa vista previa está en [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
+Ya existe un primer supervisor en `scripts/platform/run-local-native-preview.py`. Puede preparar una base aislada, iniciar el servidor, esperar el fin de la inicialización y luego iniciar el cliente web. El prototipo requiere artefactos compilados y Java 21, las herramientas nativas de PostgreSQL 18, Python 3 y Tomcat 9.0.124. Si Tomcat no está en caché, la primera preparación lo descarga y verifica; por eso todavía no es un instalador offline ni una entrega lista para una PC limpia.
+
+Desde la raíz del repositorio, después de preparar Java 21 y PostgreSQL 18:
+
+```bash
+python3 scripts/platform/runtime-config.py init
+mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
+mvn -B -ntp -f vendor/platform/pom.xml -pl server,web-client -am -DskipTests package
+python3 scripts/platform/run-local-native-preview.py doctor
+python3 scripts/platform/run-local-native-preview.py --no-open start
+```
+
+El comando de inicio abre el POS en `http://127.0.0.1:8080`; se detiene con Ctrl+C y conserva la base local. Se puede usar `--offline` antes de `doctor` o `start` para impedir descargas: sólo funcionará cuando Tomcat y los artefactos ya estén disponibles en caché. En macOS, si PostgreSQL 18 está en Postgres.app, indicá su carpeta bin mediante `RUBROVA_POSTGRES_BIN=/Applications/Postgres.app/Contents/Versions/18/bin`.
+
+La CI está migrando sus pruebas de arranque al mismo runtime nativo. La aceptación completa de venta, pagos, caja y stock ya pasó anteriormente en el smoke Docker; todavía falta repetir ese ciclo sobre la ruta nativa antes de declararla aceptada. Consultá [Modos de ejecución y control local](docs/RUNTIME_MODES_AND_LOCAL_CONTROL.md), [Estado real del proyecto](docs/PROJECT_STATUS.md) y [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
 
 ## Qué estamos construyendo
 
@@ -101,7 +115,7 @@ Una plataforma que reúne en un solo lugar:
 
 ## Compatibilidad con macOS
 
-Rubrova contempla macOS como entorno de desarrollo y como equipo cliente del POS web. La preparación de artefactos y el staging de la extensión se validan en CI sobre un runner Apple Silicon. Esto no equivale a certificar el servidor MyCompany en ARM: su imagen de lógica 6.2 está publicada para `linux/amd64`, por lo que el runtime local en Apple Silicon requiere emulación y una prueba real antes de aceptarse. La guía separa lo que ya se valida de lo que todavía falta comprobar: [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
+Rubrova tendrá un runtime nativo en macOS: el JAR de servidor y el JAR de lógica se ejecutan sobre Java 21 ARM64, PostgreSQL debe ser nativo para la arquitectura del equipo y Tomcat sirve el WAR localmente. Esto evita la emulación de la imagen Docker AMD64 de MyCompany. El supervisor ya existe como prototipo; falta aceptación real en Apple Silicon y empaquetado para usuarios. Ver [Compatibilidad con macOS](docs/MACOS_SUPPORT.md).
 
 ## Etapa actual y próximos resultados
 
@@ -111,9 +125,9 @@ MyCompany 6.2 es el primer piloto de integración, todavía no aprobado para el 
 
 - Reutilizar los módulos de Retail POS, sesiones, pagos mixtos, devoluciones, inventario, costos, compras, ventas y facturación.
 - Mantener las personalizaciones en un módulo Rubrova separado del código upstream.
-- Preparar y validar los artefactos desde Windows, Linux y macOS; desplegar la extensión en Windows/Linux nativo o Docker. CI ya arranca MyCompany 6.2 en Linux x86_64 y ejecuta la extensión Rubrova.
-- CI [#45481198077](https://github.com/JavierGrecco/Rubrova/actions/runs/45481198077), sobre `7fbfbe5`, compiló el fork vendorizado y ejecutó un ciclo sintético: login, apertura de turno, selección de producto, venta de ARS 1.250, cobro exacto en efectivo, factura/pago, stock (10 → 9) y cierre `CLOSED` conciliado.
-- El mismo smoke simuló ocho resultados de integración (timeout, HTTP 400/401/403/408/409/429/503) y comprobó recuperación posterior. Los datos se destruyen al finalizar; no es una instalación ni una jornada real.
+- Preparar y validar los artefactos desde las fuentes vendorizadas. El camino de desarrollo y CI pasa a ser PostgreSQL + Java + Tomcat nativos; Docker se reserva para una validación manual secundaria de empaquetado y aislamiento.
+- La aceptación funcional completa anterior [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) probó en un entorno efímero una venta de ARS 1.250 en efectivo, factura/pago persistidos, stock (10 → 9), caja y cierre `CLOSED`, además de fallos HTTP simulados y recuperación. Esa evidencia corresponde al runtime Docker; no se debe presentar como aceptación nativa.
+- El nuevo smoke nativo comprueba PostgreSQL 18 local, servidor Java, RMI, final de `onStarted`, Tomcat, login y navegación española con la salida externa bloqueada. La CI ya pasa las pruebas estáticas/unitarias y la validación Windows; la compilación y el smoke nativo completo siguen siendo una puerta abierta hasta que termine el workflow actual.
 - El POS sigue en aceptación: faltan devoluciones/reintegros, vuelto, pagos mixtos y tarjeta, movimientos y arqueo de caja, permisos por perfil, backup/restore, periféricos y pruebas fiscales argentinas.
 - La localización aún es parcial. La navegación general y varios formularios heredados requieren revisión. La Mac Apple Silicon ya compila localmente, pero no ejecuta nativamente el stack completo: MyCompany 6.2 publica su lógica como `linux/amd64`.
 
@@ -144,5 +158,5 @@ Las integraciones fiscales y de pago se implementarán contra documentación ofi
 
 ---
 
-**Estado del producto:** Fase 0 avanzada; ciclo básico de venta, cobro en efectivo, stock y cierre sintéticos probado en CI Linux x86_64. No está aprobado para uso diario.  
-**Estado del software:** MyCompany 6.2 + extensiones RubrovaCustom/RubrovaPOSLocalization/RubrovaIntegrationResilience; build local macOS y artefactos verificados. Devoluciones, medios mixtos, arqueo, permisos, backup/restore, periféricos, localización completa e instalación anfitriona siguen pendientes.
+**Estado del producto:** piloto MyCompany 6.2 en evolución; el ciclo comercial básico está probado en el smoke Docker, pero aún no en el runtime nativo. No está aprobado para uso diario.  
+**Estado del software:** fuentes lsFusion/MyCompany fijadas y vendorizadas, extensiones propias, supervisor nativo inicial y pruebas unitarias. Siguen pendientes el smoke de venta nativo, el instalador offline, el panel de control, la aceptación en macOS ARM64/Windows y los circuitos comerciales restantes.
