@@ -1,18 +1,35 @@
 # Estado real del proyecto Rubrova
 
 **Corte:** 25 de noviembre de 2026  
-**Rama:** `main`  
-**Última aceptación funcional completa:** [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959), commit `ded61a574a0e40d11ef6fb99cb9d84aef69465a6`. Los jobs macOS ARM64, Linux x86_64 nativo y Docker/Linux completaron login, apertura de turno, venta en efectivo, factura/pago, conciliación de stock, cierre e incidencias de integración. Linux nativo bloqueó la salida externa y mantuvo el POS operativo. La revisión posterior `774387c` también pasó build y la aceptación nativa de Linux/macOS; el modo demo incorporado se integra ahora a la prueba automatizada de arranque.
-**Última aceptación funcional Docker completa:** [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959); completó el ciclo POS en contenedores con artefactos compilados desde fuentes Rubrova.
-**Estado:** la aceptación nativa macOS ARM64 es la puerta obligatoria. Linux nativo y Docker/Linux se ejecutan como diagnósticos suplementarios no bloqueantes; ambos pasaron junto con macOS en `45637101959`. No hay aceptación todavía en un Mac físico ni autorización para uso diario.
+**Rama canónica:** `main`  
+**Integración pendiente:** [PR #8 — exportación nativa de reposición](https://github.com/JavierGrecco/Rubrova/pull/8), rama `feat/mycompany-readonly-replenishment-api`, HEAD `8777842`.
+
+## Estado de la última validación
+
+- **Suite del planificador:** aprobada en [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825), sobre el commit `8777842`.
+- **Validación estática y Windows:** aprobadas en la ejecución de plataforma correspondiente al commit anterior; la nueva ejecución [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) está en curso.
+- **Compilación completa del fork lsFusion 6.2 + GWT + MyCompany 6.2:** aprobada en la ejecución anterior [45721155696](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696).
+- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. La causa se está acotando a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. La aceptación de esa corrección sigue pendiente.
+- **Docker/Linux:** el job de diagnóstico es no bloqueante. Una anotación reportó que el smoke de POS no llegó a aprobarse; su job en verde no debe interpretarse como aceptación del flujo.
+- **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
+
+## Resumen de madurez
+
+La última aceptación funcional completa del POS base sigue siendo el [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959), sobre una revisión anterior. Validó con datos sintéticos login, apertura de turno, venta en efectivo, factura/pago, stock y cierre básico en runners de CI. No constituye una jornada real, una instalación productiva ni una aceptación del nuevo puente de reposición.
+
+El repositorio contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor compila el servidor, el cliente GWT y la lógica MyCompany desde las fuentes propias. El camino de desarrollo local prioriza Java 21, PostgreSQL 18 y Tomcat 9 sin Docker, con una vista previa supervisada y datos aislados.
+
+El PR #8 incorpora el módulo autenticado de exportación nativa y su puente Python. La compilación no detecta errores de sintaxis y la suite del planificador aprueba; el problema actual aparece al ejecutar la acción de exportación después del login. Hasta que esa acción responda correctamente en macOS ARM64 y Linux, y sus cifras concilien con una base real, la integración no se considera aceptada.
 
 ## Resumen ejecutivo
 
-Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany desde las fuentes propias. El desarrollo local prioriza el runtime nativo (Java 21, PostgreSQL 18 y Tomcat 9), especialmente en macOS. CI exige la aceptación nativa macOS ARM64; Linux nativo y Docker/Linux se ejecutan como diagnósticos suplementarios no bloqueantes y completaron una ejecución verde en `45637101959`.
+Rubrova está en **Fase 0: piloto integrado POS + ERP**. El núcleo MyCompany/lsFusion está compilado desde las fuentes fijadas y el primer circuito POS básico fue probado en CI con una base sintética. El foco inmediato es cerrar la exportación nativa de reposición y demostrar que el runtime puede utilizarse localmente en el MacBook Air del usuario.
 
-La aceptación Docker histórica `45503956218` completó una venta sintética de ARS 1.250, factura/pago, stock 10 → 9, caja `CLOSED`, reinicio y escenarios HTTP. El run `45637101959` repitió el ciclo en Docker/Linux, macOS ARM64 y Linux nativo sin Docker. En Linux nativo la salida externa quedó bloqueada y el POS pudo vender, cobrar, conciliar stock y cerrar el turno. La revisión `774387c` volvió a pasar build y los runtimes nativos; el modo demo tiene sus tests unitarios y ahora se prueba mediante un segundo arranque aislado.
+La exportación nueva es de solo lectura. Separa existencia física, disponible nativo, reservas, compromisos por línea de venta y recepciones previstas. El adaptador Python valida las conciliaciones, exige políticas explícitas por producto/ubicación y rechaza escenarios que el planificador todavía no modela. No ejecuta `fillAuto`, ni crea, modifica o confirma órdenes de compra.
 
-Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de CI que se destruye al terminar. Esta aprobación demuestra el primer recorrido venta → cobro → stock → cierre básico; no habilita aún el uso diario ni significa que el POS/ERP esté terminado.
+El último fallo ya no es de compilación ni de arranque: el servidor y el cliente cargan y el login funciona; la acción de exportación devuelve HTTP 500 por una operación de conjuntos incorrecta. Se retiraron conversiones de tipo sobre los índices de línea y se añadió una guarda estática. La revisión está siendo validada de nuevo.
+
+La capa de pagos presenciales tiene arquitectura y entidades iniciales de configuración/trazabilidad, pero no existe todavía un conector homologado ni cobros reales. Tryton 8.0 + tryton-ar 8.0 se conserva como referencia fiscal argentina, no como segundo núcleo operativo.
 
 ## Qué está probado
 
