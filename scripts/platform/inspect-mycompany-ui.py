@@ -763,9 +763,10 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
                 f"esperado {expected!r}, recibido {payload.get(field)!r}."
             )
 
-    from datetime import date
+    from datetime import date, datetime
     try:
         date.fromisoformat(str(payload.get("asOf", ""))[:10])
+        datetime.fromisoformat(str(payload.get("asOfDateTime", "")).replace("Z", "+00:00"))
     except ValueError as error:
         raise RuntimeError("La fecha asOf de la exportación no usa YYYY-MM-DD.") from error
 
@@ -775,9 +776,11 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
         "outgoingIdentity": "Sales.OrderLine.id",
         "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
+        "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
         "outgoingEffectiveReservation": "SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)",
         "incomingIdentity": "Inventory.ReceiptLine.id",
         "incomingExpectedQuantity": "0 - Inventory.ReceiptResLedger.reserved",
+        "incomingScheduledDateTime": "Receipt.scheduledDateTime",
         "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND Purchase.Order.confirmed",
         "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
     }
@@ -836,7 +839,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         reserved = numeric(row, "effectiveReserved", row_label)
         if row.get("status") != "confirmed" or open_quantity <= 0 or reserved < 0 or reserved > open_quantity + 0.001:
             raise RuntimeError(f"{row_label} viola la semántica de compromiso abierto/reserva efectiva.")
-        for field in ("sourceDocumentId", "productId", "locationId", "scheduledDate"):
+        for field in ("sourceDocumentId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
             if not str(row.get(field) or "").strip():
                 raise RuntimeError(f"{row_label}.{field} está vacío.")
 
@@ -855,7 +858,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             or not isinstance(row.get("increaseAvailableStock"), bool)
         ):
             raise RuntimeError(f"{row_label} no respeta el contrato de recepción pendiente.")
-        for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate"):
+        for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
             if not str(row.get(field) or "").strip():
                 raise RuntimeError(f"{row_label}.{field} está vacío.")
 
