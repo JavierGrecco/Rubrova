@@ -18,6 +18,7 @@ const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
 const nativePreviewSource = read("scripts/platform/run-local-native-preview.py");
+const nativeRuntimeTestsSource = read("scripts/platform/test_runtime_native_preview.py");
 const localPreviewSource = read("scripts/platform/run-local-preview-macos.sh");
 const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
@@ -300,6 +301,13 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_WEB_URL.*8080\/login/);
   assert.match(uiSmokeSource, /127[.]0[.]0[.]1:8080\/login/);
   assert.match(nativePreviewSource, /HTTP 404 en el cliente/);
+  assert.match(nativePreviewSource, /ET[.]register_namespace\("", namespace\[1:-1\]\)/);
+  assert.match(nativePreviewSource, /Tomcat servlet mapping:/);
+  assert.match(nativePreviewSource, /Ruta \/login declarada en web.xml/);
+  assert.match(nativeRuntimeTestsSource, /self[.]assertIn\('xmlns="http:\/\/java[.]sun[.]com\/xml\/ns\/javaee"'/);
+  assert.match(nativeRuntimeTestsSource, /self[.]assertEqual\(servlet_classes[.]get\("LSFWeb"\)/);
+  assert.match(nativeRuntimeTestsSource, /self[.]assertIn\("\/login", mappings[.]get\("LSFWeb", \[\]\)\)/);
+
   assert.match(sourcePatch, /RMI_SERVER_SOCKET_TARGET/);
   assert.match(sourcePatch, /System[.]getProperty\("lsfusion[.]rmi[.]bindAddress"\)/);
   assert.match(sourcePatch, /new InetSocketAddress\(InetAddress[.]getByName/);

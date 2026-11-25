@@ -388,6 +388,12 @@ def prepare_tomcat_base(tomcat_home: Path, base: Path, war: Path, ports: dict[st
         )
     params["host"].text = "127.0.0.1"
     params["port"].text = str(ports["rmi"])
+    # ElementTree otherwise rewrites the default Java EE namespace as ns0:.
+    # Tomcat's Servlet 2.5 descriptor must keep the original namespace form so the
+    # servlet mappings (/login, /main, etc.) are consumed exactly as shipped.
+    if namespace:
+        ET.register_namespace("", namespace[1:-1])
+    ET.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance")
     tree.write(web_xml, encoding="UTF-8", xml_declaration=True)
 
     server_xml = base / "conf" / "server.xml"
@@ -484,6 +490,30 @@ def tomcat_startup_diagnostics(tomcat_base: Path | None, last_http_body: str = "
             namespace = root.tag.split("}", 1)[0] + "}" if root.tag.startswith("{") else ""
             welcome = root.find(f"{namespace}welcome-file-list/{namespace}welcome-file")
             details.append(f"Página de bienvenida configurada: {(welcome.text or '').strip() if welcome is not None else 'no declarada'}.")
+            servlet_classes: dict[str, str] = {}
+            for servlet in root.findall(f"{namespace}servlet"):
+                name = servlet.find(f"{namespace}servlet-name")
+                servlet_class = servlet.find(f"{namespace}servlet-class")
+                if name is not None and name.text:
+                    servlet_classes[name.text] = (servlet_class.text or "").strip() if servlet_class is not None else ""
+            for mapping in root.findall(f"{namespace}servlet-mapping"):
+                name = mapping.find(f"{namespace}servlet-name")
+                patterns = [
+                    (pattern.text or "").strip()
+                    for pattern in mapping.findall(f"{namespace}url-pattern")
+                    if pattern.text
+                ]
+                if name is not None and name.text:
+                    servlet_class = servlet_classes.get(name.text, "(clase no declarada)")
+                    details.append(
+                        f"Tomcat servlet mapping: {name.text} ({servlet_class}) -> {', '.join(patterns)}."
+                    )
+            login_mapping = any(
+                pattern.text and pattern.text.strip() == "/login"
+                for mapping in root.findall(f"{namespace}servlet-mapping")
+                for pattern in mapping.findall(f"{namespace}url-pattern")
+            )
+            details.append(f"Ruta /login declarada en web.xml: {login_mapping}.")
         except (ET.ParseError, OSError) as exc:
             details.append(f"No se pudo leer web.xml: {exc}.")
 

@@ -123,10 +123,24 @@ class NativePreviewTests(unittest.TestCase):
             )
             war = root / "client.war"
             web_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="http://java.sun.com/xml/ns/javaee" version="2.5">
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5">
   <context-param><param-name>host</param-name><param-value>localhost</param-value></context-param>
   <context-param><param-name>port</param-name><param-value>7652</param-value></context-param>
   <context-param><param-name>exportName</param-name><param-value>default</param-value></context-param>
+  <servlet>
+    <servlet-name>LSFWeb</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>LSFWeb</servlet-name>
+    <url-pattern>/login</url-pattern>
+    <url-pattern>/main</url-pattern>
+  </servlet-mapping>
+  <welcome-file-list><welcome-file>main</welcome-file></welcome-file-list>
 </web-app>
 """
             with zipfile.ZipFile(war, "w") as archive:
@@ -141,8 +155,30 @@ class NativePreviewTests(unittest.TestCase):
             )
 
             deployed_xml = base / "webapps" / "ROOT" / "WEB-INF" / "web.xml"
+            deployed_text = deployed_xml.read_text(encoding="utf-8")
+            self.assertIn('xmlns="http://java.sun.com/xml/ns/javaee"', deployed_text)
+            self.assertNotIn("<ns0:web-app", deployed_text)
             deployed_root = ET.parse(deployed_xml).getroot()
             namespace = deployed_root.tag.split("}", 1)[0] + "}" if deployed_root.tag.startswith("{") else ""
+            servlet_classes = {}
+            for servlet in deployed_root.findall(f"{namespace}servlet"):
+                name = servlet.find(f"{namespace}servlet-name")
+                servlet_class = servlet.find(f"{namespace}servlet-class")
+                if name is not None and name.text:
+                    servlet_classes[name.text] = servlet_class.text.strip() if servlet_class is not None and servlet_class.text else ""
+            mappings = {}
+            for mapping in deployed_root.findall(f"{namespace}servlet-mapping"):
+                name = mapping.find(f"{namespace}servlet-name")
+                patterns = [
+                    pattern.text.strip()
+                    for pattern in mapping.findall(f"{namespace}url-pattern")
+                    if pattern.text and pattern.text.strip()
+                ]
+                if name is not None and name.text:
+                    mappings[name.text] = patterns
+            self.assertEqual(servlet_classes.get("LSFWeb"), "org.springframework.web.servlet.DispatcherServlet")
+            self.assertIn("/login", mappings.get("LSFWeb", []))
+            self.assertIn("/main", mappings.get("LSFWeb", []))
             params = {}
             for item in deployed_root.findall(f"{namespace}context-param"):
                 name = item.find(f"{namespace}param-name")
