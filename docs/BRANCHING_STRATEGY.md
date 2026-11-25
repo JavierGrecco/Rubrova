@@ -47,6 +47,39 @@ Las fixtures sintéticas sirven para regresión, no reemplazan la conciliación 
 - El PR #8 es la única integración funcional pendiente. Se acepta sólo después de completar la compilación, el arranque, la API autenticada y los smokes requeridos.
 - Una vez aceptado el PR #8, se debe limpiar el conjunto de ramas históricas y continuar con una sola rama de trabajo activa (dos sólo cuando exista un hotfix independiente).
 
+## Limpieza de las ramas históricas actuales
+
+La comparación de archivos contra `main` confirmó que las siguientes ramas contienen versiones anteriores o contenido ya integrado. No deben volver a usarse para desarrollo:
+
+- `diagnostic/docker-client-connectivity`
+- `feature/mycompany-readonly-replenishment-adapter`
+- `feature/order-line-replenishment-contract`
+- `feature/projected-stock-replenishment-planner`
+- `feature/stockout-aware-demand-planning`
+- `fix/demo-pos-smoke-register-name`
+- `test/complete-ci-regression-coverage`
+
+La rama `feat/mycompany-readonly-replenishment-api` se conserva hasta que el PR #8 sea aceptado. Después de fusionarlo y verificar que `main` está correcto, se pueden retirar las ocho ramas remotas juntas:
+
+```bash
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
+git push origin --delete \
+  diagnostic/docker-client-connectivity \
+  feat/mycompany-readonly-replenishment-api \
+  feature/mycompany-readonly-replenishment-adapter \
+  feature/order-line-replenishment-contract \
+  feature/projected-stock-replenishment-planner \
+  feature/stockout-aware-demand-planning \
+  fix/demo-pos-smoke-register-name \
+  test/complete-ci-regression-coverage
+git fetch origin --prune
+git branch -r
+```
+
+Ejecutar el borrado únicamente después de confirmar que el PR #8 quedó fusionado. No crear ramas nuevas para revivir estos trabajos: toda continuación parte del `main` actualizado.
+
 ## Rutina de inicio y cierre de cada hito
 
 **Inicio:** actualizar `main`, revisar el estado limpio del árbol, crear una rama de trabajo desde `main` y definir criterios de aceptación.
