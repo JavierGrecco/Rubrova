@@ -15,6 +15,8 @@ import pandas as pd
 from statsforecast import StatsForecast
 from statsforecast.models import AutoETS, AutoTheta, CrostonSBA
 
+from stockout_adjustment import build_stockout_adjustment_report, load_stockout_fixture
+
 
 def load_fixture(path: Path) -> dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -140,9 +142,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixture", type=Path, default=Path("docs/fixtures/demand-monthly-history.json"))
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--stockout-fixture", type=Path, default=Path("docs/fixtures/stockout-censored-demand.json"))
     args = parser.parse_args()
     try:
         data = load_fixture(args.fixture)
+        stockout_data = load_stockout_fixture(args.stockout_fixture)
         report = {
             "benchmarkVersion": 1,
             "fixturePurpose": data["purpose"],
@@ -151,9 +155,10 @@ def main() -> int:
             "pandasVersion": version("pandas"),
             "evaluation": data["evaluation"],
             "results": [benchmark_series(series, data["evaluation"]) for series in data["series"]],
+            "stockoutAdjustment": build_stockout_adjustment_report(stockout_data),
             "limitations": [
                 "Datos 100% sintéticos; no representan una tienda ni precios/ventas reales.",
-                "No hay quiebres de stock en este fixture; los períodos censurados requieren una política separada.",
+                "El fixture temporal regular/intermitente no contiene quiebres; el ajuste censurado se evalúa aparte con otro fixture sintético.",
                 "El benchmark compara ventanas históricas y horizonte mensual de tres meses; no cubre aún variables exógenas.",
                 "Los resultados no seleccionan automáticamente un modelo para producción.",
             ],
