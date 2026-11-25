@@ -81,7 +81,7 @@ Iniciar el servidor, la base y el cliente web:
 python3 scripts/platform/run-local-native-preview.py --no-open start
 ```
 
-La URL local es `http://127.0.0.1:8080/`. Presioná Ctrl+C para cerrar los procesos. La base de datos se conserva para el siguiente inicio; no se borra ni se recrea en cada ejecución. Los logs se guardan en la carpeta local de datos de Rubrova.
+La URL local es `http://127.0.0.1:8080/login`. Presioná Ctrl+C para cerrar los procesos. La base de datos se conserva para el siguiente inicio; no se borra ni se recrea en cada ejecución. Los logs se guardan en la carpeta local de datos de Rubrova.
 
 ### Primer inicio e inicio offline
 

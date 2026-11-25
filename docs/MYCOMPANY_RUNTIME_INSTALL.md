@@ -56,7 +56,7 @@ Comprobar dependencias e iniciar:
     python3 scripts/platform/run-local-native-preview.py doctor
     python3 scripts/platform/run-local-native-preview.py --no-open start
 
-La vista previa sirve el cliente en `http://127.0.0.1:8080/`. Presionar Ctrl+C detiene servidor, Tomcat y sólo el PostgreSQL iniciado por ese supervisor; la base local se conserva. Se puede ejecutar `--offline doctor` y `--offline --no-open start` cuando Tomcat ya está verificado en caché y los artefactos están compilados. El build Maven puede necesitar Internet en la primera preparación.
+La vista previa sirve el cliente en `http://127.0.0.1:8080/login`. Presionar Ctrl+C detiene servidor, Tomcat y sólo el PostgreSQL iniciado por ese supervisor; la base local se conserva. Se puede ejecutar `--offline doctor` y `--offline --no-open start` cuando Tomcat ya está verificado en caché y los artefactos están compilados. El build Maven puede necesitar Internet en la primera preparación.
 
 Esta modalidad sigue siendo un entorno de desarrollo: la configuración local de PostgreSQL usa autenticación `trust` sobre loopback, el usuario inicial de la base puede no tener contraseña y no debe exponerse a la LAN ni recibir datos reales. El instalador productivo deberá usar SCRAM, almacén de secretos del sistema operativo, firma y permisos correctos.
 

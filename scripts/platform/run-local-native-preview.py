@@ -885,7 +885,7 @@ def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bo
             start_new_session=(os.name != "nt"),
         )
 
-        web_url = f"http://127.0.0.1:{ports['web']}/"
+        web_url = f"http://127.0.0.1:{ports['web']}/login"
         wait_for_web(web_url, tomcat_process, tomcat_base)
         print("")
         print("RUBROVA LOCAL ACTIVO (sin Docker)")

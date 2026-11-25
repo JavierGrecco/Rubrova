@@ -1497,7 +1497,7 @@ def inspect_page(url: str) -> int:
 
 
 def main() -> int:
-    url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8080/"
+    url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8080/login"
     try:
         return inspect_page(url)
     except (PlaywrightError, RuntimeError, OSError) as error:

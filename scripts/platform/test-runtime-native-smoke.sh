@@ -34,7 +34,7 @@ fi
 WORK_DIR="${RUBROVA_NATIVE_SMOKE_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/rubrova-native-smoke.XXXXXX")}"
 mkdir -p "$WORK_DIR"
 LOG_FILE="$WORK_DIR/native-runtime.log"
-WEB_URL="${RUBROVA_NATIVE_WEB_URL:-http://127.0.0.1:8080/}"
+WEB_URL="${RUBROVA_NATIVE_WEB_URL:-http://127.0.0.1:8080/login}"
 SCREENSHOT="${RUBROVA_NATIVE_SCREENSHOT:-$WORK_DIR/rubrova-native-login.png}"
 PLAYWRIGHT_PYTHON="${RUBROVA_PLAYWRIGHT_PYTHON:-}"
 

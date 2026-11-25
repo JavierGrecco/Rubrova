@@ -288,6 +288,9 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativePreviewSource, /RUBROVA_BUILD_ARTIFACTS_DIR/);
   assert.match(nativePreviewSource, /-Dlsfusion[.]rmi[.]bindAddress=127[.]0[.]0[.]1/);
   assert.match(nativePreviewSource, /def tomcat_startup_diagnostics/);
+  assert.match(nativePreviewSource, /ports\['web'\]\}\/login/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_WEB_URL.*8080\/login/);
+  assert.match(uiSmokeSource, /127[.]0[.]0[.]1:8080\/login/);
   assert.match(nativePreviewSource, /HTTP 404 en el cliente/);
   assert.match(sourcePatch, /RMI_SERVER_SOCKET_TARGET/);
   assert.match(sourcePatch, /System[.]getProperty\("lsfusion[.]rmi[.]bindAddress"\)/);
@@ -356,7 +359,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /missing \.\+ at/);
   assert.match(runtimeSmokeSource, /se cancela la espera de arranque/);
   assert.match(runtimeSmokeSource, /módulos Rubrova/);
-  assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080/);
+  assert.match(runtimeSmokeSource, /http:\/\/127\.0\.0\.1:8080\/login/);
   assert.match(runtimeImageBuilderSource, /server[.]jar/);
   assert.match(runtimeImageBuilderSource, /logics[.]jar/);
   assert.match(runtimeImageBuilderSource, /client[.]war/);
@@ -419,7 +422,7 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
   assert.match(localPreviewSource, /RUBROVA_KEEP_RUNTIME_WORK_DIR=true/);
   assert.match(localPreviewSource, /RUBROVA_UI_TEST_LOGIN=true/);
   assert.match(localPreviewSource, /bash .*test-runtime-smoke[.]sh/);
-  assert.match(localPreviewSource, /http:\/\/127[.]0[.]0[.]1:8080/);
+  assert.match(localPreviewSource, /http:\/\/127[.]0[.]0[.]1:8080\/login/);
 });
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
