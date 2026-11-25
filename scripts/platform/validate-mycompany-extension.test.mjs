@@ -202,7 +202,12 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /UI_LOGIN_STATUS=authenticated/);
   assert.match(uiSmokeSource, /click_exact_link\(page, "Punto de venta"\)/);
   assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
-  assert.match(uiSmokeSource, /wait_until_form_loaded\(page, "UI_POS_SCREEN", timeout_seconds=45\)/);
+  assert.match(uiSmokeSource, /def wait_until_form_loaded\(/);
+  assert.match(uiSmokeSource, /register_name: str = "Caja de prueba Rubrova"/);
+  assert.match(uiSmokeSource, /register_selected = register_name in searchable/);
+  assert.match(uiSmokeSource, /register_name=pos_register_name/);
+  assert.match(uiSmokeSource, /RUBROVA_UI_POS_REGISTER_NAME/);
+  assert.match(uiSmokeSource, /wait_until_form_loaded\([\s\S]*?"UI_POS_SCREEN",[\s\S]*?register_name=pos_register_name,[\s\S]*?\)/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=true/);
   assert.doesNotMatch(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=false/);
   assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str\)/);

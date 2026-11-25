@@ -296,7 +296,13 @@ def login_to_ephemeral_instance(page: Any) -> str:
     )
 
 
-def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> str:
+def wait_until_form_loaded(
+    page: Any,
+    label: str,
+    timeout_seconds: int = 45,
+    *,
+    register_name: str = "Caja de prueba Rubrova",
+) -> str:
     deadline = time.monotonic() + timeout_seconds
     stable_reads = 0
     last_state: dict[str, Any] = {"text": "", "searchable": "", "selectors": [], "actions": []}
@@ -350,7 +356,7 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
         searchable = str(last_state.get("searchable", ""))
         normalized = searchable.casefold()
         is_loading = "loading" in normalized or "cargando" in normalized
-        register_selected = "Caja de prueba Rubrova" in searchable
+        register_selected = register_name in searchable
         open_session_available = "Abrir turno" in searchable
 
         if not is_loading and register_selected and open_session_available:
@@ -370,7 +376,7 @@ def wait_until_form_loaded(page: Any, label: str, timeout_seconds: int = 45) -> 
     print(f"{label}_LAST_SELECTORS=" + json.dumps(last_state.get("selectors", []), ensure_ascii=False))
     print(f"{label}_LAST_ACTIONS=" + json.dumps(last_state.get("actions", []), ensure_ascii=False))
     raise RuntimeError(
-        f"{label} no mostró el puesto 'Caja de prueba Rubrova' y la acción 'Abrir turno' "
+        f"{label} no mostró el puesto {register_name!r} y la acción 'Abrir turno' "
         f"en {timeout_seconds}s. Último texto visible: {last_text.strip()[:1600]}"
     )
 
@@ -950,8 +956,20 @@ def inspect_page(url: str) -> int:
                 if not click_exact_link(page, "Punto de venta"):
                     raise RuntimeError("La opción 'Punto de venta' desapareció antes de abrirse.")
 
+                # The isolated demo database seeds a distinct POS name from the CI sales fixture.
+                pos_register_name = os.environ.get(
+                    "RUBROVA_UI_POS_REGISTER_NAME", "Caja de prueba Rubrova"
+                ).strip()
+                if not pos_register_name:
+                    raise RuntimeError("RUBROVA_UI_POS_REGISTER_NAME no puede estar vacío.")
+
                 # The menu click can return before the GWT form finishes rendering.
-                pos_text = wait_until_form_loaded(page, "UI_POS_SCREEN", timeout_seconds=45)
+                pos_text = wait_until_form_loaded(
+                    page,
+                    "UI_POS_SCREEN",
+                    timeout_seconds=45,
+                    register_name=pos_register_name,
+                )
                 visible_snapshot(page, "UI_POS_SCREEN")
                 page.screenshot(path=str(pos_screenshot), full_page=True)
                 print(f"UI_POS_SCREENSHOT={pos_screenshot}")

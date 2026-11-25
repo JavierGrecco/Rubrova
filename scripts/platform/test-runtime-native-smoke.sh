@@ -365,6 +365,7 @@ RUBROVA_UI_TEST_LOGIN=true \
 RUBROVA_UI_TEST_USERNAME=admin \
 RUBROVA_UI_STOP_AFTER_LOGIN=false \
 RUBROVA_UI_DEMO_MODE=true \
+RUBROVA_UI_POS_REGISTER_NAME="Caja de demostración Rubrova" \
 "$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$DEMO_WEB_URL" 2>&1 | tee "$DEMO_UI_LOG_FILE"
 for marker in "UI_LOCAL_DEMO_SESSION_OPEN=true" "UI_LOCAL_DEMO_PRODUCT_FOUND=true"; do
   grep -Fq "$marker" "$DEMO_UI_LOG_FILE" || {
