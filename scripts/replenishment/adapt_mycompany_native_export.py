@@ -275,11 +275,15 @@ def build_normalized_snapshot(
         reserved = _milli(row.get("effectiveReserved"), f"{label}.effectiveReserved")
         if open_quantity <= 0 or reserved < 0 or reserved > open_quantity:
             raise ValueError(f"{label} tiene remanente o reserva efectiva fuera de rango.")
-        related_shipments = row.get("relatedShipmentCount", 1)
-        if isinstance(related_shipments, bool) or not isinstance(related_shipments, int) or related_shipments < 1:
-            raise ValueError(f"{label}.relatedShipmentCount debe ser un entero positivo.")
+        related_shipments = row.get("relatedShipmentCount")
+        if related_shipments is not None and (
+            isinstance(related_shipments, bool)
+            or not isinstance(related_shipments, int)
+            or related_shipments < 0
+        ):
+            raise ValueError(f"{label}.relatedShipmentCount debe ser un entero no negativo.")
         outgoing_reservations[key] = outgoing_reservations.get(key, 0) + reserved
-        outgoing.append({
+        normalized_outgoing = {
             "sourceLineId": line_id,
             "sourceDocumentId": _text(row.get("sourceDocumentId"), f"{label}.sourceDocumentId"),
             "productId": key[0],
@@ -288,8 +292,10 @@ def build_normalized_snapshot(
             "scheduledDate": _iso_date(row.get("scheduledDate"), f"{label}.scheduledDate"),
             "openQuantityMilli": open_quantity,
             "lineReservedMilli": reserved,
-            "relatedShipmentCount": related_shipments,
-        })
+        }
+        if related_shipments is not None:
+            normalized_outgoing["relatedShipmentCount"] = related_shipments
+        outgoing.append(normalized_outgoing)
 
     receipts: list[dict[str, Any]] = []
     receipt_quantities: dict[tuple[str, str], int] = {}
