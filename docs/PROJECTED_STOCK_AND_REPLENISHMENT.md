@@ -1,7 +1,7 @@
 # Stock proyectado y planificación conservadora de reposición
 
 **Revisión:** 25 de noviembre de 2026  
-**Estado:** planificador sintético + adaptador de snapshots MyCompany 6.2 de solo lectura. El contrato y sus pruebas están implementados; la extracción nativa conectada a MyCompany sigue pendiente. No genera ni confirma órdenes de compra.
+**Estado:** planificador sintético + importador de snapshots + primera API nativa `@@api` de sólo lectura. La API ya exporta hechos de MyCompany 6.2; todavía falta conciliar el resultado con una base real y unirlo con pronóstico y políticas externas. No genera ni confirma órdenes de compra.
 
 Este documento registra la primera regla temporal de reposición de Rubrova. Complementa [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) y el [Plan de trabajo](ROADMAP.md). La plataforma operativa sigue siendo MyCompany 6.2 / lsFusion 6.2; este experimento no reemplaza sus ledgers ni su flujo de compras.
 
@@ -99,17 +99,37 @@ La suite prueba también IDs duplicados, cantidades inválidas, reservas mayores
 - El planificador no calcula el stock de seguridad estadístico: lo recibe como política explícita.
 - No selecciona proveedor, no estima costos puestos, presupuesto, moneda, financiación, flete ni restricciones de capacidad.
 - No hace transferencias entre depósitos ni sustituye productos.
-- No lee directamente la base de datos MyCompany. Consume un contrato normalizado para que el futuro adaptador pueda conciliar cada dato con los ledgers y estados reales.
+- El planificador no consulta directamente la base de datos MyCompany. La API nativa exporta hechos operativos autenticados a JSON; la normalización y conciliación con pronóstico/políticas siguen siendo etapas separadas.
 - No crea, edita, confirma ni envía órdenes de compra y no cambia ventas, reservas, stock o contabilidad.
 
 ## 6. Próxima puerta antes de integración
 
-1. Construir una extracción de solo lectura desde los ledgers MyCompany para existencia, reservas, envíos abiertos y recepciones previstas.
+1. Ejecutar la API nativa `Rubrova.rubrovaExportReplenishmentSource` contra una base local MyCompany 6.2 y guardar un snapshot real sin modificar documentos.
 2. Demostrar con datos de prueba que una reserva parcial no se cuenta también como demanda pendiente independiente.
 3. Conciliar cada recepción prevista con su estado, fecha y cantidad restante; no contar dos veces lo ya recibido.
 4. Comparar en paralelo la sugerencia de este experimento con `PurchaseOrderShipmentAuto` por SKU/proveedor/ubicación, documentando diferencias.
 5. Incorporar demanda diaria ajustada por disponibilidad sólo cuando su historia y cobertura sean suficientes.
 6. Recién después diseñar una vista de planificación con explicación de cada componente. Las compras seguirán requiriendo confirmación humana explícita.
+
+## 8. API nativa de fuente MyCompany 6.2
+
+Se agregó [RubrovaReplenishmentExport.lsf](../extensions/lsfusion/RubrovaReplenishmentExport.lsf), requerido por `RubrovaCustom`. Publica la acción `Rubrova.rubrovaExportReplenishmentSource` con marcador `@@api`. La ruta de ejecución es `/exec/Rubrova.rubrovaExportReplenishmentSource`.
+
+La API está diseñada para ejecutarse con una sesión autenticada. En la configuración de lsFusion, mantener `enableAPI=0`: en ese modo no se habilita la ejecución arbitraria de código y sólo se aceptan acciones marcadas `@@api` por usuarios autorizados. No habilitar `enableAPI=2` para esta integración. El consumidor local debe usar la sesión autorizada y no exponer el endpoint a Internet.
+
+La respuesta es un documento `mycompany-replenishment-source-export`, diferente del snapshot normalizado que consume el planificador. Contiene tres colecciones independientes:
+
+| Colección | Contenido |
+|---|---|
+| `inventory` | Una fila por producto/ubicación con movimientos o reservas: entradas/salidas físicas, `onHand`, `plannedNetReservation`, `expectedInbound` y `available` nativo. |
+| `outgoingCommitments` | Una fila por línea de pedido confirmada: `Sales.toShip(OrderLine)`, reserva efectiva agregada desde `ShipmentResLedger.lineReserved`, documento, ubicación y fecha. |
+| `receipts` | Filas de `ReceiptResLedger` listas, no realizadas y vinculadas a órdenes de compra confirmadas; incluye remanente, fecha e indicador `increaseAvailableStock`. |
+
+Las cantidades se exportan en la unidad del SKU, conservando tres decimales de MyCompany; no se convierten silenciosamente a milésimas ni se agregan ubicaciones jerárquicas. El disponible sale directamente de `Inventory.available(Location, Product)`; `plannedNetReservation` conserva el saldo firmado que participa en ese cálculo. La colección de recepciones conserva `increaseAvailableStock` incluso cuando es verdadero: la etapa normalizadora debe aplicar la política y, por ahora, el importador existente continúa bloqueando ese caso.
+
+**Límite deliberado:** esta primera API no inventa pronóstico diario, períodos elegibles, lead time, stock de seguridad, MOQ ni múltiplos. Esos datos no salen de los ledgers y deben provenir de la capa de planificación/configuración. Por eso la respuesta nativa todavía no se puede pasar directamente a `import_mycompany_snapshot.py`, cuyo contrato exige además `planningInputs` normalizados.
+
+El test de runtime autenticado comprueba el esquema, la unicidad de identidades, la restricción de reservas por línea y la identidad `available = onHand - plannedNetReservation`. Es una comprobación contra la instancia efímera de CI; no reemplaza la conciliación pendiente contra una base MyCompany local con datos reales.
 
 Referencias funcionales para contraste: [Odoo — reglas de reabastecimiento](https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/warehouses_storage/replenishment/reordering_rules.html) y [ERPNext — cantidad proyectada](https://docs.frappe.io/erpnext/projected-quantity).
 
