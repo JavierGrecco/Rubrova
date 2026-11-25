@@ -825,6 +825,10 @@ def inspect_page(url: str) -> int:
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
+                if os.environ.get("RUBROVA_UI_STOP_AFTER_LOGIN", "false").lower() == "true":
+                    print("UI_LOGIN_AND_LOCAL_NAVIGATION_VERIFIED=true")
+                    return 0
+
                 if os.environ.get("RUBROVA_UI_VERIFY_PERSISTED_ONLY", "false").lower() == "true":
                     verify_restarted_persistence(context, url)
                     print("UI_RESTART_PERSISTENCE_VERIFIED=true")
