@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from stockout_adjustment import adjust_observation, build_stockout_adjustment_report
 
@@ -41,6 +44,15 @@ class StockoutAdjustmentTests(unittest.TestCase):
         self.assertIsNone(no_open["estimatedDemandUnits"])
         self.assertIsNone(no_stock["estimatedDemandUnits"])
 
+    def test_invalid_availability_thresholds_are_rejected(self) -> None:
+        for threshold in (True, False, 0, -0.1, 1.1, float("nan"), float("inf"), "0.5"):
+            with self.subTest(threshold=threshold):
+                with self.assertRaises(ValueError):
+                    adjust_observation(
+                        {"units": 10, "openDays": 20, "stockoutDays": 0},
+                        min_availability_ratio=threshold,
+                    )
+
     def test_invalid_counts_are_rejected(self) -> None:
         invalid_rows = [
             {"units": -1, "openDays": 20, "stockoutDays": 0},
@@ -52,6 +64,23 @@ class StockoutAdjustmentTests(unittest.TestCase):
             with self.subTest(row=row):
                 with self.assertRaises(ValueError):
                     adjust_observation(row)
+
+    def test_fixture_rejects_missing_months(self) -> None:
+        from stockout_adjustment import load_stockout_fixture
+
+        payload = {
+            "schemaVersion": 1,
+            "frequency": "MS",
+            "observations": [
+                {"month": "2025-01-01", "units": 10, "openDays": 26, "stockoutDays": 0, "latentDemandUnits": 10},
+                {"month": "2025-03-01", "units": 12, "openDays": 26, "stockoutDays": 0, "latentDemandUnits": 12},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_path = Path(temp_dir) / "fixture.json"
+            fixture_path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "meses faltantes"):
+                load_stockout_fixture(fixture_path)
 
     def test_report_scores_only_eligible_periods(self) -> None:
         fixture = {
