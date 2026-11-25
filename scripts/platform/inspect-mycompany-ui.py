@@ -781,7 +781,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
         "outgoingEffectiveReservation": "SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)",
         "incomingIdentity": "Receipt.number + ReceiptLine.index",
-        "incomingExpectedQuantity": "0 - Inventory.ReceiptResLedger.reserved",
+        "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
         "incomingScheduledDateTime": "Receipt.scheduledDateTime",
         "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed",
         "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
@@ -867,9 +867,12 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         if not line_id or line_id in receipt_ids:
             raise RuntimeError(f"{row_label}.lineId está vacío o duplicado.")
         receipt_ids.add(line_id)
+        signed_reservation = numeric(row, "expectedReservationSigned", row_label)
         quantity = numeric(row, "expectedQuantity", row_label)
         if (
             quantity <= 0
+            or signed_reservation >= 0
+            or abs(quantity + signed_reservation) > 0.001
             or row.get("status") != "ready"
             or row.get("purchaseOrderStatus") != "confirmed"
             or not isinstance(row.get("increaseAvailableStock"), bool)
