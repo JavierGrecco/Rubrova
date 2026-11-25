@@ -212,7 +212,7 @@ jobs:
           RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-native-playwright/bin/python
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers
           RUBROVA_NATIVE_SMOKE_DIR: ${{ runner.temp }}/rubrova-native-smoke
-          RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke/*.png
+          RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
           RUBROVA_RUNTIME_CONFIG_PATH: ${{ runner.temp }}/rubrova-native-smoke/runtime-config.json
           RUBROVA_BLOCK_EGRESS: "true"
           RUBROVA_KEEP_NATIVE_SMOKE_DATA: "true"
@@ -226,7 +226,7 @@ jobs:
           path: |
             ${{ runner.temp }}/rubrova-native-smoke/native-runtime.log
             ${{ runner.temp }}/rubrova-native-smoke/native-diagnostics.log
-            ${{ runner.temp }}/rubrova-native-smoke/rubrova-native-login.png
+            ${{ runner.temp }}/rubrova-native-smoke/*.png
             ${{ runner.temp }}/rubrova-native-smoke/ui-smoke.log
           if-no-files-found: warn
 
@@ -442,7 +442,7 @@ jobs:
           RUBROVA_PLAYWRIGHT_PYTHON: ${{ runner.temp }}/rubrova-native-playwright/bin/python
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/rubrova-native-playwright-browsers
           RUBROVA_NATIVE_SMOKE_DIR: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64
-          RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/*.png
+          RUBROVA_NATIVE_SCREENSHOT: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/rubrova-native-login.png
           RUBROVA_RUNTIME_CONFIG_PATH: ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/runtime-config.json
           RUBROVA_BLOCK_EGRESS: "false"
           RUBROVA_KEEP_NATIVE_SMOKE_DATA: "true"
@@ -456,6 +456,6 @@ jobs:
           path: |
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/native-runtime.log
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/native-diagnostics.log
-            ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/rubrova-native-login.png
+            ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/*.png
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/ui-smoke.log
           if-no-files-found: warn
