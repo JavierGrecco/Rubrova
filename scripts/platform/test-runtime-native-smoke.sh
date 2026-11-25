@@ -140,7 +140,9 @@ fi
   exit 2
 }
 RUBROVA_UI_SCREENSHOT="$SCREENSHOT" \
-RUBROVA_UI_TEST_LOGIN=false \
+RUBROVA_UI_TEST_LOGIN=true \
+RUBROVA_UI_TEST_USERNAME=admin \
+RUBROVA_UI_STOP_AFTER_LOGIN=true \
 "$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL"
 [[ -s "$SCREENSHOT" ]] || {
   echo "La inspección local no generó la captura de interfaz esperada: $SCREENSHOT" >&2
