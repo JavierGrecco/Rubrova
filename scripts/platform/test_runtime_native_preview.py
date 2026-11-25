@@ -195,6 +195,17 @@ class NativePreviewTests(unittest.TestCase):
                 with self.assertRaisesRegex(native.RuntimeErrorRubrova, "demo-runtime-config.json separado"):
                     native.initialize_demo_config(root / "runtime-config.json")
 
+    def test_demo_ui_smoke_uses_the_register_seeded_by_its_fixture(self) -> None:
+        inspector = Path(__file__).with_name("inspect-mycompany-ui.py").read_text(encoding="utf-8")
+        smoke = Path(__file__).with_name("test-runtime-native-smoke.sh").read_text(encoding="utf-8")
+        fixture = Path(__file__).with_name("fixtures") / "RubrovaLocalDemoRetail.lsf"
+        fixture_text = fixture.read_text(encoding="utf-8")
+
+        self.assertIn('register_name: str = "Caja de prueba Rubrova"', inspector)
+        self.assertIn("register_name=pos_register_name", inspector)
+        self.assertIn('RUBROVA_UI_POS_REGISTER_NAME="Caja de demostración Rubrova"', smoke)
+        self.assertIn("name(cashRegisterDemo) <- 'Caja de demostración Rubrova'", fixture_text)
+
     def test_preexisting_postgres_is_never_stopped_by_preview_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             data_dir = Path(temporary) / "postgres-data"
