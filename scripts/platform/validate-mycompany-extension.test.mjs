@@ -1062,7 +1062,10 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Inventory.expected(l, p)",
     "Inventory.reserved(l, p)",
     "Inventory.ReceiptResLedger",
-    "Inventory.increaseAvailableStock"
+    "Inventory.increaseAvailableStock",
+    "Inventory.ready(Inventory.receipt(Inventory.line(rr)))",
+    "NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))",
+    "NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))"
   ]) {
     assert.ok(replenishmentExportSource.includes(field), "La extracción debe incluir " + field);
   }
@@ -1074,6 +1077,9 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
   assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
   assert.match(replenishmentExportSource, /effectiveReserved = \(OVERRIDE/);
+  assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
+  assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
+  assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.doesNotMatch(replenishmentExportSource, /<>/);
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) != 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
