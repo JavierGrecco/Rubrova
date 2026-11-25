@@ -1,7 +1,7 @@
 # Stock proyectado y planificación conservadora de reposición
 
 **Revisión:** 25 de noviembre de 2026  
-**Estado:** experimento reproducible, sintético y de solo lectura. No genera ni confirma órdenes de compra.
+**Estado:** planificador sintético + adaptador de snapshots MyCompany 6.2 de solo lectura. El contrato y sus pruebas están implementados; la extracción nativa conectada a MyCompany sigue pendiente. No genera ni confirma órdenes de compra.
 
 Este documento registra la primera regla temporal de reposición de Rubrova. Complementa [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) y el [Plan de trabajo](ROADMAP.md). La plataforma operativa sigue siendo MyCompany 6.2 / lsFusion 6.2; este experimento no reemplaza sus ledgers ni su flujo de compras.
 
@@ -112,3 +112,28 @@ La suite prueba también IDs duplicados, cantidades inválidas, reservas mayores
 6. Recién después diseñar una vista de planificación con explicación de cada componente. Las compras seguirán requiriendo confirmación humana explícita.
 
 Referencias funcionales para contraste: [Odoo — reglas de reabastecimiento](https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/warehouses_storage/replenishment/reordering_rules.html) y [ERPNext — cantidad proyectada](https://docs.frappe.io/erpnext/projected-quantity).
+
+## 7. Adaptador de snapshots MyCompany 6.2
+
+Se agregó [import_mycompany_snapshot.py](../scripts/replenishment/import_mycompany_snapshot.py), con un ejemplo sintético en [mycompany-replenishment-snapshot.json](fixtures/mycompany-replenishment-snapshot.json). El adaptador convierte una extracción JSON en entradas del planificador y devuelve un reporte por producto/ubicación. No conoce credenciales, no tiene cliente PostgreSQL/RMI/HTTP y no abre una sesión lsFusion: sólo lee el archivo entregado por el operador.
+
+El contrato de entrada exige MyCompany 6.2 y una declaración explícita de semántica para impedir que una columna con nombre parecido se interprete como otra magnitud:
+
+| Campo del snapshot | Origen/semántica requerida |
+|---|---|
+| inventory.onHandMilli | InvLedger.onHand para una ubicación exacta, no un agregado jerárquico |
+| shipments.openQuantityMilli | Cantidad realmente pendiente de cumplir en la línea abierta |
+| shipments.lineReservedMilli | ShipmentResLedger.lineReserved, es decir, reserva efectiva después de ledgerReserved |
+| receipts.expectedQuantityMilli | Cantidad aún pendiente de recepción representada por ReceiptResLedger |
+| receipts.scheduledDate | Receipt.scheduledDateTime |
+| planningInputs.nativeAutoOrderQtyMilli | Valor leído de PurchaseOrderShipmentAuto.toOrderPeriodic, si se exporta |
+
+**Despachos y parciales.** El snapshot importa únicamente despachos waiting o ready; draft, done y cancelled se excluyen. La reserva es una porción de openQuantityMilli, nunca una línea adicional de demanda. El flujo nativo shipPartially crea un nuevo documento con las líneas restantes derivadas de toReserve = initialDemand - reserved y utiliza una extensión abstracta para resolver el documento original. Por eso no es seguro reconstruir el remanente sumando initialDemand de todas las líneas sin conocer ese resultado: el exportador nativo debe entregar openQuantityMilli ya normalizado y excluir el tramo ya despachado. El adaptador rechaza reservas superiores a la cantidad abierta y evita reutilizar IDs de línea.
+
+**Compras y recepciones.** PurchaseOrderReceipt crea/actualiza una Receipt en estado ready para una orden confirmada, copia scheduledDateTime y establece la cantidad de cada línea en toReceive, que descuenta lo ya recibido. El adaptador incluye sólo líneas ready vinculadas a una orden confirmada y una vez por purchaseOrderLineId. Una Receipt done ya debe estar reflejada en onHand y se excluye; las órdenes en draft/sent/cancelled también se excluyen. Las recepciones cuyo tipo usa increaseAvailableStock=true se rechazan en esta versión, porque MyCompany puede incorporarlas al available antes de la recepción física y el planificador aún no reproduce esa política. No se oculta esa diferencia ni se aproxima con una cifra.
+
+**Comparación contra la rutina nativa.** El campo nativeAutoOrderQtyMilli es opcional y representa una lectura de toOrderPeriodic tomada desde MyCompany en el mismo contexto de proveedor, ubicación y fecha. El adaptador calcula la diferencia contra la cantidad sugerida por Rubrova cuando el planificador tiene historia suficiente. No invoca fillAuto ni crea líneas de orden. La comparación sólo será válida con valores capturados del runtime; los números de la fixture son ilustrativos.
+
+La CI compila ambos módulos, ejecuta las pruebas del adaptador y corre el CLI contra el snapshot de ejemplo. Las pruebas cubren reservas parciales, despacho residual, recepción confirmada, recepción ya hecha, borrador, orden enviada, IDs duplicados, líneas de compra duplicadas, semántica incompatible y el caso increaseAvailableStock.
+
+**Límite actual:** el archivo de ejemplo es sintético. Todavía no existe una exportación real desde MyCompany ni se ha conciliado una muestra tomada de su base. Por tanto, esta entrega valida el contrato de intercambio y sus protecciones, no afirma que el snapshot ya pueda extraerse del runtime productivo. El siguiente paso es implementar el endpoint/reporte nativo de sólo lectura y contrastar sus cantidades contra las propiedades originales, antes de usar el planificador en una decisión comercial.

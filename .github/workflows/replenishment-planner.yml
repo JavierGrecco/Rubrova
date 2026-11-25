@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "docs/fixtures/replenishment-planning.json"
+      - "docs/fixtures/mycompany-replenishment-snapshot.json"
       - "docs/PROJECTED_STOCK_AND_REPLENISHMENT.md"
       - "scripts/replenishment/**"
       - ".github/workflows/replenishment-planner.yml"
@@ -36,7 +37,7 @@ jobs:
           python-version: "3.12"
 
       - name: Validar sintaxis del planificador
-        run: python -m py_compile scripts/replenishment/plan_replenishment.py scripts/replenishment/test_plan_replenishment.py
+        run: python -m py_compile scripts/replenishment/plan_replenishment.py scripts/replenishment/test_plan_replenishment.py scripts/replenishment/import_mycompany_snapshot.py scripts/replenishment/test_import_mycompany_snapshot.py
 
       - name: Ejecutar pruebas de reposición proyectada
         run: python -m unittest discover -s scripts/replenishment -p 'test_*.py'
@@ -44,9 +45,15 @@ jobs:
       - name: Evaluar escenarios sintéticos y reglas de reposición
         run: python scripts/replenishment/plan_replenishment.py --fixture docs/fixtures/replenishment-planning.json --output /tmp/replenishment-planning.json
 
+      - name: Importar snapshot MyCompany 6.2 sin conexión ni escritura
+        run: python scripts/replenishment/import_mycompany_snapshot.py --snapshot docs/fixtures/mycompany-replenishment-snapshot.json --output /tmp/mycompany-replenishment-report.json
+
       - name: Publicar resumen de evaluación
         if: always()
         run: |
           if [ -f /tmp/replenishment-planning.json ]; then
             cat /tmp/replenishment-planning.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f /tmp/mycompany-replenishment-report.json ]; then
+            cat /tmp/mycompany-replenishment-report.json >> "$GITHUB_STEP_SUMMARY"
           fi
