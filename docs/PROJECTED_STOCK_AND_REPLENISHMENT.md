@@ -104,10 +104,10 @@ La suite prueba también IDs duplicados, cantidades inválidas, reservas mayores
 
 ## 6. Próxima puerta antes de integración
 
-1. Ejecutar la API nativa `Rubrova.rubrovaExportReplenishmentSource` contra una base local MyCompany 6.2 y guardar un snapshot real sin modificar documentos.
-2. Demostrar con datos de prueba que una reserva parcial no se cuenta también como demanda pendiente independiente.
-3. Conciliar cada recepción prevista con su estado, fecha y cantidad restante; no contar dos veces lo ya recibido.
-4. Comparar en paralelo la sugerencia de este experimento con `PurchaseOrderShipmentAuto` por SKU/proveedor/ubicación, documentando diferencias.
+1. Ejecutar la API nativa `Rubrova.rubrovaExportReplenishmentSource` contra una base local MyCompany 6.2 y guardar un JSON real sin modificar documentos.
+2. Convertirlo con `adapt_mycompany_native_export.py`, usando una política explícita por producto/ubicación y comprobando que disponible, reservas y recepciones concilien.
+3. Rechazar la planificación si hay reservas positivas no modeladas, recepciones no representadas, diferencias de cantidades o políticas incompletas.
+4. Comparar en paralelo la sugerencia de Rubrova con `PurchaseOrderShipmentAuto` por producto/proveedor/ubicación, documentando diferencias.
 5. Incorporar demanda diaria ajustada por disponibilidad sólo cuando su historia y cobertura sean suficientes.
 6. Recién después diseñar una vista de planificación con explicación de cada componente. Las compras seguirán requiriendo confirmación humana explícita.
 
@@ -130,6 +130,39 @@ Las cantidades se exportan en la unidad del SKU, conservando tres decimales de M
 **Límite deliberado:** esta primera API no inventa pronóstico diario, períodos elegibles, lead time, stock de seguridad, MOQ ni múltiplos. Esos datos no salen de los ledgers y deben provenir de la capa de planificación/configuración. Por eso la respuesta nativa todavía no se puede pasar directamente a `import_mycompany_snapshot.py`, cuyo contrato exige además `planningInputs` normalizados.
 
 El test de runtime autenticado comprueba el esquema, la unicidad de identidades, la restricción de reservas por línea y la identidad `available = onHand - plannedNetReservation`. Es una comprobación contra la instancia efímera de CI; no reemplaza la conciliación pendiente contra una base MyCompany local con datos reales.
+
+## 9. Puente entre la exportación nativa y el planificador
+
+Se agregó [adapt_mycompany_native_export.py](../scripts/replenishment/adapt_mycompany_native_export.py). Recibe dos archivos separados:
+
+- [Exportación nativa de ejemplo](fixtures/mycompany-native-replenishment-export.json), con inventario, compromisos y recepciones.
+- [Política de planificación de ejemplo](fixtures/replenishment-planning-policy.json), con demanda, cobertura histórica, lead time, período de revisión, stock de seguridad, MOQ y múltiplos.
+
+La política es una entrada explícita de Rubrova; no se deriva de las reservas ni se confunde con un dato de MyCompany. En una captura real habrá que configurar esos valores por producto/ubicación y proveedor, o dejarlos pendientes hasta tener evidencia suficiente.
+
+Desde la raíz del repositorio, la conversión de prueba es:
+
+```bash
+python3 scripts/replenishment/adapt_mycompany_native_export.py \
+  --source docs/fixtures/mycompany-native-replenishment-export.json \
+  --policy docs/fixtures/replenishment-planning-policy.json \
+  --output /tmp/mycompany-native-normalized.json
+
+python3 scripts/replenishment/import_mycompany_snapshot.py \
+  --snapshot /tmp/mycompany-native-normalized.json \
+  --output /tmp/mycompany-native-replenishment-report.json
+```
+
+El puente conserva la precisión de tres decimales y convierte a milésimas enteras sin redondear. Antes de generar el snapshot exige:
+
+- `available = onHand - plannedNetReservation` por producto/ubicación.
+- Que las reservas de salida exportadas expliquen todo `plannedNetReservation`; si hay reservas no modeladas, detiene la sugerencia.
+- Que las recepciones de órdenes confirmadas expliquen todo `expectedInbound`; si hay reservas negativas ajenas, no las descuenta ni las ignora silenciosamente.
+- Que cada producto/ubicación con inventario tenga una política de planificación explícita.
+- Que las recepciones con `increaseAvailableStock=true` sigan bloqueadas hasta modelar ese efecto.
+
+El puente no abre conexiones, no llama a lsFusion, no modifica PostgreSQL y no crea órdenes. CI ejecuta también esta conversión de fixture y vuelve a pasar el resultado por el importador y el planificador. Eso prueba la cadena de transformación, no reemplaza la prueba de extracción contra una base MyCompany real.
+
 
 Referencias funcionales para contraste: [Odoo — reglas de reabastecimiento](https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/warehouses_storage/replenishment/reordering_rules.html) y [ERPNext — cantidad proyectada](https://docs.frappe.io/erpnext/projected-quantity).
 
