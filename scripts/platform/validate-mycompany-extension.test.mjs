@@ -13,6 +13,10 @@ const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
 const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
 const replenishmentExportSource = read("extensions/lsfusion/RubrovaReplenishmentExport.lsf");
+const replenishmentBridgeSource = read("scripts/replenishment/adapt_mycompany_native_export.py");
+const replenishmentBridgeTestsSource = read("scripts/replenishment/test_adapt_mycompany_native_export.py");
+const nativeReplenishmentFixture = JSON.parse(read("docs/fixtures/mycompany-native-replenishment-export.json"));
+const replenishmentPolicyFixture = JSON.parse(read("docs/fixtures/replenishment-planning-policy.json"));
 const paymentArchitectureSource = read("docs/PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
@@ -1099,6 +1103,32 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) != 0/);
   assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
+});
+
+test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no concilian", () => {
+  for (const fragment of [
+    "from decimal import Decimal",
+    "def _milli(",
+    "if available != on_hand - planned:",
+    "plannedNetReservationMilli",
+    "expectedInboundMilli",
+    "outgoing_reservations",
+    "receipt_quantities",
+    "increaseAvailableStock=true",
+    "Falta una política de planificación explícita",
+    "adapt_snapshot(snapshot)"
+  ]) {
+    assert.ok(replenishmentBridgeSource.includes(fragment), "El puente debe validar " + fragment);
+  }
+  assert.doesNotMatch(replenishmentBridgeSource, /psycopg|psycopg2|sqlalchemy|requests\\.|urllib\\./i);
+  assert.ok(replenishmentBridgeTestsSource.includes("test_unmodeled_planned_reservations_block_planning_even_when_available_matches"));
+  assert.ok(replenishmentBridgeTestsSource.includes("test_unrepresented_negative_reservations_block_planning"));
+  assert.ok(replenishmentBridgeTestsSource.includes("test_quantities_with_more_than_three_decimals_are_rejected_not_rounded"));
+  assert.equal(nativeReplenishmentFixture.snapshotType, "mycompany-replenishment-source-export");
+  assert.equal(nativeReplenishmentFixture.readOnly, true);
+  assert.ok(nativeReplenishmentFixture.inventory.length > 0);
+  assert.equal(replenishmentPolicyFixture.schemaVersion, 1);
+  assert.equal(replenishmentPolicyFixture.policies.length, nativeReplenishmentFixture.inventory.length);
 });
 
 test("el modelo de terminales se carga desde el punto de entrada y el lock", () => {
