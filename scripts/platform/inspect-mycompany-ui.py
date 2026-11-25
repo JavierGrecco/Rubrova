@@ -774,6 +774,8 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "inventoryOnHand": "Inventory.onHand(Location, Product), ubicación exacta",
         "inventoryAvailable": "Inventory.available(Location, Product), valor nativo MyCompany",
         "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
+        "inventoryExpectedCoverage": "all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts",
+        "emptyAggregatePolicy": "raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0",
         "outgoingIdentity": "Sales.OrderLine.id",
         "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
         "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
@@ -819,7 +821,22 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         numeric(row, "physicalIncoming", row_label)
         numeric(row, "physicalOutgoing", row_label)
         gross_reserved = numeric(row, "grossReserved", row_label)
+        planned = numeric(row, "plannedNetReservation", row_label)
         expected_inbound = numeric(row, "expectedInbound", row_label)
+        native_values = {
+            field: row.get(field)
+            for field in ("onHandNative", "availableNative", "plannedNetReservationNative",
+                          "physicalIncomingNative", "physicalOutgoingNative")
+        }
+        for field, value in native_values.items():
+            if value is not None:
+                numeric(row, field, row_label)
+        if native_values["onHandNative"] is not None and abs(float(native_values["onHandNative"]) - on_hand) > 0.001:
+            raise RuntimeError(f"{row_label}.onHand no coincide con onHandNative.")
+        if native_values["availableNative"] is not None and abs(float(native_values["availableNative"]) - available) > 0.001:
+            raise RuntimeError(f"{row_label}.available no coincide con availableNative.")
+        if native_values["plannedNetReservationNative"] is not None and abs(float(native_values["plannedNetReservationNative"]) - planned) > 0.001:
+            raise RuntimeError(f"{row_label}.plannedNetReservation no coincide con el ledger nativo.")
         if gross_reserved < 0 or expected_inbound < 0:
             raise RuntimeError(f"{row_label} contiene una reserva bruta o recepción prevista negativa.")
         if abs((on_hand - planned) - available) > 0.001:
@@ -873,6 +890,10 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             ensure_ascii=False,
         )
     )
+    print("UI_REPLENISHMENT_NATIVE_NULL_AGGREGATES="
+          + json.dumps({field: sum(row.get(field) is None for row in collections["inventory"])
+                         for field in ("onHandNative", "availableNative", "plannedNetReservationNative")},
+                        ensure_ascii=False))
     print("UI_REPLENISHMENT_NATIVE_AVAILABLE_RECONCILED=true")
     print("UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true")
 
