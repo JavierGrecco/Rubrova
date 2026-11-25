@@ -34,8 +34,13 @@ def adjust_observation(
     """
     if isinstance(min_available_days, bool) or not isinstance(min_available_days, int) or min_available_days < 1:
         raise ValueError("min_available_days debe ser un entero positivo.")
-    if not 0 < min_availability_ratio <= 1:
-        raise ValueError("min_availability_ratio debe estar entre 0 y 1.")
+    if (
+        isinstance(min_availability_ratio, bool)
+        or not isinstance(min_availability_ratio, (int, float))
+        or not math.isfinite(float(min_availability_ratio))
+        or not 0 < min_availability_ratio <= 1
+    ):
+        raise ValueError("min_availability_ratio debe ser un número finito entre 0 y 1.")
 
     units = _non_negative_int(observation.get("units"), "units")
     open_days = _non_negative_int(observation.get("openDays"), "openDays")
@@ -114,12 +119,19 @@ def load_stockout_fixture(path: Path) -> dict[str, Any]:
     seen: set[str] = set()
     previous: date | None = None
     for row in observations:
+        if not isinstance(row, dict):
+            raise ValueError("Cada observación debe ser un objeto.")
         month = row.get("month")
         if not isinstance(month, str) or len(month) != 10:
             raise ValueError("Cada observación debe tener month en formato YYYY-MM-DD.")
         parsed = date.fromisoformat(month)
         if parsed.day != 1 or month in seen or (previous and parsed <= previous):
             raise ValueError("Los meses deben ser únicos, ordenados y comenzar el día 1.")
+        if previous:
+            next_month = 1 if previous.month == 12 else previous.month + 1
+            next_year = previous.year + (1 if previous.month == 12 else 0)
+            if parsed != date(next_year, next_month, 1):
+                raise ValueError("La serie mensual contiene meses faltantes.")
         seen.add(month)
         previous = parsed
         adjust_observation(row)
