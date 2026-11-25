@@ -1058,7 +1058,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Sales.order(Sales.OrderLine ol)",
     "Sales.index(Sales.OrderLine ol)",
     "Sales.shippedProduct(Sales.OrderLine ol)",
-    "Sales.scheduledDateTime(Sales.order(ol))",
+    "Sales.scheduledDateTime(Sales.order(Sales.OrderLine ol))",
     "Sales.index(ol)",
     "Inventory.index(Inventory.line(rr))",
     "Purchase.index(Purchase.orderLine(Inventory.line(rr)))",
