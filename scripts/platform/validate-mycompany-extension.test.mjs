@@ -110,8 +110,10 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /logics\.topModule = RubrovaCustom/);
   assert.match(runtimeSmokeSource, /compose config --quiet/);
   assert.match(runtimeSmokeSource, /compose up -d/);
-  assert.ok(runtimeSmokeSource.includes('    image: $CLIENT_IMAGE\n    platform: linux/amd64\n    # Chromium runs on the host; publish only on loopback, never on the LAN.\n    ports:\n      - "127.0.0.1:8080:8080"\n    pull_policy: never'));
-  assert.match(runtimeSmokeSource, /CLIENT_HOST_BINDING/);
+  assert.ok(runtimeSmokeSource.includes('    image: $CLIENT_IMAGE\n    platform: linux/amd64\n    # Replace the upstream wildcard publication; expose only to this host.\n    ports: !override\n      - "127.0.0.1:8080:8080"\n    pull_policy: never'));
+  assert.match(runtimeSmokeSource, /CLIENT_HOST_BINDINGS_JSON/);
+  assert.match(runtimeSmokeSource, /HostIp/);
+  assert.match(runtimeSmokeSource, /HostPort/);
   assert.match(runtimeSmokeSource, /RUBROVA_CLIENT_LOOPBACK_BINDING=127[.]0[.]0[.]1:8080/);
   assert.match(runtimeSmokeSource, /build-rubrova-runtime-images[.]sh/);
   assert.match(runtimeSmokeSource, /pull_policy: never/);
@@ -1090,8 +1092,17 @@ test("la arquitectura de terminales documenta los tres modos, diagramas y límit
 
 
 test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el turno", () => {
-  assert.match(markdownViewerSource, /onWebClientLoad\(\) \+/);
-  assert.match(markdownViewerSource, /cdn[.]jsdelivr[.]net\/npm\/marked\/marked[.]min[.]js/);
+  const markdownViewerIsUpstream =
+    markdownViewerSource.includes("onWebClientLoad() +") &&
+    markdownViewerSource.includes("https://cdn.jsdelivr.net/npm/marked/marked.min.js");
+  const markdownViewerIsAlreadyPatched =
+    !markdownViewerSource.includes("onWebClientLoad() +") &&
+    markdownViewerSource.includes("marked@18.3.0/lib/marked.umd.js") &&
+    markdownViewerSource.includes("marked-gfm-heading-id@4.1.4/lib/index.umd.js");
+  assert.ok(
+    markdownViewerIsUpstream || markdownViewerIsAlreadyPatched,
+    "El visor debe ser la versión upstream conocida o la versión Rubrova de carga diferida."
+  );
   assert.ok(sourcePatch.includes("MARKDOWN_VIEWER_TARGET"));
   assert.ok(sourcePatch.includes("MARKDOWN_VIEWER_CDN_BLOCK"));
   assert.ok(sourcePatch.includes("def apply_markdown_viewer_lazy_load()"));

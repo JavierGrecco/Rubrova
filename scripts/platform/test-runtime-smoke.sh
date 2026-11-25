@@ -215,8 +215,8 @@ services:
         condition: service_healthy
     image: $CLIENT_IMAGE
     platform: linux/amd64
-    # Chromium runs on the host; publish only on loopback, never on the LAN.
-    ports:
+    # Replace the upstream wildcard publication; expose only to this host.
+    ports: !override
       - "127.0.0.1:8080:8080"
     pull_policy: never
   db:
@@ -630,12 +630,27 @@ CLIENT_CONTAINER_ID="$(compose ps -a -q client | head -n 1)"
   echo "No se encontró el contenedor del cliente web." >&2
   exit 1
 }
-CLIENT_HOST_BINDING="$(docker inspect --format '{{range (index .HostConfig.PortBindings "8080/tcp")}}{{.HostIp}}:{{.HostPort}}{{end}}' "$CLIENT_CONTAINER_ID")"
-if [[ "$CLIENT_HOST_BINDING" != "127.0.0.1:8080" ]]; then
-  echo "El cliente web debe publicarse exclusivamente en 127.0.0.1:8080; binding recibido: ${CLIENT_HOST_BINDING:-ninguno}." >&2
-  docker inspect --format 'PortBindings={{json .HostConfig.PortBindings}}' "$CLIENT_CONTAINER_ID" >&2 || true
-  exit 1
-fi
+CLIENT_HOST_BINDINGS_JSON="$(docker inspect --format '{{json (index .HostConfig.PortBindings "8080/tcp")}}' "$CLIENT_CONTAINER_ID")"
+python3 - "$CLIENT_HOST_BINDINGS_JSON" <<'PY'
+import json
+import sys
+
+try:
+    bindings = json.loads(sys.argv[1])
+except (TypeError, ValueError) as error:
+    raise SystemExit(f"No se pudo interpretar el binding de Tomcat: {error}")
+
+actual = {
+    (str(binding.get("HostIp") or ""), str(binding.get("HostPort") or ""))
+    for binding in bindings or []
+}
+expected = {("127.0.0.1", "8080")}
+if actual != expected:
+    raise SystemExit(
+        "El cliente web debe tener sólo el binding 127.0.0.1:8080; "
+        f"bindings recibidos: {sorted(actual)!r}"
+    )
+PY
 echo "RUBROVA_CLIENT_LOOPBACK_BINDING=127.0.0.1:8080"
 
 echo "4.0/7 Verificando que todo el runtime quedó en una red interna sin salida a Internet."
