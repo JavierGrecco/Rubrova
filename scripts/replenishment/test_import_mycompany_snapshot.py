@@ -40,7 +40,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
             {"NO_ORDER_NEEDED", "ORDER_RECOMMENDED"},
         )
 
-    def test_reservation_is_subset_of_open_shipment_and_deducted_only_once(self) -> None:
+    def test_reservation_is_subset_of_order_line_commitment_and_deducted_once(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "COLA-2L")
         self.assertEqual(result["onHandMilli"], 16000)
@@ -49,11 +49,11 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         self.assertEqual(result["firmOutgoingInHorizonMilli"], 4000)
         self.assertEqual(result["includedOutgoingCount"], 1)
 
-    def test_partial_shipment_residual_is_imported_without_recounting_completed_document(self) -> None:
+    def test_partial_shipments_collapse_to_one_remaining_sales_order_line(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "COLA-2L")
-        # The completed original shipment is excluded; only the separately
-        # exported open residual shipment remains in the planning horizon.
+        # Sales.toShip(OrderLine) already subtracts fulfilled quantities.
+        # Multiple shipment documents remain represented by one order-line event.
         cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
         self.assertEqual(result["firmOutgoingInHorizonMilli"], 4000)
         self.assertEqual(cola["sourceSalesOrderLineCount"], 1)
@@ -75,7 +75,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
             "NOT_READY": 1,
         })
 
-    def test_ready_shipment_reservation_and_projected_commitment_are_not_double_counted(self) -> None:
+    def test_order_line_reservation_and_projected_commitment_are_not_double_counted(self) -> None:
         report = self._adapt()
         result = self._result_for(report, "PASTA-500G")
         self.assertEqual(result["reservedMilli"], 4500)
@@ -148,7 +148,7 @@ class MyCompanySnapshotAdapterTests(unittest.TestCase):
         cola = next(row for row in report["items"] if row["result"]["sku"] == "COLA-2L")
         self.assertEqual(cola["result"]["firmOutgoingInHorizonMilli"], 0)
 
-    def test_unknown_native_shipment_or_receipt_status_is_rejected(self) -> None:
+    def test_unknown_native_commitment_or_receipt_status_is_rejected(self) -> None:
         shipment = copy.deepcopy(self.snapshot)
         shipment["outgoingCommitments"][0]["status"] = "in_progress"
         with self.assertRaisesRegex(ValueError, "status no soportado"):
