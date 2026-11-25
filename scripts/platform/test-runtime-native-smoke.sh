@@ -251,7 +251,7 @@ RUBROVA_UI_SCREENSHOT="$SCREENSHOT" \
 RUBROVA_UI_TEST_LOGIN=true \
 RUBROVA_UI_TEST_USERNAME=admin \
 RUBROVA_UI_STOP_AFTER_LOGIN=false \
-"$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL" | tee "$UI_LOG_FILE"
+"$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL" 2>&1 | tee "$UI_LOG_FILE"
 for marker in \
   "UI_LOGIN_STATUS=authenticated:admin" \
   "UI_POS_SCREEN_AVAILABLE=true" \

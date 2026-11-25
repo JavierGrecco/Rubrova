@@ -48,7 +48,8 @@ jobs:
         run: python3 scripts/platform/test_runtime_config.py
       - name: Validar supervisor nativo sin Docker
         run: |
-          python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py
+          python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py scripts/platform/native_runtime_url.py scripts/platform/test_native_runtime_url.py scripts/platform/inspect-mycompany-ui.py
+          python3 scripts/platform/test_native_runtime_url.py
           python3 scripts/platform/test_runtime_native_preview.py
       - name: Validar scripts de shell
         run: |
@@ -204,7 +205,8 @@ jobs:
       - name: Validar sintaxis del runtime nativo
         run: |
           bash -n scripts/platform/test-runtime-native-smoke.sh
-          python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py
+          python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py scripts/platform/native_runtime_url.py scripts/platform/test_native_runtime_url.py scripts/platform/inspect-mycompany-ui.py
+          python3 scripts/platform/test_native_runtime_url.py
       - name: Ejecutar servidor local y comprobar interfaz sin salida a Internet
         env:
           RUBROVA_BUILD_ARTIFACTS_DIR: ${{ runner.temp }}/rubrova-runtime-artifacts
@@ -395,6 +397,10 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Verificar construcción de rutas API del runtime nativo
+        run: |
+          python3 -m py_compile scripts/platform/native_runtime_url.py scripts/platform/test_native_runtime_url.py scripts/platform/inspect-mycompany-ui.py
+          python3 scripts/platform/test_native_runtime_url.py
       - name: Instalar y verificar PostgreSQL 18 nativo
         shell: bash
         run: |

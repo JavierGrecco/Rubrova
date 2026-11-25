@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from native_runtime_url import application_endpoint_url
+
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
@@ -21,6 +23,100 @@ SERVER_ERROR_MARKERS = (
     "Connection refused",
     "NotBoundException",
 )
+
+
+def attach_browser_diagnostics(page: Any) -> dict[str, list[dict[str, Any]]]:
+    """Collect concise browser-side evidence without changing the application."""
+    diagnostics: dict[str, list[dict[str, Any]]] = {
+        "page_errors": [],
+        "console_errors": [],
+        "failed_requests": [],
+        "http_errors": [],
+        "dispatch_responses": [],
+    }
+    dispatch_started: dict[int, float] = {}
+
+    def remember(category: str, item: dict[str, Any]) -> None:
+        bucket = diagnostics[category]
+        bucket.append(item)
+        if len(bucket) > 30:
+            del bucket[:-30]
+
+    def on_page_error(error: Any) -> None:
+        remember("page_errors", {"message": str(error)[:1200]})
+
+    def on_console(message: Any) -> None:
+        if message.type == "error":
+            remember("console_errors", {"message": str(message.text)[:1200]})
+
+    def on_request(request: Any) -> None:
+        if request.method.upper() == "POST" and "/dispatch" in request.url:
+            dispatch_started[id(request)] = time.monotonic()
+
+    def on_response(response: Any) -> None:
+        request = response.request
+        request_url = request.url.split("?", 1)[0]
+        if response.status >= 400:
+            remember("http_errors", {
+                "status": response.status,
+                "method": request.method,
+                "url": request_url[:500],
+            })
+        if request.method.upper() == "POST" and "/dispatch" in request.url:
+            started = dispatch_started.pop(id(request), None)
+            remember("dispatch_responses", {
+                "status": response.status,
+                "elapsed_seconds": round(time.monotonic() - started, 3) if started else None,
+                "content_length": response.headers.get("content-length", ""),
+                "url": request_url[:500],
+            })
+
+    def on_request_failed(request: Any) -> None:
+        request_url = request.url.split("?", 1)[0]
+        failure = request.failure
+        remember("failed_requests", {
+            "method": request.method,
+            "url": request_url[:500],
+            "failure": str(failure or "unknown")[:500],
+        })
+        dispatch_started.pop(id(request), None)
+
+    page.on("pageerror", on_page_error)
+    page.on("console", on_console)
+    page.on("request", on_request)
+    page.on("response", on_response)
+    page.on("requestfailed", on_request_failed)
+    return diagnostics
+
+
+def emit_browser_diagnostics(
+    page: Any,
+    diagnostics: dict[str, list[dict[str, Any]]],
+    label: str,
+    screenshot_path: Path | None = None,
+) -> None:
+    """Write the browser's last known state even when the UI smoke aborts."""
+    try:
+        print(f"{label}_URL={page.url}")
+    except PlaywrightError as error:
+        print(f"{label}_URL_UNAVAILABLE={str(error)[:500]}")
+    try:
+        print(f"{label}_READY_STATE={page.evaluate('() => document.readyState')}")
+    except PlaywrightError as error:
+        print(f"{label}_READY_STATE_UNAVAILABLE={str(error)[:500]}")
+    try:
+        body_text = page.locator("body").inner_text(timeout=3_000)
+        print(f"{label}_BODY_TEXT={body_text.strip()[:2500]}")
+    except PlaywrightError as error:
+        print(f"{label}_BODY_TEXT_UNAVAILABLE={str(error)[:500]}")
+    for category, entries in diagnostics.items():
+        print(f"{label}_{category.upper()}=" + json.dumps(entries[-20:], ensure_ascii=False))
+    if screenshot_path is not None:
+        try:
+            page.screenshot(path=str(screenshot_path), full_page=True, timeout=5_000)
+            print(f"{label}_SCREENSHOT={screenshot_path}")
+        except PlaywrightError as error:
+            print(f"{label}_SCREENSHOT_FAILED={str(error)[:500]}")
 
 
 def visible_snapshot(page: Any, label: str) -> str:
@@ -617,7 +713,7 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
 
 
 def verify_restarted_persistence(context: Any, url: str) -> None:
-    base = url.rstrip("/") + "/exec/"
+    base = application_endpoint_url(url, "exec/")
 
     sales = fetch_restart_api_payload(
         context,
@@ -751,6 +847,7 @@ def inspect_page(url: str) -> int:
         )
         page = context.new_page()
         page.set_default_timeout(10_000)
+        browser_diagnostics = attach_browser_diagnostics(page)
 
         try:
             response = page.goto(url, wait_until="domcontentloaded", timeout=60_000)
@@ -996,7 +1093,7 @@ def inspect_page(url: str) -> int:
                 print("UI_TEST_PRODUCT_ADDED_TO_RECEIPT=true")
 
                 # Leer la configuración efectiva del POS desde el servidor antes de comprobar el cobro.
-                api_base = url.rstrip("/") + "/exec/Rubrova."
+                api_base = application_endpoint_url(url, "exec/Rubrova.")
                 pos_config_response = context.request.get(
                     api_base + "rubrovaTestPosConfigurationApi", timeout=12_000
                 )
@@ -1051,7 +1148,7 @@ def inspect_page(url: str) -> int:
                 print("UI_PAYMENT_CONFIRMED=true")
 
                 # Estas acciones del fixture están declaradas en NAMESPACE Sales.
-                sales_api_base = url.rstrip("/") + "/exec/Sales."
+                sales_api_base = application_endpoint_url(url, "exec/Sales.")
 
                 # Conciliar la factura y el pago persistidos, no sólo el cierre visual del diálogo.
                 sales_payload: dict[str, Any] = {}
@@ -1301,7 +1398,7 @@ def inspect_page(url: str) -> int:
 
                 # Ejecutar pruebas de resiliencia sólo contra el simulador local.
                 # Las operaciones de prueba no crean ventas, pagos ni movimientos de caja.
-                api_base = url.rstrip("/") + "/exec/Rubrova."
+                api_base = application_endpoint_url(url, "exec/Rubrova.")
                 timeout_started = time.monotonic()
                 timeout_response = context.request.get(
                     api_base + "rubrovaTestHttpTimeout", timeout=12_000
@@ -1491,6 +1588,21 @@ def inspect_page(url: str) -> int:
                 )
 
             return 0
+        except Exception as error:
+            failure_screenshot = screenshot_path.with_name(
+                screenshot_path.stem + "-failure" + screenshot_path.suffix
+            )
+            print(
+                "UI_FAILURE_EXCEPTION="
+                + f"{type(error).__name__}: {str(error)[:1600]}"
+            )
+            emit_browser_diagnostics(
+                page,
+                browser_diagnostics,
+                "UI_FAILURE",
+                failure_screenshot,
+            )
+            raise
         finally:
             context.close()
             browser.close()
