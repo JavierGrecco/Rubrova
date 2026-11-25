@@ -30,10 +30,10 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             incomingAvailabilityPolicy = 'ReceiptType.increaseAvailableStock; skipAvailable is its inverse'
         ),
         inventory = (JSON FROM
-            productId = MasterData.id(p),
+            productId = MasterData.id(MasterData.Product p),
             productName = MasterData.name(p),
             productReference = MasterData.reference(p),
-            locationId = Inventory.id(l),
+            locationId = Inventory.id(Inventory.Location l),
             locationName = Inventory.name(l),
             physicalIncoming = Inventory.inQuantity(l, p),
             physicalOutgoing = Inventory.outQuantity(l, p),
@@ -49,7 +49,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
-            sourceLineId = Sales.id(ol),
+            sourceLineId = Sales.id(Sales.OrderLine ol),
             sourceDocumentId = Sales.id(Sales.order(ol)),
             sourceDocumentNumber = Sales.number(Sales.order(ol)),
             productId = MasterData.id(Sales.shippedProduct(ol)),
@@ -57,7 +57,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationId = Inventory.id(Sales.location(Sales.order(ol))),
             locationName = Inventory.name(Sales.location(Sales.order(ol))),
             openQuantity = Sales.toShip(ol),
-            effectiveReserved = GROUP SUM Inventory.lineReserved(Inventory.line(rr))
+            effectiveReserved = GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
                 IF Sales.orderLine(Inventory.line(rr)) = ol,
             scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
             status = 'confirmed'
@@ -65,10 +65,10 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                 AND Sales.toShip(ol) > 0
                 AND Sales.location(Sales.order(ol))
                 AND Sales.shippedProduct(ol) IS MasterData.Product
-            ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.id(ol)
+            ORDER DATE(Sales.scheduledDateTime(Sales.order(ol))), Sales.id(ol)
         ),
         receipts = (JSON FROM
-            lineId = Inventory.id(Inventory.line(rr)),
+            lineId = Inventory.id(Inventory.line(Inventory.ReceiptResLedger rr)),
             receiptId = Inventory.id(Inventory.receipt(Inventory.line(rr))),
             receiptNumber = Inventory.number(Inventory.receipt(Inventory.line(rr))),
             purchaseOrderId = Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
@@ -83,7 +83,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             purchaseOrderStatus = 'confirmed',
             increaseAvailableStock = Inventory.increaseAvailableStock(Inventory.type(Inventory.receipt(Inventory.line(rr))))
             WHERE Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
-            ORDER Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
+            ORDER DATE(Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))),
                 Purchase.id(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
                 Purchase.id(Purchase.orderLine(Inventory.line(rr)))
         );
