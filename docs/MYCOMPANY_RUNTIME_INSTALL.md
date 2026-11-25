@@ -1,15 +1,21 @@
 # Instalación y carga de la extensión Rubrova — MyCompany 6.2
 
 **Versión objetivo:** MyCompany 6.2 / lsFusion 6.x  
-**Estado:** preparación multiplataforma y staging automatizados; el runtime construido desde fuentes Rubrova ya pasó en CI Linux x86_64 un ciclo sintético de venta, cobro en efectivo, conciliación de stock y caja, y cierre de turno. La instalación anfitriona y la aceptación operativa siguen pendientes.
+**Estado:** lsFusion 6.2 y MyCompany 6.2 están vendorizados; el build produce servidor, lógica y cliente desde nuestras fuentes. El recorrido comercial completo fue aceptado anteriormente sobre Docker. El camino principal ahora es el runtime nativo sin Docker; su supervisor y su smoke de login están implementados, pero el ciclo de venta nativo, la instalación offline y la aceptación final siguen pendientes.
 
-Para el uso desde una MacBook, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
+Para macOS, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
-## Ruta recomendada para el primer piloto
+## Ruta recomendada de desarrollo: runtime nativo
 
-Para comenzar, recomendamos el instalador oficial en un equipo Windows x64. Es la ruta más directa para levantar el sistema sin depender de Docker. El cliente web permite después operar desde otro equipo de la misma LAN, siempre que la contraseña administrativa y el firewall estén correctamente configurados.
+El servidor, la lógica y el interfaz web pueden ejecutarse directamente en el sistema operativo:
 
-Docker es una alternativa oficial, pero se debe inspeccionar el Compose y las arquitecturas de sus imágenes antes de iniciar contenedores.
+- Java 21 ejecuta `BusinessLogicsBootstrap` con `server.jar` y `logics.jar`.
+- PostgreSQL 18 conserva los datos en un directorio independiente de Rubrova.
+- Tomcat 9.0.124 publica el `client.war` en loopback.
+- El supervisor Python controla el arranque y la detención; no reemplaza al servidor ni al motor de base de datos.
+
+El runtime nativo es la ruta por defecto para desarrollo y la CI. Docker se conserva como comprobación secundaria/manual de empaquetado; no es requisito para operar el POS local una vez instaladas sus dependencias.
+
 
 ## 1. Preparar los artefactos
 
@@ -29,7 +35,34 @@ El Compose correcto para MyCompany es:
 
 No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2/compose.yaml: ese archivo no incorpora por sí solo el contenedor con la lógica de MyCompany. El directorio oficial de MyCompany 6.2 publica su archivo versionado, pero la descarga es de tipo binario; el preparador calcula el SHA-256 local y no inicia el stack.
 
-## 2. Instalar de forma aislada
+## 2. Vista previa nativa de desarrollo sin Docker
+
+Esta vista previa utiliza los mismos artefactos compilados desde `vendor/platform` y `vendor/mycompany`. No usa las imágenes oficiales de Docker ni modifica el código upstream.
+
+Dependencias locales: Java 21, herramientas PostgreSQL 18 (incluidos `initdb` y `pg_ctl`), Python 3 y los artefactos `server.jar`, `logics.jar` y `client.war`. El supervisor descarga Tomcat 9.0.124 desde Apache y verifica SHA-512 en el primer inicio, salvo que ya esté instalado y configurado.
+
+Compilar desde la raíz del repositorio:
+
+    mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
+    mvn -B -ntp -f vendor/platform/pom.xml -pl server,web-client -am -DskipTests package
+
+Crear y validar preferencias:
+
+    python3 scripts/platform/runtime-config.py init
+    python3 scripts/platform/runtime-config.py validate
+
+Comprobar dependencias e iniciar:
+
+    python3 scripts/platform/run-local-native-preview.py doctor
+    python3 scripts/platform/run-local-native-preview.py --no-open start
+
+La vista previa sirve el cliente en `http://127.0.0.1:8080/`. Presionar Ctrl+C detiene servidor, Tomcat y sólo el PostgreSQL iniciado por ese supervisor; la base local se conserva. Se puede ejecutar `--offline doctor` y `--offline --no-open start` cuando Tomcat ya está verificado en caché y los artefactos están compilados. El build Maven puede necesitar Internet en la primera preparación.
+
+Esta modalidad sigue siendo un entorno de desarrollo: la configuración local de PostgreSQL usa autenticación `trust` sobre loopback, el usuario inicial de la base puede no tener contraseña y no debe exponerse a la LAN ni recibir datos reales. El instalador productivo deberá usar SCRAM, almacén de secretos del sistema operativo, firma y permisos correctos.
+
+**Todavía no se acepta como instalación comercial:** falta ejecutar la venta completa sobre este runtime, completar la prueba en tu Mac y Windows, empaquetar las dependencias y demostrar una instalación limpia sin Internet.
+
+## 3. Instalar de forma aislada
 
 ### Windows x64
 
@@ -40,7 +73,7 @@ No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2
 5. Iniciar sesión con el usuario inicial indicado por la documentación del producto.
 6. Cambiar inmediatamente la contraseña de admin. La guía oficial permite el acceso inicial con `admin` sin contraseña; esa condición se utiliza sólo en la base efímera de CI y nunca debe conservarse en una instalación real. No habilitar acceso LAN hasta cambiarla.
 
-### Docker en macOS/Linux/Windows
+### Docker (alternativa secundaria y smoke manual)
 
 1. Instalar Docker Engine o Docker Desktop con Docker Compose.
 2. Preparar el directorio de trabajo con el Compose oficial MyCompany 6.2.
@@ -51,7 +84,7 @@ No confundirlo con el Compose genérico de la plataforma lsFusion en /docker/6.2
 7. Si ya existe una instalación anterior, no borres ni renombres `docker-db`: el directorio de Rubrova para PostgreSQL 18 es nuevo y no migra automáticamente datos de PostgreSQL 17 o anteriores. Hacé un backup lógico y una migración validada antes de cambiar la base activa.
 8. Iniciar sólo en la máquina local para la primera prueba. Cambiar la contraseña inicial de admin antes de abrir acceso a otros equipos.
 
-**Arquitectura Apple Silicon:** Docker Hub publica `lsfusion/mycompany:6.2` sólo para `linux/amd64`; las imágenes `lsfusion/server:6.2` y `lsfusion/client:6.2` publican `amd64` y `arm64`. El stack no es nativo ARM64 de punta a punta. Docker Desktop puede ejecutar imágenes AMD64 mediante emulación, pero eso no convierte la combinación en una instalación soportada o aceptada por Rubrova: el rendimiento y la estabilidad deben medirse en el equipo real. No se debe forzar `platform: linux/amd64` ni cambiar imágenes del Compose sin comprobar el conjunto completo. En una MacBook Intel, `amd64` coincide con la arquitectura del host, aunque el runtime también sigue pendiente de aceptación.
+**Arquitectura Apple Silicon:** la imagen Docker `lsfusion/mycompany:6.2` sólo publica `linux/amd64`, por lo que ese camino necesita emulación. En el runtime nativo el JAR de lógica se ejecuta sobre Java 21 ARM64; PostgreSQL y Tomcat también deben ser nativos para el equipo. Esa compatibilidad está prevista pero todavía falta aceptarla en la Mac real. No confundas la limitación de la imagen Docker con una limitación intrínseca del JAR.
 
 ## 3. Copiar el módulo Rubrova sin modificar el ERP
 
@@ -107,9 +140,17 @@ No basta con que el servicio figure como activo. Confirmar:
 
 La traducción actual es parcial. No habilitar el uso diario mientras falten textos críticos o los errores estén en inglés.
 
-## 5. Smoke test automatizado del runtime
+## 6. Pruebas automatizadas del runtime
 
-El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_64 con Docker Engine y Compose disponibles:
+### Camino principal: smoke nativo
+
+El workflow `.github/workflows/platform-extension.yml` construye los tres artefactos desde las fuentes Rubrova y ejecuta un smoke sin Docker en Linux x86_64. Instala Java 21 y PostgreSQL 18 nativos, prepara Tomcat, inicia el runtime con `run-local-native-preview.py`, bloquea la salida externa y comprueba que el login y la navegación en español siguen disponibles por loopback.
+
+La prueba nativa actual no realiza todavía la venta sintética ni la conciliación de factura, pago, caja, stock y cierre. El siguiente paso es compartir con ella los fixtures del smoke comercial existente y repetir el mismo ciclo con PostgreSQL local; no se considerará aceptado el runtime nativo hasta entonces.
+
+### Camino secundario: smoke Docker manual
+
+El repositorio conserva `scripts/platform/test-runtime-smoke.sh`. Se activa manualmente en GitHub Actions con el input `run_docker_smoke=true`, en Linux x86_64 con Docker Engine y Compose:
 
 1. Descarga el JAR y el Compose oficiales y compara ambos SHA-256 con el lock.
 2. Copia `RubrovaCustom`, `RubrovaPOSLocalization` y el ResourceBundle a `docker-server` sin editar el código upstream.
@@ -122,7 +163,9 @@ El repositorio incorpora `scripts/platform/test-runtime-smoke.sh`. En Linux x86_
 9. Abre la aplicación con Chromium en locale `es-AR`, reintenta la carga mientras aparezca `NotBoundException` y, sólo en la base efímera de CI, inicia sesión con el usuario inicial `admin` sin contraseña. El test espera la transición a `/main`, tolera el reemplazo temporal del DOM por GWT y confirma el acceso cuando el menú queda estable. Luego navega a `Comercio → Punto de venta`, abre el turno sintético, busca un producto de prueba y lo agrega al recibo mediante la acción nativa de MyCompany. Confirma una venta por ARS 1.250 en efectivo, verifica factura/pago persistidos, entrada de stock 10 → 9 y conciliación de caja; luego cierra el turno y exige estado `CLOSED`, venta y efectivo conciliados. Finalmente simula timeout y respuestas HTTP 400/401/403/408/409/429/503, valida la clasificación/persistencia de ocho incidencias y confirma recuperación del proveedor. El puesto, el producto, las cuentas, los módulos de fixture y el resto de los datos son exclusivos de la base efímera; no se modifica el despliegue ni se incorporan datos de demostración al producto. Las capturas se guardan sólo tras estabilizarse el contenido.
 10. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 
-La ejecución [45481198077](https://github.com/JavierGrecco/Rubrova/actions/runs/45481198077), sobre el commit `7fbfbe5`, compiló el servidor, la lógica y el cliente web desde fuentes Rubrova y verificó los tres artefactos. En Linux x86_64, Chromium completó login, navegación, apertura de `SM/000001`, alta de una línea, venta por ARS 1.250, pago exacto en efectivo, conciliación de factura/pago/stock/caja y cierre `CLOSED`. También se verificaron los módulos propios, las imágenes de runtime, los ocho casos HTTP y la recuperación. El job eliminó contenedores, red y volúmenes al terminar. Los registros mostraron 14 `SQLTimeoutException` durante la inicialización y varios ajustes de materialización agotados que se recuperaron; el arranque llegó a completar, pero estos eventos quedan como deuda técnica para investigar antes del uso real. En macOS Apple Silicon se han validado compilación y preparación, no el servidor nativo: MyCompany 6.2 publica su lógica como `linux/amd64`.
+La aceptación comercial completa [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) compiló servidor, lógica y cliente desde fuentes Rubrova y comprobó con Chromium login, venta por ARS 1.250, pago exacto en efectivo, factura/pago, stock 10 → 9, caja y cierre `CLOSED`. También reinició servidor/cliente sin borrar PostgreSQL y comprobó persistencia, ocho escenarios HTTP y recuperación. **Esa prueba se ejecutó en Docker.** No prueba todavía la venta nativa.
+
+El workflow se está reorganizando para que la ruta nativa sea la automática y Docker sea manual. La validación estática del supervisor, las pruebas unitarias y la comprobación de Windows ya pasan en la revisión actual; la compilación y el smoke nativo deben terminar antes de informar una aceptación.
 
 ## 6. Criterio de finalización del Bloque 0
 
@@ -136,7 +179,7 @@ El bloque sólo se declara completado después de guardar evidencia de:
 6. Backup y restauración en una instancia limpia comprobados.
 7. Reinicio de proceso y retorno a servicio documentados.
 
-La CI que valida el lock y el esqueleto de extensión no reemplaza estas pruebas de ejecución.
+La compilación del fork y las pruebas unitarias tampoco reemplazan la aceptación de una instalación nativa con venta, persistencia, reinicio, bloqueo de Internet y restauración.
 
 ## Fuentes oficiales
 
