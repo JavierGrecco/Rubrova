@@ -1051,13 +1051,16 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Inventory.planned(l, p)",
     "Sales.toShip(ol)",
     "Inventory.ShipmentResLedger",
+    "Inventory.lineReserved(Inventory.line(rr))",
+    "Inventory.expected(l, p)",
+    "Inventory.reserved(l, p)",
     "Inventory.ReceiptResLedger",
     "Inventory.increaseAvailableStock"
   ]) {
     assert.ok(replenishmentExportSource.includes(field), "La extracción debe incluir " + field);
   }
-  assert.doesNotMatch(replenishmentExportSource, /fillAuto\\s*\\(/);
-  assert.doesNotMatch(replenishmentExportSource, /NEW\\s+\\w+\\s*=|DELETE\\s+/);
+  assert.doesNotMatch(replenishmentExportSource, /fillAuto\s*\(/);
+  assert.doesNotMatch(replenishmentExportSource, /NEW\s+\w+\s*=|DELETE\s+/);
   assert.match(replenishmentExportSource, /snapshotType = 'mycompany-replenishment-source-export'/);
   assert.match(replenishmentExportSource, /quantityPrecision = 3/);
 });
