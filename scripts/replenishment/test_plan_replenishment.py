@@ -55,6 +55,8 @@ class ReplenishmentPlannerTests(unittest.TestCase):
         self.assertEqual(result["confirmedIncomingInHorizonMilli"], 2500)
         self.assertEqual(result["excludedIncomingByReason"], {
             "CANCELLED": 1,
+            "ALREADY_RECEIVED": 1,
+            "AFTER_COVERAGE": 1,
             "NOT_CONFIRMED": 2,
             "PAST_DUE": 1,
         })
