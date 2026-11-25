@@ -9,7 +9,7 @@
 - **Suite del planificador:** aprobada en [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825), sobre el commit `8777842`.
 - **Validación estática y Windows:** aprobadas en la ejecución de plataforma correspondiente al commit anterior; la nueva ejecución [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) está en curso.
 - **Compilación completa del fork lsFusion 6.2 + GWT + MyCompany 6.2:** aprobada en la ejecución anterior [45721155696](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696).
-- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. La causa se está acotando a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. La aceptación de esa corrección sigue pendiente.
+- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. El diagnóstico apuntó a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. La nueva compilación y los smokes deben confirmar que la llamada autenticada ya devuelve JSON válido.
 - **Docker/Linux:** el job de diagnóstico es no bloqueante. Una anotación reportó que el smoke de POS no llegó a aprobarse; su job en verde no debe interpretarse como aceptación del flujo.
 - **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
 
@@ -40,6 +40,7 @@ La capa de pagos presenciales tiene arquitectura y entidades iniciales de config
 | Imágenes propias del runtime Docker | Construcción y smoke aprobados en CI | Artefactos compilados desde fuentes Rubrova; el diagnóstico Docker/Linux completó el ciclo funcional en `45637101959` |
 | Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45641728845`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux sigue como diagnóstico suplementario no bloqueante |
 | Login y navegación al POS | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | Chromium abrió Comercio → Punto de venta y ejecutó el recorrido de venta tanto en macOS ARM64 como en Linux x86_64 sin Docker |
+| API nativa autenticada de reposición | En validación | El servidor y el login cargaron en macOS ARM64 y Linux; la acción devolvió HTTP 500 `Set operation is incorrect`. Se eliminaron las conversiones de índices y el nuevo smoke está en curso. No se declara aceptada hasta verificar el JSON y conciliarlo con datos reales |
 | Apertura de turno | Aprobado en Docker y macOS ARM64 CI | Turno sintético `SM/000001` en Docker y turno de prueba de Rubrova en macOS nativo |
 | Búsqueda y selección de artículo | Aprobado en Docker y macOS ARM64 CI | Un producto sintético; línea de recibo, cantidad 1 y precio ARS 1.250 |
 | Confirmación del cobro en efectivo | Aprobado en Docker y macOS ARM64 CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |
