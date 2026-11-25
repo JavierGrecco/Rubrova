@@ -2,7 +2,7 @@
 
 **Corte:** 25 de noviembre de 2026  
 **Rama:** `main`  
-**Última aceptación funcional nativa:** [CI 45558057837](https://github.com/JavierGrecco/Rubrova/actions/runs/45558057837), commit `e979e15aece4befa6c6c253e1ca463b345396fe5`. Los jobs macOS ARM64 y Linux x86_64 sin Docker completaron login, apertura de turno, venta en efectivo, factura/pago, conciliación de stock, cierre e incidencias de integración con la salida externa bloqueada. El job Docker/Linux falló antes de la UI: el cliente devolvió HTTP `000` durante 900 segundos, aunque los 717 módulos cargaron y Tomcat desplegó `ROOT.war`.
+**Última aceptación funcional nativa:** [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959), commit probado `ded61a574a0e40d11ef6fb99cb9d84aef69465a6`. El job macOS ARM64 completó login, turno, venta en efectivo, factura/pago, conciliación de stock, cierre y recuperación de integración con conectividad habilitada. El job Linux x86_64 nativo completó el mismo ciclo con la salida externa bloqueada. El diagnóstico Docker/Linux quedó en advertencia no bloqueante: HTTP `000` durante 900 segundos, aunque cargaron 717 módulos y Tomcat desplegó `ROOT.war`.
 **Última aceptación funcional Docker completa:** [CI 45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218).  
 **Estado:** la aceptación nativa macOS ARM64 es la puerta obligatoria. Linux nativo y Docker/Linux son diagnósticos suplementarios no bloqueantes; el primero pasó y el segundo requiere investigar el acceso HTTP del cliente. No hay aceptación todavía en un Mac físico ni autorización para uso diario.
 
@@ -10,7 +10,7 @@
 
 Rubrova contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor Maven compila servidor, cliente GWT y lógica MyCompany desde las fuentes propias. El desarrollo local prioriza el runtime nativo (Java 21, PostgreSQL 18 y Tomcat 9), especialmente en macOS. CI exige la aceptación nativa macOS ARM64; Linux nativo y Docker/Linux se ejecutan como diagnósticos suplementarios no bloqueantes.
 
-La aceptación Docker histórica [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) completó una venta sintética de ARS 1.250, factura/pago, stock 10 → 9, caja `CLOSED`, reinicio y escenarios HTTP simulados. En el último push [45558057837](https://github.com/JavierGrecco/Rubrova/actions/runs/45558057837), tanto macOS ARM64 como Linux x86_64 nativo sin Docker repitieron el recorrido POS completo y las pruebas de fallos/recuperación con salida externa bloqueada. La nueva prueba Docker/Linux no alcanzó la interfaz: el chequeo HTTP devolvió `000` durante 900 segundos después de la inicialización de los módulos y del despliegue de Tomcat. Se mantiene como diagnóstico no bloqueante. Ninguna de estas ejecuciones reemplaza la prueba en un Mac de usuario.
+La aceptación Docker histórica [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) completó una venta sintética de ARS 1.250, factura/pago, stock 10 → 9, caja `CLOSED`, reinicio y escenarios HTTP simulados. En el último run [45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959), macOS ARM64 volvió a completar el ciclo con conectividad externa habilitada y Linux x86_64 nativo completó el ciclo con salida externa bloqueada. La aceptación Docker/Linux no alcanzó la interfaz y devolvió HTTP `000`; queda como diagnóstico no bloqueante. Ninguna de estas ejecuciones reemplaza la prueba en un Mac de usuario.
 
 Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de CI que se destruye al terminar. Esta aprobación demuestra el primer recorrido venta → cobro → stock → cierre básico; no habilita aún el uso diario ni significa que el POS/ERP esté terminado.
 
@@ -21,7 +21,7 @@ Todos los datos utilizados fueron sintéticos y quedaron en una base temporal de
 | Fuentes originales lsFusion 6.2 + MyCompany 6.2 | Aprobado | Snapshots fijados en el lock y completos en `vendor/` |
 | Compilación del fork Rubrova | Aprobado en CI | Reactor Maven, servidor, cliente GWT y lógica MyCompany compilados desde fuentes propias |
 | Imágenes propias del runtime Docker | Construcción aprobada; aceptación de ejecución pendiente | Los artefactos compilados desde fuentes Rubrova se incorporan a imágenes propias; el diagnóstico Docker/Linux del último push no alcanzó HTTP del cliente y no bloquea el runtime nativo |
-| Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45558057837`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux actualizó servidor y desplegó Tomcat, pero el acceso HTTP desde el runner quedó en `000` |
+| Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45637101959`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux desplegó `ROOT.war` y cargó 717/717 módulos, pero el acceso HTTP del cliente quedó en `000` |
 | Login y navegación al POS | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | Chromium abrió Comercio → Punto de venta y ejecutó el recorrido de venta tanto en macOS ARM64 como en Linux x86_64 sin Docker |
 | Apertura de turno | Aprobado en Docker y macOS ARM64 CI | Turno sintético `SM/000001` en Docker y turno de prueba de Rubrova en macOS nativo |
 | Búsqueda y selección de artículo | Aprobado en Docker y macOS ARM64 CI | Un producto sintético; línea de recibo, cantidad 1 y precio ARS 1.250 |
@@ -86,7 +86,7 @@ No se actualizará automáticamente ningún componente. Cada versión candidata 
 7. **ERP y localización:** continuar compras, inventario, proveedores, reportes y experiencia visual sobre módulos originales, adaptando con extensiones propias.
 8. **Fiscalidad e integraciones externas:** ARCA, medios electrónicos, marketplaces y logística sólo después de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación probadas.
 
-La evidencia `45503956218` demuestra el recorrido comercial básico en Docker histórico; `45558057837` demuestra que macOS ARM64 y Linux nativo sin Docker completan ese recorrido, incluso con salida externa bloqueada. Ninguna ejecución declara terminado el producto ni autoriza producción.
+La evidencia `45503956218` demuestra el recorrido comercial básico en Docker histórico; `45637101959` demuestra que macOS ARM64 y Linux nativo sin Docker completan ese recorrido. Linux nativo también lo completó con salida externa bloqueada; el smoke macOS mantuvo conectividad habilitada. Ninguna ejecución declara terminado el producto ni autoriza producción.
 
 ## Política transversal de errores
 
