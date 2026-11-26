@@ -190,3 +190,14 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Regionales:** no hay raíz ARCA; ATOL, Wazzup, EnterpriseData, KSeF y otros son patrones opcionales. WazzupWebhook registra el body y usa @@noauth en el handler revisado; no copiar sin firma/deduplicación/protección de PII.
 - **Documento:** docs/engineering/BASE_REUSE_AUDIT.md, enlazado desde índice, contratos y guía.
 - **Pendiente:** pruebas de runtime del stocktake, FIFO retroactivo, coste real por documento, API duplicada, restore selectivo fallido, permisos por depósito y arqueo físico de efectivo.
+
+
+## 2026-11-26 — REP-020 — Evidencia de rechazo transaccional y pago de devolución parcial
+
+- **Run:** [45872444450](https://github.com/JavierGrecco/Rubrova/actions/runs/45872444450), SHA 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53.
+- **Hechos del runtime:** parser y carga de los 722 módulos aprobados; servidor nativo macOS ARM64 inició en 158.053 ms. El smoke funcional creó la primera devolución de 0,4 unidades, importe ARS 500 y el stock subió de 9 a 9,4. La constraint nativa produjo el mensaje “The returned quantity on the invoice line exceeds the original quantity” al intentar 0,7 sobre remanente 0,6.
+- **Causa del primer fallo de fixture:** el indicador overReturnRejected se escribía como DATA persistente dentro de la NEWSESSION cuyo APPLY quedaba cancelado; ese valor no sobrevivía al cierre de la sesión. La API devolvía NULL y no ejecutaba el paso posterior de 0,6.
+- **Corrección en PR #13:** commit f2c35de9965842b64861d49a78367d1d10f2d3f8 usa DATA LOCAL NESTED BOOLEAN para llevar el resultado al padre y registra la marca durable después, en un APPLY independiente. El helper de devolución también crea directamente el OutgoingPayment nativo en efectivo, sin depender del buffer LOCAL usado por la pantalla de cobro.
+- **Regresión estática inicial:** run 45876753464 falló antes del build por cuatro secuencias literales \\n insertadas al editar el test JavaScript; no ejecutó lógica de producto.
+- **Corrección del test:** commit d5edc886c2c9fa827d8eedff9e7951eeefb36194 reemplazó esos cuatro escapes por saltos de línea reales.
+- **Estado:** run [45876903441](https://github.com/JavierGrecco/Rubrova/actions/runs/45876903441) sobre d5edc88 quedó en cola al registrar este documento. La validación final sigue pendiente; no afirmar todavía que la segunda devolución, los reintegros y la persistencia E2E hayan pasado.

@@ -142,6 +142,15 @@ Una propiedad DATA LOCAL no es un registro durable. Es temporal y pertenece al c
 
 El patrón común de MyCompany es APPLY, comprobar canceled(), y después entrar a NEWSESSION para completar otra etapa. No copiarlo mecánicamente: entender qué se ha confirmado y qué sigue siendo reversible en cada punto.
 
+**Cómo conservar evidencia de un APPLY rechazado en una fixture/API:**
+
+- Una constraint cancela el APPLY y revierte sus cambios persistentes. Cualquier marca escrita en una propiedad DATA normal dentro de esa misma sesión fallida puede perderse al cerrar NEWSESSION; no sirve como evidencia durable del rechazo.
+- Para transportar el resultado fuera de una NEWSESSION, declarar una propiedad transitoria como DATA LOCAL NESTED BOOLEAN. Después de APPLY, si canceled(), establecer la marca local. Al cerrar NEWSESSION, el valor local nested vuelve a la sesión exterior.
+- Sólo después de que la sesión exterior haya recibido esa marca, persistir el resultado en una transacción limpia y exitosa si la API/fixture debe demostrarlo después de un reinicio.
+- No usar esa marca como fuente de verdad de negocio ni cambiar la constraint para facilitar la prueba. La evidencia debe reflejar la cancelación real de MyCompany.
+
+Este patrón se apoya en la semántica v6 de [Session management](https://docs.lsfusion.org/v6/Session_management/), [APPLY](https://docs.lsfusion.org/v6/Apply_changes_APPLY/) y [NEWSESSION/NESTEDSESSION](https://docs.lsfusion.org/v6/New_session_NEWSESSION_NESTEDSESSION/).
+
 **Regla crítica:** la acción aplicada dentro de APPLY puede ejecutarse más de una vez si la transacción se reintenta por conflicto, deadlock o timeout. No enviar un cobro, emitir un documento fiscal, imprimir un ticket no repetible ni llamar a un proveedor externo como efecto irreversible dentro de esa transacción. En su lugar:
 
 1. crear/persistir una intención con ID e idempotencia;

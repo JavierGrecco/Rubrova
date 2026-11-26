@@ -145,3 +145,13 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Decisión:** no añadir raíces regionales al topModule argentino indiscriminadamente. Reutilizar patrones sólo después de definir contrato legal/proveedor local, autenticación, secreto, idempotencia, replay, timeout y reconciliación.
 - **Riesgo concreto:** WazzupWebhook usa @@noauth y registra el body completo; el handler revisado no evidencia verificación de firma. No copiar esa política a endpoints Rubrova.
 - **Evidencia:** BASE_REUSE_AUDIT.md, secciones 2.2 y 6; MyCompanyRu.lsf, MyCompanyPl.lsf, CashRegisterAtol.lsf y WazzupWebhook.lsf.
+
+
+## ADR-0017 — Transportar el resultado de un APPLY rechazado sin perderlo al cerrar la sesión
+
+- **Estado:** Aceptada para fixtures, APIs y diagnósticos transaccionales.
+- **Ámbito:** pruebas de constraints, rechazo funcional y persistencia de evidencias.
+- **Contexto:** en run 45872444450, MyCompany rechazó la sobredevolución de 0,7 unidades sobre un remanente de 0,6, pero la fixture escribió el indicador durable dentro de la misma NEWSESSION cuyo APPLY fue cancelado. Al cerrarse esa sesión, la marca no llegó al API; la respuesta contenía overReturnRejected = NULL aunque el servidor había registrado el mensaje de constraint.
+- **Decisión:** usar DATA LOCAL NESTED para transportar la marca de cancelación hacia la sesión padre. Fuera de la sesión fallida, persistir una evidencia durable mediante un APPLY independiente y exitoso cuando el contrato de prueba requiera observarla después del reinicio.
+- **Consecuencia:** una prueba nunca debe sustituir una constraint real por una asignación de bandera optimista ni escribir la evidencia en la transacción que se espera cancelar.
+- **Evidencia:** fuente v6 Session management/APPLY/NEWSESSION; docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md, sección 4.2; PR #13.
