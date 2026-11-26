@@ -75,47 +75,57 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 
 ### 2.1 Identidad de la revisión
 
-- La documentación canónica se incorporó a main en 1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b. La revisión 84121794b9570a4418970272349331bed4cc1711 fue el HEAD inmediatamente anterior a la consolidación.
-- El último commit con cambios de código funcional es d9791ff1c7894346d31ea5e0d240077940ba788c.
-- La comparación entre d9791ff1 y el HEAD actual muestra nueve commits posteriores, todos documentales; no hay cambios de código fuente. La auditoría de fuentes continúa describiendo la composición actual, con esa procedencia explícita.
-- La comparación desde 475ca9224520d296b23990071b1c79f00d6dced9 también muestra sólo actualizaciones documentales después de la auditoría inicial.
-- No se debe corregir una cabecera histórica reescribiendo la historia: se conserva el commit revisado y se añade la comparación que demuestra si el código cambió.
+- La auditoría de fuentes y contratos conserva como referencia la revisión `d9791ff1c7894346d31ea5e0d240077940ba788c`; sus conclusiones describen el snapshot completo de MyCompany/lsFusion, no una afirmación de que todo esté ya probado en runtime.
+- `main` está en `04249dc983c3af066a386f1e1b022da2d9587ec0`, que integra por squash el PR #15 (devoluciones parciales) desde `8d9ebd06cad6c3ee9f3894fcaf6257841683bfba`.
+- El trabajo activo de stocktake está aislado en `work/stocktake-barcode-runtime-acceptance`; al corte de esta revisión su HEAD es `92786b7258378b063bed9ce3a5b71fdf3d2b505a`, PR #14. Aún no está integrado.
+- La comparación de fuentes debe referirse a la revisión exacta indicada en cada informe; los anexos conservan sus observaciones históricas. Las secciones 2–10 reflejan el estado operativo más reciente.
+
 
 ### 2.2 Evidencia de aceptación vigente
 
 | Área | Evidencia | Resultado exacto |
 |---|---|---|
-| Compilación del fork MyCompany + lsFusion | [Run 45859119105](https://github.com/JavierGrecco/Rubrova/actions/runs/45859119105), SHA d9791ff1 | Éxito: fuentes fijadas, servidor, cliente GWT y lógica compilados |
-| Runtime nativo macOS ARM64 | Run 45859119105 | Smoke autenticado E2E exitoso en runner Apple Silicon; no sustituye prueba en Mac físico |
-| POS básico | Run 45859119105 | Venta sintética, factura/pago, stock, turno/caja, reinicio y persistencia dentro del escenario; no es jornada real |
-| Backup PostgreSQL | [Run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), SHA ac758d01 | Backup lógico, checksum y restauración en DB nueva; sólo PostgreSQL, no backup integral del negocio |
-| Exportación de reposición | Smoke autenticado y fixtures | Sólo lectura sobre datos sintéticos; falta conciliar con base comercial local real |
-| Devoluciones parciales completas | [Run 45872444450](https://github.com/JavierGrecco/Rubrova/actions/runs/45872444450), [run 45876903441](https://github.com/JavierGrecco/Rubrova/actions/runs/45876903441) | No aceptadas; rama PR #13 fallida, no integrada |
-| Offline macOS | RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested | Pendiente |
-| Linux/Docker | Jobs omitidos en los runs recientes | No aprobado por omisión |
-| Windows | Validación sintáctica PowerShell | No es instalación ni prueba funcional nativa |
-| Producción | No hay homologación integral | No autorizado |
+| Prevalidación, Windows y compilación de `main` | [Run 45906455407](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407), SHA `04249dc` | Éxito: prevalidación, validación PowerShell, fork lsFusion + MyCompany, cliente GWT y artefactos de runtime |
+| Runtime nativo macOS ARM64 de `main` | Run 45906455407 | Éxito: servidor, RMI, PostgreSQL, UI autenticada, POS, cierre de turno, backup/restore PostgreSQL, reinicio y demo nativa |
+| Devoluciones parciales en `main` | Run 45906455407 | Éxito: 0,4 + 0,6 unidades, rechazo de 0,7, dos reintegros en efectivo por ARS 1.250, stock final 10 y caja neta cero |
+| Exportación de reposición | Run 45906455407 y fixtures | API autenticada de sólo lectura sobre datos sintéticos; falta conciliar con una base comercial real |
+| Conteo por barcode (PR #14) | [Run 45907277530](https://github.com/JavierGrecco/Rubrova/actions/runs/45907277530), SHA `92786b7` | Prevalidación, Windows y compilación pasaron. Smoke ARM64 falló en la expectativa post-reinicio: cero, NULL y positivo pasaron; la API devolvió stock 10, correcto tras venta de 1 y devolución completa de 1. El inspector esperaba 9 incorrectamente |
+| Backup PostgreSQL | Run 45906455407 | Backup, verificación y restauración en DB aislada pasaron dentro del smoke nativo |
+| Offline macOS | `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested` | Pendiente; no confundir runtime local con aceptación offline |
+| Egreso de red | `RUBROVA_NATIVE_EGRESS_BLOCKED=false` | La prueba no bloqueó egress; no afirmar aislamiento de red |
+| Linux/Docker | Jobs omitidos en los runs #458 y #459 | No aprobado por omisión |
+| Windows | Validación de sintaxis PowerShell | No equivale a instalación ni smoke funcional nativo |
+| Producción | Sin homologación integral con datos reales | No autorizado |
 
-El run 45859119105 es la última evidencia E2E aprobada en el código principal antes del trabajo de devoluciones parciales. No se debe trasladar el resultado de una rama a main sin integrar y volver a probar el SHA integrado.
+El run #458 es la evidencia verde del SHA integrado de `main`. El run #459 es evidencia de la rama del PR #14 y no se hereda a `main`; su único fallo observado fue la expectativa incorrecta de stock después de la devolución completa. La corrección de esa expectativa requiere una nueva ejecución antes de integrar stocktake.
 
-### 2.3 Devoluciones parciales: estado real del PR #13
 
-PR [#13](https://github.com/JavierGrecco/Rubrova/pull/13) sigue abierto y no integrado, en la rama work/pos-partial-return-remaining-quantity, head d5edc886c2c9fa827d8eedff9e7951eeefb36194, basada en main d9791ff1c7894346d31ea5e0d240077940ba788c.
+### 2.3 Devoluciones parciales: integradas y probadas en `main`
 
-- RubrovaRetailReturns no está en RubrovaCustom ni en el lock de main.
-- Run 45876903441: prevalidación, sintaxis de PowerShell y compilación completa pasaron; smoke macOS ARM64 falló; Linux y Docker se omitieron.
-- El servidor logró iniciar y cargar la lógica. El inspector llamó a GET /exec/Sales.rubrovaTestPartialReturnsApi y recibió HTTP 200 con Content-Length de 5 bytes; después falló en response.json(). No se ha confirmado el contenido exacto de esos cinco bytes, por lo que no debe suponerse que sea una cadena determinada.
-- En el log aparece: Property Importe(Invoicing.amount[Invoicing.OutgoingPayment] ...) is not set para el OutgoingPayment OVN/000001. Es una pista para investigar el valor de amount(Bill), la secuencia de creación y la asignación de amount(OutgoingPayment); aún no es causa raíz.
-- Run 45872444450 demostró la primera devolución 0,4 sobre 1 unidad, ARS 500, stock 9→9,4, y rechazo nativo de 0,7 con 0,6 remanente. Falló después porque una marca persistente escrita dentro de la NEWSESSION cancelada no sobrevivió.
-- La corrección de fixture en PR usa DATA LOCAL NESTED BOOLEAN para transportar el resultado del APPLY cancelado al padre, y después lo persiste en un APPLY independiente. Este aprendizaje transaccional es válido, pero no hace que el flujo completo haya pasado.
+PR [#15](https://github.com/JavierGrecco/Rubrova/pull/15) fue integrado por squash en `main`, commit [04249dc](https://github.com/JavierGrecco/Rubrova/commit/04249dc983c3af066a386f1e1b022da2d9587ec0). PR #13 quedó cerrado como reemplazado; su historial de fallos se conserva como evidencia, no como línea de desarrollo vigente.
 
-**Próxima investigación de devolución:** la API debe validar Content-Type y registrar cuerpo textual seguro antes de parsear; la fixture debe exportar un resultado tipado aun cuando una suboperación rechace; registrar estado/importe de Bill, cada BillLine, cada OutgoingPayment, método y cantidad pagada, Receipt, InvLedger, saldo de Session, inventario y persistencia después de reinicio. Aislar cada paso para saber exactamente cuál devuelve el cuerpo inválido.
+- `RubrovaRetailReturns` está incluido en `RubrovaCustom` y en `platform/mycompany-6.2.lock.json`.
+- La extensión reutiliza `CreditNote.fill(BillLine, InvoiceLine)` para completar sólo la cantidad no devuelta. Mantiene la protección de `checkReturnedQuantity` de MyCompany y reutiliza documentos, pagos, recibos y ledgers nativos.
+- El fixture ejecuta los eventos locales después de crear la nota de crédito y después de ajustar la cantidad, antes de calcular y asignar el importe del reintegro.
+- [Run 45906455407](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407), SHA `04249dc`, pasó completo: prevalidación, Windows, compilación, smoke nativo macOS ARM64, cierre, backup/restore PostgreSQL, reinicio y demo.
+- El escenario verificó venta de ARS 1.250, primera devolución 0,4, rechazo de 0,7 cuando quedaban 0,6, segunda devolución automática de 0,6, dos notas y dos reintegros por efectivo por ARS 1.250, cantidad devuelta total 1, stock físico final 10, caja neta cero y persistencia tras reinicio.
+- Linux x86_64 y Docker/Linux se omitieron. El escenario es una fixture sintética de efectivo; pagos mixtos, reintegros tarjeta/QR, conciliación de adquirentes y terminales reales siguen pendientes.
+
+No trasladar esta aceptación a medios de pago o entornos no cubiertos por el escenario.
+
 
 ### 2.4 Estado de ramas
 
-La consulta actual de GitHub encontró main, work/pos-partial-return-remaining-quantity y work/retail-return-quantity-guard. main tiene protected=false. La política de trabajar con main como fuente única no equivale a protección obligatoria del servidor GitHub. No eliminar ramas que contengan cambios no conciliados sin inspeccionarlos; después de integrar/cerrar, volver a verificar el listado.
+Inventario remoto verificado tras cerrar PR #13 e integrar PR #15:
 
----
+- `main`: SHA `04249dc983c3af066a386f1e1b022da2d9587ec0`; rama canónica.
+- `work/stocktake-barcode-runtime-acceptance`: único trabajo temporal y PR #14 abierto (borrador), SHA `92786b7258378b063bed9ce3a5b71fdf3d2b505a`. Debe permanecer aislado hasta completar una nueva ejecución nativa.
+- Las ramas `work/pos-partial-return-remaining-quantity`, `work/pos-partial-returns-runtime-fix` y `work/retail-return-quantity-guard` ya no aparecen en la lista remota. No recrearlas.
+- GitHub informa `protected=false` para `main`. También informa `delete_branch_on_merge=false`: la eliminación automática de la rama fuente tras merge todavía no está activada. La conexión utilizada no permite cambiar esos ajustes administrativos.
+- Al corte, PR #13 está cerrado sin merge, PR #15 está integrado y PR #14 es el único PR abierto.
+
+La política es una sola rama de trabajo activa, nacida del SHA exacto de `main`, y cierre inmediato después de integrar o descartar.
+
 
 ## 3. Qué incorporamos: versiones, alcance y composición
 
@@ -141,7 +151,7 @@ RubrovaCustom.lsf en main requiere:
 - RubrovaPaymentTerminals
 - RubrovaReplenishmentExport
 
-RubrovaRetailReturns existe sólo en PR #13. Los módulos regionales RU/PL/BG están en el snapshot pero no se cargan automáticamente en el core argentino.
+RubrovaRetailReturns está cargado desde RubrovaCustom y extiende el hook nativo CreditNote.fill. Los módulos regionales RU/PL/BG están en el snapshot pero no se cargan automáticamente en el core argentino.
 
 ### 3.3 Regla reuse-first
 
@@ -476,6 +486,16 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 ---
 
 
+### 2026-11-26 — REP-022 — Aceptación runtime de captura por barcode (en validación)
+
+- Se añade a la fixture descartable de CI un Adjustment en progreso con una AdjustmentList nativa, enlazada al mismo producto/ubicación sintéticos de POS.
+- La prueba invoca el helper upstream `Inventory.setRealQuantity`, que es el utilizado por `@defineBarCodeSearch`: primero ingresa `0`, verifica que exista una fila y que `listRealQuantity` se agregue a `AdjustmentLine`; luego ingresa `NULL` y verifica que la fila se elimine; finalmente reingresa `2` y concilia ambas cantidades.
+- El Adjustment queda sin validar. No crea InvAdjustment ni modifica InvLedger/onHand, por lo que no contamina la venta POS ni su conciliación.
+- La misma cantidad positiva se consulta después del reinicio del runtime para verificar persistencia de la hoja y del Adjustment padre.
+- **Límite explícito:** esto no acepta todavía `Adjustment.fill` para la distinción entre `onHand=0` y `onHand=NULL`, ni prueba conteo ciego, reconteo, tolerancias, permisos o doble validación. Tampoco equivale a una prueba física con lector barcode real; la ruta de backend se ejercita invocando el helper que usa la pantalla.
+- **Evidencia inicial (run #454, SHA `38805f47cc3697034e73c1b7837e5dab8d26ddea`):** preflight, Windows y compilación pasaron; el smoke nativo arrancó, pero falló porque `AdjustmentListLine` tenía una fila con `0` y no existía la `AdjustmentLine` agregada (`listLineCount=1`, `adjustmentLineCount=0`). El cero quedó almacenado en la hoja, pero no se propagó al documento padre. La corrección se valida en el registro REP-024; aún no se acepta el circuito.
+
+
 ### 2026-11-26 — REP-023 — Cálculo de importe en devolución parcial y eventos locales
 
 - **Hecho observado:** en el run 45876903441, el endpoint de CI para devoluciones devolvió HTTP 200 con un cuerpo de 5 bytes; el inspector falló al parsearlo como JSON. En `adjust.log` quedó el mensaje `Property Importe(Invoicing.amount[Invoicing.OutgoingPayment] ...) is not set` para el egreso `OVN/000001`. El contenido exacto de los cinco bytes no se capturó en esa ejecución.
@@ -485,7 +505,45 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Cambio preparado desde main:** se portó el módulo `RubrovaRetailReturns` y su cableado de despliegue/lock/CI sobre la base vigente. El fixture ahora llama `executeLocalEvents()` después de crear la nota y otra vez después de cambiar la cantidad. El inspector registra Content-Type y cuerpo textual cuando el endpoint no devuelve JSON válido.
 - **Criterio de aceptación:** compilación del fork, prevalidación y scripts Windows, smoke nativo macOS ARM64, dos devoluciones (0,4 y remanente 0,6), rechazo de 0,7, dos reintegros por efectivo, reingreso físico de una unidad, caja neta cero y persistencia tras reinicio. Comprobar también que ninguna devolución por medio supera lo abonado originalmente con ese medio.
 - **Límite:** el fixture actual es de efectivo sintético. El circuito mixto tarjeta/efectivo y la experiencia del operador se deberán probar con el mismo contrato de distribución por medio antes de aceptar operación real.
-- **Estado:** cambio en rama basada en main; compilación y smoke funcional pendientes. El PR #13 original no se fusiona por su divergencia con main.
+- **Resultado:** run 45901168467, SHA e7c1fc1be1463dc726065f2ac16508943b156f53, completó correctamente prevalidación, Windows, compilación completa y smoke nativo macOS ARM64. Verificó dos devoluciones (0,4 + 0,6), rechazo de 0,7, dos reintegros en efectivo por ARS 1.250, stock 9→10, caja neta cero y persistencia tras reinicio. Linux y Docker/Linux se omitieron.
+- **Integración:** PR #15 fue integrado por squash en main, commit 04249dc983c3af066a386f1e1b022da2d9587ec0.
+- **Límites:** aceptado para fixture sintética de efectivo. Pagos mixtos, reintegros tarjeta/QR y terminales/adquirentes reales siguen pendientes. La ejecución posterior del SHA integrado de main se registra por separado.
+
+### 2026-11-26 — REP-024 — Diagnóstico del cero en el agregado de hojas de conteo
+
+- **Revisión observada:** PR #14, SHA `38805f47cc3697034e73c1b7837e5dab8d26ddea`, ejecución #454, job macOS ARM64 nativo.
+- **Hecho del runtime:** al ingresar la primera cantidad `0`, la API devolvió HTTP 200 y `listLineCount=1`, pero `adjustmentLineCount=0`. El servidor nativo y la compilación del fork pasaron; el fallo se produjo en el flujo de aceptación funcional.
+- **Causa identificada en la semántica del lenguaje:** `AdjustmentList.listRealQuantity` era un `GROUP SUM` directo. En lsFusion, una suma cuyo resultado es cero devuelve `NULL`. Por eso el agregado no distinguía una fila contada en cero de un grupo sin filas, y el `WHEN SETCHANGED(listRealQuantity(...))` nativo no podía materializar el padre al pasar de grupo vacío a suma cero. La documentación de lsFusion también confirma que los agregados `GROUP MAX` pueden conservar un cero no nulo y que `OVERRIDE` permite usar un valor de respaldo.
+- **Decisión:** preservar el `GROUP SUM` nativo y agregar una segunda agregación que produce `0.000` sólo cuando existe al menos una línea con cantidad no nula. `OVERRIDE` usa la suma original cuando no es cero y ese respaldo cuando la suma devuelve `NULL`; si no queda ninguna línea, ambas agregaciones son `NULL`. Así el evento upstream conserva su función original, el cero llega al padre y `NULL` sigue significando grupo vacío.
+- **Implementación reproducible:** `scripts/platform/apply-rubrova-source-patches.py` aplica el cambio al módulo propietario `AdjustmentList.lsf`, con ancla exacta, marcadores, detección de drift e idempotencia. No se crean clases ni ledgers paralelos.
+- **Fallos intermedios:** run #455 falló sólo por una aserción estática sensible a mayúsculas (`el` frente a `El`); run #456 compiló los artefactos Java del fork, pero el runtime abortó al parsear `IS NULL` en la fixture, sintaxis que no existe en lsFusion. Para comprobar ausencia se usa `NOT propiedad(...)`, conforme a la semántica del lenguaje.
+- **Cobertura:** la prueba exige fila padre/cantidad cero, borrado de la hoja con línea padre retenida y cantidad NULL, cantidad positiva 2, stock físico sin cambios mientras el Adjustment sigue pendiente y persistencia después del reinicio.
+- **Estado:** corrección del agregado y sintaxis de fixture en nueva revisión de PR #14; pendiente de compilación de lógica y smoke ARM64. Ningún resultado funcional se considera aprobado todavía.
+
+### 2026-11-26 — REP-025 — Fallo del runtime #456 y corrección de sintaxis de ausencia
+
+- **Ejecución:** #456, SHA `0b314ed5a24036f2022c150d5594b1d0e65a0784`; prevalidación Node/Python, Windows y build Java/Maven pasaron.
+- **Fallo exacto:** el servidor abortó durante el parseo de módulos con `RubrovaCISalesFixture:190:98 no viable alternative at input 'NULL'`. La causa fue usar `IS NULL`, operador de SQL que no forma parte del lenguaje lsFusion. El smoke funcional no comenzó.
+- **Corrección:** la sonda ahora usa `NOT Inventory.realQuantity(...)`, que devuelve TRUE cuando la propiedad no tiene valor y distingue cero (no nulo) de ausencia. El test estático prohíbe reintroducir `IS NULL` en la fixture.
+- **Estado:** nueva revisión pendiente de ejecución. El fallo de #456 no invalida el build Java completado, pero tampoco aporta evidencia del flujo de conteo.
+
+### 2026-11-26 — REP-026 — Corrección de lectura del conteo cero en la sonda
+
+- **Ejecución:** run 45905585216, job macOS ARM64 140202817953, SHA 689e0101c881ee640514e8ec9db5b7c4f7589687.
+- **Resultado observado:** prevalidación, validación Windows y compilación pasaron. El servidor nativo inició y la API respondió HTTP 200. La sonda informó listLineCount=1, adjustmentLineCount=1, adjustmentQuantityIsZero=true y onHand=10, pero no exportó zeroQuantityPreserved; el inspector falló al exigirlo.
+- **Interpretación:** la prueba consultaba una propiedad agregada de la lista, no la cantidad almacenada en la fila individual AdjustmentListLine. Esa lectura no es una prueba fiable del cero de la línea. El log confirma que el cero llegó a la línea principal del Adjustment y que el conteo pendiente no alteró onHand.
+- **Corrección preparada:** resolver la AdjustmentListLine sintética por lista/producto/ubicación y leer directamente Inventory.realQuantity(AdjustmentListLine). La API positiva y la comprobación tras reinicio usan el mismo acceso por fila. Se añade una regresión estática para impedir volver a consultar el agregado equivocado.
+- **Estado:** corrección preparada para revalidación sobre el main vigente. No se acepta todavía el circuito barcode.
+
+### 2026-11-26 — REP-027 — Expectativa de inventario tras venta y devolución completa
+
+- **Ejecución:** run 45907277530 (#459), job macOS ARM64 `140208799219`, SHA `92786b7258378b063bed9ce3a5b71fdf3d2b505a`.
+- **Checks previos:** prevalidación compartida, Windows y compilación completa del fork pasaron.
+- **Hechos del smoke:** los endpoints de stocktake devolvieron HTTP 200. El caso cero confirmó `listLineCount=1`, `adjustmentLineCount=1`, `zeroQuantityPreserved=true`, `adjustmentQuantityIsZero=true`, `onHand=10`. El caso NULL dejó cero filas en AdjustmentList, conservó la AdjustmentLine con cantidad NULL y mantuvo `onHand=10`. El caso positivo guardó 2 tanto en la fila de lista como en AdjustmentLine, sin alterar `onHand=10`.
+- **Fallo real:** después del reinicio, la hoja y sus cantidades 2 persistieron. El único error fue que el inspector esperaba `onHand=9`, pero el endpoint devolvió 10.
+- **Causa:** el flujo E2E no termina sólo con la venta de una unidad. Después de vender 1 (stock 10→9), ejecuta la devolución completa en dos partes (0,4 + 0,6), que reingresa la unidad (stock 9→10). El valor persistido correcto al final del escenario es 10, y coincide con `UI_PARTIAL_RETURNS_INVENTORY` y la sonda de reinicio del POS. No es evidencia de que el Adjustment pendiente haya alterado stock.
+- **Corrección:** la sonda de persistencia espera 10 y el mensaje explica que se compara después de venta y devoluciones. La regresión estática exige ese contrato para impedir una expectativa desfasada.
+- **Límite:** cero, NULL, positivo y persistencia de fila pasan en la ejecución #459; el run global quedó rojo únicamente por la expectativa de stock. El circuito no se declara aceptado hasta que un nuevo smoke completo termine verde con la expectativa corregida.
 
 ## 11. Anexos históricos preservados
 

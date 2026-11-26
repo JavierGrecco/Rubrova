@@ -143,6 +143,29 @@ MARKDOWN_VIEWER_REQUIRED_MARKERS = (
     "marked-gfm-heading-id@4.1.4/lib/index.umd.js",
 )
 
+# Preserve the distinction between an empty adjustment-list group and a group whose
+# recorded quantities sum to zero. In lsFusion, GROUP SUM returns NULL for a zero sum.
+STOCKTAKE_LIST_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentList.lsf"
+STOCKTAKE_LIST_AGGREGATE_BEFORE = """listRealQuantity (Adjustment, Product, Location) = 
+    GROUP SUM realQuantity(AdjustmentListLine l) BY adjustment(adjustmentList(l)), product(l), location(l);"""
+STOCKTAKE_LIST_AGGREGATE_AFTER = """listRealQuantitySum (Adjustment, Product, Location) =
+    GROUP SUM realQuantity(AdjustmentListLine l) BY adjustment(adjustmentList(l)), product(l), location(l);
+
+listRealQuantityZeroFallback (Adjustment, Product, Location) =
+    GROUP MAX 0.000 IF realQuantity(AdjustmentListLine l)
+        BY adjustment(adjustmentList(l)), product(l), location(l);
+
+listRealQuantity (Adjustment a, Product p, Location loc) =
+    (OVERRIDE listRealQuantitySum(a, p, loc), listRealQuantityZeroFallback(a, p, loc));"""
+STOCKTAKE_LIST_AGGREGATE_MARKERS = (
+    "listRealQuantitySum (Adjustment, Product, Location) =",
+    "GROUP MAX 0.000 IF realQuantity(AdjustmentListLine l)",
+    "listRealQuantity (Adjustment a, Product p, Location loc) =",
+    "(OVERRIDE listRealQuantitySum(a, p, loc), listRealQuantityZeroFallback(a, p, loc))",
+    "WHEN SETCHANGED(listRealQuantity(Adjustment a, Product p, Location l))",
+)
+
+
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
 # Tax changes are part of the document-line audit trail, alongside quantity and amount.
 TAX_HISTORY_TARGETS = (
@@ -393,6 +416,50 @@ def apply_cash_movement_date_captions() -> bool:
     return True
 
 
+def apply_stocktake_list_zero_aware_aggregate() -> bool:
+    target = STOCKTAKE_LIST_TARGET
+    if not target.is_file():
+        print(f"No se encontró el módulo de hojas de inventario: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATE_MARKERS if marker not in source]
+    if not missing and STOCKTAKE_LIST_AGGREGATE_BEFORE not in source:
+        print("El agregado nativo de conteo conserva cero y NULL sin confundir grupos vacíos.")
+        return True
+
+    if STOCKTAKE_LIST_AGGREGATE_AFTER in source:
+        print("El parche de agregado de conteo existe, pero faltan marcadores esperados.", file=sys.stderr)
+        return False
+
+    occurrences = source.count(STOCKTAKE_LIST_AGGREGATE_BEFORE)
+    if occurrences != 1:
+        print(
+            "No se ajustó el agregado de hojas de inventario. Se esperaba exactamente "
+            f"una coincidencia del agregado upstream y se encontraron {occurrences}.",
+            file=sys.stderr,
+        )
+        return False
+
+    source = source.replace(
+        STOCKTAKE_LIST_AGGREGATE_BEFORE,
+        STOCKTAKE_LIST_AGGREGATE_AFTER,
+        1,
+    )
+    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATE_MARKERS if marker not in source]
+    if missing or STOCKTAKE_LIST_AGGREGATE_BEFORE in source:
+        print(
+            "El parche de agregado cero/NULL de AdjustmentList quedó incompleto: "
+            + ", ".join(missing or ["el agregado upstream original sigue presente"]),
+            file=sys.stderr,
+        )
+        return False
+
+    target.write_text(source, encoding="utf-8")
+    print("Agregado nativo de AdjustmentList corregido: cero presente y grupo vacío NULL.")
+    return True
+
+
 def apply_tax_history_line_tracking() -> bool:
     for target, anchor, replacement in TAX_HISTORY_TARGETS:
         if not target.is_file():
@@ -525,6 +592,9 @@ def main() -> int:
         print("El control de cuentas de caja de Rubrova ya está aplicado.")
 
     if not apply_newsession_guards():
+        return 1
+
+    if not apply_stocktake_list_zero_aware_aggregate():
         return 1
 
     if not apply_cash_account_query_filters():

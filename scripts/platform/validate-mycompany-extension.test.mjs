@@ -51,6 +51,7 @@ const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoice
 const incomingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf");
 const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf");
 const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
+const adjustmentListSource = read("vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentList.lsf");
 const markdownViewerSource = read("vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const plannerWorkflowSource = read(".github/workflows/replenishment-planner.yml");
@@ -1463,6 +1464,45 @@ test("las devoluciones parciales calculan importes después de los eventos local
   assert.match(uiSmokeSource, /UI_PARTIAL_RETURNS_RESPONSE_CONTENT_TYPE=/);
   assert.match(uiSmokeSource, /UI_PARTIAL_RETURNS_RESPONSE_BODY=/);
   assert.match(uiSmokeSource, /json[.]loads\(response_body\)/);
+});
+
+
+
+test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras reinicio", () => {
+  assert.match(adjustmentListSource, /WHEN SETCHANGED\(listRealQuantity/);
+  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATE_BEFORE"));
+  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATE_AFTER"));
+  assert.match(sourcePatch, /GROUP MAX 0[.]000 IF realQuantity\(AdjustmentListLine l\)/);
+  assert.match(sourcePatch, /OVERRIDE listRealQuantitySum\(a, p, loc\), listRealQuantityZeroFallback\(a, p, loc\)/);
+  assert.ok(sourcePatch.includes("if not apply_stocktake_list_zero_aware_aggregate():"));
+  assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeZeroApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeNullApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodePositiveApi/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), 0\)/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), NULL\)/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]useList\(stocktakeCI\) <- TRUE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeListLineQuantity/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]realQuantity\(rubrovaCIStocktakeListLine\(\)\)/);
+  assert.doesNotMatch(nativeSalesFixtureSource, /Inventory[.]realQuantity\(rubrovaCIStocktakeList\(\),/);
+  assert.match(nativeSalesFixtureSource, /adjustmentQuantityIsNull = NOT Inventory[.]realQuantity\(rubrovaCIStocktakeAdjustmentLine\(\)\)/);
+  assert.doesNotMatch(nativeSalesFixtureSource, /\bIS NULL\b/);
+  assert.match(nativeSalesFixtureSource, /onHand = Inventory[.]onHand\(rubrovaCITestLocation\(\), rubrovaCITestProduct\(\)\)/);
+  assert.match(uiSmokeSource, /[Ee]l conteo descartable alteró el stock físico/);
+  assert.match(uiSmokeSource, /adjustmentQuantityIsNull/);
+  assert.ok(uiSmokeSource.includes('_stocktake_number(state, "onHand", "restart") - 10.0'));
+  assert.ok(uiSmokeSource.includes("después de la venta y las devoluciones POS:"));
+  assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeListLineCount\(\) = \(OVERRIDE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeAdjustmentLineCount\(\) = \(OVERRIDE/);
+  assert.match(uiSmokeSource, /def verify_stocktake_barcode_semantics\(/);
+  assert.match(uiSmokeSource, /def verify_stocktake_persistence\(/);
+  assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true/);
+  assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_NULL_CLEARED=true/);
+  assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_AGGREGATE_RECONCILED=true/);
+  assert.match(uiSmokeSource, /UI_RESTART_PERSISTENCE_STOCKTAKE=true/);
+  assert.match(nativeSmokeSource, /UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true/);
+  assert.match(nativeSmokeSource, /UI_STOCKTAKE_BARCODE_NULL_CLEARED=true/);
+  assert.match(nativeSmokeSource, /UI_STOCKTAKE_BARCODE_AGGREGATE_RECONCILED=true/);
+  assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_STOCKTAKE=true/);
 });
 
 test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el turno", () => {

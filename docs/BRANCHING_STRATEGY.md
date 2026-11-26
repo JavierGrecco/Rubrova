@@ -2,7 +2,7 @@
 
 **Revisión:** 26 de noviembre de 2026  
 **Rama canónica:** `main`  
-**Límite operativo:** `main` como única línea persistente; ramas temporales sólo para cambios aislados y con cierre inmediato.
+**Límite operativo:** una rama persistente (`main`) y como máximo una rama temporal activa para revisión.
 
 ## Objetivo
 
@@ -10,55 +10,58 @@ Mantener una línea principal fácil de revisar, probar, ejecutar localmente y r
 
 ## Reglas
 
-1. **`main` es la única fuente de verdad y la rama persistente.** No mantener ramas de desarrollo abiertas cuando el hito ya está integrado.
-2. **Ramas temporales sólo por necesidad de revisión aislada.** Deben nacer del SHA actual de `main`, tener alcance único y cerrarse al terminar.
-3. **No apilar funcionalidades ni PR encadenados.** Cada cambio se valida contra la revisión exacta que se pretende integrar.
-4. **Integrar pronto y de forma coherente.** Revisar el diff, ejecutar preflight, build y smoke afectados; actualizar `main` sólo con evidencia.
-5. **Eliminar referencias temporales al integrar.** Cerrar PR y borrar la rama en el mismo hito; no acumular ramas históricas.
-6. **No revivir ramas por su historial.** Recuperar selectivamente sólo contenido que falte y comprobarlo contra `main`.
-7. **No confundir CI verde con aceptación funcional.** Separar unitarias, compilación, arranque, login, API autenticada, smoke POS y conciliación de datos.
-8. **Mantener una vía de recuperación.** Los cambios de runtime/esquema deben tener backup antes de migraciones y evidencia de restore.
+1. **`main` es la única fuente de verdad.** Las ramas temporales sólo existen para una revisión aislada y no sustituyen el estado de la aplicación.
+2. **Una sola rama temporal activa.** Debe nacer del SHA actual de `main`, tener un alcance único y cerrarse al terminar.
+3. **No apilar PR ni ramas de la misma funcionalidad.** Si un test falla, corregir el mismo PR salvo que se pruebe que la línea de trabajo ya no es recuperable.
+4. **Integrar con evidencia del SHA exacto.** Revisar diff, preflight, Windows, compilación y smoke de runtime afectado.
+5. **Después del merge, verificar `main` y eliminar la rama temporal.** No confiar en que GitHub lo haga automáticamente: la configuración actual `delete_branch_on_merge=false`.
+6. **No revivir ramas antiguas.** Recuperar selectivamente sólo contenido que falte y compararlo con `main`.
+7. **No confundir compilación verde con aceptación funcional.** Login, API autenticada, POS, ledgers, persistencia y backups son comprobaciones distintas.
+8. **Mantener recuperación.** Los cambios de runtime/esquema requieren backup y evidencia de restore antes de considerarse listos.
 
 ## Convención de nombres
 
-- `work/<area>-<objetivo>`: rama principal para una nueva funcionalidad.
-- `fix/<area>-<problema>`: segunda rama opcional para un hotfix urgente e independiente.
-
-Los nombres describen un objetivo estable, no un experimento temporal.
+- `work/<area>-<objetivo>`: una funcionalidad o prueba aislada.
+- `fix/<area>-<problema>`: un hotfix independiente y urgente; no abrirlo si puede corregirse en el PR activo.
 
 ## Puerta de aceptación
 
-Para cambios del runtime o de MyCompany, la puerta mínima contempla:
+Para cambios del runtime o de MyCompany:
 
 - validaciones estáticas y pruebas de contrato;
 - suites Python y regresiones relacionadas;
 - compilación del servidor, cliente GWT y lógica MyCompany desde fuentes fijadas;
-- arranque, RMI, disponibilidad del cliente y login;
-- API autenticada cuando se modifica su contrato;
-- smokes de runtime nativo macOS ARM64 y Linux; Windows cuando la extensión o el despliegue lo afecten;
-- evidencia de conciliación contra una base local real antes de declarar aceptada una exportación productiva.
+- arranque, RMI, API y login autenticado;
+- smoke nativo macOS ARM64 y Linux; Windows cuando el despliegue lo afecte;
+- backup/restore y persistencia después del reinicio;
+- evidencia con datos locales reales antes de declarar aceptación productiva.
 
-Las fixtures sintéticas son regresión automatizada, no sustituyen datos reales.
+Las fixtures sintéticas son regresión automatizada, no sustituyen una prueba con datos reales ni la homologación de pagos externos.
 
 ## Estado del repositorio — 26 de noviembre de 2026
 
-La consulta actual a GitHub confirma:
+Última consulta a GitHub:
 
-- Ramas remotas visibles: **1**, únicamente `main`.
-- Pull requests abiertos: **0**.
-- SHA actual: `ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a`.
-- El workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó correctamente.
-
-No hay ramas feature pendientes de integrar. No se deben ejecutar los comandos históricos de borrado que aparecían en versiones anteriores de esta guía: ya no describen el estado actual.
+- Ramas remotas: **2** — `main` y `work/stocktake-barcode-runtime-acceptance`.
+- Pull requests abiertos: **1** — PR [#14](https://github.com/JavierGrecco/Rubrova/pull/14), en borrador.
+- `main`: `04249dc983c3af066a386f1e1b022da2d9587ec0`.
+- Rama del PR #14: `92786b7258378b063bed9ce3a5b71fdf3d2b505a`, sincronizada con `main` (`ahead 12 / behind 0` al último diff).
+- PR #13 está cerrado como reemplazado; PR #15 está integrado.
+- El run [45906455407](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407) de `main` terminó correctamente, incluido el smoke nativo macOS ARM64.
+- El run [45907277530](https://github.com/JavierGrecco/Rubrova/actions/runs/45907277530) del PR #14 terminó rojo sólo por una expectativa incorrecta: tras venta de 1 y devolución completa de 1, el stock final persistido es 10, no 9. Los casos barcode cero/NULL/positivo pasaron. Se corrige la expectativa y se exige un run nuevo.
 
 ### Protección de la rama principal
 
-La API de GitHub informa `protected: false` para `main`. Tener una única rama no impide por sí solo un push directo ni obliga a que pasen los checks. La protección de rama/ruleset debe activarse desde GitHub Settings por alguien con permisos administrativos. La política recomendada es exigir los workflows aplicables, impedir force-push y exigir revisión cuando haya más colaboradores. No se declara esa protección activa hasta verificarla.
+La lista de ramas informa `protected=false` para `main`. La consulta del endpoint detallado de protección no está disponible para la conexión actual. No se afirma que existan reglas obligatorias de revisión o checks hasta verificarlas. La administración de GitHub debe activar protección, impedir force-push y exigir checks.
+
+### Borrado automático de ramas
+
+La API de repositorio informa `delete_branch_on_merge=false`. Esa opción no puede cambiarse desde las acciones habilitadas en esta conexión. Hasta activarla desde Settings, la rutina de cierre debe borrar manualmente la rama fuente y verificar después que sólo quede `main`.
 
 ## Rutina por hito
 
-**Inicio:** actualizar `main`, comprobar árbol limpio, crear una sola rama desde `main` y definir la aceptación.
+**Inicio:** actualizar `main`, confirmar árbol limpio, crear una rama temporal desde el SHA actual y definir la aceptación.
 
-**Desarrollo:** mantener el alcance concentrado y ejecutar pruebas focalizadas. Corregir sobre la misma rama mientras el PR siga siendo el único trabajo activo.
+**Desarrollo:** mantener un único PR, ejecutar pruebas focalizadas y corregir sobre la misma rama.
 
-**Cierre:** revisar el diff, ejecutar validaciones completas, integrar por squash, verificar el resultado en `main` y eliminar la rama. Si falla la aceptación, no se abre otra rama para el mismo trabajo.
+**Cierre:** repetir validaciones completas, integrar por squash, verificar el SHA de `main`, borrar la rama fuente y refrescar este inventario. Si falla la aceptación, no abrir una segunda rama para el mismo trabajo.
