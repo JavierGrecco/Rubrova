@@ -92,13 +92,21 @@ class NativePreviewTests(unittest.TestCase):
                     configured_home=str(tomcat_home),
                 )
 
+    def test_retail_returns_extension_is_staged_with_native_runtime(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            logics_dir = Path(temporary)
+            native.ensure_extension_files(logics_dir)
+            staged_module = logics_dir / "RubrovaRetailReturns.lsf"
+            self.assertTrue(staged_module.is_file())
+            self.assertIn("rubrovaRemainingReturnQuantity", staged_module.read_text(encoding="utf-8"))
+
     def test_ci_sales_fixture_is_added_to_a_temporary_runtime_only(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             logics_dir = Path(temporary)
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -115,6 +123,7 @@ class NativePreviewTests(unittest.TestCase):
             updated_entrypoint = entrypoint.read_text(encoding="utf-8")
             self.assertEqual(updated_entrypoint.count("RubrovaCISalesFixture"), 1)
             self.assertIn("RubrovaCIRetailFixture", updated_entrypoint)
+            self.assertEqual(updated_entrypoint.count("RubrovaRetailReturns"), 1)
             self.assertIn("RubrovaCIIntegrationFixture", updated_entrypoint)
             sales_fixture = (logics_dir / "RubrovaCISalesFixture.lsf").read_text(encoding="utf-8")
             retail_fixture = (logics_dir / "RubrovaCIRetailFixture.lsf").read_text(encoding="utf-8")
@@ -130,7 +139,7 @@ class NativePreviewTests(unittest.TestCase):
             logics_dir = Path(temporary)
             (logics_dir / "RubrovaCustom.lsf").write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -150,7 +159,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
                 encoding="utf-8",
             )
 
@@ -160,6 +169,7 @@ class NativePreviewTests(unittest.TestCase):
             updated_entrypoint = entrypoint.read_text(encoding="utf-8")
             self.assertEqual(updated_entrypoint.count("RubrovaLocalDemoRetail"), 1)
             self.assertEqual(updated_entrypoint.count("RubrovaLocalDemoInventory"), 1)
+            self.assertEqual(updated_entrypoint.count("RubrovaRetailReturns"), 1)
             retail_fixture = (logics_dir / "RubrovaLocalDemoRetail.lsf").read_text(encoding="utf-8")
             inventory_fixture = (logics_dir / "RubrovaLocalDemoInventory.lsf").read_text(encoding="utf-8")
             self.assertIn("Caja de demostración Rubrova", retail_fixture)
