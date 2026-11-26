@@ -1151,7 +1151,7 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
         "paidAmount": 1250,
         "cashPaidAmount": 1250,
         "incomingPaymentCount": 1,
-        "cashBalance": 1250,
+        "cashBalance": 0,
     }
     for field, expected in expected_sales.items():
         try:
@@ -1174,9 +1174,9 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
         "inventory",
     )
     for field, expected in {
-        "incomingQuantity": 10,
+        "incomingQuantity": 11,
         "outgoingQuantity": 1,
-        "onHand": 9,
+        "onHand": 10,
     }.items():
         try:
             actual = float(inventory.get(field) or 0)
@@ -1209,11 +1209,11 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
     for field, expected in {
         "salesCount": 1,
         "salesAmount": 1250,
-        "returnsCount": 0,
-        "returnsAmount": 0,
-        "netAmount": 1250,
-        "cashPaid": 1250,
-        "cashBalance": 1250,
+        "returnsCount": 2,
+        "returnsAmount": 1250,
+        "netAmount": 0,
+        "cashPaid": 0,
+        "cashBalance": 0,
     }.items():
         try:
             actual = float(session.get(field) or 0)
@@ -1228,6 +1228,39 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
             )
     print("UI_RESTART_PERSISTENCE_SESSION_CLOSED=true")
     print("UI_RESTART_PERSISTENCE_CASH_RECONCILED=true")
+
+    partial_returns = fetch_restart_api_payload(
+        context,
+        base + "Sales.rubrovaPartialReturnsReconciliationApi",
+        "partial returns",
+    )
+    for field, expected in {
+        "returnBillCount": 2,
+        "returnAmount": 1250,
+        "returnedQuantity": 1,
+        "cashRefundPaymentCount": 2,
+        "cashRefundPaymentAmount": 1250,
+        "sessionCashNet": 0,
+        "cashBalance": 0,
+        "onHand": 10,
+    }.items():
+        try:
+            actual = float(partial_returns.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"Las devoluciones persistidas devolvieron un valor inválido en {field}."
+            ) from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"Las devoluciones parciales no sobrevivieron al reinicio en {field}: "
+                f"esperado {expected}, recibido {actual}."
+            )
+    if partial_returns.get("overReturnRejected") is not True:
+        raise RuntimeError(
+            "La evidencia persistida no conserva el rechazo de sobredevolución: "
+            + json.dumps(partial_returns, ensure_ascii=False)
+        )
+    print("UI_RESTART_PERSISTENCE_PARTIAL_RETURNS=true")
 
     incidents = fetch_restart_api_payload(
         context,
@@ -1265,6 +1298,104 @@ def verify_return_quantity_guard(context: Any, url: str) -> None:
             + json.dumps(payload, ensure_ascii=False)
         )
     print("UI_RETURN_QUANTITY_GUARD_ENABLED=true")
+
+
+
+def verify_partial_returns(context: Any, url: str) -> None:
+    """Exercise partial returns, a rejected over-return, refunds and stock receipt in disposable CI data."""
+    api_base = application_endpoint_url(url, "exec/Sales.")
+    response = context.request.get(
+        api_base + "rubrovaTestPartialReturnsApi",
+        timeout=60_000,
+    )
+    if response.status != 200:
+        raise RuntimeError(
+            "El flujo transaccional de devoluciones parciales respondió "
+            f"HTTP {response.status}: {response.text()[:1600]}"
+        )
+    content_type = response.headers.get("content-type", "")
+    response_body = response.text()
+    print("UI_PARTIAL_RETURNS_RESPONSE_CONTENT_TYPE=" + content_type)
+    print("UI_PARTIAL_RETURNS_RESPONSE_BODY=" + repr(response_body[:2000]))
+    try:
+        payload = json.loads(response_body)
+    except json.JSONDecodeError as error:
+        raise RuntimeError(
+            "La API de devoluciones respondió HTTP 200 pero no entregó JSON válido. "
+            f"Content-Type={content_type!r}; cuerpo={response_body[:2000]!r}"
+        ) from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "La API de devoluciones no devolvió un objeto JSON: "
+            + repr(payload)[:2000]
+        )
+    expected = {
+        "overReturnRejected": True,
+        "returnBillCount": 2,
+        "returnAmount": 1250,
+        "returnedQuantity": 1,
+        "cashRefundPaymentCount": 2,
+        "cashRefundPaymentAmount": 1250,
+        "sessionCashNet": 0,
+        "cashBalance": 0,
+        "onHand": 10,
+    }
+    for field, wanted in expected.items():
+        actual = payload.get(field)
+        if isinstance(wanted, bool):
+            if actual is not wanted:
+                raise RuntimeError(
+                    f"La devolución parcial no confirmó {field}: esperado {wanted!r}, "
+                    f"recibido {actual!r}. Respuesta: {json.dumps(payload, ensure_ascii=False)}"
+                )
+            continue
+        try:
+            numeric_actual = float(actual or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"La conciliación de devoluciones devolvió un valor inválido en {field}: {actual!r}"
+            ) from error
+        if abs(numeric_actual - wanted) > 0.001:
+            raise RuntimeError(
+                f"La devolución parcial no quedó conciliada en {field}: esperado {wanted}, "
+                f"recibido {numeric_actual}. Respuesta: {json.dumps(payload, ensure_ascii=False)}"
+            )
+
+    inventory_response = context.request.get(
+        api_base + "rubrovaTestInventoryApi",
+        timeout=12_000,
+    )
+    if inventory_response.status != 200:
+        raise RuntimeError(
+            "La consulta del inventario después de devolver respondió "
+            f"HTTP {inventory_response.status}: {inventory_response.text()[:1200]}"
+        )
+    inventory = inventory_response.json()
+    if isinstance(inventory, list):
+        inventory = inventory[0] if inventory else {}
+    for field, wanted in {"incomingQuantity": 11, "outgoingQuantity": 1, "onHand": 10}.items():
+        try:
+            actual = float(inventory.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"El ledger de inventario devolvió un valor inválido para {field}: "
+                f"{inventory.get(field)!r}"
+            ) from error
+        if abs(actual - wanted) > 0.001:
+            raise RuntimeError(
+                f"El recibo de devolución no reingresó el stock en {field}: esperado {wanted}, "
+                f"recibido {actual}. Inventario: {json.dumps(inventory, ensure_ascii=False)}"
+            )
+
+    print("UI_PARTIAL_RETURNS_RECONCILIATION=" + json.dumps(payload, ensure_ascii=False))
+    print("UI_PARTIAL_RETURNS_INVENTORY=" + json.dumps(inventory, ensure_ascii=False))
+    print("UI_PARTIAL_RETURNS_OVER_RETURN_REJECTED=true")
+    print("UI_PARTIAL_RETURNS_REMAINING_QUANTITY_RECONCILED=true")
+    print("UI_PARTIAL_RETURNS_REFUNDS_RECONCILED=true")
+    print("UI_PARTIAL_RETURNS_STOCK_REENTERED=true")
+    print("UI_PARTIAL_RETURNS_RECONCILED=true")
 
 def inspect_page(url: str) -> int:
     screenshot_path = Path(
@@ -1728,6 +1859,9 @@ def inspect_page(url: str) -> int:
                         )
                 print("UI_SALE_STOCK_DEDUCTED=true")
 
+                # Ejecuta el circuito de crédito nativo y comprueba reintegro y reingreso de stock.
+                verify_partial_returns(context, url)
+
                 sale_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-sale" + screenshot_path.suffix
                 )
@@ -1846,11 +1980,11 @@ def inspect_page(url: str) -> int:
                 expected_close = {
                     "salesCount": 1,
                     "salesAmount": 1250,
-                    "returnsCount": 0,
-                    "returnsAmount": 0,
-                    "netAmount": 1250,
-                    "cashPaid": 1250,
-                    "cashBalance": 1250,
+                    "returnsCount": 2,
+                    "returnsAmount": 1250,
+                    "netAmount": 0,
+                    "cashPaid": 0,
+                    "cashBalance": 0,
                 }
                 for field, expected in expected_close.items():
                     try:

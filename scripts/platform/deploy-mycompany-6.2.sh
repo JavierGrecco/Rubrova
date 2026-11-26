@@ -27,6 +27,7 @@ MODULE_FILES=(
   "RubrovaIntegrationResilience.lsf"
   "RubrovaPaymentTerminals.lsf"
   "RubrovaReplenishmentExport.lsf"
+  "RubrovaRetailReturns.lsf"
   "MyCompanyResourceBundle_es_AR.properties"
 )
 for file in "${MODULE_FILES[@]}"; do

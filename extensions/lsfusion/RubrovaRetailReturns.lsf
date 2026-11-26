@@ -1,0 +1,29 @@
+MODULE RubrovaRetailReturns;
+REQUIRE MyCompany, CreditNote;
+
+NAMESPACE Invoicing;
+
+// Cantidad devuelta antes del documento que se está creando.
+// Se excluye el Bill actual para no contar dos veces sus líneas recién copiadas.
+rubrovaPreviouslyReturnedQuantity (Bill currentBill, InvoiceLine originalLine) =
+    OVERRIDE (GROUP SUM quantity(BillLine previousLine)
+        IF invoiceLine(previousLine) = originalLine
+        AND bill(previousLine) != currentBill
+        AND active(bill(previousLine))), 0.0;
+
+// Saldo de la línea original después de las devoluciones ya confirmadas.
+rubrovaRemainingReturnQuantity (Bill currentBill, BillLine currentLine) =
+    max(quantity(invoiceLine(currentLine)) (-)
+        rubrovaPreviouslyReturnedQuantity(currentBill, invoiceLine(currentLine)), 0.0);
+
+// CreditNote.create es una acción concreta de MyCompany, no un punto ACTION+.
+// El módulo CreditNote expone fill(BillLine, InvoiceLine) como extensión abstracta.
+// Ajustamos la línea recién copiada desde ese contrato, antes de finalizar la nota.
+fill (BillLine currentLine, InvoiceLine originalLine) + {
+    IF type(invoice(originalLine)) = invoiceType('retail') THEN {
+        IF rubrovaRemainingReturnQuantity(bill(currentLine), currentLine) > 0.0 THEN
+            quantity(currentLine) <- rubrovaRemainingReturnQuantity(bill(currentLine), currentLine);
+        ELSE
+            DELETE currentLine;
+    }
+}

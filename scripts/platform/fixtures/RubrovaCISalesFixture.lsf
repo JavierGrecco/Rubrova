@@ -112,6 +112,139 @@ rubrovaTestSessionCloseApi () {
 } @@api;
 
 
+
+rubrovaCITestInvoice() = GROUP MAX Invoicing.Invoice i
+    IF Retail.session(i) = rubrovaCITestSession()
+       AND Invoicing.countProductLines(i) > 0
+       AND Invoicing.done(i);
+
+rubrovaCITestInvoiceLine() = GROUP MAX Invoicing.InvoiceLine il
+    IF Invoicing.invoice(il) = rubrovaCITestInvoice()
+       AND Invoicing.item(il) = rubrovaCITestProduct();
+
+// MyCompany deja NULL cuando un conjunto de devoluciones está vacío.
+// Normalizamos esos agregados a cero: sin esto, la condición inicial = 0 nunca se ejecuta.
+rubrovaCIReturnCount() = OVERRIDE Retail.countBills(rubrovaCITestSession()), 0;
+rubrovaCIReturnAmount() = OVERRIDE Retail.totalAmountBill(rubrovaCITestSession()), 0.0;
+rubrovaCIReturnedQuantity() = OVERRIDE Invoicing.returned(rubrovaCITestInvoiceLine()), 0.0;
+
+rubrovaCIReturnCashPaymentCount() = OVERRIDE (GROUP SUM 1
+    IF Retail.session(Invoicing.Bill b) = rubrovaCITestSession()
+       AND Retail.paymentMethod(b, Invoicing.OutgoingPayment p) = Retail.cashPaymentMethod()), 0;
+
+rubrovaCIReturnCashPaymentAmount() = OVERRIDE (GROUP SUM Invoicing.paid(Invoicing.Bill b, Invoicing.OutgoingPayment p)
+    IF Retail.session(b) = rubrovaCITestSession()
+       AND Retail.paymentMethod(b, p) = Retail.cashPaymentMethod()), 0.0;
+
+rubrovaOverReturnRejected = DATA BOOLEAN ();
+rubrovaOverReturnRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
+
+// Reproduce el mismo documento de crédito y reintegro que usa el POS.
+// Un valor de cantidad 0 conserva el remanente calculado por RubrovaRetailReturns.
+rubrovaCreateCIReturn (Invoicing.Bill b, Invoicing.Invoice i, NUMERIC[16,3] explicitQuantity) {
+    Retail.session(b) <- Retail.session(i);
+    Invoicing.create(b, i);
+    // CreditNote.fill y los eventos de precio/impuestos son locales. El POS
+    // interactivo los procesa antes de mostrar/conciliar amount(b); en CI
+    // debemos forzar el mismo paso antes de crear el egreso no nulo.
+    executeLocalEvents();
+
+    IF explicitQuantity > 0.0 THEN
+        FOR Invoicing.bill(Invoicing.BillLine bl) = b DO
+            Invoicing.quantity(bl) <- explicitQuantity;
+
+    // Cambiar quantity puede recalcular importes y tributos de la nota.
+    executeLocalEvents();
+
+    // Este fixture acepta sólo efectivo: crear directamente el egreso nativo
+    // evita depender del buffer LOCAL de la pantalla de cobro POS.
+    NEW p = Invoicing.OutgoingPayment {
+        Invoicing.done(p) <- TRUE;
+        Retail.paymentMethod(b, p) <- Retail.cashPaymentMethod();
+        Invoicing.type(p) <- Retail.outgoingPaymentType(Retail.cashPaymentMethod());
+        Invoicing.company(p) <- Retail.company(Retail.pos(Retail.session(b)));
+        Invoicing.companyAccount(p) <- Retail.account(Retail.pos(Retail.session(b)), Retail.cashPaymentMethod());
+        Invoicing.partner(p) <- Invoicing.vendor(b);
+        Invoicing.amount(p) <- Invoicing.amount(b);
+        Invoicing.paid(b, p) <- Invoicing.amount(b);
+    }
+
+    Invoicing.ready(b) <- TRUE;
+}
+
+rubrovaTestPartialReturnsApi () {
+    // Primera devolución: se devuelven 0,4 unidades de una venta de 1 unidad.
+    IF rubrovaCIReturnCount() = 0 AND rubrovaCITestInvoice() THEN
+        NEWSESSION {
+            NEW b = Invoicing.Bill {
+                rubrovaCreateCIReturn(b, rubrovaCITestInvoice(), 0.4);
+                APPLY;
+                IF canceled() THEN RETURN;
+            }
+        }
+
+    // Intento inválido: sólo quedan 0,6 unidades, por lo que 0,7 debe rechazarse.
+    IF rubrovaCIReturnCount() = 1 AND rubrovaCITestInvoice() THEN {
+        rubrovaOverReturnRejected() <- NULL;
+        rubrovaOverReturnRejectedLocal() <- NULL;
+        NEWSESSION {
+            NEW b = Invoicing.Bill {
+                Retail.session(b) <- Retail.session(rubrovaCITestInvoice());
+                Invoicing.create(b, rubrovaCITestInvoice());
+                FOR Invoicing.bill(Invoicing.BillLine bl) = b DO
+                    Invoicing.quantity(bl) <- 0.7;
+                Invoicing.ready(b) <- TRUE;
+                APPLY;
+                // El APPLY rechazado conserva cambios sólo en la sesión hija.
+                // La marca LOCAL NESTED vuelve a la sesión exterior al cerrar NEWSESSION.
+                IF canceled() THEN rubrovaOverReturnRejectedLocal() <- TRUE;
+            }
+        }
+        IF rubrovaOverReturnRejectedLocal() THEN {
+            // Persistir la evidencia en una transacción limpia, fuera del APPLY cancelado.
+            rubrovaOverReturnRejected() <- TRUE;
+            APPLY;
+            IF canceled() THEN RETURN;
+        }
+    }
+
+    // Segunda devolución válida: la cantidad por defecto debe ser el remanente 0,6.
+    IF rubrovaCIReturnCount() = 1 AND rubrovaOverReturnRejected() AND rubrovaCITestInvoice() THEN
+        NEWSESSION {
+            NEW b = Invoicing.Bill {
+                rubrovaCreateCIReturn(b, rubrovaCITestInvoice(), 0.0);
+                APPLY;
+                IF canceled() THEN RETURN;
+            }
+        }
+
+    EXPORT JSON FROM
+        sourceInvoiceFound = CASE WHEN rubrovaCITestInvoice() THEN 1 ELSE 0,
+        sourceInvoiceLineFound = CASE WHEN rubrovaCITestInvoiceLine() THEN 1 ELSE 0,
+        overReturnRejected = rubrovaOverReturnRejected(),
+        returnBillCount = rubrovaCIReturnCount(),
+        returnAmount = rubrovaCIReturnAmount(),
+        returnedQuantity = rubrovaCIReturnedQuantity(),
+        cashRefundPaymentCount = rubrovaCIReturnCashPaymentCount(),
+        cashRefundPaymentAmount = rubrovaCIReturnCashPaymentAmount(),
+        sessionCashNet = Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod()),
+        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci')),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+rubrovaPartialReturnsReconciliationApi () {
+    EXPORT JSON FROM
+        overReturnRejected = rubrovaOverReturnRejected(),
+        returnBillCount = rubrovaCIReturnCount(),
+        returnAmount = rubrovaCIReturnAmount(),
+        returnedQuantity = rubrovaCIReturnedQuantity(),
+        cashRefundPaymentCount = rubrovaCIReturnCashPaymentCount(),
+        cashRefundPaymentAmount = rubrovaCIReturnCashPaymentAmount(),
+        sessionCashNet = Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod()),
+        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci')),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
 // Smoke contract: the retail invoice type must enforce MyCompany's native return quantity guard.
 rubrovaReturnSafetyApi () {
     EXPORT JSON FROM
