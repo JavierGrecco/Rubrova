@@ -116,7 +116,7 @@ La definición de `expectedInbound` cubre las reservas entrantes negativas de lo
 - Origen: `Sales.OrderLine` de una orden confirmada.
 - Sólo se exportan líneas con `Sales.toShip(ol) > 0`.
 - `openQuantity` representa lo que todavía queda por despachar.
-- `outgoingReservations` emite una fila por `ShipmentLine` enlazada a una `Sales.OrderLine` confirmada y todavía abierta. Incluye `reservedQuantityNative = Inventory.reserved(ShipmentLine)`, `ledgerReservedQuantityNative = Inventory.ledgerReserved(ShipmentLine)`, `shipmentId`, `shipmentLineId`, `sourceLineId` y `reserveEligible`.
+- `outgoingReservations` emite una fila por `ShipmentLine` enlazada a una `Sales.OrderLine` confirmada y todavía abierta. Incluye `reservedQuantityNative = OVERRIDE Inventory.reserved(ShipmentLine), 0`, `ledgerReservedQuantityNative = OVERRIDE Inventory.ledgerReserved(ShipmentLine), 0`, `shipmentId`, `shipmentLineId`, `sourceLineId` y `reserveEligible`; ambos campos se serializan aunque el valor nativo sea `NULL`.
 - El adaptador normaliza cada componente `NULL` a cero y calcula `lineReserved = reservedQuantityNative - ledgerReservedQuantityNative`; sólo suma diferencias positivas cuando `reserveEligible=true`, agrupadas por `sourceLineId`.
 - Varios despachos parciales no deben duplicar una línea abierta.
 - Identidad compuesta acordada: número de orden + índice de línea. La identidad debe ser estable dentro del documento y no debe inventarse a partir de IDs no expuestos por MyCompany.

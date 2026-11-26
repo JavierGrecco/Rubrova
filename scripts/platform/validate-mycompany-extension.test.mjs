@@ -1184,6 +1184,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.ok(uiSmokeSource.includes("reserveEligible"));
   assert.ok(uiSmokeSource.includes("reservedQuantityNative"));
   assert.ok(uiSmokeSource.includes("ledgerReservedQuantityNative"));
+  assert.ok(uiSmokeSource.includes("Emit the exact source facts before semantic validation"));
   assert.ok(uiSmokeSource.includes("len(rows) != expected_count"));
   assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON="));
   assert.ok(uiSmokeSource.includes("reserved > commitments_by_id[line_id] + 0.001"));
@@ -1223,8 +1224,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     !replenishmentExportSource.includes("BPSTRING[10]"),
     "Los índices de línea deben conservar su fuente de conjunto y no quedar ocultos tras BPSTRING."
   );
-  assert.match(replenishmentExportSource, /reservedQuantityNative = Inventory\.reserved\(sl\)/);
-  assert.match(replenishmentExportSource, /ledgerReservedQuantityNative = Inventory\.ledgerReserved\(sl\)/);
+  assert.match(replenishmentExportSource, /reservedQuantityNative = \(OVERRIDE Inventory\.reserved\(sl\), 0\)/);
+  assert.match(replenishmentExportSource, /ledgerReservedQuantityNative = \(OVERRIDE Inventory\.ledgerReserved\(sl\), 0\)/);
   assert.doesNotMatch(replenishmentExportSource, /Inventory\.lineReserved\(sl\)/);
   assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);

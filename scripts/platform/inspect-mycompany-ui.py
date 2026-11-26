@@ -850,9 +850,11 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_SOURCE_COUNT={payload[count_field]}")
             if label == "outgoing_commitments":
                 reservation_rows = _native_collection(payload, "outgoingReservations", label)
-                totals = _outgoing_reservation_totals(rows, reservation_rows)
+                # Emit the exact source facts before semantic validation so CI retains
+                # evidence even when a required native JSON key is missing.
                 print("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON=" + json.dumps(rows, ensure_ascii=False))
                 print("UI_REPLENISHMENT_PROBE_OUTGOING_RESERVATION_ROWS_JSON=" + json.dumps(reservation_rows, ensure_ascii=False))
+                totals = _outgoing_reservation_totals(rows, reservation_rows)
                 print("UI_REPLENISHMENT_PROBE_OUTGOING_EFFECTIVE_TOTALS=" + json.dumps(totals, ensure_ascii=False, sort_keys=True))
                 print("UI_REPLENISHMENT_PROBE_OUTGOING_RESERVATION_SOURCE_COUNT=" + str(payload["outgoingReservationsCount"]))
                 if require_positive and not any(value > 0 for value in totals.values()):

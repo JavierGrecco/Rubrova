@@ -112,8 +112,8 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.orderLine(Inventory.ShipmentLine sl))), '#', Sales.index(Sales.orderLine(sl))),
             shipmentId = Inventory.number(Inventory.shipment(sl)),
             shipmentLineId = (CONCAT '', Inventory.number(Inventory.shipment(sl)), '#', Inventory.index(sl)),
-            reservedQuantityNative = Inventory.reserved(sl),
-            ledgerReservedQuantityNative = Inventory.ledgerReserved(sl),
+            reservedQuantityNative = (OVERRIDE Inventory.reserved(sl), 0),
+            ledgerReservedQuantityNative = (OVERRIDE Inventory.ledgerReserved(sl), 0),
             reserveEligible = Inventory.toReserve(Inventory.shipment(sl))
             WHERE Sales.orderLine(sl)
                 AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
@@ -204,8 +204,8 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
             sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.orderLine(Inventory.ShipmentLine sl))), '#', Sales.index(Sales.orderLine(sl))),
             shipmentId = Inventory.number(Inventory.shipment(sl)),
             shipmentLineId = (CONCAT '', Inventory.number(Inventory.shipment(sl)), '#', Inventory.index(sl)),
-            reservedQuantityNative = Inventory.reserved(sl),
-            ledgerReservedQuantityNative = Inventory.ledgerReserved(sl),
+            reservedQuantityNative = (OVERRIDE Inventory.reserved(sl), 0),
+            ledgerReservedQuantityNative = (OVERRIDE Inventory.ledgerReserved(sl), 0),
             reserveEligible = Inventory.toReserve(Inventory.shipment(sl))
             WHERE Sales.orderLine(sl)
                 AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
