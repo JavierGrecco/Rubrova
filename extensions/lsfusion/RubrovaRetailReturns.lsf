@@ -11,20 +11,19 @@ rubrovaPreviouslyReturnedQuantity (Bill currentBill, InvoiceLine originalLine) =
         AND bill(previousLine) != currentBill
         AND active(bill(previousLine))), 0.0;
 
-// MyCompany CreditNote.create copia inicialmente la cantidad completa.
-// En el tipo retail, reducimos la nueva nota al saldo todavía no devuelto.
-// Así se pueden hacer varias devoluciones parciales sin crear otro ledger.
+// Saldo de la línea original después de las devoluciones ya confirmadas.
 rubrovaRemainingReturnQuantity (Bill currentBill, BillLine currentLine) =
     max(quantity(invoiceLine(currentLine)) (-)
         rubrovaPreviouslyReturnedQuantity(currentBill, invoiceLine(currentLine)), 0.0);
 
-create (Bill b, Invoice i) + {
-    IF type(i) = invoiceType('retail') THEN {
-        FOR bill(BillLine bl) = b DO {
-            IF rubrovaRemainingReturnQuantity(b, bl) > 0.0 THEN
-                quantity(bl) <- rubrovaRemainingReturnQuantity(b, bl);
-            ELSE
-                DELETE bl;
-        }
+// CreditNote.create es una acción concreta de MyCompany, no un punto ACTION+.
+// El módulo CreditNote expone fill(BillLine, InvoiceLine) como extensión abstracta.
+// Ajustamos la línea recién copiada desde ese contrato, antes de finalizar la nota.
+fill (BillLine currentLine, InvoiceLine originalLine) + {
+    IF type(invoice(originalLine)) = invoiceType('retail') THEN {
+        IF rubrovaRemainingReturnQuantity(bill(currentLine), currentLine) > 0.0 THEN
+            quantity(currentLine) <- rubrovaRemainingReturnQuantity(bill(currentLine), currentLine);
+        ELSE
+            DELETE currentLine;
     }
 }
