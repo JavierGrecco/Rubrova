@@ -430,6 +430,10 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /127[.]0[.]0[.]1:8080\/login/);
   assert.match(nativePreviewSource, /HTTP 404 en el cliente/);
   assert.match(nativePreviewSource, /ET[.]register_namespace\("", namespace\[1:-1\]\)/);
+  assert.match(nativePreviewSource, /manager[.]set\("pathname", ""\)/);
+  assert.match(nativeRuntimeTestsSource, /test_existing_tomcat_session_manager_is_made_non_persistent/);
+  assert.match(nativePreviewSource, /lsFusion's web sessions contain Spring\/lsFusion objects/);
+  assert.match(nativePreviewSource, /PostgreSQL/);
   assert.match(nativePreviewSource, /Tomcat servlet mapping:/);
   assert.match(nativePreviewSource, /Ruta \/login declarada en web.xml/);
   assert.match(nativeRuntimeTestsSource, /self[.]assertIn\('xmlns="http:\/\/java[.]sun[.]com\/xml\/ns\/javaee"'/);
