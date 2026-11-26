@@ -1,0 +1,10 @@
+undefined
+## ADR-0007 — Reservar el pedido CI después de confirmar el stock sintético
+
+- **Estado:** Aceptada.
+- **Ámbito:** smoke nativo macOS ARM64 y fixture temporal de reposición.
+- **Contexto:** el smoke 45741635022 inició correctamente el servidor y exportó una línea de venta con cantidad abierta 2, pero effectiveReserved fue 0. En MyCompany 6.2, SalesOrderShipment crea el documento Shipment en estado waiting y llama a precheckAvailability; este cálculo usa prevAvailableRec, es decir, la disponibilidad de la transacción previa. El stock de CI se sembraba en la misma carga inicial que confirmaba la orden y todavía no era visible para ese cálculo.
+- **Decisión:** mantener el pedido sintético y ejecutar Inventory.precheckAvailability mediante una API temporal del fixture, después del bootstrap y con el stock confirmado. La API sólo existe en el módulo cargado por el smoke CI. El export productivo RubrovaReplenishmentExport permanece de sólo lectura.
+- **Consecuencia:** el smoke comprueba una reserva efectiva generada por MyCompany, no una cantidad escrita manualmente por el fixture. La aserción exige 0 < effectiveReserved <= openQuantity.
+- **Evidencia:** SalesOrderShipment.lsf crea la reserva inicial; ShipmentReady.lsf define precheckAvailability; ShipmentRes.lsf deriva lineReserved del ledger. La corrida fallida reportó openQuantity=2.0, effectiveReserved=0.0.
+- **Regresión:** el inspector ejecuta rubrovaPrepareOutgoingReservation sólo con RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT=true y valida su respuesta antes de consultar probes/export.

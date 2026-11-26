@@ -368,6 +368,11 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]vendor\(purchaseOrderCI\) <- rubrovaCIReplenishmentPartner\(\)/);
   assert.match(nativeReplenishmentFixtureSource, /Sales[.]confirmed\(salesOrderCI\)/);
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]confirmed\(purchaseOrderCI\)/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaPrepareOutgoingReservation/);
+  assert.match(nativeReplenishmentFixtureSource, /Inventory[.]precheckAvailability\(rubrovaCIOutgoingShipment\(\)\)/);
+  assert.match(uiSmokeSource, /def prepare_ci_outgoing_reservation\(/);
+  assert.match(uiSmokeSource, /rubrovaPrepareOutgoingReservation/);
+  assert.match(uiSmokeSource, /UI_REPLENISHMENT_CI_RESERVATION_PREPARED=/);
   assert.match(nativeReplenishmentFixtureSource, /Inventory[.]increaseAvailableStock\(Inventory[.]receiptType\('receipt'\)\) <- NULL/);
   assert.match(nativeSmokeSource, /RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT=true/);
   assert.match(uiSmokeSource, /RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT/);

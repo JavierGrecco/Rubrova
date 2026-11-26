@@ -63,3 +63,23 @@ loadDefaultData () + {
         rubrovaCIReplenishmentFixtureSeeded() <- TRUE;
     }
 }
+
+// Confirmada la orden, el trigger nativo crea un Shipment waiting con su línea.
+// La reserva usa prevAvailableRec, por eso se ejecuta en una llamada API posterior
+// al bootstrap, cuando el stock sintético de CI ya quedó confirmado.
+rubrovaCIOutgoingOrder() = GROUP MAX Sales.Order o
+    WHERE Sales.customerReference(o) = 'rubrova-ci-outgoing';
+rubrovaCIOutgoingShipment() = Sales.reserveShipment(rubrovaCIOutgoingOrder());
+
+rubrovaPrepareOutgoingReservation 'Preparar reserva sintética de salida' () {
+    IF rubrovaCIOutgoingShipment() THEN
+        Inventory.precheckAvailability(rubrovaCIOutgoingShipment());
+
+    EXPORT JSON FROM
+        outgoingOpenQuantity = (GROUP SUM Sales.toShip(Sales.OrderLine ol)
+            IF Sales.order(ol) = rubrovaCIOutgoingOrder()),
+        outgoingReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Inventory.shipment(sl) = rubrovaCIOutgoingShipment()),
+            0);
+} @@api;

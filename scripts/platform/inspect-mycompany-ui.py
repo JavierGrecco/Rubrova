@@ -788,8 +788,49 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
             + "; ".join(failures)
         )
 
+def prepare_ci_outgoing_reservation(context: Any, url: str) -> None:
+    """Run MyCompany's own availability precheck for the disposable CI sales order."""
+    if os.environ.get("RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT", "false").lower() != "true":
+        return
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(endpoint + "rubrovaPrepareOutgoingReservation", timeout=20_000)
+    print(f"UI_REPLENISHMENT_CI_RESERVATION_HTTP={response.status}")
+    if response.status != 200:
+        raise RuntimeError(
+            "No se pudo preparar la reserva del fixture de salida: "
+            f"HTTP {response.status}: {response.text()[:1000]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La preparación de reserva CI no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if len(payload) == 1 else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError("La preparación de reserva CI no devolvió un objeto JSON.")
+
+    def quantity(field: str) -> float:
+        value = payload.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"La preparación de reserva CI devolvió {field} no numérico.")
+        return float(value)
+
+    open_quantity = quantity("outgoingOpenQuantity")
+    reserved_quantity = quantity("outgoingReservedQuantity")
+    if open_quantity <= 0 or reserved_quantity <= 0 or reserved_quantity > open_quantity + 0.001:
+        raise RuntimeError(
+            "El precheckAvailability nativo no generó una reserva válida para el pedido CI; "
+            f"openQuantity={open_quantity}, effectiveReserved={reserved_quantity}."
+        )
+    print("UI_REPLENISHMENT_CI_RESERVATION_PREPARED=" + json.dumps({
+        "openQuantity": open_quantity,
+        "effectiveReserved": reserved_quantity,
+    }, ensure_ascii=False))
+
+
 def verify_replenishment_source_export(context: Any, url: str) -> None:
     """Validate the native MyCompany export without mutating the ERP."""
+    prepare_ci_outgoing_reservation(context, url)
     probe_replenishment_source_sections(context, url)
     endpoint = application_endpoint_url(url, "exec/Rubrova.")
     response = context.request.get(

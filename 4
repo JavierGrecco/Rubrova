@@ -1,0 +1,10 @@
+undefined
+## 2026-11-26 — REP-010 — Separar el cálculo de reserva del bootstrap de datos
+
+- **PR:** #10.
+- **Ejecución:** 45741635022, SHA a45a398c.
+- **Hecho observado:** el servidor inició en macOS ARM64, autenticó y respondió HTTP 200 con JSON válido para inventario, compromisos y recepciones. Los conteos fueron inventory=1, outgoingCommitments=1, receipts=1. La exportación detectó openQuantity=2.0 y effectiveReserved=0.0; el smoke positivo falló por esa diferencia.
+- **Diagnóstico:** la línea abierta del pedido existía. El trigger SalesOrderShipment había creado su Shipment en espera, pero precheckAvailability usa prevAvailableRec. El stock se sembró dentro de la misma carga inicial que confirmaba el pedido y aún no era visible para la consulta de disponibilidad previa.
+- **Corrección:** el fixture agrega rubrovaPrepareOutgoingReservation, que llama al método nativo Inventory.precheckAvailability en una llamada autenticada posterior al bootstrap. El inspector sólo la invoca en modo de smoke positivo y valida que la reserva efectiva resultante sea positiva y no supere la cantidad abierta.
+- **No se cambia:** el endpoint productivo de exportación, los ledgers de MyCompany ni el adaptador para fabricar reservas. La corrección ejecuta el flujo nativo en la base efímera de CI.
+- **Estado:** cambio subido; requiere nueva compilación y smoke macOS ARM64.
