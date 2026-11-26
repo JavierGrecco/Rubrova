@@ -123,7 +123,7 @@ class NativePreviewTests(unittest.TestCase):
             updated_entrypoint = entrypoint.read_text(encoding="utf-8")
             self.assertEqual(updated_entrypoint.count("RubrovaCISalesFixture"), 1)
             self.assertIn("RubrovaCIRetailFixture", updated_entrypoint)
-            self.assertIn("RubrovaRetailReturns", updated_entrypoint)
+            self.assertEqual(updated_entrypoint.count("RubrovaRetailReturns"), 1)
             self.assertIn("RubrovaCIIntegrationFixture", updated_entrypoint)
             sales_fixture = (logics_dir / "RubrovaCISalesFixture.lsf").read_text(encoding="utf-8")
             retail_fixture = (logics_dir / "RubrovaCIRetailFixture.lsf").read_text(encoding="utf-8")
