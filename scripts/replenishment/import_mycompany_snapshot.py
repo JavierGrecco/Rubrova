@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Normalize a read-only MyCompany 6.2 export for the Rubrova planner.
+"""Normalize a validated, read-only MyCompany 6.2 snapshot for the Rubrova planner.
 
 This adapter reads a JSON snapshot only. It has no database driver, network
-client, lsFusion session, or write path. The native export that produces the
-snapshot is intentionally a separate, later integration step.
+client, lsFusion session, or write path. The native export is converted to this
+stable planning contract by adapt_mycompany_native_export.py.
 """
 
 from __future__ import annotations
@@ -20,13 +20,18 @@ from plan_replenishment import plan_replenishment
 
 SOURCE_SEMANTICS = {
     "inventory": "InvLedger.onHand_exact_location",
-    "outgoingIdentity": "Sales.OrderLine.id",
+    "inventoryAvailable": "InvLedger.onHand_minus_ResLedger.planned_exact_location",
+    "inventoryPlannedNetReservation": "ResLedger.planned_excluding_skipAvailable_exact_location",
+    "inventoryGrossReserved": "ResLedger.positive_reservations_exact_location_including_skipAvailable",
+    "inventoryExpectedInbound": "ResLedger.negative_reservations_exact_location_as_positive_quantity",
+    "outgoingIdentity": "Sales.number(Order)+Sales.index(OrderLine)",
     "outgoingQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingReservation": "SUM(ShipmentResLedger.lineReserved_by_OrderLine)",
     "outgoingDate": "Sales.Order.scheduledDateTime",
-    "incomingQuantity": "ReceiptResLedger.expectedRemaining",
+    "incomingIdentity": "Receipt.number+ReceiptLine.index",
+    "incomingQuantity": "0-ReceiptResLedger.reserved",
     "incomingDate": "Receipt.scheduledDateTime",
-    "incomingEligibility": "Receipt.ready_and_PurchaseOrder.confirmed",
+    "incomingEligibility": "Receipt.ready_AND_NOT_done_AND_NOT_canceled_AND_PurchaseOrder.confirmed",
 }
 
 OUTGOING_COMMITMENT_STATUSES = {"draft", "sent", "confirmed", "cancelled"}
@@ -173,6 +178,7 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     excluded_outgoing: Counter[str] = Counter()
     source_line_counts: Counter[tuple[str, str]] = Counter()
     source_shipment_counts: Counter[tuple[str, str]] = Counter()
+    known_shipment_counts: set[tuple[str, str]] = set()
     for index, row in enumerate(snapshot["outgoingCommitments"]):
         prefix = f"outgoingCommitments[{index}]"
         line_id = _text(row.get("sourceLineId"), f"{prefix}.sourceLineId")
@@ -191,8 +197,10 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         due_date = _date(row.get("scheduledDate"), f"{prefix}.scheduledDate")
         quantity = _integer(row.get("openQuantityMilli"), f"{prefix}.openQuantityMilli")
         reserved = _integer(row.get("lineReservedMilli"), f"{prefix}.lineReservedMilli")
-        shipment_document_count = _integer(
-            row.get("relatedShipmentCount", 1), f"{prefix}.relatedShipmentCount", minimum=1
+        raw_shipment_count = row.get("relatedShipmentCount")
+        shipment_document_count = (
+            None if raw_shipment_count is None
+            else _integer(raw_shipment_count, f"{prefix}.relatedShipmentCount")
         )
         if status != "confirmed":
             _count(
@@ -215,7 +223,9 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             "reservedMilli": reserved,
         })
         source_line_counts[key] += 1
-        source_shipment_counts[key] += shipment_document_count
+        if shipment_document_count is not None:
+            source_shipment_counts[key] += shipment_document_count
+            known_shipment_counts.add(key)
 
     seen_receipt_lines: set[str] = set()
     seen_purchase_order_lines: set[str] = set()
@@ -301,7 +311,9 @@ def adapt_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
             "productId": key[0],
             "locationId": key[1],
             "sourceSalesOrderLineCount": source_line_counts[key],
-            "underlyingShipmentDocumentCount": source_shipment_counts[key],
+            "underlyingShipmentDocumentCount": (
+                source_shipment_counts[key] if key in known_shipment_counts else None
+            ),
             "result": result,
             "nativeComparison": comparison,
         })

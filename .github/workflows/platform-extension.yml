@@ -27,44 +27,32 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: rubrova-platform-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
+    name: Prevalidación local compartida
     runs-on: ubuntu-latest
     steps:
       - name: Obtener el repositorio
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Preparar Node
         uses: actions/setup-node@v7
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Validar lock, extensión y glosario
-        run: node --test scripts/platform/validate-mycompany-extension.test.mjs
-      - name: Validar dataset de evaluación comercial y sus reglas
-        run: node --test scripts/evaluation/fixture-validator.test.mjs
-      - name: Validar configuración de ejecución nativa, Docker y remota
-        run: python3 scripts/platform/test_runtime_config.py
-      - name: Validar supervisor nativo sin Docker
-        run: |
-          python3 -m py_compile scripts/platform/runtime-config.py scripts/platform/run-local-native-preview.py scripts/platform/native_runtime_url.py scripts/platform/test_native_runtime_url.py scripts/platform/inspect-mycompany-ui.py
-          python3 scripts/platform/test_native_runtime_url.py
-          python3 scripts/platform/test_runtime_native_preview.py
-      - name: Validar scripts de shell
-        run: |
-          bash -n scripts/platform/prepare-mycompany-6.2.sh
-          bash -n scripts/platform/deploy-mycompany-6.2.sh
-          bash -n scripts/platform/test-deploy-mycompany-6.2.sh
-          bash -n scripts/platform/test-runtime-smoke.sh
-          bash -n scripts/platform/test-runtime-native-smoke.sh
-          bash -n scripts/platform/native-listener-check.sh
-          bash -n scripts/platform/test-native-listener-check.sh
-          bash scripts/platform/test-native-listener-check.sh
-          bash -n scripts/platform/run-local-preview-macos.sh
-          bash -n scripts/platform/build-rubrova-runtime-images.sh
-          bash -n "Iniciar Rubrova.command"
-          bash -n "Iniciar Rubrova - Demo.command"
-          bash scripts/platform/test-deploy-mycompany-6.2.sh
+      - name: Ejecutar la misma prevalidación que se usa en macOS local
+        env:
+          RUBROVA_PREFLIGHT_OUTPUT_DIR: ${{ runner.temp }}/rubrova-preflight
+        run: bash scripts/platform/local-preflight.sh --platform
 
+  # La compilación sólo prueba que se generaron artefactos. No demuestra que
+  # lsFusion 6.2 pueda parsear/cargar todos los módulos ni que sus APIs respeten
+  # el contrato HTTP. Los smokes nativos posteriores son la evidencia de runtime.
   build-fork:
     name: Compilar el fork lsFusion + MyCompany de Rubrova
     runs-on: ubuntu-latest
@@ -148,6 +136,7 @@ jobs:
           retention-days: 1
 
   native-runtime-smoke:
+    if: github.event_name == 'workflow_dispatch'
     name: Diagnóstico de servidor nativo sin Docker (Linux x86_64, no bloqueante)
     runs-on: ubuntu-24.04
     # Linux nativo queda como diagnóstico; la validación obligatoria de Linux es Docker.
@@ -240,6 +229,7 @@ jobs:
           if-no-files-found: warn
 
   runtime-smoke:
+    if: github.event_name == 'workflow_dispatch'
     name: Diagnóstico POS sobre runtime Docker/Linux (no bloqueante)
     runs-on: ubuntu-latest
     needs: [validate, build-fork]
@@ -354,6 +344,9 @@ jobs:
             }
           }
 
+  # Gate obligatorio en Apple Silicon: esperar carga de lógica, autenticarse,
+  # validar cuerpo/esquema/conteos de las APIs de dominio y recorrer el flujo POS.
+  # HTTP 200 por sí solo nunca se interpreta como aceptación de contrato.
   native-runtime-smoke-macos-arm64:
     name: Smoke de servidor nativo sin Docker (macOS ARM64)
     runs-on: macos-26

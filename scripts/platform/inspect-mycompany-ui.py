@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 import time
@@ -724,6 +725,244 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
     return payload
 
 
+
+def _native_collection(payload: dict[str, Any], field: str, label: str) -> list[dict[str, Any]]:
+    count_field = f"{field}Count"
+    expected_count = payload.get(count_field)
+    if isinstance(expected_count, bool) or not isinstance(expected_count, int) or expected_count < 0:
+        raise ValueError(f"{count_field} debe ser un entero no negativo.")
+    rows = payload.get(field)
+    # lsFusion puede omitir el objeto JSON anidado si la consulta no tiene filas.
+    # Sólo se interpreta como [] cuando el contador nativo independiente confirma cero filas.
+    if rows is None and expected_count == 0:
+        rows = []
+    if not isinstance(rows, list):
+        raise ValueError(f"{field} es {type(rows).__name__}; {count_field}={expected_count}.")
+    if len(rows) != expected_count:
+        raise ValueError(f"{count_field}={expected_count} no coincide con {len(rows)} filas en {field}.")
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError(f"Todos los elementos de {field} deben ser objetos JSON.")
+    return rows
+
+
+def probe_replenishment_source_sections(context: Any, url: str) -> None:
+    """Validate native array shape and count on each independently authenticated endpoint."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    probes = (
+        ("inventory", "inventory", "rubrovaProbeInventory"),
+        ("outgoing_commitments", "outgoingCommitments", "rubrovaProbeOutgoingCommitments"),
+        ("receipts", "receipts", "rubrovaProbeReceipts"),
+    )
+    failures: list[str] = []
+    for label, collection_field, action in probes:
+        response = context.request.get(endpoint + action, timeout=20_000)
+        print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
+        if response.status != 200:
+            detail = response.text()[:1800].replace("\r", " ").replace("\n", " ")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ERROR={detail}")
+            failures.append(f"{label}: HTTP {response.status} ({detail[:500]})")
+            continue
+
+        try:
+            payload = response.json()
+            if isinstance(payload, list):
+                payload = payload[0] if len(payload) == 1 else {}
+            if not isinstance(payload, dict):
+                raise ValueError(f"la raíz JSON es {type(payload).__name__}, no un objeto")
+            rows = _native_collection(payload, collection_field, label)
+            count_field = f"{collection_field}Count"
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROOT_KEYS=" + json.dumps(sorted(payload)))
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_COLLECTION_TYPE=list")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROWS={len(rows)}")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_SOURCE_COUNT={payload[count_field]}")
+        except ValueError as error:
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
+            failures.append(f"{label}: respuesta JSON incompatible ({error})")
+    if failures:
+        raise RuntimeError(
+            "Falló la estructura de una consulta aislada de la exportación MyCompany: "
+            + "; ".join(failures)
+        )
+
+def verify_replenishment_source_export(context: Any, url: str) -> None:
+    """Validate the native MyCompany export without mutating the ERP."""
+    probe_replenishment_source_sections(context, url)
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(
+        endpoint + "rubrovaExportReplenishmentSource",
+        timeout=20_000,
+    )
+    if response.status != 200:
+        raise RuntimeError(
+            "La exportación nativa de reposición respondió HTTP "
+            f"{response.status}: {response.text()[:1200]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La exportación nativa de reposición no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError("La exportación nativa de reposición no devolvió un objeto JSON.")
+
+    expected_header = {
+        "schemaVersion": 1,
+        "snapshotType": "mycompany-replenishment-source-export",
+        "sourceSystem": "MyCompany",
+        "sourceVersion": "6.2",
+        "quantityUnit": "product-uom",
+        "quantityPrecision": 3,
+        "readOnly": True,
+    }
+    for field, expected in expected_header.items():
+        if payload.get(field) != expected:
+            raise RuntimeError(
+                f"Contrato de exportación inválido en {field}: "
+                f"esperado {expected!r}, recibido {payload.get(field)!r}."
+            )
+
+    from datetime import date, datetime
+    try:
+        date.fromisoformat(str(payload.get("asOf", ""))[:10])
+        datetime.fromisoformat(str(payload.get("asOfDateTime", "")).replace("Z", "+00:00"))
+    except ValueError as error:
+        raise RuntimeError("La fecha asOf de la exportación no usa YYYY-MM-DD.") from error
+
+    expected_semantics = {
+        "inventoryOnHand": "Inventory.onHand(Location, Product), ubicación exacta",
+        "inventoryAvailable": "Inventory.available(Location, Product), valor nativo MyCompany",
+        "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
+        "inventoryExpectedCoverage": "all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts",
+        "emptyAggregatePolicy": "raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0",
+        "emptyCollectionPolicy": "collection counts are authoritative; an omitted collection is an empty list only when its count is zero",
+        "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
+        "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
+        "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
+        "outgoingEffectiveReservation": "SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)",
+        "incomingIdentity": "Receipt.number + ReceiptLine.index",
+        "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
+        "incomingScheduledDateTime": "Receipt.scheduledDateTime",
+        "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed",
+        "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
+    }
+    if payload.get("sourceSemantics") != expected_semantics:
+        raise RuntimeError("sourceSemantics no coincide con el contrato de exportación MyCompany 6.2.")
+
+    collections: dict[str, list[dict[str, Any]]] = {}
+    source_counts: dict[str, int] = {}
+    for field in ("inventory", "outgoingCommitments", "receipts"):
+        try:
+            rows = _native_collection(payload, field, "export")
+        except ValueError as error:
+            raise RuntimeError(f"Contrato inválido para {field}: {error}") from error
+        collections[field] = rows
+        source_counts[field] = payload[f"{field}Count"]
+
+    def numeric(row: dict[str, Any], field: str, row_label: str) -> float:
+        value = row.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"{row_label}.{field} debe ser un número finito.")
+        return float(value)
+
+    inventory_keys: set[tuple[str, str]] = set()
+    for index, row in enumerate(collections["inventory"]):
+        row_label = f"inventory[{index}]"
+        product_id = str(row.get("productId") or "").strip()
+        location_id = str(row.get("locationId") or "").strip()
+        if not product_id or not location_id:
+            raise RuntimeError(f"{row_label} no identifica producto y ubicación.")
+        key = (product_id, location_id)
+        if key in inventory_keys:
+            raise RuntimeError(f"Inventario duplicado para producto/ubicación {product_id}/{location_id}.")
+        inventory_keys.add(key)
+        on_hand = numeric(row, "onHand", row_label)
+        planned = numeric(row, "plannedNetReservation", row_label)
+        available = numeric(row, "available", row_label)
+        numeric(row, "physicalIncoming", row_label)
+        numeric(row, "physicalOutgoing", row_label)
+        gross_reserved = numeric(row, "grossReserved", row_label)
+        planned = numeric(row, "plannedNetReservation", row_label)
+        expected_inbound = numeric(row, "expectedInbound", row_label)
+        native_values = {
+            field: row.get(field)
+            for field in ("onHandNative", "availableNative", "plannedNetReservationNative",
+                          "physicalIncomingNative", "physicalOutgoingNative")
+        }
+        for field, value in native_values.items():
+            if value is not None:
+                numeric(row, field, row_label)
+        if native_values["onHandNative"] is not None and abs(float(native_values["onHandNative"]) - on_hand) > 0.001:
+            raise RuntimeError(f"{row_label}.onHand no coincide con onHandNative.")
+        if native_values["availableNative"] is not None and abs(float(native_values["availableNative"]) - available) > 0.001:
+            raise RuntimeError(f"{row_label}.available no coincide con availableNative.")
+        if native_values["plannedNetReservationNative"] is not None and abs(float(native_values["plannedNetReservationNative"]) - planned) > 0.001:
+            raise RuntimeError(f"{row_label}.plannedNetReservation no coincide con el ledger nativo.")
+        if gross_reserved < 0 or expected_inbound < 0:
+            raise RuntimeError(f"{row_label} contiene una reserva bruta o recepción prevista negativa.")
+        if abs((on_hand - planned) - available) > 0.001:
+            raise RuntimeError(
+                f"Inventory.available no concilia en {product_id}/{location_id}: "
+                f"onHand={on_hand}, planned={planned}, available={available}."
+            )
+
+    outgoing_ids: set[str] = set()
+    for index, row in enumerate(collections["outgoingCommitments"]):
+        row_label = f"outgoingCommitments[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if not line_id or line_id in outgoing_ids:
+            raise RuntimeError(f"{row_label}.sourceLineId está vacío o duplicado.")
+        outgoing_ids.add(line_id)
+        open_quantity = numeric(row, "openQuantity", row_label)
+        reserved = numeric(row, "effectiveReserved", row_label)
+        if row.get("status") != "confirmed" or open_quantity <= 0 or reserved < 0 or reserved > open_quantity + 0.001:
+            raise RuntimeError(f"{row_label} viola la semántica de compromiso abierto/reserva efectiva.")
+        for field in ("sourceDocumentId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
+            if not str(row.get(field) or "").strip():
+                raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    receipt_ids: set[str] = set()
+    for index, row in enumerate(collections["receipts"]):
+        row_label = f"receipts[{index}]"
+        line_id = str(row.get("lineId") or "").strip()
+        if not line_id or line_id in receipt_ids:
+            raise RuntimeError(f"{row_label}.lineId está vacío o duplicado.")
+        receipt_ids.add(line_id)
+        signed_reservation = numeric(row, "expectedReservationSigned", row_label)
+        quantity = numeric(row, "expectedQuantity", row_label)
+        if (
+            quantity <= 0
+            or signed_reservation >= 0
+            or abs(quantity + signed_reservation) > 0.001
+            or row.get("status") != "ready"
+            or row.get("purchaseOrderStatus") != "confirmed"
+            or not isinstance(row.get("increaseAvailableStock"), bool)
+        ):
+            raise RuntimeError(f"{row_label} no respeta el contrato de recepción pendiente.")
+        for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
+            if not str(row.get(field) or "").strip():
+                raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    print(
+        "UI_REPLENISHMENT_SOURCE_EXPORT_COUNTS="
+        + json.dumps(
+            {
+                "inventory": {"source": source_counts["inventory"], "rows": len(collections["inventory"])},
+                "outgoingCommitments": {"source": source_counts["outgoingCommitments"], "rows": len(collections["outgoingCommitments"])},
+                "receipts": {"source": source_counts["receipts"], "rows": len(collections["receipts"])},
+            },
+            ensure_ascii=False,
+        )
+    )
+    print("UI_REPLENISHMENT_NATIVE_NULL_AGGREGATES="
+          + json.dumps({field: sum(row.get(field) is None for row in collections["inventory"])
+                         for field in ("onHandNative", "availableNative", "plannedNetReservationNative")},
+                        ensure_ascii=False))
+    print("UI_REPLENISHMENT_NATIVE_AVAILABLE_RECONCILED=true")
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true")
+
+
 def verify_restarted_persistence(context: Any, url: str) -> None:
     base = application_endpoint_url(url, "exec/")
 
@@ -931,6 +1170,7 @@ def inspect_page(url: str) -> int:
                         )
                 page.screenshot(path=str(after_login_screenshot), full_page=True)
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
+                verify_replenishment_source_export(context, url)
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 

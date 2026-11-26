@@ -1,0 +1,68 @@
+# Registro de iteraciones e investigaciones
+
+Registro cronológico de hechos y resultados. No reemplaza a los commits ni a los logs originales: los enlaza y conserva la explicación necesaria para no repetir diagnósticos.
+
+## 2026-11-25 — REP-001 — Primeras sondas nativas de reposición
+
+- **Pull request:** [#8](https://github.com/JavierGrecco/Rubrova/pull/8).
+- **Run:** [45727626334](https://github.com/JavierGrecco/Rubrova/actions/runs/45727626334).
+- **Resultado:** en Linux x86_64 y macOS ARM64 arrancaron PostgreSQL, el servidor lsFusion y Tomcat; el login y la navegación funcionaron.
+- **Hecho observado:** las sondas de inventario, compromisos y recepciones devolvieron HTTP 200 y JSON parseable. El inspector rechazó `outgoingCommitments` porque no era una lista. El access log mostró respuestas de 12 bytes para la sonda de compromisos.
+- **Interpretación:** el transporte y la autenticación no eran suficientes para demostrar el contrato. La estructura del JSON no contenía la colección esperada.
+- **Decisión/cambio:** añadir conteos nativos independientes a las colecciones y comprobar raíz, tipo, filas y conteo. El consumidor sólo interpreta ausencia como lista vacía si el conteo confirma cero.
+- **Estado:** regla incorporada al módulo, adaptador, inspector y fixtures; aceptación nativa pendiente.
+
+## 2026-11-25 — REP-002 — Incompatibilidad de sintaxis entre lsFusion 6.2 y 7.x
+
+- **Pull request:** [#8](https://github.com/JavierGrecco/Rubrova/pull/8).
+- **Run:** [45730502272](https://github.com/JavierGrecco/Rubrova/actions/runs/45730502272).
+- **Commit probado:** `b189e2c7d526d5b9eebcf39590d845016ed8f742`.
+- **Hecho observado:** build de lsFusion/MyCompany y publicación de artefactos completaron. En el arranque nativo Linux y macOS, el parser reportó `RubrovaReplenishmentExport:11:12 mismatched input 'JSON' expecting ';'` en `RETURN JSON FROM`, seguido por errores en cascada en las columnas del mismo bloque. El contenedor Docker presentó la misma causa de inicio; no fue un problema exclusivo de arquitectura ARM.
+- **Interpretación confirmada por fuente:** el proyecto está fijado a lsFusion 6.2. Su documentación define `RETURN` sin expresión y documenta los resultados de API v6 mediante propiedades de resultado. El patrón de endpoints existentes de Rubrova utiliza `EXPORT JSON FROM`. La forma `RETURN JSON FROM` consultada pertenece a documentación 7.x.
+- **Corrección aplicada:** reemplazar `RETURN JSON FROM` por `EXPORT JSON FROM` en los cuatro endpoints y cambiar la prueba estática para impedir que se vuelva a introducir sintaxis 7.x en módulos 6.2.
+- **Advertencia metodológica:** la recomendación anterior de reemplazar `EXPORT` por `RETURN JSON FROM` fue incorrecta para la versión fijada. Se conserva aquí para evitar repetirla.
+- **Resultado esperado:** el servidor debe poder parsear y cargar el módulo; después se debe validar el cuerpo HTTP y la estructura de las tres colecciones.
+- **Estado al actualizar este registro:** corrección subida a la rama del PR; aún no hay un run de aceptación sobre el nuevo SHA.
+
+## 2026-11-25 — REP-003 — Fijación de sintaxis y protección del contrato
+
+- **Cambios:**
+  - `extensions/lsfusion/RubrovaReplenishmentExport.lsf`: volver al patrón `EXPORT JSON FROM`.
+  - `scripts/platform/validate-mycompany-extension.test.mjs`: exigir ese patrón para las cuatro acciones API y rechazar `RETURN JSON FROM`.
+  - Se conservan los conteos independientes y la política de colecciones ausentes.
+- **Commits:** `e8e20e8c28e1e1f2479d07604668030603598c1f` y `c99c9941836571a7465066eefda31179dd6a26c5`.
+- **Validación:** pendiente de la ejecución de CI sobre el SHA resultante.
+
+## Plantilla de nuevo registro
+
+Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar también las hipótesis descartadas y las limitaciones que siguen abiertas.
+
+## 2026-11-25 — REP-004 — Regresión del matcher estático y verificación de endpoints
+
+- **Workflow afectado:** [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752).
+- **Hecho observado:** el job de validación estática falló antes de compilar; `assert.equal(replenishmentApiActions.length, 4)` recibió cero acciones.
+- **Causa raíz:** la expresión regular del test se escribió con escapes duplicados. El archivo fuente tenía cuatro acciones; el matcher no las reconocía por un defecto del test.
+- **Corrección:** se fijó el patrón de captura y se comprobó contra el contenido real de `RubrovaReplenishmentExport.lsf`: cuatro acciones detectadas, las cuatro empiezan con `EXPORT JSON FROM` y ninguna con `RETURN JSON FROM`.
+- **Commit correctivo:** `073a22915b34baf0816a456d2b815bb355726be8`.
+- **Estado:** el matcher quedó corregido y verificado contra los archivos recuperados del branch; todavía falta una ejecución de CI que confirme el test en GitHub Actions.
+
+## 2026-11-26 — REP-005 — Verificación de la regresión, mapa de relaciones y divergencia con main
+
+- **Cambios documentales:** se añadió [DOMAIN_RELATIONSHIPS.md](DOMAIN_RELATIONSHIPS.md), con el recorrido entre módulos, matriz de propiedad, relaciones navegadas de inventario, venta, ledger de despachos y recepciones; también se añadió ADR-0004 para la identidad compuesta de líneas de venta.
+- **Hecho observado:** la rama feature define `sourceLineId` como número comercial de orden + índice de línea, mientras que la versión actual de `main` todavía tiene una descripción antigua basada en `Sales.OrderLine.id`. La extracción de esta rama agrupa por el objeto `Sales.OrderLine` y serializa una clave compuesta; el contrato debe conservar esa distinción.
+- **Verificación estática local del contenido recuperado:** cuatro acciones API detectadas; todas utilizan `EXPORT JSON FROM`; ninguna utiliza `RETURN JSON FROM`; los tres contadores aparecen en la exportación y en su sonda; adaptador e inspector validan conteo y longitud; fixture JSON válido; están presentes las tres pruebas nuevas de colecciones vacías/conteos.
+- **Límite de esa verificación:** es una comprobación del contenido del branch; no sustituye Node, Python, el parser de lsFusion ni el runtime real de CI.
+- **Estado de CI:** el último workflow de plataforma visible sigue siendo [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752), que falló por un matcher estático defectuoso antes de compilar. El matcher se simplificó luego a verificaciones inequívocas, pero todavía no hay una ejecución registrada sobre el SHA actual.
+- **Divergencia de ramas:** el PR #8 continúa apuntando al SHA base anterior `bab975fd...`; `main` avanzó 21 commits documentales y GitHub informa `mergeable_state=dirty`. Antes de fusionar hay que incorporar los cambios de `main` y reconciliar, como mínimo, README, Calidad y pruebas, soporte macOS, instalación MyCompany y el documento de stock proyectado; no se debe resolver sobrescribiendo documentación sin revisión.
+- **Criterio de cierre:** validar el test estático en CI; compilar y cargar lógica en Linux/macOS; verificar la respuesta autenticada y las colecciones; después sincronizar con `main` y volver a ejecutar los gates del SHA final.
+
+
+## 2026-11-25 — REP-006 — Prevalidación compartida y reducción del ciclo CI
+
+- **Hechos de duración:** en [45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959) el workflow tardó 31m32s: el build del fork duró 401s, el diagnóstico Docker/Linux 1.005s y el smoke nativo macOS 417s. En [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906), el build duró 363s, Docker/Linux 226s y el smoke macOS 294s.
+- **Diagnóstico:** Docker/Linux era un job no bloqueante y no era el entorno local prioritario; su coste puede superar el de todos los tests rápidos juntos. No aporta evidencia superior a la ruta nativa cuando la aceptación prioritaria es macOS ARM64.
+- **Cambio:** se añadió `scripts/platform/local-preflight.sh` con modos `--platform`, `--replenishment` y `--all`. Los workflows llaman a las mismas rutinas para evitar que la validación local difiera de CI.
+- **Cambio CI:** el build completo y el smoke nativo macOS ARM64 permanecen automáticos. Los jobs Linux nativo y Docker/Linux quedan bajo ejecución manual. Se añade concurrencia a nivel workflow para cancelar una corrida antigua al llegar un commit nuevo al mismo PR.
+- **Integración de ramas:** se creó `integration/replenishment-mainline-preflight` desde `main` (base `699eb8343706acd9631ca83150eb54ba8fba71e3`) para reconstruir un PR corto y evitar arrastrar los 118 commits divergentes del PR #8.
+- **Límite de validación:** esta entrada registra la decisión y la implementación del preflight/workflows; hasta que el nuevo PR ejecute Actions, no se marca la nueva capa como aprobada. El script rápido tampoco carga lsFusion ni consulta una base MyCompany.
+- **Próximo criterio de cierre:** nueva ejecución de CI para el commit integrado; build + smoke macOS ARM64 + respuesta JSON válida de las cuatro acciones y conteos conciliados; después probar el runtime en el MacBook local.

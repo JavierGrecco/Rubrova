@@ -6,12 +6,14 @@
 
 ## Estado de la última validación
 
-- **Suite del planificador:** aprobada en [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825), sobre el commit `8777842`.
-- **Validación estática y Windows:** aprobadas en el commit `8777842`, dentro de [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906).
-- **Compilación completa del fork lsFusion 6.2 + GWT + MyCompany 6.2:** aprobada en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906); también pasaron la recompilación final de servidor/cliente y la publicación de artefactos. Los smokes macOS ARM64, Linux nativo y Docker/Linux están ahora en ejecución.
-- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. El diagnóstico apuntó a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. El nuevo smoke de macOS ARM64 y los diagnósticos Linux/Docker están en ejecución para confirmar que la llamada autenticada ya devuelve JSON válido.
-- **Docker/Linux:** el job de diagnóstico es no bloqueante. Una anotación reportó que el smoke de POS no llegó a aprobarse; su job en verde no debe interpretarse como aceptación del flujo.
-- **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
+- **Planificador de reposición:** el workflow [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911) terminó en verde sobre `fe931e72`. Esa suite valida el motor y las fixtures Python; no carga el módulo MyCompany.
+- **Validación estática de plataforma:** [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló en la comprobación del matcher de las cuatro acciones API, antes de la compilación. El matcher fue revisado y corregido después, pero no hay un run asociado al SHA documental más reciente de la rama antigua del PR #8.
+- **Compilación:** [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) compiló lsFusion 6.2, GWT y MyCompany 6.2 y publicó los artefactos del runtime.
+- **Runtime nativo macOS ARM64:** en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) PostgreSQL, servidor, RMI y Tomcat iniciaron; el cliente web respondió HTTP 200 y el login autenticó al usuario de CI. La acción `/exec/Rubrova.rubrovaExportReplenishmentSource` devolvió HTTP 500 con `Set operation is incorrect`. El smoke Linux nativo también quedó bloqueado por la exportación. El ajuste posterior de código no está validado todavía en CI.
+- **Docker/Linux:** es un diagnóstico suplementario. En ejecuciones anteriores llegó a tardar más de 16 minutos; se conserva como ejecución manual para no añadir ese coste a cada PR.
+- **Datos reales:** no se ha conciliado una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
+- **Prevalidación local compartida:** se incorpora `scripts/platform/local-preflight.sh` para ejecutar en Mac/Linux las mismas pruebas rápidas de plataforma y reposición que invoca CI. Su incorporación debe aprobar en el nuevo PR; no demuestra carga real de lsFusion.
+
 
 ## Resumen de madurez
 
@@ -19,7 +21,7 @@ La última aceptación funcional completa del POS base sigue siendo el [CI 45637
 
 El repositorio contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor compila el servidor, el cliente GWT y la lógica MyCompany desde las fuentes propias. El camino de desarrollo local prioriza Java 21, PostgreSQL 18 y Tomcat 9 sin Docker, con una vista previa supervisada y datos aislados.
 
-El PR #8 incorpora el módulo autenticado de exportación nativa y su puente Python. La compilación no detecta errores de sintaxis y la suite del planificador aprueba; el problema actual aparece al ejecutar la acción de exportación después del login. Hasta que esa acción responda correctamente en macOS ARM64 y Linux, y sus cifras concilien con una base real, la integración no se considera aceptada.
+El candidato de integración incorpora el módulo autenticado de exportación nativa y su puente Python. Las pruebas rápidas cubren conversión y conciliación con fixtures, pero sólo el servidor real puede demostrar que las consultas lsFusion 6.2 son finitas y correctas. La exportación consolidada ya falló con `Set operation is incorrect`; hasta que el smoke macOS ARM64 pruebe los cuatro endpoints y las cifras concilien con una base real, la integración no se considera aceptada.
 
 ## Resumen ejecutivo
 
@@ -27,7 +29,7 @@ Rubrova está en **Fase 0: piloto integrado POS + ERP**. El núcleo MyCompany/ls
 
 La exportación nueva es de solo lectura. Separa existencia física, disponible nativo, reservas, compromisos por línea de venta y recepciones previstas. El adaptador Python valida las conciliaciones, exige políticas explícitas por producto/ubicación y rechaza escenarios que el planificador todavía no modela. No ejecuta `fillAuto`, ni crea, modifica o confirma órdenes de compra.
 
-El último fallo ya no es de compilación ni de arranque: el servidor y el cliente cargan y el login funciona; la acción de exportación devuelve HTTP 500 por una operación de conjuntos incorrecta. Se retiraron conversiones de tipo sobre los índices de línea y se añadió una guarda estática. La revisión está siendo validada de nuevo.
+El último fallo de runtime identificado no es de compilación ni de arranque: el servidor y el cliente cargan y el login funciona; la acción consolidada devuelve HTTP 500 por una operación de conjuntos incorrecta. Se retiraron conversiones de tipo sobre los índices de línea y se reforzó la comprobación estática; la corrección necesita una nueva ejecución del smoke nativo.
 
 La capa de pagos presenciales tiene arquitectura y entidades iniciales de configuración/trazabilidad, pero no existe todavía un conector homologado ni cobros reales. Tryton 8.0 + tryton-ar 8.0 se conserva como referencia fiscal argentina, no como segundo núcleo operativo.
 

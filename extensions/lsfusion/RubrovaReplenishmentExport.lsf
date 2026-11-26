@@ -1,0 +1,216 @@
+MODULE RubrovaReplenishmentExport;
+REQUIRE MyCompany;
+
+NAMESPACE Rubrova;
+
+// Exportación de hechos nativos para reposición. No crea ni modifica documentos.
+// Se exportan por separado stock físico, disponible nativo y reservas efectivas.
+// Las cantidades conservan la precisión NUMERIC[16,3] de MyCompany (unidad del SKU).
+
+rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
+    EXPORT JSON FROM
+        schemaVersion = 1,
+        snapshotType = 'mycompany-replenishment-source-export',
+        sourceSystem = 'MyCompany',
+        sourceVersion = '6.2',
+        asOf = DATE(currentDateTime()),
+        asOfDateTime = currentDateTime(),
+        quantityUnit = 'product-uom',
+        quantityPrecision = 3,
+        readOnly = TRUE,
+        sourceSemantics = (JSON FROM
+            inventoryOnHand = 'Inventory.onHand(Location, Product), ubicación exacta',
+            inventoryAvailable = 'Inventory.available(Location, Product), valor nativo MyCompany',
+            inventoryPlannedNet = 'Inventory.planned(Location, Product), reservas firmadas que participan en available',
+            inventoryExpectedCoverage = 'all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts',
+            emptyAggregatePolicy = 'raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0',
+            emptyCollectionPolicy = 'collection counts are authoritative; an omitted collection is an empty list only when its count is zero',
+            outgoingIdentity = 'Sales.number(Order) + Sales.index(OrderLine)',
+            outgoingOpenQuantity = 'Sales.toShip(OrderLine_confirmed)',
+            outgoingScheduledDateTime = 'Sales.scheduledDateTime(Order)',
+            outgoingEffectiveReservation = 'SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)',
+            incomingIdentity = 'Receipt.number + ReceiptLine.index',
+            incomingExpectedQuantity = '0 - ReceiptResLedger.reserved; signed reservation remains negative',
+            incomingScheduledDateTime = 'Receipt.scheduledDateTime',
+            incomingEligibility = 'Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed',
+            incomingAvailabilityPolicy = 'ReceiptType.increaseAvailableStock; skipAvailable is its inverse'
+        ),
+        // Los conteos son explícitos: JSON FROM puede omitir una colección anidada sin filas.
+        // El consumidor sólo normaliza una colección ausente a [] cuando su contador es cero.
+        inventoryCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.active(Inventory.Location l) AND MasterData.active(MasterData.Product p)
+                AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                    OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                    OR Inventory.expected(l, p) != 0)),
+            0),
+        outgoingCommitmentsCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.confirmed(Sales.order(Sales.OrderLine ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product),
+            0),
+        receiptsCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.ready(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr)))
+                AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+                AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))),
+            0),
+        inventory = (JSON FROM
+            productId = MasterData.id(MasterData.Product p),
+            productName = MasterData.name(p),
+            productReference = MasterData.reference(p),
+            locationId = Inventory.id(Inventory.Location l),
+            locationName = Inventory.name(l),
+            physicalIncomingNative = Inventory.inQuantity(l, p),
+            physicalIncoming = (OVERRIDE Inventory.inQuantity(l, p), 0),
+            physicalOutgoingNative = Inventory.outQuantity(l, p),
+            physicalOutgoing = (OVERRIDE Inventory.outQuantity(l, p), 0),
+            onHandNative = Inventory.onHand(l, p),
+            onHand = (OVERRIDE Inventory.onHand(l, p),
+                (OVERRIDE Inventory.inQuantity(l, p), 0) (-) (OVERRIDE Inventory.outQuantity(l, p), 0)), 
+            grossReserved = (OVERRIDE Inventory.reserved(l, p), 0),
+            plannedNetReservationNative = Inventory.planned(l, p),
+            plannedNetReservation = (OVERRIDE Inventory.planned(l, p), 0),
+            expectedInbound = (OVERRIDE Inventory.expected(l, p), 0),
+            availableNative = Inventory.available(l, p),
+            available = (OVERRIDE Inventory.available(l, p),
+                (OVERRIDE Inventory.onHand(l, p),
+                    (OVERRIDE Inventory.inQuantity(l, p), 0) (-) (OVERRIDE Inventory.outQuantity(l, p), 0))
+                (-) (OVERRIDE Inventory.planned(l, p), 0))
+            WHERE Inventory.active(l) AND MasterData.active(p)
+                AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                    OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                    OR Inventory.expected(l, p) != 0)
+            ORDER Inventory.id(l), MasterData.id(p)
+        ),
+        outgoingCommitments = (JSON FROM
+            sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol)),
+            sourceDocumentId = Sales.number(Sales.order(ol)),
+            sourceDocumentNumber = Sales.number(Sales.order(ol)),
+            productId = MasterData.id(Sales.shippedProduct(ol)),
+            productName = MasterData.name(Sales.shippedProduct(ol)),
+            locationId = Inventory.id(Sales.location(Sales.order(ol))),
+            locationName = Inventory.name(Sales.location(Sales.order(ol))),
+            openQuantity = Sales.toShip(ol),
+            effectiveReserved = (OVERRIDE
+                (GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
+                    IF Sales.orderLine(Inventory.line(rr)) = ol),
+                0),
+            scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol)),
+            scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
+            status = 'confirmed'
+            WHERE Sales.confirmed(Sales.order(ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product
+            ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
+        ),
+        receipts = (JSON FROM
+            lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
+            receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
+            receiptNumber = Inventory.number(Inventory.receipt(Inventory.line(rr))),
+            purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+            purchaseOrderLineId = (CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr)))),
+            productId = MasterData.id(Inventory.product(Inventory.line(rr))),
+            productName = MasterData.name(Inventory.product(Inventory.line(rr))),
+            locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
+            locationName = Inventory.name(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
+            expectedReservationSigned = Inventory.reserved(rr),
+            expectedQuantity = 0 (-) Inventory.reserved(rr),
+            scheduledDateTime = Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
+            scheduledDate = DATE(Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))),
+            status = 'ready',
+            purchaseOrderStatus = 'confirmed',
+            increaseAvailableStock = Inventory.increaseAvailableStock(Inventory.type(Inventory.receipt(Inventory.line(rr))))
+            WHERE Inventory.ready(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+                AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
+            ORDER Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
+                Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+                Purchase.index(Purchase.orderLine(Inventory.line(rr)))
+        );
+} @@api;
+
+
+// Endpoints temporales de diagnóstico: aíslan cada consulta sin modificar datos.
+rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
+    EXPORT JSON FROM
+        inventoryCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.active(Inventory.Location l) AND MasterData.active(MasterData.Product p)
+                AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                    OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                    OR Inventory.expected(l, p) != 0)),
+            0),
+        inventory = (JSON FROM
+        productId = MasterData.id(MasterData.Product p),
+        locationId = Inventory.id(Inventory.Location l),
+        physicalIncoming = (OVERRIDE Inventory.inQuantity(l, p), 0),
+        physicalOutgoing = (OVERRIDE Inventory.outQuantity(l, p), 0),
+        onHandNative = Inventory.onHand(l, p),
+        availableNative = Inventory.available(l, p),
+        plannedNetReservationNative = Inventory.planned(l, p)
+        WHERE Inventory.active(l) AND MasterData.active(p)
+            AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                OR Inventory.expected(l, p) != 0)
+        ORDER Inventory.id(l), MasterData.id(p)
+    );
+} @@api;
+
+rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para reposición' () {
+    EXPORT JSON FROM
+        outgoingCommitmentsCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.confirmed(Sales.order(Sales.OrderLine ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product),
+            0),
+        outgoingCommitments = (JSON FROM
+        sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol)),
+        sourceDocumentId = Sales.number(Sales.order(ol)),
+        productId = MasterData.id(Sales.shippedProduct(ol)),
+        locationId = Inventory.id(Sales.location(Sales.order(ol))),
+        openQuantity = Sales.toShip(ol),
+        effectiveReserved = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
+                IF Sales.orderLine(Inventory.line(rr)) = ol),
+            0),
+        scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol))
+        WHERE Sales.confirmed(Sales.order(ol))
+            AND Sales.toShip(ol) > 0
+            AND Sales.location(Sales.order(ol))
+            AND Sales.shippedProduct(ol) IS MasterData.Product
+        ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
+    );
+} @@api;
+
+rubrovaProbeReceipts 'Diagnóstico de recepciones para reposición' () {
+    EXPORT JSON FROM
+        receiptsCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.ready(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr)))
+                AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+                AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))),
+            0),
+        receipts = (JSON FROM
+        lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
+        receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
+        purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+        purchaseOrderLineId = (CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr)))),
+        productId = MasterData.id(Inventory.product(Inventory.line(rr))),
+        locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
+        expectedReservationSigned = Inventory.reserved(rr),
+        expectedQuantity = 0 (-) Inventory.reserved(rr),
+        scheduledDateTime = Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
+        increaseAvailableStock = Inventory.increaseAvailableStock(Inventory.type(Inventory.receipt(Inventory.line(rr))))
+        WHERE Inventory.ready(Inventory.receipt(Inventory.line(rr)))
+            AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+            AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+            AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))
+        ORDER Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr))),
+            Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
+            Purchase.index(Purchase.orderLine(Inventory.line(rr)))
+    );
+} @@api;
+

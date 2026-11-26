@@ -8,9 +8,9 @@ Rubrova es una plataforma de gestión comercial en desarrollo. Busca reunir la o
 
 > **Estado del proyecto · 25 de noviembre de 2026**
 >
-> Rubrova está en etapa de piloto integrado POS + ERP. El código fuente de lsFusion 6.2 y MyCompany 6.2 está fijado dentro del repositorio. En la revisión actual de CI aprobaron el planificador, las validaciones estáticas, Windows, la compilación propia de servidor/cliente GWT/lógica y la publicación de artefactos; los smokes macOS ARM64 y Linux siguen ejecutándose. Un ciclo POS básico con datos sintéticos fue aceptado anteriormente. La exportación nativa de reposición es de solo lectura y continúa en validación: el último smoke completado permitió iniciar sesión, pero la llamada a la API respondió “Set operation is incorrect”. Se retiraron conversiones de índices que podían ocultar la fuente de los parámetros y la corrección está bajo revalidación. **No es una versión productiva ni está aprobada para operar con datos comerciales reales.**
+> Rubrova sigue en etapa de piloto integrado POS + ERP. La suite de reposición pasó en [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911), pero la última validación de plataforma [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló en una comprobación estática anterior a la compilación. En una ejecución nativa previa ([45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906)), el fork compiló, el servidor inició y el login funcionó, pero la API autenticada de reposición devolvió HTTP 500: `Set operation is incorrect`. El ajuste posterior todavía no tiene una ejecución de CI sobre el SHA actual. El puente nativo, la operación local en un Mac físico y el producto completo **no están aceptados para producción**.
 >
-> Seguimiento: [PR #8 — exportación nativa MyCompany](https://github.com/JavierGrecco/Rubrova/pull/8) · [último diagnóstico completado](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) · [revalidación en curso](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
+> La estrategia ahora es prevalidar localmente con el mismo script usado por CI, compilar y ejecutar el smoke obligatorio en macOS ARM64; los diagnósticos secundarios Linux/Docker quedan bajo ejecución manual.
 
 ## Propuesta de producto
 
@@ -99,6 +99,17 @@ También existen los accesos **Iniciar Rubrova.command** y **Iniciar Rubrova - D
 
 **Seguridad de la vista previa:** se enlaza a loopback y usa una configuración local de desarrollo. No la expongas a la red ni cargues información comercial real. La instalación productiva requiere endurecimiento de credenciales, permisos, firewall, backups y restauración verificada.
 
+
+### Prevalidación rápida antes de compilar
+
+Desde la raíz del repositorio, ejecutá primero:
+
+```bash
+bash scripts/platform/local-preflight.sh
+```
+
+También podés ejecutar una capa por vez con `--platform` o `--replenishment`. Esta rutina compartida con GitHub Actions valida extensiones, contratos, tests Python/Node, fixtures y scripts sin iniciar servidores. No reemplaza Maven ni el smoke autenticado de lsFusion/MyCompany.
+
 ## Organización del repositorio
 
 - **main** es la fuente de verdad.
@@ -130,6 +141,7 @@ Ver [Política de ramas e integración](docs/BRANCHING_STRATEGY.md).
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Backups, restore, rollback y fallos |
 | [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Ejecución nativa en Apple Silicon |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de validación y puertas de aceptación |
+| [Base de conocimiento de ingeniería](docs/engineering/README.md) | Contratos, decisiones, relaciones entre módulos e historial de investigaciones |
 
 ## Alcance y responsabilidad
 
