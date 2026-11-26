@@ -100,9 +100,8 @@ jobs:
         shell: bash
         run: |
           # La fase assemble anterior ya compiló las 10 permutaciones GWT.
-          # Esta segunda pasada sólo cambia el alcance de dependencias para incluir
-          # api-6.2.jar en server.jar y en WEB-INF/lib del WAR; no debe volver a
-          # ejecutar el compilador GWT.
+          # Esta segunda pasada cambia el alcance de dependencias para incluir api-6.2.jar
+          # en server.jar y WEB-INF/lib del WAR, pero no debe recompilar los JS de GWT.
           WEBAPP_DIR="vendor/platform/web-client/target/lsfusion-client-6.2"
           test -d "$WEBAPP_DIR"
           GWT_BOOTSTRAP="$(find "$WEBAPP_DIR" -type f -name '*.nocache.js' -print -quit)"
@@ -130,7 +129,7 @@ jobs:
           unzip -Z1 "$LOGICS_JAR" | grep -Eq '(^|/)MyCompany[.]lsf$'
           # El perfil assemble marca api como provided para la lógica; el WAR web necesita incluirla.
           unzip -Z1 "$CLIENT_WAR" | grep -F -x 'WEB-INF/lib/api-6.2.jar' >/dev/null
-          unzip -Z1 "$CLIENT_WAR" | grep -E '\.nocache\.js
+          unzip -Z1 "$CLIENT_WAR" | grep -E '\\.nocache\\.js
           unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
           unzip -Z1 "$RUNNER_TEMP/rubrova-client-api.jar" | grep -F -x 'lsfusion/base/DaemonThreadFactory.class' >/dev/null
           mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
@@ -489,7 +488,7 @@ jobs:
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/ui-smoke.log
           if-no-files-found: warn
  >/dev/null
-          unzip -Z1 "$CLIENT_WAR" | grep -E '\.cache\.js
+          unzip -Z1 "$CLIENT_WAR" | grep -E '\\.cache\\.js
           unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
           unzip -Z1 "$RUNNER_TEMP/rubrova-client-api.jar" | grep -F -x 'lsfusion/base/DaemonThreadFactory.class' >/dev/null
           mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
