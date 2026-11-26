@@ -1259,7 +1259,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "outgoingNativeLedgerReservedQuantity",
     "linkedToFixtureOrder"
   ]) {
-    assert.ok(nativeReplenishmentFixtureSource.includes(fragment) === false,
+    assert.ok(!replenishmentExportSource.includes(fragment),
       "Los diagnósticos deben quedar aislados en el fixture temporal de CI.");
     assert.ok(read("scripts/platform/fixtures/RubrovaCIReplenishmentFixture.lsf").includes(fragment),
       "Falta evidencia temporal del vínculo de reserva: " + fragment);
