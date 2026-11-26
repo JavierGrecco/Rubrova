@@ -1445,6 +1445,8 @@ test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras
   assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), 0\)/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), NULL\)/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]useList\(stocktakeCI\) <- TRUE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeListLineCount\(\) = \(OVERRIDE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeAdjustmentLineCount\(\) = \(OVERRIDE/);
   assert.match(uiSmokeSource, /def verify_stocktake_barcode_semantics\(/);
   assert.match(uiSmokeSource, /def verify_stocktake_persistence\(/);
   assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true/);
