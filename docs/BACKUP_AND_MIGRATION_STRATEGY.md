@@ -1,7 +1,7 @@
 # Copias de seguridad y recuperación de Rubrova
 
-**Revisión:** 20 de noviembre de 2026  
-**Estado:** requisito de producto y diseño de recuperación. No representa una función implementada ni una copia de seguridad actualmente operativa.
+**Revisión:** 26 de noviembre de 2026  
+**Estado:** primer incremento técnico implementado para backup lógico PostgreSQL nativo. No es todavía el paquete portable completo ni una recuperación de negocio certificada.
 
 ## 1. Objetivo para el negocio
 
@@ -167,15 +167,41 @@ La prueba sólo pasa si la operación puede continuar y los ledgers concilian. U
 
 ## 11. Estado y dependencias
 
+### Incremento técnico inicial
+
+Se incorpora `scripts/platform/native-postgres-backup.py` para el runtime `native-local`:
+
+- `create`: genera un paquete `.rubrova-db-backup` con un volcado PostgreSQL en formato custom, manifiesto, tamaño y SHA-256.
+- `verify`: valida las entradas del paquete, el checksum del manifiesto y del volcado, y que `pg_restore --list` pueda leerlo.
+- `restore`: verifica primero el paquete y restaura sólo en una base nueva indicada explícitamente. Rechaza nombres reservados y bases existentes. Si falla una restauración, intenta eliminar únicamente la base parcial que creó; no cambia el destino activo de Rubrova.
+- La herramienta comprueba que el servidor PostgreSQL 18 pertenece al directorio privado de datos configurado y limita la conexión a loopback. No almacena ni empaqueta contraseñas.
+- La prueba nativa de CI crea, verifica y restaura el respaldo dentro del mismo clúster aislado, usando una base de destino separada.
+
+Comandos desde la raíz del repositorio:
+
+```bash
+python3 scripts/platform/native-postgres-backup.py create --output /ruta/segura/rubrova-db.rubrova-db-backup
+python3 scripts/platform/native-postgres-backup.py verify /ruta/segura/rubrova-db.rubrova-db-backup
+python3 scripts/platform/native-postgres-backup.py restore /ruta/segura/rubrova-db.rubrova-db-backup --target-database rubrova_restore_test --confirm-new-database
+```
+
+El comando `restore` no sustituye la base activa ni actualiza `runtime-config.json`; restaura a una base nueva para validación o recuperación asistida. El primer paquete declara de forma visible que su alcance es **sólo PostgreSQL**. No contiene archivos adjuntos, imágenes, documentos externos, secretos ni binarios. Los checksums detectan corrupción accidental, no autentican el origen del archivo.
+
+### Lista de implementación
+
 - [x] Requisito de recuperar la operación en instalación limpia documentado.
 - [x] Separación de backup completo, incremental, exportación portable y secretos.
 - [x] Flujo previsto para reinstalar Windows o reemplazar la computadora.
-- [ ] Elegir motor POS/ERP y comprobar su soporte real de snapshot/WAL/exportación.
-- [ ] Definir formato y esquema versionado del paquete portable.
-- [ ] Implementar programación, catálogo, checksums, verificación y retención.
-- [ ] Implementar asistente de restauración y re-vinculación de periféricos.
-- [ ] Probar restauración Windows limpia, PC de reemplazo y recuperación de secretos.
+- [x] Primera herramienta de backup lógico PostgreSQL con manifiesto y SHA-256.
+- [x] Verificación estructural mediante checksum y `pg_restore --list`.
+- [x] Restauración protegida que sólo crea una base nueva, con limpieza ante fallo.
+- [ ] Superar la suite automatizada y el smoke real de PostgreSQL del nuevo SHA.
+- [ ] Validar en el Mac físico y en Windows las rutas reales y recuperación de datos.
+- [ ] Incorporar adjuntos, documentos, configuración funcional y exportación portable.
+- [ ] Implementar programación, catálogo, retención y copia verificada a disco externo.
+- [ ] Implementar asistente visual en español y re-vinculación de periféricos.
+- [ ] Probar restauración Windows limpia y PC de reemplazo desde un disco externo.
 
 **Decisión vigente:** el backup de Rubrova no tendrá cifrado a nivel de aplicación en la primera versión. La protección opcional del disco se delega al sistema operativo.
 
-**Estado real:** la creación automática, los checksums, la exportación portable y la restauración guiada todavía no están implementados.
+**Estado real:** ya existe una primera copia lógica de PostgreSQL; la recuperación completa del negocio sigue sin estar implementada ni aceptada.

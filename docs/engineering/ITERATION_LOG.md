@@ -109,3 +109,20 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Corrección:** se reemplazó `WHERE` por `IF`, siguiendo la sintaxis de agrupación ya usada por `RubrovaCISalesFixture.lsf` y otros módulos del repositorio.
 - **Regresión:** se añadió al preflight una aserción positiva para `GROUP MAX ... IF` y otra negativa para `GROUP MAX ... WHERE`.
 - **Alcance:** esta corrección resuelve el error de parseo identificado; no se declara validada hasta que el servidor arranque y el smoke macOS pase las sondas y la exportación.
+
+
+## 2026-11-26 — REP-013 — Consolidación main y aceptación nativa integrada
+
+- **Commit canónico:** [`f545c907`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139).
+- **Estado del repositorio:** una única rama visible (`main`) y cero pull requests abiertos. La exportación nativa de reposición y el runtime quedaron integrados; no continuar desarrollando ramas paralelas para el mismo alcance.
+- **Validación:** [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), concluido con `success`; [planificador run 45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643), concluido con `success`.
+- **Hechos observados en macOS ARM64:** login autenticado; sondas de inventario, compromisos y recepciones HTTP 200; exportación con conteos y filas verificables; venta sintética ARS 1.250; pago exacto en efectivo; stock 10 → 9; turno `CLOSED`; persistencia después del reinicio; Demo aislada aprobada.
+- **Límites:** egress externo habilitado (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`); Linux nativo y Docker/Linux `skipped`; los datos son sintéticos y todavía no hay aceptación en el Mac físico ni jornada productiva.
+
+## 2026-11-26 — REP-014 — Primer respaldo lógico PostgreSQL nativo
+
+- **Motivo:** el supervisor ya conservaba la base entre reinicios, pero aún no existía un paquete comprobable ni una restauración protegida.
+- **Implementación:** `scripts/platform/native-postgres-backup.py` crea un paquete de base PostgreSQL en formato custom, con manifiesto y SHA-256; verifica el paquete y restaura sólo a una base nueva, nunca sobre `rubrova_dev`.
+- **Seguridad:** comprueba que el servidor sea PostgreSQL 18 y que el directorio de datos y puerto correspondan al clúster privado de Rubrova; sólo conecta a loopback; no exporta secretos; ante un fallo intenta retirar únicamente la base nueva incompleta.
+- **Pruebas añadidas:** corrupción de dump/manifiesto, entradas extra, directorio de datos ajeno, confirmación explícita, base ya existente y limpieza de una restauración fallida.
+- **Límite:** este incremento protege PostgreSQL, no adjuntos, documentos, configuración del SO ni credenciales. La aceptación real queda condicionada al preflight y al smoke PostgreSQL del SHA de esta iteración, y luego a una prueba local en Mac/Windows.

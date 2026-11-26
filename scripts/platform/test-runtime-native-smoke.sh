@@ -360,6 +360,13 @@ echo "RUBROVA_NATIVE_POS_ACCEPTANCE=passed"
 }
 echo "RUBROVA_NATIVE_UI_SMOKE=passed"
 
+echo "5.1/7 Creando, verificando y restaurando un respaldo PostgreSQL en una base aislada"
+BACKUP_BUNDLE="$WORK_DIR/rubrova-db-backup.rubrova-db-backup"
+python3 "$SCRIPT_DIR/native-postgres-backup.py" --config "$RUBROVA_RUNTIME_CONFIG_PATH" create --output "$BACKUP_BUNDLE"
+python3 "$SCRIPT_DIR/native-postgres-backup.py" --config "$RUBROVA_RUNTIME_CONFIG_PATH" verify "$BACKUP_BUNDLE"
+python3 "$SCRIPT_DIR/native-postgres-backup.py" --config "$RUBROVA_RUNTIME_CONFIG_PATH" restore "$BACKUP_BUNDLE" --target-database rubrova_restore_ci --confirm-new-database
+echo "RUBROVA_NATIVE_POSTGRES_BACKUP_RESTORE=passed"
+
 echo "4/5 Verificando que el supervisor y el servidor siguen activos tras la inspección"
 kill -0 "$SUPERVISOR_PID" || {
   echo "El supervisor nativo se cerró después de cargar la interfaz." >&2

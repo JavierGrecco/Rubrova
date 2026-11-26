@@ -81,9 +81,12 @@ run_platform() {
     scripts/platform/run-local-native-preview.py \
     scripts/platform/native_runtime_url.py \
     scripts/platform/test_native_runtime_url.py \
+    scripts/platform/native-postgres-backup.py \
+    scripts/platform/test_native_postgres_backup.py \
     scripts/platform/inspect-mycompany-ui.py
   run_step "$PYTHON_BIN" scripts/platform/test_native_runtime_url.py
   run_step "$PYTHON_BIN" scripts/platform/test_runtime_native_preview.py
+  run_step "$PYTHON_BIN" scripts/platform/test_native_postgres_backup.py
 
   local shell_file
   for shell_file in \

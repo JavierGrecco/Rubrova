@@ -1,27 +1,24 @@
 # Compatibilidad con macOS
 
-**Revisión:** 25 de noviembre de 2026.
+**Revisión:** 26 de noviembre de 2026.
 **Objetivo:** ejecutar el mismo runtime Rubrova en el equipo local sin Docker, sin confundir la compatibilidad del repositorio con la aceptación del servidor nativo.
 
 ## Decisión actual
-## Estado de la validación más reciente
 
-La aceptación comercial básica del runtime nativo en CI corresponde a revisiones anteriores (`45637101959` y `45641728845`) y no sustituye la aceptación del cambio actual.
+El runtime nativo sin Docker es la ruta prioritaria de desarrollo local y ya superó un smoke integrado de Apple Silicon en CI. La revisión aceptada es `main` en el commit [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139).
 
-En el PR #8, el run [45721155696](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) volvió a iniciar PostgreSQL, servidor lsFusion y Tomcat en macOS ARM64 y Linux; Chromium completó el login y cargó la navegación. La llamada autenticada a la nueva exportación de reposición devolvió HTTP 500 (`Set operation is incorrect`). La compilación fue correcta; el fallo se produce al ejecutar la consulta de exportación.
+En [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), el runner macOS ARM64 ejecutó Java 21, PostgreSQL 18, lsFusion/MyCompany y Tomcat sin Docker. Chromium autenticó y navegó al POS; las sondas de inventario, compromisos y recepciones respondieron HTTP 200. Se verificó el export JSON de sólo lectura, una venta sintética por ARS 1.250, pago en efectivo, stock 10 → 9, cierre de turno y persistencia después de reiniciar. La instancia Demo utilizó otra base y puertos separados.
 
-Se retiraron conversiones `BPSTRING[10]` de los índices usados en los identificadores de línea y se añadió una guarda estática. La nueva validación está en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906). Hasta que el endpoint devuelva JSON válido en macOS ARM64 y Linux, no se considera aceptada la integración de reposición. La prueba en un Mac físico, periféricos y una instalación limpia offline siguen siendo hitos separados.
+La prueba se ejecutó con salida externa habilitada: `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Los jobs Linux nativo y Docker/Linux se omitieron en ese push. Por tanto, todavía no se certifica operación offline macOS, Windows nativo, instalación limpia, periféricos reales ni uso productivo. La prueba del runner tampoco sustituye la ejecución en el Mac físico del usuario.
 
+El camino macOS sigue siendo:
+- Java 21 ARM64 para el servidor y la lógica compilados desde Rubrova.
+- PostgreSQL 18 ARM64 en un directorio privado persistente.
+- Apache Tomcat 9.0.124 para el cliente web en loopback.
+- Supervisor Python para arranque, verificación y parada sin borrar los datos.
+- Docker no es requisito de ejecución local.
 
-El camino previsto para macOS es nativo:
-
-- Java 21 ejecuta el servidor lsFusion y la lógica MyCompany/Rubrova desde los JAR compilados por el propio repositorio.
-- PostgreSQL 18 se ejecuta como proceso nativo y conserva los datos en una carpeta privada de Rubrova.
-- Apache Tomcat 9.0.124 sirve el WAR del cliente web desde `127.0.0.1`.
-- Python 3 supervisa el arranque, comprueba los procesos/puertos y los detiene sin borrar la base.
-- Docker no es requisito para el runtime nativo local en macOS. En CI, la aceptación nativa macOS ARM64 es obligatoria; Linux nativo y Docker/Linux se conservan como diagnósticos suplementarios no bloqueantes y pasaron en `45637101959`.
-
-El supervisor está en `scripts/platform/run-local-native-preview.py`. Sus pruebas unitarias cubren la espera de RMI y `onStarted`, el aislamiento de PostgreSQL, la versión exacta de Tomcat, la configuración RMI del WAR y el enlace de la web a loopback. En `45637101959`, el smoke completó en `macos-26` ARM64 el ciclo de abrir turno, vender, cobrar, conciliar stock, cerrar caja y registrar incidencias de integración. Confirma el runtime nativo en un runner Apple Silicon, pero no sustituye la prueba en tu Mac ni es un instalador final.
+El smoke de plataforma también incorpora en esta revisión una prueba lógica de backup/restore: crear y verificar el paquete y restaurarlo en una base nueva. La copia cubre PostgreSQL únicamente; los documentos, adjuntos y demás archivos todavía no forman parte de un respaldo completo.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -30,7 +27,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | POS base aceptado históricamente en CI; API de reposición del PR #8 sigue pendiente tras HTTP 500 en runtime. Prueba en un Mac de usuario, periféricos e instalación limpia pendientes |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Smoke integrado y exportación nativa aprobados en CI 45847755524; prueba en el Mac físico, modo offline, periféricos e instalación limpia pendientes |
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 
@@ -112,15 +109,15 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 
 ## Validación en CI y estado de aceptación
 
-La CI ejecuta tres verificaciones de runtime distintas, a partir de los artefactos compilados desde la misma revisión:
+La puerta obligatoria de plataforma es el smoke macOS ARM64 nativo, después de compilar servidor, cliente GWT y lógica MyCompany desde el mismo SHA.
 
-- **macOS ARM64 nativo (obligatorio):** runner Apple Silicon `macos-26`, Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Chromium. En `45641728845` completó login, apertura de turno, venta, cobro, factura/pago, descuento de stock, cierre y conciliación de caja, además de persistir una incidencia simulada de integración. Ese job usó `RUBROVA_BLOCK_EGRESS=false`; no certifica por sí solo el modo offline en macOS.
-- **Docker/Linux (diagnóstico no bloqueante):** ejecuta automáticamente el smoke POS dentro del runtime en contenedores, con PostgreSQL y proveedor HTTP simulado en red interna. La aceptación `45637101959` completó login, venta, pago, stock, cierre y resiliencia HTTP. El job sigue sin bloquear los runtimes nativos si vuelve a fallar.
-- **Linux x86_64 nativo (smoke complementario):** en `45641728845` inició Java, PostgreSQL y Tomcat, bloqueó la salida externa y completó el mismo ciclo POS: turno, venta, cobro, stock, cierre y pruebas de integración. No se necesita Docker para este recorrido.
+- **macOS ARM64 nativo:** [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), aprobado. Verificó Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat, Chromium, login, exportación nativa, venta, pago, stock, cierre, reinicio/persistencia y Demo aislada. La conectividad externa estuvo habilitada.
+- **Linux x86_64 nativo y Docker/Linux:** fueron omitidos en ese push (`skipped`). Se conservan como diagnósticos complementarios; no deben contarse como aprobados por el run actual.
+- **Windows:** el trabajo reciente validó sintaxis de scripts PowerShell; no equivale a una instalación y aceptación funcional completa.
 
-El smoke macOS `45641728845` se ejecutó con salida externa habilitada (`RUBROVA_BLOCK_EGRESS=false`), por lo que no demuestra por sí solo el comportamiento offline del navegador en esa plataforma. En cambio, el smoke Linux nativo `45641728845` bloqueó la salida externa y completó el POS, pago, stock, cierre y recuperación de integraciones. Las pruebas unitarias también comprueban que el modo Demo utiliza una base separada y que sus fixtures no se mezclan con los de CI; todavía falta ejecutar esa demostración en un Mac de usuario. La primera instalación completa offline sigue pendiente.
+La continuidad offline en macOS sigue abierta. El run 45847755524 declara explícitamente `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Linux nativo había completado históricamente pruebas con salida bloqueada en ejecuciones previas, pero esa evidencia no sustituye repetir la prueba sobre el SHA actual.
 
-La aceptación Docker histórica `45503956218` y la aceptación nativa macOS/Linux del run `45637101959` son evidencias separadas. El run `45637101959` completó el smoke también en Docker/Linux. Todas cubren venta por ARS 1.250, factura/pago, stock y cierre básico; Linux nativo se probó además con salida externa bloqueada. Faltan los restantes circuitos comerciales y la prueba en un equipo físico.
+El usuario todavía debe ejecutar el runtime en el Mac físico. La compatibilidad del runner CI tampoco certifica Safari/Chrome, lector, impresora, cajón, balanza, terminal, rendimiento de una jornada ni recuperación en un equipo nuevo.
 
 ## Ruta Docker para empaquetado y validación CI
 

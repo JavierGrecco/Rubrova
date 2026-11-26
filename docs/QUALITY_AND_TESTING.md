@@ -46,13 +46,14 @@ En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado
 
 ### Estado de evidencia
 
-- El POS base completó en una revisión anterior un recorrido sintético de login, turno, venta en efectivo, factura/pago, stock y cierre en [45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959). No valida cambios posteriores ni el puente nativo de reposición.
-- En el PR #10, la prevalidación de plataforma aprobó en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978): 30/30 pruebas Node, 34/34 validaciones de evaluación, 33 pruebas Python, scripts de shell, listener y despliegue. Windows también pasó.
-- El workflow de reposición aprobó en [45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945), ejecutando la misma capa `--replenishment` del preflight local.
-- La compilación completa del fork está en curso en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Aún no se ha iniciado la aceptación runtime del nuevo SHA.
-- En la última ejecución nativa anterior ([45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906)), el servidor, RMI, Tomcat y login funcionaron, pero la API autenticada consolidada devolvió HTTP 500 `Set operation is incorrect`. El nuevo inspector consulta primero por separado inventario, compromisos y recepciones, para identificar qué operación de conjunto provoca el error.
-- No existe todavía evidencia de una exportación nativa aceptada y conciliada contra una base MyCompany real. Los fixtures del adaptador son sintéticos.
-- La aceptación en un Mac físico, Safari/Chrome, lector, impresora, cajón, balanza y terminales reales sigue pendiente.
+- La última revisión integrada de `main` es `f545c907`. El workflow [45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524) terminó con `success`: preflight compartido, compilación completa y smoke nativo macOS ARM64.
+- El smoke nativo autenticó mediante Chromium, confirmó las sondas de inventario/compromisos/recepciones (HTTP 200), verificó el JSON de exportación de reposición y completó una venta sintética por ARS 1.250, pago exacto en efectivo, salida de stock 10 → 9 y cierre del turno.
+- Tras reiniciar el runtime, la factura, el pago, el stock, el turno cerrado y las incidencias siguieron conciliados en PostgreSQL. Una segunda instancia Demo se ejecutó con base y puertos separados.
+- La evaluación del planificador aprobó en [45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643). Sus fixtures siguen siendo sintéticos y no prueban compras reales ni ejecutan `fillAuto`.
+- La ejecución 45847755524 dejó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`; no demuestra continuidad offline en macOS.
+- Los jobs Docker/Linux y Linux nativo fueron `skipped` en el push actual. La validación Windows ejecutó comprobaciones de sintaxis PowerShell, no una instalación completa.
+- Se añade una herramienta de backup lógico PostgreSQL con checksum, verificación `pg_restore --list` y restauración sólo a una base nueva. Su preflight y el recorrido real crear/verificar/restaurar quedan incluidos en esta revisión; no sustituye el backup completo de adjuntos/documentos.
+- Sigue pendiente conciliar reposición con una base MyCompany real, probar el runtime en un Mac físico, instalar en Windows, usar periféricos reales y realizar una jornada comercial supervisada.
 
 ### Controles del smoke nativo
 
@@ -61,6 +62,8 @@ En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado
 - Verificación de la API autenticada cuando el cambio modifica el contrato.
 - Captura de errores del navegador, requests fallidos, respuestas HTTP y tiempos de `dispatch`.
 - Ejecución con salida externa bloqueada cuando se evalúa la continuidad offline; distinguirla de los smokes que habilitan Internet para dependencias o integraciones simuladas.
+- Crear un paquete PostgreSQL, verificar checksums y restaurarlo en una base nueva sin modificar la base activa.
+- Rechazar paquetes alterados, bases destino existentes y restauraciones parciales; comprobar que la limpieza sólo retire la base nueva creada por esa operación.
 
 Los tests unitarios del supervisor no sustituyen las pruebas de runtime, y el inicio de sesión no sustituye la prueba de una API de dominio.
 

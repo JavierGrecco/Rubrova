@@ -1,13 +1,13 @@
 # Plan maestro de implementación de Rubrova
 
-**Revisión:** 25 de noviembre de 2026  
+**Revisión:** 26 de noviembre de 2026  
 **Base técnica:** MyCompany 6.2 + lsFusion 6.2, con fuentes completas fijadas en el repositorio; Tryton 8.0 + tryton-ar 8.0 se conserva como contraste fiscal argentino, no como segundo núcleo operativo.
 
-**Estado real:** el fork compila servidor, cliente web y lógica desde fuentes propias. Un ciclo POS básico con datos sintéticos fue aceptado anteriormente en CI ([45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959)); no existe todavía aceptación para uso productivo. El camino principal de desarrollo local es el runtime nativo con Java 21, PostgreSQL 18 y Tomcat 9.
+**Estado real:** el fork compila servidor, cliente GWT y lógica desde fuentes propias. En [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), el smoke nativo macOS ARM64 aprobó login, exportación autenticada de reposición, una venta en efectivo, stock, cierre y persistencia tras reinicio. El commit integrado es `f545c907` en `main`; no hay PR abierto ni rama feature adicional. No existe todavía aceptación para uso productivo.
 
-**Hito activo:** PR #8 agrega una exportación autenticada de reposición, estrictamente de solo lectura. La suite del planificador, las validaciones estáticas, Windows, la compilación completa de lsFusion/GWT/MyCompany, la recompilación de servidor/cliente y la publicación de artefactos aprobaron en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906). Los smokes nativos macOS ARM64 y Linux y el diagnóstico Docker/Linux están ejecutándose sobre esos artefactos. El último smoke completado inició el runtime nativo y permitió login, pero la acción de exportación devolvió HTTP 500 por una operación de conjuntos incorrecta. La corrección de los identificadores de línea está siendo probada. El PR no está fusionado y no debe tratarse como aceptado.
+**Hito activo:** el runtime nativo es la ruta local prioritaria (Java 21, PostgreSQL 18 y Tomcat 9, sin Docker obligatorio). El puente de reposición es de sólo lectura y ya devuelve datos verificables sobre fixtures; falta conciliar una exportación contra una base MyCompany real. La nueva herramienta de backup lógico PostgreSQL genera, verifica y restaura a una base nueva sin sobrescribir la activa; debe superar el preflight y el smoke real de esta revisión. Su alcance no incluye documentos ni adjuntos.
 
-**Límites pendientes:** devoluciones/reintegros, arqueo y movimientos de caja completos, vuelto y pagos mixtos, integraciones ARCA/adquirentes reales, exportación conciliada contra una base MyCompany real, instalación limpia offline y backup/restore verificados.
+**Límites pendientes:** devoluciones/reintegros, arqueo y movimientos de caja completos, vuelto y pagos mixtos, ARCA/adquirentes reales, conciliación de reposición con datos reales, modo offline macOS, prueba física en Mac, Windows nativo, instalación limpia, periféricos y backup/restore completo del negocio.
 
 ## 1. Decisión ejecutiva
 

@@ -1,122 +1,85 @@
 # Estado real del proyecto Rubrova
 
-**Corte:** 26 de noviembre de 2026  
+**Corte:** 26 de noviembre de 2026, 15:45 UTC  
 **Rama canónica:** `main`  
-**Candidato de integración:** [PR #10](https://github.com/JavierGrecco/Rubrova/pull/10), rama `integration/replenishment-mainline-preflight`, basada directamente en `main` (`699eb834`), sin commits por detrás. El [PR #8](https://github.com/JavierGrecco/Rubrova/pull/8) fue cerrado sin fusionar y reemplazado para no arrastrar 118 commits divergentes.
-
-## Estado de la última validación
-
-**SHA del candidato:** `a00e3d669e1fe934a0ffd575d7f87a85d07ed3d1` · [PR #10](https://github.com/JavierGrecco/Rubrova/pull/10), todavía en Draft.
-
-- **Prevalidación compartida:** aprobada en [45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328).
-- **Windows:** validación aprobada en el mismo run.
-- **Compilación del fork:** compilación completa de lsFusion/MyCompany aprobada en el mismo run.
-- **Suite del planificador:** aprobada en [45751756295](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756295). Este resultado valida el planificador y sus fixtures; no demuestra que la API nativa esté aceptada.
-- **Smoke nativo macOS ARM64:** el servidor completó el inicio de la instancia de lógica, pero el paso integral de ejecución terminó con código distinto de cero. El run [45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328) conserva logs y artefactos de diagnóstico.
-- **Indicios en los logs:** aparecen timeouts SQL durante consultas de búsqueda de iconos (`getBestIcons`) y un conflicto de serialización durante la inicialización. Son observaciones de diagnóstico; todavía no se ha confirmado que alguna de ellas sea la causa raíz del fallo del smoke.
-- **Linux nativo y Docker/Linux:** se omitieron en esta ejecución; permanecen como diagnósticos manuales.
-- **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
-- **Estado de integración:** el PR #10 sigue abierto y en borrador. No debe fusionarse hasta que el smoke autenticado demuestre los endpoints y los datos exportados se concilien según los criterios definidos.
-
-La ejecución anterior [45744747100](https://github.com/JavierGrecco/Rubrova/actions/runs/45744747100) había detectado una expresión `GROUP MAX ... WHERE` no admitida por lsFusion. Se corrigió a `IF` y la regresión se incorporó a la prevalidación; el run más reciente ya pasó esa etapa, pero todavía no completa la validación de runtime.
-
-## Resumen de madurez
-
-La última aceptación funcional completa del POS base sigue siendo el [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959), sobre una revisión anterior. Validó con datos sintéticos login, apertura de turno, venta en efectivo, factura/pago, stock y cierre básico en runners de CI. No constituye una jornada real, una instalación productiva ni una aceptación del nuevo puente de reposición.
-
-El repositorio contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor compila el servidor, el cliente GWT y la lógica MyCompany desde las fuentes propias. El camino de desarrollo local prioriza Java 21, PostgreSQL 18 y Tomcat 9 sin Docker, con una vista previa supervisada y datos aislados.
-
-El candidato de integración incorpora el módulo autenticado de exportación nativa y su puente Python. Las pruebas rápidas cubren conversión y conciliación con fixtures, pero sólo el servidor real puede demostrar que las consultas lsFusion 6.2 son finitas y correctas. Un smoke anterior devolvió `Set operation is incorrect`; tras los cambios siguientes, el run más reciente logró iniciar la instancia de lógica, pero el paso integral volvió a terminar con error y los logs contienen timeouts SQL durante la inicialización de búsquedas de iconos. Hasta confirmar la causa, completar los endpoints y conciliar cifras con una base real, la integración no se considera aceptada.
+**Commit integrado:** [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139)  
+**Estado GitHub:** una sola rama (`main`), cero pull requests abiertos. No quedan ramas de desarrollo separadas visibles.
 
 ## Resumen ejecutivo
 
-Rubrova está en **Fase 0: piloto integrado POS + ERP**. El núcleo MyCompany/lsFusion está compilado desde las fuentes fijadas y el primer circuito POS básico fue probado en CI con una base sintética. El foco inmediato es cerrar la exportación nativa de reposición y demostrar que el runtime puede utilizarse localmente en el MacBook Air del usuario.
+Rubrova ya dispone de un runtime propio compilado desde las fuentes fijadas de MyCompany 6.2 + lsFusion 6.2 y acaba de superar el smoke nativo de Apple Silicon con PostgreSQL 18, Java 21 y Tomcat 9, sin Docker. La validación ya no se limita a iniciar el servidor: autenticó, consultó la exportación nativa de inventario, ejecutó una venta sintética, concilió caja y stock, cerró el turno, reinició el servidor y comprobó la persistencia.
 
-La exportación nueva es de solo lectura. Separa existencia física, disponible nativo, reservas, compromisos por línea de venta y recepciones previstas. El adaptador Python valida las conciliaciones, exige políticas explícitas por producto/ubicación y rechaza escenarios que el planificador todavía no modela. No ejecuta `fillAuto`, ni crea, modifica o confirma órdenes de compra.
+Esto confirma una base técnica prometedora para continuar el piloto POS + ERP. **No significa que Rubrova esté listo para uso comercial diario o producción.** Los datos son sintéticos y aún faltan flujos importantes de caja, devoluciones, pagos, fiscalidad, instalación y recuperación completa.
 
-El run 45744747100 registró el error de sintaxis en el fixture (`GROUP MAX ... WHERE`), que se corrigió a `IF`. En la ejecución posterior 45751756328 el servidor sí completó el inicio de la instancia lógica, pero el paso integral de runtime terminó con error; los logs registran timeouts SQL en `getBestIcons` y un conflicto de serialización durante la inicialización. Todavía no se estableció una causa raíz confirmada. El siguiente paso es aislar esos problemas y volver a validar el login, las tres sondas, el endpoint consolidado y la conciliación de los datos.
+## Última validación de plataforma
 
-La capa de pagos presenciales tiene arquitectura y entidades iniciales de configuración/trazabilidad, pero no existe todavía un conector homologado ni cobros reales. Tryton 8.0 + tryton-ar 8.0 se conserva como referencia fiscal argentina, no como segundo núcleo operativo.
+El workflow [Validación del arranque de plataforma, run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), ejecutado sobre el SHA `f545c907`, terminó en `success`.
 
-## Qué está probado
-
-| Capacidad | Estado | Evidencia y alcance |
+| Trabajo | Resultado | Alcance real |
 |---|---|---|
-| Fuentes originales lsFusion 6.2 + MyCompany 6.2 | Aprobado | Snapshots fijados en el lock y completos en `vendor/` |
-| Compilación del fork Rubrova | Aprobado en CI | Reactor Maven, servidor, cliente GWT y lógica MyCompany compilados desde fuentes propias |
-| Imágenes propias del runtime Docker | Construcción y smoke aprobados en CI | Artefactos compilados desde fuentes Rubrova; el diagnóstico Docker/Linux completó el ciclo funcional en `45637101959` |
-| Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45641728845`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux sigue como diagnóstico suplementario no bloqueante |
-| Login y navegación al POS | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | Chromium abrió Comercio → Punto de venta y ejecutó el recorrido de venta tanto en macOS ARM64 como en Linux x86_64 sin Docker |
-| API nativa autenticada de reposición | En validación | El run más reciente inició la instancia de lógica, pero el paso integral del smoke terminó con error. Los endpoints y la exportación consolidada aún no cuentan con aceptación de extremo a extremo ni conciliación contra datos reales. |
-| Apertura de turno | Aprobado en Docker y macOS ARM64 CI | Turno sintético `SM/000001` en Docker y turno de prueba de Rubrova en macOS nativo |
-| Búsqueda y selección de artículo | Aprobado en Docker y macOS ARM64 CI | Un producto sintético; línea de recibo, cantidad 1 y precio ARS 1.250 |
-| Confirmación del cobro en efectivo | Aprobado en Docker y macOS ARM64 CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |
-| Factura y pago | Aprobado en Docker y macOS ARM64 CI | Una factura, una factura pagada y un pago entrante; importe aplicado ARS 1.250 |
-| Caja y turno | Aprobado en Docker y macOS ARM64 CI | Efectivo pagado y conciliado; cierre básico de turno y caja |
-| Movimiento de stock | Aprobado en Docker y macOS ARM64 CI | Ledger de inventario conciliado; en el fixture Docker, entrada 10, salida 1, existencia 9 |
-| Resiliencia HTTP GET | Aprobado en escenarios CI | Timeout, clasificación de 408/429/503 y errores definitivos, persistencia de incidencias y recuperación del proveedor simulado |
-| `HEADERSTO` / `Retry-After` | Aprobado en escenario CI | El 429 devuelve y persiste `Retry-After: 2` con el mecanismo nativo de lsFusion |
-| Configuración y trazabilidad de terminales | Base inicial incorporada; validación CI pendiente | Cuentas de proveedor, equipos, asignación a caja/medio, intenciones, intentos, eventos, reintegros y líneas de liquidación con claves idempotentes únicas. No procesa tarjetas ni ejecuta cobros reales |
-| Adaptadores físicos y cloud-to-cloud | Pendiente | Falta seleccionar un proveedor/modelo, conseguir SDK/API y credenciales de sandbox y homologar la operación con terminal real |
-| Timeout de `EXTERNAL HTTP CLIENT` desde navegador | Pendiente | Falta una prueba real en Chromium con endpoint lento/CORS, abort, error de red y recuperación |
-| Cierre básico después de venta en efectivo exacto | Aprobado en CI | Turno `SM/000001` quedó `CLOSED`; venta/neta y saldo de caja ARS 1.250 conciliados. Faltan arqueo contado, diferencias, ingresos y retiros |
-| Devolución y reintegro | Pendiente | Falta comprobar Bill, OutgoingPayment, medio original y movimiento inverso de stock |
-| Vuelto, pagos mixtos y tarjeta | Pendiente | El primer circuito aceptado sólo cubre efectivo exacto, sin vuelto |
-| Reinicio conservando datos | Aprobado en CI | En `45503956218` se reiniciaron servidor y cliente sin borrar PostgreSQL y se volvieron a conciliar factura, pago, caja, stock y turno cerrado |
-| Traducción completa | En curso / parcial | Se corrigieron captions de POS y caja y se añadió el bundle de acceso español; la revisión integrada debe superar el smoke visual antes de aceptarse |
-| Runtime durante una caída de Internet | Parcial | Linux x86_64 nativo completó en CI `45637101959` el ciclo POS con salida externa bloqueada, incluyendo pago, stock, cierre y recuperación de integraciones. macOS ARM64 pasó el recorrido con conectividad habilitada; falta repetir el navegador Mac con egress bloqueado y completar una instalación offline limpia |
-| Instalación inicial y paquete completo sin Internet | Pendiente | La prueba de runtime aislado no demuestra todavía que el instalador, los artefactos, las imágenes base y las dependencias puedan instalarse en una PC limpia sin conexión |
-| Ejecución local nativa sin Docker | Aceptación comercial básica en macOS ARM64 y Linux x86_64 CI; prueba en equipo real pendiente | Supervisor Python, instancia PostgreSQL propia, servidor `BusinessLogicsBootstrap` y cliente Tomcat. El recorrido de venta, pago, stock, cierre y fallos de integración pasó en ambos runners nativos; falta repetir en tu Mac y ampliar la cobertura |
-| Configuración siempre disponible | En desarrollo inicial | Existe el esquema y el gestor CLI para `native-local`, `docker-local` y `remote-online`; falta el panel visual independiente y su integración con la administración del POS |
-| Backup, restauración y rollback | Pendiente | No se acepta producción sin restauración real sobre una copia |
-| Windows y macOS ARM64 | Parcial | macOS ARM64: venta y cierre básicos aprobados en runner `macos-26`; prueba en Mac físico y periféricos pendientes. Windows: sólo validación sintáctica hasta ahora; falta runtime y aceptación funcional |
-| ARCA, terminales/adquirentes, marketplaces y logística | Pendiente | La arquitectura y la base de configuración de terminales están documentadas; no hay adaptador bancario productivo ni homologación física. Ningún conector comercial se habilita hasta superar idempotencia, Outbox, circuit breaker, fallos simulados y conciliación |
+| Prevalidación local compartida | Aprobado | Tests Node/Python, contratos, scripts, configuración, listener y despliegue |
+| Validación Windows | Aprobado | Comprobación de sintaxis PowerShell; no es todavía una instalación funcional completa |
+| Compilación del fork | Aprobado | Servidor lsFusion, cliente GWT y lógica MyCompany desde fuentes Rubrova |
+| Smoke macOS ARM64 nativo | Aprobado | Java 21, PostgreSQL 18, servidor lsFusion, Tomcat y Chromium; sin Docker |
+| Docker/Linux y Linux nativo complementarios | Omitidos en este push | `skipped`; no deben contarse como aprobados por esta ejecución |
 
-## Terminales de pago
+La evaluación del planificador también terminó correctamente en [run 45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643).
 
-La responsabilidad del cobro bancario permanece en la terminal y en el proveedor (PSP/adquirente). Rubrova contempla tres modalidades: terminal autónoma con registro manual, integración local por SDK/puente e integración cloud-to-cloud. Se incorporó una base de configuración y trazabilidad, pero no un adaptador real ni una autorización de cobro. La liquidación bancaria se concilia por separado del pago confirmado. Véase [Arquitectura de terminales de pago y conciliación](PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md).
+## Evidencia funcional del smoke nativo
 
-## Modos de ejecución y control local
+La ejecución [45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524) registró:
 
-El contrato está en `platform/runtime-config.schema.json`; `scripts/platform/runtime-config.py` permite crear, validar y gestionar los destinos `native-local`, `docker-local` y `remote-online`. El prototipo nativo inicia y supervisa PostgreSQL, lsFusion y Tomcat, pero aún no cambia de destino ni migra datos de negocio. El panel visual independiente sigue pendiente. Ver [Modos de ejecución y control local](RUNTIME_MODES_AND_LOCAL_CONTROL.md).
+- Login autenticado en Chromium y navegación al módulo Comercio → Punto de venta.
+- Las sondas autenticadas de inventario, compromisos de salida y recepciones respondieron HTTP 200.
+- La exportación nativa devolvió JSON verificable: una fila de inventario, una línea de compromiso, una reserva vinculada y una recepción en el fixture de prueba. La reserva de 2 unidades quedó asociada a la línea de salida, sin duplicar el compromiso.
+- Una venta sintética por ARS 1.250: una factura, un pago en efectivo por el mismo importe y una salida de una unidad (stock 10 → 9).
+- Cierre del turno conciliado: estado `CLOSED`, venta neta y efectivo ARS 1.250.
+- Reinicio de servidor y cliente, conservando PostgreSQL; factura, pago, existencia, turno cerrado y ocho incidencias permanecieron verificables.
+- Segunda instancia de demostración con PostgreSQL, configuración y puertos separados; abrió turno y encontró su producto de muestra.
 
-## Código y propiedad de fuentes
+La prueba usó `RUBROVA_NATIVE_EGRESS_BLOCKED=false`; el log dejó explícito `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Los diagnósticos Linux/Docker fueron omitidos en ese push.
 
-- `vendor/platform/`: snapshot del motor lsFusion 6.2 (servidor, API, cliente web/desktop y build).
-- `vendor/mycompany/`: snapshot completo de MyCompany 6.2 (POS y ERP).
-- `extensions/lsfusion/`: módulos y localización propios de Rubrova.
-- `patches/lsfusion/`: modificaciones directas al motor, sólo cuando una extensión no alcanza.
-- `build/rubrova/pom.xml`: reactor Maven que compone las fuentes del motor y de MyCompany.
+## Estado por capacidad
 
-Los commits de origen y licencias están fijados en `platform/source-lock.json` y en los avisos de los árboles vendorizados. MyCompany usa Apache-2.0 y lsFusion LGPL-3.0. Los módulos de pago, factura y despacho usados en el primer circuito se conservaron del snapshot original; la prueba prepara datos sintéticos y mide los resultados, no reimplementa esos procesos.
+| Capacidad | Estado | Límite pendiente |
+|---|---|---|
+| Fuentes fijadas y propiedad del código | Aprobado | Mantener los locks y la revisión de licencias/origen |
+| Compilación MyCompany/lsFusion propia | Aprobado en CI | Repetir en el equipo local y conservar artefactos por SHA |
+| Runtime nativo macOS ARM64 | Aprobado en runner CI | Validar en el Mac físico del usuario |
+| Login, navegación y POS básico | Aprobado con fixture sintético | No equivale a una jornada de operación real |
+| Venta, factura, pago exacto y stock | Aprobado | Vuelto, pagos mixtos, descuentos complejos y cancelaciones |
+| Cierre básico del turno | Aprobado | Arqueo contado, diferencias, ingresos y retiros |
+| Persistencia tras reinicio | Aprobado | Backups externos, restauración completa y rollback |
+| Exportación nativa de reposición | Aprobada contra fixtures de MyCompany | Conciliar con una base real y mantener el modo sólo lectura |
+| Planificador de reposición | Suite aprobada | Datos históricos reales, política por proveedor y evaluación fuera de muestra |
+| Terminales de pago | Modelo y trazabilidad iniciales | SDK/proveedor, sandbox, hardware y homologación |
+| ARCA y fiscalidad argentina | Diseño e investigación | Integración y homologación; evitar doble facturación de canales externos |
+| Offline en macOS | Pendiente | Repetir el recorrido con egress bloqueado |
+| Windows nativo | Parcial | La validación reciente sólo comprobó sintaxis; falta instalación y smoke funcional |
+| Instalador offline y periféricos | Pendiente | PC limpia, lector, impresora, cajón, balanza y terminal |
+| Backup/restore completo del negocio | Pendiente | El primer incremento cubre sólo PostgreSQL; faltan adjuntos, documentos y asistente guiado |
 
-## Arquitectura objetivo para una PC local
+## Arquitectura y propiedad
 
-El runtime productivo será local: servidor propio, aplicación MyCompany adaptada, cliente web servido desde el mismo equipo y PostgreSQL persistente. El primer runtime construido desde fuentes Rubrova ya se ejecutó con éxito en CI. Aún falta empaquetar todas las dependencias y demostrar una instalación limpia sin Internet.
+- `vendor/platform/`: fuentes fijadas de lsFusion 6.2.
+- `vendor/mycompany/`: fuentes fijadas de MyCompany 6.2.
+- `extensions/lsfusion/`: módulos y localización propios.
+- `patches/lsfusion/`: cambios directos al motor sólo cuando una extensión no alcanza.
+- `build/rubrova/pom.xml`: reactor que compila los componentes desde el repositorio.
+- Runtime local prioritario: Java 21 + PostgreSQL 18 + Tomcat 9, sin Docker como dependencia de ejecución.
 
-El núcleo POS/ERP debe continuar operando sin conexión externa. ARCA, adquirentes/QR, marketplaces, mensajería y transportistas son integraciones remotas: cuando no estén disponibles, deben quedar pendientes o informar indisponibilidad sin bloquear catálogo, caja local, ventas permitidas, compras, stock ni informes.
+La extensión de reposición es de sólo lectura. No ejecuta `fillAuto`, no crea órdenes de compra y no altera inventario. Las integraciones externas deben fallar de forma aislada y nunca convertirse en requisito para operar la caja local.
 
-## Protección de producción
+## Próximas prioridades
 
-No se actualizará automáticamente ningún componente. Cada versión candidata debe superar comparación con su origen, reaplicación de cambios Rubrova, compilación, regresión funcional, migración probada sobre una copia de base, backup/restore y prueba offline. Se mantendrá el último paquete estable y una ruta de recuperación. Nunca probaremos una migración sobre la única base productiva.
+1. **Validar el primer backup lógico PostgreSQL** con el mismo clúster nativo: crear paquete, verificar checksum/legibilidad y restaurar a una base nueva sin tocar `rubrova_dev`.
+2. **Probar el runtime en el Mac físico** con los artefactos y herramientas instaladas localmente; revisar arranque, cierre, logs y persistencia.
+3. **Completar caja y POS:** arqueo contado, diferencias, ingresos/retiros, vuelto, pagos mixtos, cancelaciones y devolución parcial/total vinculada a la venta original.
+4. **Probar continuidad offline en macOS** con salida externa bloqueada, incluyendo estados pendientes de proveedores y recuperación posterior.
+5. **Cerrar Windows x64** con instalación, rutas, permisos, arranque, parada y persistencia nativos.
+6. **Desarrollar backup completo y restauración guiada:** adjuntos, documentos, manifiesto, verificaciones de relaciones/ledgers y recuperación en otra PC.
+7. Después de consolidar el núcleo, avanzar en compras/recepciones, costos, cuentas corrientes, fiscalidad, reportes e inteligencia comercial.
 
-## Próximo orden de implementación
+## Límites de aceptación
 
-1. **Completar la aceptación de la demostración aislada:** el launcher crea una base, configuración y puertos separados; verificar con Chromium el turno y el artículo de muestra en el segundo arranque nativo.
-2. **Verificar el runtime nativo en el Mac de usuario:** repetir el recorrido que ya pasó en CI con PostgreSQL 18 y Java 21 ARM64, revisar persistencia, logs y estabilidad.
-3. **Completar la cobertura del POS:** arqueo contado, diferencias, ingresos/retiros, vuelto, pagos mixtos, tarjeta, devoluciones y cancelaciones.
-4. **Cerrar la verificación offline en macOS:** repetir el smoke del POS con egress bloqueado en un runner Apple Silicon y después en el Mac de usuario. Linux nativo ya completó este recorrido sin Docker en `45637101959`.
-5. **Persistencia y recuperación:** reiniciar servidor y cliente sin borrar PostgreSQL; probar backup/restore y rollback sobre copias.
-6. **Instalación offline y Windows:** paquete completo en PC limpia sin Internet; validar instalación, procesos, permisos y rutas en Windows x64.
-7. **ERP y localización:** continuar compras, inventario, proveedores, reportes y experiencia visual sobre módulos originales, adaptando con extensiones propias.
-8. **Fiscalidad e integraciones externas:** ARCA, medios electrónicos, marketplaces y logística sólo después de tener idempotencia, Outbox, circuit breaker, auditoría y conciliación probadas.
-
-La evidencia `45503956218` demuestra el recorrido comercial básico en Docker histórico; `45637101959` demuestra ese recorrido en Docker/Linux, macOS ARM64 y Linux nativo. Linux nativo también lo completó con la salida externa bloqueada. Ninguna ejecución declara terminado el producto ni autoriza producción.
-
-## Política transversal de errores
-
-Se mantiene la política de [Resiliencia de integraciones y tratamiento de errores](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md). El motor lsFusion ofrece `timeoutHttp()`, `HEADERSTO` y `TRY/CATCH`, pero esos mecanismos no sustituyen una política completa. El helper GET y el registro de incidencias se probaron contra un proveedor simulado; faltan Outbox, circuit breaker y ampliar los escenarios de escritura más allá de GET. Los conectores de producción permanecen deshabilitados hasta superar esas puertas.
-
-Los logs SQL de arranque se interpretan en el diagnóstico técnico actualizado: las dos consultas iniciales de `dumb` pertenecen a la detección de base vacía; el conflicto serializable de `Time.currentDate` se recuperó y el valor quedó persistido. Los timeouts de consultas siguen observándose y deben medirse para mejorar el arranque, sin aumentar límites indiscriminadamente.
-
-La prueba de venta usa `RubrovaCISalesFixture` sólo en CI: prepara ARS, caja, depósito y stock sintético. La venta aceptada no se valida con el precio de la búsqueda, sino con el importe de la factura, pago asociado, caja y ledger de inventario realmente persistidos.
+No se debe habilitar uso productivo hasta demostrar una jornada repetible con datos controlados y luego una prueba piloto supervisada: venta, pagos, caja, stock, devolución, documentos fiscales, auditoría, modo offline, copia externa y restauración. Ningún smoke sintético sustituye esa aceptación.

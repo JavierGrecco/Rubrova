@@ -1,22 +1,22 @@
 # Plan de trabajo
 
-**Revisión:** 25 de noviembre de 2026  
+**Revisión:** 26 de noviembre de 2026  
 **Dirección prioritaria:** POS y operación comercial → ERP de gestión → contabilidad/fiscalidad → análisis y reportes → perfiles sectoriales y canales → logística avanzada.
 **Gobierno del repositorio:** seguir [Política de ramas e integración](BRANCHING_STRATEGY.md); `main` es la única fuente de verdad y se mantienen como máximo dos ramas activas.
 
 ## Estado real
 
-Rubrova sigue en **Fase 0: piloto integrado POS + ERP**. La última aceptación funcional completa del POS base es [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959), sobre una revisión anterior y con datos sintéticos: login, apertura de turno, venta en efectivo, factura/pago, conciliación de stock y cierre básico. No equivale a una instalación productiva ni a una jornada real.
+Rubrova está en **Fase 0: piloto integrado POS + ERP**, con el runtime nativo y el puente de reposición ya aceptados en la última revisión de `main`. El commit canónico es [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139). El run [45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524) aprobó preflight, compilación completa y smoke macOS ARM64 sin Docker; el planificador aprobó en [45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643).
 
-Los árboles fuente completos de lsFusion 6.2 y MyCompany 6.2 están fijados en `vendor/platform/` y `vendor/mycompany/`. Rubrova compila servidor, cliente GWT y lógica MyCompany desde sus propias fuentes. El camino local prioritario utiliza Java 21, PostgreSQL 18 y Tomcat 9 de forma nativa; Docker no es requisito para esa modalidad.
+El smoke autenticado de macOS verificó login, sondas HTTP 200 y exportación nativa de inventario, compromisos, reservas y recepciones. También completó una venta sintética de ARS 1.250, un pago exacto en efectivo, salida de stock 10 → 9, cierre de turno y persistencia después de reiniciar PostgreSQL/servidor/cliente. La segunda instancia Demo utilizó su propia base y puertos.
 
-El planificador de reposición y el adaptador de snapshots ya están integrados en `main` mediante los PR #5, #6 y #7. La nueva exportación nativa de solo lectura está en el PR #8 y aún **no está integrada**. En la revisión `8777842`, la suite del planificador pasó en [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825). En la ejecución de plataforma [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906), las validaciones estáticas, Windows, la compilación completa de lsFusion/GWT/MyCompany, la recompilación final de servidor/cliente y la publicación de artefactos aprobaron. Los smokes nativos macOS ARM64 y Linux y el diagnóstico POS Docker/Linux están ejecutándose ahora sobre esos mismos artefactos. La última ejecución completada con runtime [45721155696](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) inició PostgreSQL, servidor y cliente web nativos en macOS ARM64 y Linux; el login funcionó, pero la acción autenticada de exportación devolvió HTTP 500 con `Set operation is incorrect`. El diagnóstico Docker/Linux es no bloqueante y no se debe presentar como aprobado cuando el smoke de POS no completa.
+La ejecución reciente **no probó el modo offline en macOS** (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`) y omitió los diagnósticos Linux nativo y Docker/Linux. La validación Windows de ese workflow fue sintáctica, no una instalación completa. No hay aceptación en un Mac físico, periféricos reales ni datos comerciales.
 
-La corrección actual elimina conversiones `BPSTRING[10]` de los índices usados para construir las identidades de línea, porque pueden ocultar la fuente finita de los parámetros dentro de una operación de conjuntos. También se añadió una guarda estática. Debe pasar el runtime en macOS ARM64 y Linux antes de aceptar el PR #8; luego hay que capturar una exportación real y conciliarla contra los ledgers de MyCompany. Las fixtures actuales son sintéticas y las compras seguirán sin ejecutarse automáticamente.
+Los árboles fuente completos de lsFusion 6.2 y MyCompany 6.2 siguen fijados en `vendor/platform/` y `vendor/mycompany/`; servidor, cliente GWT y lógica MyCompany se compilan desde Rubrova. El camino local prioritario continúa siendo Java 21, PostgreSQL 18 y Tomcat 9 sin Docker.
 
-La capa de pagos presenciales tiene arquitectura y una base inicial de configuración/trazabilidad, pero no es un conector ni un cobro real: faltan proveedor/equipo, sandbox y homologación. Las prioridades operativas del POS siguen siendo devoluciones/reintegros, movimientos y arqueo de caja, pagos pendientes, vuelto y medios mixtos.
+El planificador y el adaptador de snapshots ya forman parte de `main`; la exportación nativa de reposición también está integrada y respondió correctamente contra fixtures. Es estrictamente de sólo lectura y aún debe conciliarse contra una base MyCompany real. La primera herramienta de backup lógico de PostgreSQL se incorpora en esta iteración; cubre únicamente la base de datos y debe pasar el smoke real antes de considerarse verificada. La recuperación completa también debe incluir adjuntos, documentos y configuración portable.
 
-La dirección completa está en [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md). La selección reuse-first está en [Estrategia de reutilización](REUSE_FIRST_IMPLEMENTATION_STRATEGY.md) y la prueba comparativa en [Evaluación de plataformas](PLATFORM_EVALUATION.md). El diseño ejecutable por etapas de demanda, rentabilidad y marcas queda especificado en [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md).
+La capa de pagos presenciales conserva arquitectura y trazabilidad iniciales, pero no existe un conector homologado ni cobros reales. Las prioridades funcionales que siguen abiertas son devoluciones/reintegros, arqueo y movimientos de caja, vuelto, pagos mixtos y cancelaciones.
 
 ## Prioridad del producto
 
@@ -69,18 +69,21 @@ El lock de versión, la extensión modular, los scripts de preparación y el det
 
 ### Cierre actual de Fase 0 y próximo bloque
 
-- [x] MyCompany 6.2 y lsFusion 6.2 fijados; árboles completos de fuentes vendorizados y compilados desde Rubrova.
-- [x] Runtime propio Linux x86_64 (lógica, servidor y cliente) levantado en CI.
-- [x] Login, navegación hasta Punto de venta y apertura del turno sintético `SM/000001`.
-- [x] Venta sintética ARS 1.250, pago exacto en efectivo y factura persistida.
-- [x] Stock conciliado: entrada 10, salida 1, existencia 9.
-- [x] Cierre básico nativo del turno conciliado: estado `CLOSED`, neto y caja ARS 1.250.
+- [x] MyCompany 6.2 y lsFusion 6.2 fijados; fuentes completas vendorizadas y compiladas desde Rubrova.
+- [x] Runtime nativo macOS ARM64 con Java 21, PostgreSQL 18 y Tomcat 9; sin Docker.
+- [x] Login, navegación Comercio → Punto de venta y apertura de turno sintético.
+- [x] Venta por ARS 1.250, pago exacto en efectivo, factura persistida y stock conciliado (10 → 9).
+- [x] Cierre básico del turno y conciliación de efectivo.
+- [x] Exportación nativa de reposición de sólo lectura con sondas HTTP 200 y colecciones verificadas en fixtures.
+- [x] Persistencia después de reiniciar el runtime y segunda instancia Demo aislada.
+- [ ] Backup/restore PostgreSQL validado en el smoke real y después en el Mac físico.
 - [ ] Devolución/reintegro vinculados a la venta original y reposición de stock.
-- [ ] Ingresos/retiros y arqueo de caja con diferencias.
-- [ ] Vuelto, medios mixtos, tarjeta y cancelación.
-- [ ] Instalación offline, persistencia tras reinicio, exportación y backup/restore.
+- [ ] Ingresos/retiros, arqueo contado y diferencias de caja.
+- [ ] Vuelto, pagos mixtos, tarjeta, cancelación y pagos pendientes.
+- [ ] Continuidad offline macOS, Windows nativo, instalación limpia y periféricos reales.
+- [ ] Backup portable completo con adjuntos/documentos y restauración guiada en otro equipo.
 
-**Dirección inmediata:** cerrar devolución/reintegro y movimientos/arqueo de caja sobre MyCompany; no sumar otra suite ERP ni un segundo ledger. Después completar los medios de pago y recuperación antes de iniciar la homologación fiscal.
+**Dirección inmediata:** validar backup/restore PostgreSQL sin sobrescribir datos; luego completar devoluciones y caja. No sumar otra suite ERP ni crear un segundo ledger. Después cerrar offline, Windows y recuperación integral antes de habilitar un piloto comercial.
 
 ## Fase 1 — primera entrega: POS con gestión mínima real
 
