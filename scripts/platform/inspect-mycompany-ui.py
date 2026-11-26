@@ -739,7 +739,7 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
         response = context.request.get(endpoint + action, timeout=20_000)
         print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
         if response.status != 200:
-            detail = response.text()[:1800].replace("\\r", " ").replace("\\n", " ")
+            detail = response.text()[:1800].replace("\r", " ").replace("\n", " ")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ERROR={detail}")
             failures.append(f"{label}: HTTP {response.status} ({detail[:500]})")
             continue
