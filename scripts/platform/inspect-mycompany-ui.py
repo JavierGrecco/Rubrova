@@ -808,6 +808,7 @@ def prepare_ci_outgoing_reservation(context: Any, url: str) -> None:
         payload = payload[0] if len(payload) == 1 else {}
     if not isinstance(payload, dict):
         raise RuntimeError("La preparación de reserva CI no devolvió un objeto JSON.")
+    print("UI_REPLENISHMENT_CI_RESERVATION_DIAGNOSTICS=" + json.dumps(payload, ensure_ascii=False))
 
     def quantity(field: str) -> float:
         value = payload.get(field)
@@ -903,6 +904,9 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             raise RuntimeError(f"Contrato inválido para {field}: {error}") from error
         collections[field] = rows
         source_counts[field] = payload[f"{field}Count"]
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_ROWS=" + json.dumps(
+        collections["outgoingCommitments"], ensure_ascii=False
+    ))
 
     def numeric(row: dict[str, Any], field: str, row_label: str) -> float:
         value = row.get(field)

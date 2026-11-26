@@ -1247,6 +1247,23 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     assert.ok(uiSmokeSource.includes(probe), "El smoke debe ejecutar la sonda " + probe);
   }
   assert.ok(uiSmokeSource.includes("probe_replenishment_source_sections(context, url)"));
+  assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_CI_RESERVATION_DIAGNOSTICS="));
+  assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_ROWS="));
+  for (const fragment of [
+    "outgoingLinkedShipmentLineCount",
+    "outgoingLinkedReservedQuantity",
+    "outgoingLinkedPositiveReservedQuantity",
+    "outgoingLinkedReservableReservedQuantity",
+    "outgoingLinkedEffectiveReservedQuantity",
+    "outgoingNativeSalesReservedQuantity",
+    "outgoingNativeLedgerReservedQuantity",
+    "linkedToFixtureOrder"
+  ]) {
+    assert.ok(nativeReplenishmentFixtureSource.includes(fragment) === false,
+      "Los diagnósticos deben quedar aislados en el fixture temporal de CI.");
+    assert.ok(read("scripts/platform/fixtures/RubrovaCIReplenishmentFixture.lsf").includes(fragment),
+      "Falta evidencia temporal del vínculo de reserva: " + fragment);
+  }
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
 });
 

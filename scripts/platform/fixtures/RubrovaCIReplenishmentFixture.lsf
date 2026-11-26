@@ -70,6 +70,8 @@ loadDefaultData () + {
 rubrovaCIOutgoingOrder() = GROUP MAX Sales.Order o
     IF Sales.customerReference(o) = 'rubrova-ci-outgoing';
 rubrovaCIOutgoingShipment() = Sales.reserveShipment(rubrovaCIOutgoingOrder());
+rubrovaCIOutgoingOrderLine() = GROUP MAX Sales.OrderLine ol
+    IF Sales.order(ol) = rubrovaCIOutgoingOrder();
 
 rubrovaPrepareOutgoingReservation 'Preparar reserva sintética de salida' () {
     IF rubrovaCIOutgoingShipment() THEN
@@ -81,5 +83,50 @@ rubrovaPrepareOutgoingReservation 'Preparar reserva sintética de salida' () {
         outgoingReservedQuantity = (OVERRIDE
             (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
                 IF Inventory.shipment(sl) = rubrovaCIOutgoingShipment()),
-            0);
+            0),
+        outgoingShipmentLineCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.shipment(Inventory.ShipmentLine sl) = rubrovaCIOutgoingShipment()),
+            0),
+        outgoingSalesOrderLineCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.order(Sales.OrderLine ol) = rubrovaCIOutgoingOrder()),
+            0),
+        outgoingLinkedShipmentLineCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.orderLine(Inventory.ShipmentLine sl) = rubrovaCIOutgoingOrderLine()),
+            0),
+        outgoingLinkedReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()),
+            0),
+        outgoingLinkedPositiveReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+                    AND Inventory.lineReserved(sl) > 0),
+            0),
+        outgoingLinkedReservableReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+                    AND Inventory.toReserve(Inventory.shipment(sl))),
+            0),
+        outgoingLinkedEffectiveReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+                    AND Inventory.lineReserved(sl) > 0
+                    AND Inventory.toReserve(Inventory.shipment(sl))),
+            0),
+        outgoingNativeSalesReservedQuantity = (OVERRIDE Sales.reserved(rubrovaCIOutgoingOrderLine()), 0),
+        outgoingNativeLedgerReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.ledgerReserved(Inventory.ShipmentLine sl)
+                IF Inventory.shipment(sl) = rubrovaCIOutgoingShipment()),
+            0),
+        outgoingShipmentLines = (JSON FROM
+            shipmentLineIndex = Inventory.index(Inventory.ShipmentLine sl),
+            orderLineIndex = Sales.index(Sales.orderLine(sl)),
+            reserved = Inventory.reserved(sl),
+            ledgerReserved = Inventory.ledgerReserved(sl),
+            lineReserved = Inventory.lineReserved(sl),
+            waiting = Inventory.waiting(Inventory.shipment(sl)),
+            ready = Inventory.ready(Inventory.shipment(sl)),
+            linkedToFixtureOrder = Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+            WHERE Inventory.shipment(sl) = rubrovaCIOutgoingShipment()
+        );
 } @@api;
