@@ -1,5 +1,5 @@
 MODULE RubrovaRetailReturns;
-REQUIRE MyCompany;
+REQUIRE MyCompany, CreditNote;
 
 NAMESPACE Invoicing;
 

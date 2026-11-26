@@ -176,7 +176,7 @@ rubrovaTestPartialReturnsApi () {
 
     // Intento inválido: sólo quedan 0,6 unidades, por lo que 0,7 debe rechazarse.
     IF rubrovaCIReturnCount() = 1 AND rubrovaCITestInvoice() THEN {
-        rubrovaOverReturnRejected() <- FALSE;
+        rubrovaOverReturnRejected() <- NULL;
         NEWSESSION {
             NEW b = Invoicing.Bill {
                 Retail.session(b) <- Retail.session(rubrovaCITestInvoice());
