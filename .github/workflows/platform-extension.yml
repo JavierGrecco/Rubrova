@@ -96,9 +96,10 @@ jobs:
           ! grep -Fq 'onWebClientLoad() +' "$MARKDOWN_VIEWER_SOURCE"
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
         run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
-      - name: Recompilar servidor y cliente web con dependencias de runtime
+      - name: Empaquetar servidor y cliente reutilizando GWT
         shell: bash
         run: |
+          set -o pipefail
           # La fase assemble anterior ya compiló las 10 permutaciones GWT.
           # Esta segunda pasada cambia el alcance de dependencias para incluir api-6.2.jar
           # en server.jar y WEB-INF/lib del WAR, pero no debe recompilar los JS de GWT.
@@ -112,7 +113,16 @@ jobs:
           echo "Fragmento GWT reutilizado: $GWT_FRAGMENT"
           timeout --signal=TERM --kill-after=30s 8m \
             mvn -B -ntp -f vendor/platform/pom.xml -pl server,web-client -am \
-              -DskipTests -Dgwt.compiler.skip=true package
+              -DskipTests -Dgwt.skipCompilation=true package \
+              | tee "$RUNNER_TEMP/rubrova-gwt-repackage.log"
+          grep -Fq "GWT compilation is skipped" "$RUNNER_TEMP/rubrova-gwt-repackage.log" || {
+            echo "ERROR: el plugin GWT no confirmó que omitió la segunda compilación." >&2
+            exit 1
+          }
+          if grep -Fq "Compiling module lsfusion.gwt.main" "$RUNNER_TEMP/rubrova-gwt-repackage.log"; then
+            echo "ERROR: se volvió a ejecutar GWT durante el empaquetado secundario." >&2
+            exit 1
+          fi
       - name: Verificar y preparar los artefactos propios del runtime
         shell: bash
         run: |
