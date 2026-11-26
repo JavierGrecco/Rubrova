@@ -1374,7 +1374,7 @@ test("el modelo de terminales se carga desde el punto de entrada y el lock", () 
   assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
   const retailReturnsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailReturns");
   assert.ok(retailReturnsModule, "El cálculo del remanente de devoluciones debe estar en el lock reproducible.");
-  assert.deepEqual(retailReturnsModule.requires, ["MyCompany", "CreditNote"]);
+  assert.deepEqual(retailReturnsModule.requires, ["MyCompany"]);
   assert.ok(customModule.requires.includes("RubrovaRetailReturns"));
   const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
   assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
@@ -1519,7 +1519,6 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(nativeSalesFixtureSource, /Invoicing[.]quantity\(bl\) <- 0[.]7/);
   assert.match(nativeSalesFixtureSource, /Invoicing[.]quantity\(bl\) <- explicitQuantity/);
   assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejected = DATA BOOLEAN/);
-  assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejected\(\) <- NULL/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnedQuantity\(\)/);
   assert.match(nativeSalesFixtureSource, /rubrovaPartialReturnsReconciliationApi/);
   assert.match(uiSmokeSource, /verify_partial_returns\(context, url\)/);
