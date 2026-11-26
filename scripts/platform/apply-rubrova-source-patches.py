@@ -176,7 +176,7 @@ def apply_adjustment_list_zero_quantity() -> bool:
         print("No se encontró la firma exacta de setRealQuantity en AdjustmentListSearch.lsf.", file=sys.stderr)
         return False
 
-    end = source.find("\\n}\\n", start)
+    end = source.find("\n}\n", start)
     if end < 0:
         print("No se encontró el cierre exacto de setRealQuantity; se requiere revisión manual.", file=sys.stderr)
         return False
@@ -198,7 +198,7 @@ def apply_adjustment_list_zero_quantity() -> bool:
     patched = block.replace("IF q THEN", "IF q IS NOT NULL THEN")
     patched = patched.replace(
         ADJUSTMENT_LIST_SEARCH_SIGNATURE,
-        ADJUSTMENT_LIST_SEARCH_SIGNATURE + "\\n    " + ADJUSTMENT_ZERO_QUANTITY_MARKER,
+        ADJUSTMENT_LIST_SEARCH_SIGNATURE + "\n    " + ADJUSTMENT_ZERO_QUANTITY_MARKER,
         1,
     )
     if patched.count("IF q IS NOT NULL THEN") != 2 or ADJUSTMENT_ZERO_QUANTITY_MARKER not in patched:
