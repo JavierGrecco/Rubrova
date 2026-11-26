@@ -225,17 +225,6 @@ rubrovaPartialReturnsReconciliationApi () {
         onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
-        overReturnRejected = rubrovaOverReturnRejected(),
-        returnBillCount = rubrovaCIReturnCount(),
-        returnAmount = rubrovaCIReturnAmount(),
-        returnedQuantity = rubrovaCIReturnedQuantity(),
-        cashRefundPaymentCount = rubrovaCIReturnCashPaymentCount(),
-        cashRefundPaymentAmount = rubrovaCIReturnCashPaymentAmount(),
-        sessionCashNet = Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod()),
-        cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci')),
-        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
-} @@api;
-
 // Smoke contract: the retail invoice type must enforce MyCompany's native return quantity guard.
 rubrovaReturnSafetyApi () {
     EXPORT JSON FROM

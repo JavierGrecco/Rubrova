@@ -382,7 +382,7 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     fixture_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
         "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, "
-        "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture, "
+        "RubrovaRetailReturns, RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture, "
         "RubrovaCIReplenishmentFixture;"
     )
     if source.count(original_require) == 1:
@@ -420,7 +420,7 @@ def ensure_local_demo_fixture(logics_dir: Path) -> None:
     demo_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
         "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, "
-        "RubrovaLocalDemoRetail, RubrovaLocalDemoInventory;"
+        "RubrovaRetailReturns, RubrovaLocalDemoRetail, RubrovaLocalDemoInventory;"
     )
     if source.count(original_require) == 1:
         entrypoint.write_text(source.replace(original_require, demo_require, 1), encoding="utf-8")
