@@ -8,7 +8,7 @@ NAMESPACE Rubrova;
 // Las cantidades conservan la precisión NUMERIC[16,3] de MyCompany (unidad del SKU).
 
 rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
-    EXPORT JSON FROM
+    RETURN JSON FROM
         schemaVersion = 1,
         snapshotType = 'mycompany-replenishment-source-export',
         sourceSystem = 'MyCompany',
@@ -114,7 +114,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
 
 // Endpoints temporales de diagnóstico: aíslan cada consulta sin modificar datos.
 rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
-    EXPORT JSON FROM inventory = (JSON FROM
+    RETURN JSON FROM inventory = (JSON FROM
         productId = MasterData.id(MasterData.Product p),
         locationId = Inventory.id(Inventory.Location l),
         physicalIncoming = (OVERRIDE Inventory.inQuantity(l, p), 0),
@@ -131,7 +131,7 @@ rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
 } @@api;
 
 rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para reposición' () {
-    EXPORT JSON FROM outgoingCommitments = (JSON FROM
+    RETURN JSON FROM outgoingCommitments = (JSON FROM
         sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol)),
         sourceDocumentId = Sales.number(Sales.order(ol)),
         productId = MasterData.id(Sales.shippedProduct(ol)),
@@ -151,7 +151,7 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
 } @@api;
 
 rubrovaProbeReceipts 'Diagnóstico de recepciones para reposición' () {
-    EXPORT JSON FROM receipts = (JSON FROM
+    RETURN JSON FROM receipts = (JSON FROM
         lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
         receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
         purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
