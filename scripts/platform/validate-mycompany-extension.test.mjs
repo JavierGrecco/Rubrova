@@ -1062,7 +1062,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     assert.match(
       action[1],
       /^\s*EXPORT JSON FROM/m,
-      \`El endpoint MyCompany \${index + 1} debe usar la exportación JSON compatible con lsFusion 6.2.\`
+      "El endpoint MyCompany " + (index + 1) + " debe usar EXPORT JSON FROM compatible con lsFusion 6.2."
     );
     assert.doesNotMatch(
       action[1],
