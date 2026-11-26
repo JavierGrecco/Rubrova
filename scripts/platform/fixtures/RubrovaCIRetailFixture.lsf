@@ -40,6 +40,15 @@ loadDefaultData () + {
                         account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
                         account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
                     }
+                    NEW refundCashRegisterCI = Pos {
+                        id(refundCashRegisterCI) <- 'rubrova-ci-refund';
+                        name(refundCashRegisterCI) <- 'Caja de prueba de reintegros mixtos';
+                        company(refundCashRegisterCI) <- defaultCompany();
+                        invoiceType(refundCashRegisterCI) <- invoiceType('retail');
+                        account(refundCashRegisterCI) <- centralAccountCI;
+                        account(refundCashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
+                        account(refundCashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
+                    }
                 }
             }
         }
