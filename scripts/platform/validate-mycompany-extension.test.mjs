@@ -1505,6 +1505,53 @@ test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras
   assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_STOCKTAKE=true/);
 });
 
+test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones concurrentes", () => {
+  assert.match(retailReturnsSource, /rubrovaRefundedByMethod/);
+  assert.match(retailReturnsSource, /rubrovaRefundedBefore/);
+  assert.match(retailReturnsSource, /rubrovaRefundRemaining/);
+  assert.match(retailReturnsSource, /Invoicing[.]in\(originalInvoice, previousBill\)/);
+  assert.match(retailReturnsSource, /paymentMethod\(previousBill, p\) = pm/);
+  assert.match(retailReturnsSource, /Invoicing[.]active\(p\)/);
+  assert.match(retailReturnsSource, /CONSTRAINT SET\(rubrovaRefundedByMethod/);
+  assert.match(retailReturnsSource, /El total reintegrado por medio de pago supera el importe cobrado originalmente/);
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_BEFORE"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_AFTER"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_FORM_AFTER"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_BEFORE"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_AFTER"));
+  assert.match(sourcePatch, /APPLY SERIALIZABLE/);
+  assert.match(sourcePatch, /def apply_cumulative_refund_guard\(/);
+  assert.ok(sourcePatch.includes("if not apply_cumulative_refund_guard():"));
+  assert.match(nativeRetailFixtureSource, /rubrova-ci-refund/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundsApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundRaceAApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundRaceBApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundBillCancelApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundReleaseApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCumulativeRefundsReconciliationApi/);
+  assert.match(nativeSalesFixtureSource, /Retail[.]paid\(rubrovaCIMixedInvoice\(\), Retail[.]cashPaymentMethod\(\)\)/);
+  assert.match(nativeSalesFixtureSource, /Retail[.]paid\(rubrovaCIMixedInvoice\(\), Retail[.]paymentMethod\('card'\)\)/);
+  assert.match(nativeSalesFixtureSource, /Invoicing[.]cancel\(rubrovaCIMixedFirstRefundBill\(\)\)/);
+  assert.match(nativeSalesFixtureSource, /Invoicing[.]cancel\(p\)/);
+  assert.match(nativeSalesFixtureSource, /APPLY SERIALIZABLE/);
+  assert.match(uiSmokeSource, /def verify_cumulative_refunds\(context, url\)/);
+  assert.match(uiSmokeSource, /ThreadPoolExecutor\(max_workers=2/);
+  assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true/);
+  assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true/);
+  assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_BILL_CANCEL_DOES_NOT_RELEASE_CAP=true/);
+  assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_PAYMENT_CANCEL_RELEASES_CAP=true/);
+  assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_RECONCILED=true/);
+  assert.match(uiSmokeSource, /UI_RESTART_PERSISTENCE_CUMULATIVE_REFUNDS=true/);
+  for (const marker of [
+    "UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true",
+    "UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true",
+    "UI_CUMULATIVE_REFUNDS_BILL_CANCEL_DOES_NOT_RELEASE_CAP=true",
+    "UI_CUMULATIVE_REFUNDS_PAYMENT_CANCEL_RELEASES_CAP=true",
+    "UI_CUMULATIVE_REFUNDS_RECONCILED=true",
+    "UI_RESTART_PERSISTENCE_CUMULATIVE_REFUNDS=true",
+  ]) assert.ok(nativeSmokeSource.includes(marker), "Falta exigir el marcador " + marker);
+});
+
 test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el turno", () => {
   const markdownViewerIsUpstream =
     markdownViewerSource.includes("onWebClientLoad() +") &&
