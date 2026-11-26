@@ -1316,10 +1316,12 @@ test("el preflight rápido se comparte entre el equipo y los workflows CI", () =
   assert.ok(runtimeWorkflowSource.includes("bash scripts/platform/local-preflight.sh --platform"));
   assert.ok(plannerWorkflowSource.includes("bash scripts/platform/local-preflight.sh --replenishment"));
   assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
-  assert.match(runtimeWorkflowSource, /^  native-runtime-smoke-macos-arm64:\n    name: Smoke de servidor nativo sin Docker \(macOS ARM64\)\n    runs-on: macos-26/m);
-  assert.doesNotMatch(
-    runtimeWorkflowSource,
-    /native-runtime-smoke-macos-arm64:[\\s\\S]{0,180}?if: github[.]event_name == 'workflow_dispatch'/,
-    'El smoke nativo macOS ARM64 debe correr automáticamente en cada PR.'
-  );
+  const workflowLines = runtimeWorkflowSource.split(String.fromCharCode(10));
+  const macosJobLine = workflowLines.indexOf("  native-runtime-smoke-macos-arm64:");
+  assert.ok(macosJobLine >= 0, "Debe existir un job nativo específico para macOS ARM64.");
+  const nextJobLine = workflowLines.findIndex((line, index) => index > macosJobLine && /^  [a-z][a-z0-9-]*:$/.test(line));
+  const macosJobSource = workflowLines.slice(macosJobLine, nextJobLine < 0 ? undefined : nextJobLine).join(String.fromCharCode(10));
+  assert.match(macosJobSource, /runs-on: macos-26/);
+  assert.doesNotMatch(macosJobSource, /if: github[.]event_name == 'workflow_dispatch'/,
+    "El smoke nativo macOS ARM64 debe correr automáticamente en cada PR.");
 });
