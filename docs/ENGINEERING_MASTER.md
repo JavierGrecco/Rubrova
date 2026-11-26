@@ -476,6 +476,16 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 ---
 
 
+### 2026-11-26 — REP-022 — Aceptación runtime de captura por barcode (en validación)
+
+- Se añade a la fixture descartable de CI un Adjustment en progreso con una AdjustmentList nativa, enlazada al mismo producto/ubicación sintéticos de POS.
+- La prueba invoca el helper upstream `Inventory.setRealQuantity`, que es el utilizado por `@defineBarCodeSearch`: primero ingresa `0`, verifica que exista una fila y que `listRealQuantity` se agregue a `AdjustmentLine`; luego ingresa `NULL` y verifica que la fila se elimine; finalmente reingresa `2` y concilia ambas cantidades.
+- El Adjustment queda sin validar. No crea InvAdjustment ni modifica InvLedger/onHand, por lo que no contamina la venta POS ni su conciliación.
+- La misma cantidad positiva se consulta después del reinicio del runtime para verificar persistencia de la hoja y del Adjustment padre.
+- **Límite explícito:** esto no acepta todavía `Adjustment.fill` para la distinción entre `onHand=0` y `onHand=NULL`, ni prueba conteo ciego, reconteo, tolerancias, permisos o doble validación. Tampoco equivale a una prueba física con lector barcode real; la ruta de backend se ejercita invocando el helper que usa la pantalla.
+- **Evidencia inicial (run #454, SHA `38805f47cc3697034e73c1b7837e5dab8d26ddea`):** preflight, Windows y compilación pasaron; el smoke nativo arrancó, pero falló porque `AdjustmentListLine` tenía una fila con `0` y no existía la `AdjustmentLine` agregada (`listLineCount=1`, `adjustmentLineCount=0`). El cero quedó almacenado en la hoja, pero no se propagó al documento padre. La corrección se valida en el registro REP-024; aún no se acepta el circuito.
+
+
 ### 2026-11-26 — REP-023 — Cálculo de importe en devolución parcial y eventos locales
 
 - **Hecho observado:** en el run 45876903441, el endpoint de CI para devoluciones devolvió HTTP 200 con un cuerpo de 5 bytes; el inspector falló al parsearlo como JSON. En `adjust.log` quedó el mensaje `Property Importe(Invoicing.amount[Invoicing.OutgoingPayment] ...) is not set` para el egreso `OVN/000001`. El contenido exacto de los cinco bytes no se capturó en esa ejecución.
@@ -485,7 +495,35 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Cambio preparado desde main:** se portó el módulo `RubrovaRetailReturns` y su cableado de despliegue/lock/CI sobre la base vigente. El fixture ahora llama `executeLocalEvents()` después de crear la nota y otra vez después de cambiar la cantidad. El inspector registra Content-Type y cuerpo textual cuando el endpoint no devuelve JSON válido.
 - **Criterio de aceptación:** compilación del fork, prevalidación y scripts Windows, smoke nativo macOS ARM64, dos devoluciones (0,4 y remanente 0,6), rechazo de 0,7, dos reintegros por efectivo, reingreso físico de una unidad, caja neta cero y persistencia tras reinicio. Comprobar también que ninguna devolución por medio supera lo abonado originalmente con ese medio.
 - **Límite:** el fixture actual es de efectivo sintético. El circuito mixto tarjeta/efectivo y la experiencia del operador se deberán probar con el mismo contrato de distribución por medio antes de aceptar operación real.
-- **Estado:** cambio en rama basada en main; compilación y smoke funcional pendientes. El PR #13 original no se fusiona por su divergencia con main.
+- **Resultado:** run 45901168467, SHA e7c1fc1be1463dc726065f2ac16508943b156f53, completó correctamente prevalidación, Windows, compilación completa y smoke nativo macOS ARM64. Verificó dos devoluciones (0,4 + 0,6), rechazo de 0,7, dos reintegros en efectivo por ARS 1.250, stock 9→10, caja neta cero y persistencia tras reinicio. Linux y Docker/Linux se omitieron.
+- **Integración:** PR #15 fue integrado por squash en main, commit 04249dc983c3af066a386f1e1b022da2d9587ec0.
+- **Límites:** aceptado para fixture sintética de efectivo. Pagos mixtos, reintegros tarjeta/QR y terminales/adquirentes reales siguen pendientes. La ejecución posterior del SHA integrado de main se registra por separado.
+
+### 2026-11-26 — REP-024 — Diagnóstico del cero en el agregado de hojas de conteo
+
+- **Revisión observada:** PR #14, SHA `38805f47cc3697034e73c1b7837e5dab8d26ddea`, ejecución #454, job macOS ARM64 nativo.
+- **Hecho del runtime:** al ingresar la primera cantidad `0`, la API devolvió HTTP 200 y `listLineCount=1`, pero `adjustmentLineCount=0`. El servidor nativo y la compilación del fork pasaron; el fallo se produjo en el flujo de aceptación funcional.
+- **Causa identificada en la semántica del lenguaje:** `AdjustmentList.listRealQuantity` era un `GROUP SUM` directo. En lsFusion, una suma cuyo resultado es cero devuelve `NULL`. Por eso el agregado no distinguía una fila contada en cero de un grupo sin filas, y el `WHEN SETCHANGED(listRealQuantity(...))` nativo no podía materializar el padre al pasar de grupo vacío a suma cero. La documentación de lsFusion también confirma que los agregados `GROUP MAX` pueden conservar un cero no nulo y que `OVERRIDE` permite usar un valor de respaldo.
+- **Decisión:** preservar el `GROUP SUM` nativo y agregar una segunda agregación que produce `0.000` sólo cuando existe al menos una línea con cantidad no nula. `OVERRIDE` usa la suma original cuando no es cero y ese respaldo cuando la suma devuelve `NULL`; si no queda ninguna línea, ambas agregaciones son `NULL`. Así el evento upstream conserva su función original, el cero llega al padre y `NULL` sigue significando grupo vacío.
+- **Implementación reproducible:** `scripts/platform/apply-rubrova-source-patches.py` aplica el cambio al módulo propietario `AdjustmentList.lsf`, con ancla exacta, marcadores, detección de drift e idempotencia. No se crean clases ni ledgers paralelos.
+- **Fallos intermedios:** run #455 falló sólo por una aserción estática sensible a mayúsculas (`el` frente a `El`); run #456 compiló los artefactos Java del fork, pero el runtime abortó al parsear `IS NULL` en la fixture, sintaxis que no existe en lsFusion. Para comprobar ausencia se usa `NOT propiedad(...)`, conforme a la semántica del lenguaje.
+- **Cobertura:** la prueba exige fila padre/cantidad cero, borrado de la hoja con línea padre retenida y cantidad NULL, cantidad positiva 2, stock físico sin cambios mientras el Adjustment sigue pendiente y persistencia después del reinicio.
+- **Estado:** corrección del agregado y sintaxis de fixture en nueva revisión de PR #14; pendiente de compilación de lógica y smoke ARM64. Ningún resultado funcional se considera aprobado todavía.
+
+### 2026-11-26 — REP-025 — Fallo del runtime #456 y corrección de sintaxis de ausencia
+
+- **Ejecución:** #456, SHA `0b314ed5a24036f2022c150d5594b1d0e65a0784`; prevalidación Node/Python, Windows y build Java/Maven pasaron.
+- **Fallo exacto:** el servidor abortó durante el parseo de módulos con `RubrovaCISalesFixture:190:98 no viable alternative at input 'NULL'`. La causa fue usar `IS NULL`, operador de SQL que no forma parte del lenguaje lsFusion. El smoke funcional no comenzó.
+- **Corrección:** la sonda ahora usa `NOT Inventory.realQuantity(...)`, que devuelve TRUE cuando la propiedad no tiene valor y distingue cero (no nulo) de ausencia. El test estático prohíbe reintroducir `IS NULL` en la fixture.
+- **Estado:** nueva revisión pendiente de ejecución. El fallo de #456 no invalida el build Java completado, pero tampoco aporta evidencia del flujo de conteo.
+
+### 2026-11-26 — REP-026 — Corrección de lectura del conteo cero en la sonda
+
+- **Ejecución:** run 45905585216, job macOS ARM64 140202817953, SHA 689e0101c881ee640514e8ec9db5b7c4f7589687.
+- **Resultado observado:** prevalidación, validación Windows y compilación pasaron. El servidor nativo inició y la API respondió HTTP 200. La sonda informó listLineCount=1, adjustmentLineCount=1, adjustmentQuantityIsZero=true y onHand=10, pero no exportó zeroQuantityPreserved; el inspector falló al exigirlo.
+- **Interpretación:** la prueba consultaba una propiedad agregada de la lista, no la cantidad almacenada en la fila individual AdjustmentListLine. Esa lectura no es una prueba fiable del cero de la línea. El log confirma que el cero llegó a la línea principal del Adjustment y que el conteo pendiente no alteró onHand.
+- **Corrección preparada:** resolver la AdjustmentListLine sintética por lista/producto/ubicación y leer directamente Inventory.realQuantity(AdjustmentListLine). La API positiva y la comprobación tras reinicio usan el mismo acceso por fila. Se añade una regresión estática para impedir volver a consultar el agregado equivocado.
+- **Estado:** corrección preparada para revalidación sobre el main vigente. No se acepta todavía el circuito barcode.
 
 ## 11. Anexos históricos preservados
 

@@ -16,6 +16,42 @@ rubrovaCITestProduct() = GROUP MAX MasterData.Product p
     IF MasterData.id(p) = 'rubrova-ci-product';
 rubrovaCITestStockSeeded = DATA BOOLEAN ();
 
+// Conteo descartable para probar el contrato real de captura por barcode.
+// Se mantiene en progreso y nunca se valida: no genera movimientos de inventario.
+rubrovaCIStocktakeSeeded = DATA BOOLEAN ();
+rubrovaCIStocktakeAdjustment = DATA Inventory.Adjustment ();
+rubrovaCIStocktakeList = DATA Inventory.AdjustmentList ();
+
+rubrovaCIStocktakeListLineCount() = (OVERRIDE
+    (GROUP SUM 1 IF Inventory.AdjustmentListLine l
+        AND Inventory.adjustmentList(l) = rubrovaCIStocktakeList()
+        AND Inventory.product(l) = rubrovaCITestProduct()
+        AND Inventory.location(l) = rubrovaCITestLocation()),
+    0);
+
+rubrovaCIStocktakeAdjustmentLineCount() = (OVERRIDE
+    (GROUP SUM 1 IF Inventory.AdjustmentLine l
+        AND Inventory.adjustment(l) = rubrovaCIStocktakeAdjustment()
+        AND Inventory.product(l) = rubrovaCITestProduct()
+        AND Inventory.location(l) = rubrovaCITestLocation()),
+    0);
+
+rubrovaCIStocktakeAdjustmentLine() = GROUP MAX Inventory.AdjustmentLine l
+    IF Inventory.adjustment(l) = rubrovaCIStocktakeAdjustment()
+        AND Inventory.product(l) = rubrovaCITestProduct()
+        AND Inventory.location(l) = rubrovaCITestLocation();
+
+rubrovaCIStocktakeListLine() = GROUP MAX Inventory.AdjustmentListLine l
+    IF Inventory.adjustmentList(l) = rubrovaCIStocktakeList()
+        AND Inventory.product(l) = rubrovaCITestProduct()
+        AND Inventory.location(l) = rubrovaCITestLocation();
+
+rubrovaCIStocktakeListLineQuantity() =
+    Inventory.realQuantity(rubrovaCIStocktakeListLine());
+
+rubrovaCIStocktakeAdjustmentLineQuantity() =
+    Inventory.realQuantity(rubrovaCIStocktakeAdjustmentLine());
+
 loadDefaultData () + {
     IF NOT rubrovaCITestLocation() THEN
         NEW locationCI = Inventory.Location {
@@ -46,6 +82,22 @@ loadDefaultData () + {
 
     // MyCompany ya incorpora SessionShipment: sólo enlazamos la caja al depósito CI.
     Retail.location(Retail.pos('rubrova-ci')) <- rubrovaCITestLocation();
+
+    IF NOT rubrovaCIStocktakeSeeded() THEN {
+        NEW stocktakeCI = Inventory.Adjustment {
+            Inventory.type(stocktakeCI) <- Inventory.AdjustmentType.all;
+            Inventory.location(stocktakeCI) <- rubrovaCITestLocation();
+            Inventory.note(stocktakeCI) <- 'rubrova-ci-stocktake-barcode';
+            Inventory.useList(stocktakeCI) <- TRUE;
+            Inventory.inProgress(stocktakeCI) <- TRUE;
+            rubrovaCIStocktakeAdjustment() <- stocktakeCI;
+        }
+        NEW stocktakeListCI = Inventory.AdjustmentList {
+            Inventory.adjustment(stocktakeListCI) <- rubrovaCIStocktakeAdjustment();
+            rubrovaCIStocktakeList() <- stocktakeListCI;
+        }
+        rubrovaCIStocktakeSeeded() <- TRUE;
+    }
 }
 
 rubrovaTestInventoryApi () {
@@ -249,4 +301,52 @@ rubrovaPartialReturnsReconciliationApi () {
 rubrovaReturnSafetyApi () {
     EXPORT JSON FROM
         retailReturnQuantityGuardEnabled = Invoicing.checkReturnedQuantity(Invoicing.invoiceType('retail'));
+} @@api;
+
+
+// La captura por barcode usa setRealQuantity: 0 es una cantidad presente;
+// NULL elimina la línea. Se comprueba también la agregación a AdjustmentLine.
+rubrovaTestStocktakeBarcodeZeroApi () {
+    Inventory.setRealQuantity(rubrovaCIStocktakeList(), rubrovaCITestProduct(), rubrovaCITestLocation(), 0);
+    APPLY;
+    IF canceled() THEN RETURN;
+    EXPORT JSON FROM
+        listLineCount = rubrovaCIStocktakeListLineCount(),
+        adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
+        zeroQuantityPreserved = rubrovaCIStocktakeListLineQuantity() = 0,
+        adjustmentQuantityIsZero = rubrovaCIStocktakeAdjustmentLineQuantity() = 0,
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+rubrovaTestStocktakeBarcodeNullApi () {
+    Inventory.setRealQuantity(rubrovaCIStocktakeList(), rubrovaCITestProduct(), rubrovaCITestLocation(), NULL);
+    APPLY;
+    IF canceled() THEN RETURN;
+    EXPORT JSON FROM
+        listLineCount = rubrovaCIStocktakeListLineCount(),
+        adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
+        adjustmentQuantityIsNull = NOT Inventory.realQuantity(rubrovaCIStocktakeAdjustmentLine()),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+rubrovaTestStocktakeBarcodePositiveApi () {
+    Inventory.setRealQuantity(rubrovaCIStocktakeList(), rubrovaCITestProduct(), rubrovaCITestLocation(), 2);
+    APPLY;
+    IF canceled() THEN RETURN;
+    EXPORT JSON FROM
+        listLineCount = rubrovaCIStocktakeListLineCount(),
+        adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
+        listQuantity = rubrovaCIStocktakeListLineQuantity(),
+        adjustmentLineQuantity = rubrovaCIStocktakeAdjustmentLineQuantity(),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+// Sonda de sólo lectura usada después del reinicio del servidor.
+rubrovaTestStocktakeBarcodeStateApi () {
+    EXPORT JSON FROM
+        listLineCount = rubrovaCIStocktakeListLineCount(),
+        adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
+        listQuantity = rubrovaCIStocktakeListLineQuantity(),
+        adjustmentLineQuantity = rubrovaCIStocktakeAdjustmentLineQuantity(),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
