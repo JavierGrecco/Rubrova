@@ -779,6 +779,30 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_COLLECTION_TYPE=list")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROWS={len(rows)}")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_SOURCE_COUNT={payload[count_field]}")
+            if label == "outgoing_commitments":
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON=" + json.dumps(
+                    rows, ensure_ascii=False
+                ))
+                if require_positive:
+                    for index, row in enumerate(rows):
+                        open_quantity = row.get("openQuantity")
+                        effective_reserved = row.get("effectiveReserved")
+                        if (
+                            isinstance(open_quantity, bool)
+                            or not isinstance(open_quantity, (int, float))
+                            or isinstance(effective_reserved, bool)
+                            or not isinstance(effective_reserved, (int, float))
+                            or not math.isfinite(float(open_quantity))
+                            or not math.isfinite(float(effective_reserved))
+                            or open_quantity <= 0
+                            or effective_reserved <= 0
+                            or effective_reserved > open_quantity + 0.001
+                        ):
+                            raise ValueError(
+                                "La sonda nativa de salida no concilia la reserva efectiva "
+                                f"en outgoingCommitments[{index}]: openQuantity={open_quantity}, "
+                                f"effectiveReserved={effective_reserved}."
+                            )
         except ValueError as error:
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
             failures.append(f"{label}: respuesta JSON incompatible ({error})")

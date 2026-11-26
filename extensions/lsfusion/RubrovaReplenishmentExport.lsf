@@ -93,10 +93,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationName = Inventory.name(Sales.location(Sales.order(ol))),
             openQuantity = Sales.toShip(ol),
             effectiveReserved = (OVERRIDE
-                (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
-                    IF Sales.orderLine(sl) = ol
-                        AND Inventory.lineReserved(sl) > 0
-                        AND Inventory.toReserve(Inventory.shipment(sl))),
+                Sales.reserved(ol),
                 0),
             scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol)),
             scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
@@ -175,10 +172,7 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
         locationId = Inventory.id(Sales.location(Sales.order(ol))),
         openQuantity = Sales.toShip(ol),
         effectiveReserved = (OVERRIDE
-            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
-                IF Sales.orderLine(sl) = ol
-                    AND Inventory.lineReserved(sl) > 0
-                    AND Inventory.toReserve(Inventory.shipment(sl))),
+            Sales.reserved(ol),
             0),
         scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol))
         WHERE Sales.confirmed(Sales.order(ol))
