@@ -158,7 +158,6 @@ TAX_HISTORY_TARGETS = (
     ),
 )
 
-# Fix the stocktake barcode search: zero is a real physical count, not "unset".
 RMI_SERVER_SOCKET_TARGET = ROOT / "vendor/platform/api/src/main/java/lsfusion/base/remote/ZipServerSocket.java"
 RMI_SERVER_SOCKET_BEFORE = """    public ZipServerSocket(int port) throws IOException {
         super(port, 500);
@@ -536,7 +535,6 @@ def main() -> int:
 
     if not apply_tax_history_line_tracking():
         return 1
-
 
     if not apply_cash_movement_date_captions():
         return 1
