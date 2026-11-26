@@ -1519,9 +1519,9 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(nativeSalesFixtureSource, /rubrovaTestPartialReturnsApi/);
   assert.match(nativeSalesFixtureSource, /explicitQuantity/);
   assert.match(nativeSalesFixtureSource, /Invoicing[.]quantity\(bl\) <- 0[.]7/);
-  assert.match(nativeSalesFixtureSource, /Invoicing[.]quantity\(bl\) <- explicitQuantity/);
-  assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejected = DATA BOOLEAN/);
-  assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejected\(\) <- NULL/);
+  assert.match(nativeSalesFixtureSource, /Invoicing[.]amount\(p\) <- Invoicing[.]amount\(b\)/);\n  assert.match(nativeSalesFixtureSource, /Invoicing[.]paid\(b, p\) <- Invoicing[.]amount\(b\)/);
+  assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejected = DATA BOOLEAN/);\n  assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejectedLocal = DATA LOCAL NESTED BOOLEAN/);
+  assert.match(nativeSalesFixtureSource, /rubrovaOverReturnRejected\(\) <- NULL/);\n  assert.match(nativeSalesFixtureSource, /IF canceled\(\) THEN rubrovaOverReturnRejectedLocal\(\) <- TRUE/);\n  assert.match(nativeSalesFixtureSource, /IF rubrovaOverReturnRejectedLocal\(\) THEN/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnCount\(\) = OVERRIDE Retail[.]countBills/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnAmount\(\) = OVERRIDE Retail[.]totalAmountBill/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnedQuantity\(\) = OVERRIDE Invoicing[.]returned/);

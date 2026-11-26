@@ -137,6 +137,7 @@ rubrovaCIReturnCashPaymentAmount() = OVERRIDE (GROUP SUM Invoicing.paid(Invoicin
        AND Retail.paymentMethod(b, p) = Retail.cashPaymentMethod()), 0.0;
 
 rubrovaOverReturnRejected = DATA BOOLEAN ();
+rubrovaOverReturnRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
 
 // Reproduce el mismo documento de crédito y reintegro que usa el POS.
 // Un valor de cantidad 0 conserva el remanente calculado por RubrovaRetailReturns.
@@ -148,18 +149,17 @@ rubrovaCreateCIReturn (Invoicing.Bill b, Invoicing.Invoice i, NUMERIC[16,3] expl
         FOR Invoicing.bill(Invoicing.BillLine bl) = b DO
             Invoicing.quantity(bl) <- explicitQuantity;
 
-    Retail.amount(Retail.PaymentMethod pm) <- NULL;
-    Retail.amount(Retail.cashPaymentMethod()) <- Invoicing.amount(b);
-
-    FOR am = Retail.amount(Retail.PaymentMethod pm) DO NEW p = Invoicing.OutgoingPayment {
+    // Este fixture acepta sólo efectivo: crear directamente el egreso nativo
+    // evita depender del buffer LOCAL de la pantalla de cobro POS.
+    NEW p = Invoicing.OutgoingPayment {
         Invoicing.done(p) <- TRUE;
-        Retail.paymentMethod(b, p) <- pm;
-        Invoicing.type(p) <- Retail.outgoingPaymentType(pm);
+        Retail.paymentMethod(b, p) <- Retail.cashPaymentMethod();
+        Invoicing.type(p) <- Retail.outgoingPaymentType(Retail.cashPaymentMethod());
         Invoicing.company(p) <- Retail.company(Retail.pos(Retail.session(b)));
-        Invoicing.companyAccount(p) <- Retail.account(Retail.pos(Retail.session(b)), pm);
+        Invoicing.companyAccount(p) <- Retail.account(Retail.pos(Retail.session(b)), Retail.cashPaymentMethod());
         Invoicing.partner(p) <- Invoicing.vendor(b);
-        Invoicing.amount(p) <- am;
-        Invoicing.paid(b, p) <- am;
+        Invoicing.amount(p) <- Invoicing.amount(b);
+        Invoicing.paid(b, p) <- Invoicing.amount(b);
     }
 
     Invoicing.ready(b) <- TRUE;
@@ -179,6 +179,7 @@ rubrovaTestPartialReturnsApi () {
     // Intento inválido: sólo quedan 0,6 unidades, por lo que 0,7 debe rechazarse.
     IF rubrovaCIReturnCount() = 1 AND rubrovaCITestInvoice() THEN {
         rubrovaOverReturnRejected() <- NULL;
+        rubrovaOverReturnRejectedLocal() <- NULL;
         NEWSESSION {
             NEW b = Invoicing.Bill {
                 Retail.session(b) <- Retail.session(rubrovaCITestInvoice());
@@ -187,8 +188,16 @@ rubrovaTestPartialReturnsApi () {
                     Invoicing.quantity(bl) <- 0.7;
                 Invoicing.ready(b) <- TRUE;
                 APPLY;
-                IF canceled() THEN rubrovaOverReturnRejected() <- TRUE;
+                // El APPLY rechazado conserva cambios sólo en la sesión hija.
+                // La marca LOCAL NESTED vuelve a la sesión exterior al cerrar NEWSESSION.
+                IF canceled() THEN rubrovaOverReturnRejectedLocal() <- TRUE;
             }
+        }
+        IF rubrovaOverReturnRejectedLocal() THEN {
+            // Persistir la evidencia en una transacción limpia, fuera del APPLY cancelado.
+            rubrovaOverReturnRejected() <- TRUE;
+            APPLY;
+            IF canceled() THEN RETURN;
         }
     }
 
