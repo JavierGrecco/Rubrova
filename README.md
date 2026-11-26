@@ -6,11 +6,11 @@ Rubrova es una plataforma de gestión comercial en desarrollo. Busca reunir la o
 
 **Dirección de producto:** experiencia simple en el mostrador, control operativo completo para la administración y datos confiables para decidir.
 
-> **Estado del proyecto · 25 de noviembre de 2026**
+> **Estado del proyecto · 26 de noviembre de 2026**
 >
-> Rubrova sigue en etapa de piloto integrado POS + ERP. La suite de reposición pasó en [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911), pero la última validación de plataforma [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló en una comprobación estática anterior a la compilación. En una ejecución nativa previa ([45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906)), el fork compiló, el servidor inició y el login funcionó, pero la API autenticada de reposición devolvió HTTP 500: `Set operation is incorrect`. El ajuste posterior todavía no tiene una ejecución de CI sobre el SHA actual. El puente nativo, la operación local en un Mac físico y el producto completo **no están aceptados para producción**.
+> Rubrova continúa en etapa de piloto integrado POS + ERP; todavía no es una versión productiva. En el PR limpio [#10](https://github.com/JavierGrecco/Rubrova/pull/10), basado directamente en `main`, pasó la prevalidación compartida: 30/30 pruebas Node, 34/34 validaciones de evaluación, 33 pruebas Python, scripts de shell y pruebas de listeners; también pasó Windows. La suite de reposición pasó en [45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945). La compilación completa del fork está en curso en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978); el smoke nativo macOS ARM64 todavía no comenzó.
 >
-> La estrategia ahora es prevalidar localmente con el mismo script usado por CI, compilar y ejecutar el smoke obligatorio en macOS ARM64; los diagnósticos secundarios Linux/Docker quedan bajo ejecución manual.
+> La última ejecución nativa terminada de una revisión anterior logró iniciar el servidor y autenticar, pero la API de exportación respondió HTTP 500 `Set operation is incorrect`. No se declara corregida hasta que el nuevo smoke pruebe las sondas y el endpoint consolidado. El PR #8 antiguo fue cerrado sin fusionar y reemplazado por el PR #10.
 
 ## Propuesta de producto
 

@@ -1,18 +1,19 @@
 # Estado real del proyecto Rubrova
 
-**Corte:** 25 de noviembre de 2026  
+**Corte:** 26 de noviembre de 2026  
 **Rama canónica:** `main`  
-**Candidato de integración:** rama `integration/replenishment-mainline-preflight`, basada directamente en `main` (`699eb834`), HEAD `bbbfb18c`. El PR #8 original sigue abierto pero está desfasado y no debe fusionarse; se prepara un PR limpio que lo reemplaza.
+**Candidato de integración:** [PR #10](https://github.com/JavierGrecco/Rubrova/pull/10), rama `integration/replenishment-mainline-preflight`, basada directamente en `main` (`699eb834`), sin commits por detrás. El [PR #8](https://github.com/JavierGrecco/Rubrova/pull/8) fue cerrado sin fusionar y reemplazado para no arrastrar 118 commits divergentes.
 
 ## Estado de la última validación
 
-- **Planificador de reposición:** el workflow [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911) terminó en verde sobre `fe931e72`. Esa suite valida el motor y las fixtures Python; no carga el módulo MyCompany.
-- **Validación estática de plataforma:** [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló en la comprobación del matcher de las cuatro acciones API, antes de la compilación. El matcher fue revisado y corregido después, pero no hay un run asociado al SHA documental más reciente de la rama antigua del PR #8.
-- **Compilación:** [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) compiló lsFusion 6.2, GWT y MyCompany 6.2 y publicó los artefactos del runtime.
-- **Runtime nativo macOS ARM64:** en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) PostgreSQL, servidor, RMI y Tomcat iniciaron; el cliente web respondió HTTP 200 y el login autenticó al usuario de CI. La acción `/exec/Rubrova.rubrovaExportReplenishmentSource` devolvió HTTP 500 con `Set operation is incorrect`. El smoke Linux nativo también quedó bloqueado por la exportación. El ajuste posterior de código no está validado todavía en CI.
-- **Docker/Linux:** es un diagnóstico suplementario. En ejecuciones anteriores llegó a tardar más de 16 minutos; se conserva como ejecución manual para no añadir ese coste a cada PR.
-- **Datos reales:** no se ha conciliado una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
-- **Prevalidación local compartida:** se incorpora `scripts/platform/local-preflight.sh` para ejecutar en Mac/Linux las mismas pruebas rápidas de plataforma y reposición que invoca CI. Su incorporación debe aprobar en el nuevo PR; no demuestra carga real de lsFusion.
+- **Prevalidación de plataforma compartida:** aprobada en el PR #10, SHA `9b9083c35570675a1bb7055fd86d235bf9ab4fde`, run [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Pasaron 30/30 pruebas Node, 34/34 validaciones de evaluación, 10 + 5 + 18 pruebas Python, chequeos de shell, listener y despliegue.
+- **Windows:** validación sintáctica aprobada en el mismo run.
+- **Prevalidación de reposición:** aprobada en [45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945), invocando el mismo `local-preflight.sh --replenishment` usado localmente.
+- **Compilación completa:** en ejecución en el job `build-fork` del run [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Todavía no se declara aprobada.
+- **Runtime nativo macOS ARM64:** pendiente de la compilación. La última ejecución completada de una revisión anterior inició PostgreSQL, servidor, RMI y Tomcat; el navegador autenticó correctamente, pero la acción `/exec/Rubrova.rubrovaExportReplenishmentSource` falló con HTTP 500 `Set operation is incorrect`. El nuevo smoke incorpora sondas independientes para inventario, compromisos y recepciones, antes de probar la exportación consolidada.
+- **Linux nativo y Docker/Linux:** ahora se reservan para ejecución manual (`workflow_dispatch`), para conservar sus diagnósticos sin sumar sus tiempos a cada PR. El smoke nativo macOS ARM64 sigue siendo obligatorio.
+- **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
+- **PR y ramas:** PR #10 deriva de `main` y está en borrador. PR #8 se cerró sin fusionar; no debe reabrirse ni mezclarse con la rama nueva.
 
 
 ## Resumen de madurez

@@ -77,3 +77,14 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Corrección:** distinguir en el test la regla global por PR de las cuatro reglas por job; añadir una regresión que verifica que Linux/Docker son manuales y que el smoke macOS ARM64 permanece automático; comprobar que ambos workflows invocan el mismo preflight local.
 - **Alcance del fallo:** no llegó a la compilación Maven ni al smoke de runtime porque el job `validate` es una dependencia previa. Windows pasó y el workflow del planificador terminó en verde.
 - **Estado:** corrección subida al branch; la segunda ejecución sobre el nuevo SHA debe confirmar el arreglo.
+
+
+## 2026-11-26 — REP-008 — Preflight unificado aprobado en la nueva rama principal
+
+- **PR:** [#10](https://github.com/JavierGrecco/Rubrova/pull/10), SHA probado `9b9083c35570675a1bb7055fd86d235bf9ab4fde`.
+- **Preflight de plataforma:** [run 45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978), job `Prevalidación local compartida`: aprobado.
+- **Resultados:** 30/30 tests Node de la extensión; 34/34 tests Node de evaluación; 10 tests de configuración Python, 5 de URL/runtime nativo y 18 de supervisor nativo; pruebas de listener y despliegue aprobadas. La validación sintáctica de Windows también pasó.
+- **Preflight de reposición:** [run 45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945): aprobado, usando `local-preflight.sh --replenishment`.
+- **Corrección de iteración:** las ejecuciones iniciales del PR #10 descubrieron (a) una aserción que mezclaba concurrencia global y por job, y (b) que el workflow de reposición conservaba sus pasos anteriores. Ambos casos se corrigieron y se añadieron pruebas estáticas para que no vuelva a producirse la divergencia.
+- **Concurrencia:** al llegar el SHA corregido, la corrida anterior fue cancelada; no se debe tomar como fallo funcional de código.
+- **Estado:** primera capa de validación rápida aprobada en GitHub. La compilación completa del fork continúa; el smoke macOS ARM64 y la API nativa siguen pendientes.

@@ -47,9 +47,10 @@ En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado
 ### Estado de evidencia
 
 - El POS base completó en una revisión anterior un recorrido sintético de login, turno, venta en efectivo, factura/pago, stock y cierre en [45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959). No valida cambios posteriores ni el puente nativo de reposición.
-- La suite del planificador aprobó en [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911). Es una prueba rápida de Python/fixtures sobre una revisión anterior del branch.
-- La validación de plataforma [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló en el matcher estático antes de compilar. El matcher se corrigió después, pero no hay una ejecución de CI registrada para el SHA actual de la antigua rama PR #8.
-- La compilación y publicación de artefactos aprobaron en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906). En el smoke macOS ARM64 el servidor, RMI, Tomcat, HTTP y login estuvieron operativos; la llamada autenticada `/exec/Rubrova.rubrovaExportReplenishmentSource` devolvió HTTP 500 con `Set operation is incorrect`. El diagnóstico Linux nativo presentó el mismo bloqueo. El Docker smoke no sustituye ese resultado.
+- En el PR #10, la prevalidación de plataforma aprobó en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978): 30/30 pruebas Node, 34/34 validaciones de evaluación, 33 pruebas Python, scripts de shell, listener y despliegue. Windows también pasó.
+- El workflow de reposición aprobó en [45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945), ejecutando la misma capa `--replenishment` del preflight local.
+- La compilación completa del fork está en curso en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Aún no se ha iniciado la aceptación runtime del nuevo SHA.
+- En la última ejecución nativa anterior ([45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906)), el servidor, RMI, Tomcat y login funcionaron, pero la API autenticada consolidada devolvió HTTP 500 `Set operation is incorrect`. El nuevo inspector consulta primero por separado inventario, compromisos y recepciones, para identificar qué operación de conjunto provoca el error.
 - No existe todavía evidencia de una exportación nativa aceptada y conciliada contra una base MyCompany real. Los fixtures del adaptador son sintéticos.
 - La aceptación en un Mac físico, Safari/Chrome, lector, impresora, cajón, balanza y terminales reales sigue pendiente.
 
