@@ -4,6 +4,12 @@
 
 Una capacidad no se considera terminada por mostrar una pantalla. Debe cumplir reglas, permisos, persistencia, integridad, accesibilidad, recuperación y pruebas.
 
+## Memoria técnica y contratos
+
+Toda corrección, integración o cambio de comportamiento debe actualizar la [base de conocimiento de ingeniería](engineering/README.md). Los contratos de APIs y módulos se registran en [Contratos de integración](engineering/CONTRACTS.md); las decisiones que explican el porqué, en [Registro de decisiones](engineering/DECISION_LOG.md); y la evidencia cronológica, en [Registro de iteraciones](engineering/ITERATION_LOG.md).
+
+La documentación no sustituye a las pruebas: conserva el significado, las versiones, las dependencias entre componentes, las limitaciones y la evidencia que permite repetirlas y mantenerlas.
+
 ## Estrategia
 
 - Unitarias: cálculos, reglas, validaciones y estados.
