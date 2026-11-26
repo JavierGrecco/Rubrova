@@ -1507,7 +1507,7 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(retailReturnsSource, /bill\(previousLine\) != currentBill/);
   assert.match(retailReturnsSource, /active\(bill\(previousLine\)\)/);
   assert.match(retailReturnsSource, /max\(quantity\(invoiceLine\(currentLine\)\) \(-\)/);
-  assert.match(retailReturnsSource, /DELETE bl/);
+  assert.match(retailReturnsSource, /DELETE currentLine/);
   assert.match(creditNoteSource, /@defineDocLineRelation\(invoice, bill, 'Invoice', 'Return', i, b\)/);
   assert.match(creditNoteSource, /returned 'Returned' \(InvoiceLine il\) =/);
   assert.match(creditNoteSource, /CONSTRAINT SET\(returned\(InvoiceLine il\) > OVERRIDE quantity\(il\), 0[.]0\) AND checkReturnedQuantity\(type\(il\)\)/);
