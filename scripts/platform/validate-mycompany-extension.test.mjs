@@ -447,9 +447,14 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /needs: \[validate, build-fork\]/);
   assert.match(runtimeWorkflowSource, /java-version: "21"/);
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f build\/rubrova\/pom[.]xml -Passemble -DskipTests package/);
-  assert.match(runtimeWorkflowSource, /Recompilar servidor y cliente web con dependencias de runtime/);
+  assert.match(runtimeWorkflowSource, /Empaquetar servidor y cliente reutilizando GWT/);
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor/);
-  assert.match(runtimeWorkflowSource, /-DskipTests -Dgwt[.]compiler[.]skip=true package/);
+  assert.match(runtimeWorkflowSource, /-DskipTests -Dgwt[.]skipCompilation=true package/);
+  assert.match(runtimeWorkflowSource, /GWT compilation is skipped/);
+  assert.match(runtimeWorkflowSource, /Compiling module lsfusion[.]gwt[.]main/);
+  assert.match(runtimeWorkflowSource, /GWT_BOOTSTRAP/);
+  assert.match(runtimeWorkflowSource, /GWT_FRAGMENT/);
+  assert.match(runtimeWorkflowSource, /timeout --signal=TERM --kill-after=30s 8m/);
   assert.match(runtimeWorkflowSource, /GWT_BOOTSTRAP/);
   assert.match(runtimeWorkflowSource, /GWT_FRAGMENT/);
   assert.match(runtimeWorkflowSource, /timeout --signal=TERM --kill-after=30s 8m/);
