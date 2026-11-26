@@ -27,3 +27,35 @@ fill (BillLine currentLine, InvoiceLine originalLine) + {
             DELETE currentLine;
     }
 }
+
+NAMESPACE Retail;
+
+// Total de egresos todavía activos de todas las notas de crédito enlazadas
+// a la factura original. Cancelar la nota no cancela automáticamente su pago;
+// sólo deja de consumir cupo cuando el egreso nativo también está cancelado.
+rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
+    GROUP SUM Invoicing.paid(Invoicing.Bill previousBill, Invoicing.OutgoingPayment p)
+        IF Invoicing.in(originalInvoice, previousBill)
+        AND paymentMethod(previousBill, p) = pm
+        AND Invoicing.active(p);
+
+// Egresos activos de notas anteriores de la misma factura. Se excluye la nota
+// actual para que el formulario pueda mostrar su cupo disponible mientras se edita.
+rubrovaRefundedBefore (Invoicing.Bill currentBill, PaymentMethod pm) =
+    GROUP SUM Invoicing.paid(Invoicing.Bill previousBill, Invoicing.OutgoingPayment p)
+        IF Invoicing.in(Invoicing.Invoice originalInvoice, currentBill)
+        AND Invoicing.in(originalInvoice, previousBill)
+        AND previousBill != currentBill
+        AND paymentMethod(previousBill, p) = pm
+        AND Invoicing.active(p);
+
+rubrovaRefundRemaining 'Remaining refund' (Invoicing.Bill currentBill, PaymentMethod pm) =
+    max((OVERRIDE invoicePaid(currentBill, pm), 0.0) (-)
+        (OVERRIDE rubrovaRefundedBefore(currentBill, pm), 0.0), 0.0);
+
+// Regla global: no se puede confirmar un conjunto de egresos activos que supere
+// lo efectivamente cobrado en la factura original por ese mismo método.
+CONSTRAINT SET(rubrovaRefundedByMethod(Invoicing.Invoice originalInvoice, PaymentMethod pm) >
+    (OVERRIDE paid(originalInvoice, pm), 0.0))
+    AND Invoicing.type(originalInvoice) = Invoicing.invoiceType('retail')
+    MESSAGE 'El total reintegrado por medio de pago supera el importe cobrado originalmente';
