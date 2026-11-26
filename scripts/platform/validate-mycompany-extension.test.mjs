@@ -1500,7 +1500,9 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(entrypointSource, /RubrovaRetailReturns/);
   assert.match(retailReturnsSource, /^MODULE RubrovaRetailReturns;/m);
   assert.match(retailReturnsSource, /^REQUIRE MyCompany, CreditNote;/m);
-  assert.match(retailReturnsSource, /create \(Bill b, Invoice i\) \+/);
+  assert.match(retailReturnsSource, /fill \(BillLine currentLine, InvoiceLine originalLine\) \+/);
+  assert.match(creditNoteSource, /fill ABSTRACT LIST \(BillLine, InvoiceLine\)/);
+  assert.match(retailReturnsSource, /type\(invoice\(originalLine\)\) = invoiceType\('retail'\)/);
   assert.match(retailReturnsSource, /invoiceLine\(previousLine\) = originalLine/);
   assert.match(retailReturnsSource, /bill\(previousLine\) != currentBill/);
   assert.match(retailReturnsSource, /active\(bill\(previousLine\)\)/);
