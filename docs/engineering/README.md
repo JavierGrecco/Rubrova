@@ -11,6 +11,7 @@ Esta documentación es parte del producto técnico. Se versiona en Git, se revis
 
 ## Documentos
 
+- [Auditoría de reutilización de la base incorporada](BASE_REUSE_AUDIT.md): catálogo de capacidades ya implementadas, APIs nativas, contratos, riesgos heredados y matriz de reutilización antes de desarrollar equivalentes.
 - [Guía de integración lsFusion 6.2 + MyCompany 6.2](LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md): arquitectura real del runtime integrado, reglas de extensión, transacciones, comunicación externa y circuitos POS/venta/devolución/pago/caja/inventario.
 - [Contratos de integración](CONTRACTS.md): reglas normativas de intercambio, propiedad de datos, seguridad, formatos, versiones y compatibilidad.
 - [Mapa de dominios y relaciones](DOMAIN_RELATIONSHIPS.md): propiedad de datos, relaciones observadas, claves y dependencias entre módulos.

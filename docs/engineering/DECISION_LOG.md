@@ -96,3 +96,52 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Decisión:** el estado de capacidad es modelo preparado / no operativo hasta que exista adaptador de terminal/proveedor, protocolo local, idempotencia durable, confirmación de proveedor, reconciliación y prueba hardware end-to-end. Un intento/intención no es un cobro contable; sólo IncomingPayment representa el cobro en el ledger nativo después de confirmación. Un timeout posterior al envío queda desconocido y requiere conciliación.
 - **Consecuencia:** los métodos de pago con terminal no deben mostrarse como integrados ni usarse en operación real hasta cumplir la matriz de pruebas; las ventas locales en efectivo no deben depender de la terminal. Se separan bruto, comisiones, impuestos y neto de liquidación.
 - **Evidencia:** extensions/lsfusion/RubrovaPaymentTerminals.lsf; extensions/lsfusion/RubrovaIntegrationResilience.lsf; docs/MYCOMPANY_RUNTIME_INSTALL.md; búsqueda de acciones EXTERNAL HTTP POST en el snapshot actual sin resultados.
+
+
+## ADR-0012 — Reutilizar APIs y procesos nativos antes de crear contratos paralelos
+
+- **Estado:** Aceptada.
+- **Ámbito:** integración de e-commerce, marketplaces, apps y servicios externos.
+- **Contexto:** MyCompany 6.2 ya incluye ItemAPI, CategoryAPI, ItemAttributeAPI, SalesPricelistAPI, InvLedgerAPI, SalesOrderAPI y TaskAPI en los árboles de dominios principales. No todas tienen semánticas suficientes para sincronización bidireccional o reintentos.
+- **Decisión:** los consumidores parten de la API o acción nativa. Se añade wrapper/adapter sólo para versionar esquema, completar validaciones, idempotencia, paginación, correlación o proyecciones que falten. No habilitar @@noauth ni evaluación arbitraria para integraciones ordinarias.
+- **Consecuencia:** SalesOrderAPI.newOrders es alta por número, no upsert: ignora órdenes cuyo número ya existe; deleteOrders sólo elimina drafts. InvLedgerAPI.getInventory devuelve onHand, no available. Cada contrato debe probar duplicados, conflicto de contenido, estado y respuesta perdida.
+- **Evidencia:** docs/engineering/BASE_REUSE_AUDIT.md, sección 4; fuentes ItemAPI.lsf, CategoryAPI.lsf, ItemAttributeAPI.lsf, SalesPricelistAPI.lsf, InvLedgerAPI.lsf, SalesOrderAPI.lsf y TaskAPI.lsf.
+
+
+## ADR-0013 — Mantener el costo planificado separado del costo real de inventario
+
+- **Estado:** Aceptada como regla de analítica; valoración FIFO histórica pendiente de regresión.
+- **Ámbito:** compras, inventario, devoluciones, fabricación y rentabilidad.
+- **Contexto:** MyCompany implementa ItemCost (planificado por fecha) y CostLedger (FIFO/AVCO/standardPrice), enlaza costos de Receipt/Shipment/Adjustment/Manufacturing con movimientos y extiende SalesLedger con costo real de ShipmentLine y ReceiptLine.
+- **Decisión:** no calcular margen sólo desde ItemCost cuando existe costo real de movimiento. Conservar fuente, método, fecha, ubicación y documento de origen; reportar desde SalesLedger y ledgers nativos.
+- **Riesgo:** CostLedger.lsf tiene comentados filtros temporales dateTime(inCost) <= dateTime(outCost) en dos asignaciones FIFO. No se concluye bug sin reproducir; bloquear afirmaciones sobre FIFO retroactivo hasta cubrir salidas anteriores a entradas y recálculo.
+- **Evidencia:** BASE_REUSE_AUDIT.md, sección 3.6; ItemCost, CostLedger, ReceiptCost, ShipmentCost, SalesLedgerInvoiceShipment y SalesLedgerBillReceipt.
+
+
+## ADR-0014 — Reutilizar stocktake nativo y separar arqueo de efectivo
+
+- **Estado:** Aceptada.
+- **Ámbito:** stock, caja y auditoría física.
+- **Contexto:** MyCompany tiene Adjustment/AdjustmentList, estados de conteo, cantidad teórica, cantidad real, hojas y barcode; la validación genera InvAdjustment en el ledger. Session/POS registra pagos, depósitos y retiros, pero no se encontró conteo físico de billetes/monedas en el modelo POS central inspeccionado.
+- **Decisión:** stocktake Rubrova extenderá Adjustment para conteo ciego/reconteo/autorización. El arqueo físico de efectivo será una capacidad separada ligada a Session/Pos que compare saldo esperado y contado con motivo, operador y autorización; nunca sobrescribe Payment.balance.
+- **Evidencia:** BASE_REUSE_AUDIT.md, sección 3.4; Adjustment.lsf, AdjustmentInProgress.lsf, AdjustmentDone.lsf, AdjustmentList.lsf, Session.lsf y PosDashboardCash.lsf.
+
+
+## ADR-0015 — Complementar backup nativo con paquete verificado y recuperación probada
+
+- **Estado:** Aceptada; riesgo en restore selectivo upstream pendiente de regresión.
+- **Ámbito:** operación local y recuperación.
+- **Contexto:** lsFusion trae backup completo/parcial, retención, scheduler y restauración selectiva; Rubrova tiene paquete PostgreSQL con manifiesto/SHA-256 y restauración a base nueva.
+- **Decisión:** mantener ambos como complementarios hasta demostrar equivalencia: nativo aporta selección lógica; Rubrova aporta paquete, integridad y recuperación completa. Toda restauración crítica debe validar resultado y limpiar temporales ante error.
+- **Hallazgo:** PostgreDataAdapter.customRestoreDB devuelve el nombre de la DB temporal desde el catch de IOException de pg_restore y no hace dropDB en ese catch. Debe probarse el fallo y evitar tratar el retorno no nulo como éxito.
+- **Evidencia:** BASE_REUSE_AUDIT.md, sección 5.3; Backup.lsf; BackupAction.java; PostgreDataAdapter.java; native-postgres-backup.py.
+
+
+## ADR-0016 — Activar integraciones regionales sólo con adaptación local y seguridad
+
+- **Estado:** Aceptada.
+- **Ámbito:** ARCA, terminales, WhatsApp, e-commerce, WMS y telecomunicaciones.
+- **Contexto:** el snapshot incluye raíces optativas RU/PL/BG con ATOL, Wazzup, EnterpriseData, KSeF, WMS, CRPT y telefonía; MyCompany.lsf no las requiere y el árbol no incluye raíz Argentina/ARCA.
+- **Decisión:** no añadir raíces regionales al topModule argentino indiscriminadamente. Reutilizar patrones sólo después de definir contrato legal/proveedor local, autenticación, secreto, idempotencia, replay, timeout y reconciliación.
+- **Riesgo concreto:** WazzupWebhook usa @@noauth y registra el body completo; el handler revisado no evidencia verificación de firma. No copiar esa política a endpoints Rubrova.
+- **Evidencia:** BASE_REUSE_AUDIT.md, secciones 2.2 y 6; MyCompanyRu.lsf, MyCompanyPl.lsf, CashRegisterAtol.lsf y WazzupWebhook.lsf.

@@ -181,3 +181,8 @@ Este control evita confundir “no hay filas” con “la API no entregó la col
 - **Retirado:** sustituido por otro contrato; se conserva la referencia histórica y la guía de migración.
 
 No usar “terminado” como estado ambiguo.
+
+
+## 4. Reutilización de módulos incorporados
+
+Antes de proponer una entidad, API o proceso nuevo, consultar la [auditoría de reutilización de la base incorporada](BASE_REUSE_AUDIT.md). Allí se catalogan los circuitos de MyCompany 6.2, módulos regionales opcionales, APIs existentes y límites conocidos que deben superar pruebas antes de uso productivo. La regla es reutilizar primero el dueño/ledger nativo y añadir una extensión Rubrova sólo para el comportamiento que realmente falta.

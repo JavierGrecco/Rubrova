@@ -5,6 +5,8 @@
 **Fuentes upstream:** lsFusion 6.2 dd4dbe5bf9b136e73e18fe25d741253929324350; MyCompany 6.2 d21ca6978717b98b6300d90267f9767db7414008.  
 **Alcance:** arquitectura, contratos de módulos, extensión, transacciones, integración externa y circuitos POS/ventas, devoluciones, pagos, caja e inventario. No constituye aceptación productiva.
 
+Para el inventario más amplio de funciones ya incorporadas, las APIs existentes y las capacidades que debemos reutilizar antes de programar equivalentes, consultar la [Auditoría de reutilización de la base incorporada](BASE_REUSE_AUDIT.md).
+
 > Regla de precedencia: para saber qué hace la instalación Rubrova, prevalecen las fuentes 6.2 vendorizadas, sus parches explícitos y los tests sobre esa misma revisión. La documentación pública explica conceptos y escenarios, pero no sustituye la inspección del código exacto. El portal MyCompany v6 identifica su manual como 6.0 y parte de la documentación actual está en 7.0; se usa como apoyo conceptual, no para asumir compatibilidad sin verificar.
 
 ## 1. Conclusión arquitectónica
@@ -454,6 +456,13 @@ SalesLedger proporciona una clase abstracta de hechos para informes por producto
 El costo base se deriva de cost(item, date) por cantidad. Esta estructura es preferible a reconstruir ventas desde el formulario POS. Antes de utilizar el margen para decisiones productivas, Rubrova debe verificar la política de costo temporal, ajustes retroactivos, devoluciones parciales, descuentos, impuestos y moneda, y reconciliarlo contra el ledger de costos de inventario.
 
 **Implicación de arquitectura:** los canales local, POS y mayorista deben converger a los documentos y ledgers de origen adecuados; los informes analíticos deben leer esas fuentes con claves de canal/área preservadas. No generar un segundo inventario o una tabla de ventas paralela para cada canal.
+
+
+### 6.12 Conteo físico de mercadería y logística interna
+
+MyCompany ya incluye el circuito de stocktake mediante Adjustment, AdjustmentInProgress, AdjustmentDone y AdjustmentList. La cantidad teórica se calcula a la fecha del ajuste desde el ledger; la cantidad real se registra durante el estado inProgress y puede capturarse por listas separadas con búsqueda por código de barras. Al validar, el sistema genera InvAdjustment con la diferencia y la publica en InvLedger. No se debe crear un segundo stocktake ni editar onHand directamente.
+
+También están incluidos transferencias en lote/móviles, aceptación en destino, picking por ubicación, put-away de recepción, mermas y gestión de lotes/series. El arqueo físico de efectivo es otro proceso: el modelo Session/POS inspeccionado registra pagos, depósitos y retiros, pero no se encontró en él un formulario/campo central de billetes/monedas contados. La diferencia de efectivo debe quedar documentada como una capacidad Rubrova separada.
 
 ## 7. Hallazgos que se deben convertir en regresiones
 
