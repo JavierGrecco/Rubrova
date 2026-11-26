@@ -1050,6 +1050,26 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /^REQUIRE MyCompany;/m);
   assert.match(replenishmentExportSource, /rubrovaExportReplenishmentSource/);
   assert.match(replenishmentExportSource, /} @@api;/);
+  const replenishmentApiActions = [
+    ...replenishmentExportSource.matchAll(/^\\w+\\s+'[^']+'\\s+\\(\\)\\s*\\{([\\s\\S]*?)^\\}\\s*@@api;/gm)
+  ];
+  assert.equal(
+    replenishmentApiActions.length,
+    4,
+    "La exportación y las tres sondas deben seguir siendo endpoints autenticados independientes."
+  );
+  for (const [index, action] of replenishmentApiActions.entries()) {
+    assert.match(
+      action[1],
+      /^\\s*RETURN JSON FROM/m,
+      `El endpoint MyCompany ${index + 1} debe devolver JSON al cliente HTTP; EXPORT sólo guarda el resultado en la sesión.`
+    );
+    assert.doesNotMatch(
+      action[1],
+      /^\\s*EXPORT JSON FROM/m,
+      "No se permite usar EXPORT como respuesta de una API externa."
+    );
+  }
   for (const field of [
     "Inventory.onHand(l, p)",
     "Inventory.available(l, p)",
