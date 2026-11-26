@@ -134,6 +134,35 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Falta una política de planificación"):
             self._build(policy=policy)
 
+    def test_omitted_empty_collections_are_normalized_only_when_native_count_is_zero(self) -> None:
+        source = copy.deepcopy(self.native)
+        source.pop("outgoingCommitments")
+        source["outgoingCommitmentsCount"] = 0
+        source.pop("receipts")
+        source["receiptsCount"] = 0
+        for row in source["inventory"]:
+            row["plannedNetReservation"] = 0
+            row["plannedNetReservationNative"] = 0
+            row["available"] = row["onHand"]
+            row["availableNative"] = row["onHand"]
+            row["expectedInbound"] = 0
+
+        snapshot = self._build(source)
+        self.assertEqual(snapshot["outgoingCommitments"], [])
+        self.assertEqual(snapshot["receipts"], [])
+
+    def test_native_collection_count_mismatch_is_rejected(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingCommitmentsCount"] = 1
+        with self.assertRaisesRegex(ValueError, "no coincide con la cantidad de filas"):
+            self._build(source)
+
+    def test_missing_non_empty_collection_is_rejected(self) -> None:
+        source = copy.deepcopy(self.native)
+        source.pop("outgoingCommitments")
+        with self.assertRaisesRegex(ValueError, "outgoingCommitments debe ser una lista"):
+            self._build(source)
+
     def test_native_contract_version_and_semantics_are_checked(self) -> None:
         source = copy.deepcopy(self.native)
         source["sourceVersion"] = "6.3"
