@@ -1229,6 +1229,8 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
     print("UI_RESTART_PERSISTENCE_SESSION_CLOSED=true")
     print("UI_RESTART_PERSISTENCE_CASH_RECONCILED=true")
 
+    verify_stocktake_persistence(context, url)
+
     incidents = fetch_restart_api_payload(
         context,
         base + "Rubrova.rubrovaTestIncidentCountApi",
@@ -1265,6 +1267,117 @@ def verify_return_quantity_guard(context: Any, url: str) -> None:
             + json.dumps(payload, ensure_ascii=False)
         )
     print("UI_RETURN_QUANTITY_GUARD_ENABLED=true")
+
+
+
+def _stocktake_api_payload(context: Any, endpoint: str, label: str) -> dict[str, Any]:
+    response = context.request.get(endpoint, timeout=20_000)
+    if response.status != 200:
+        raise RuntimeError(
+            f"La prueba de stocktake ({label}) respondió HTTP {response.status}: "
+            f"{response.text()[:1200]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError(
+            f"La prueba de stocktake ({label}) no devolvió JSON válido: {response.text()[:1200]!r}"
+        ) from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"La prueba de stocktake ({label}) devolvió {type(payload).__name__}, no un objeto JSON."
+        )
+    print(f"UI_STOCKTAKE_BARCODE_{label.upper()}_PAYLOAD=" + json.dumps(payload, ensure_ascii=False))
+    return payload
+
+
+def _stocktake_number(payload: dict[str, Any], field: str, label: str) -> float:
+    value = payload.get(field)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        raise RuntimeError(f"Stocktake {label}.{field} debe ser un número finito; recibido {value!r}.")
+    return float(value)
+
+
+def verify_stocktake_barcode_semantics(context: Any, url: str) -> None:
+    """Exercise MyCompany's real barcode quantity helper against disposable, unvalidated data."""
+    api_base = application_endpoint_url(url, "exec/Sales.")
+
+    zero = _stocktake_api_payload(
+        context, api_base + "rubrovaTestStocktakeBarcodeZeroApi", "zero"
+    )
+    for field in ("listLineCount", "adjustmentLineCount"):
+        actual = _stocktake_number(zero, field, "zero")
+        if actual != 1:
+            raise RuntimeError(
+                f"Stocktake cero: {field} debe ser 1, se obtuvo {actual}. "
+                + json.dumps(zero, ensure_ascii=False)
+            )
+    if zero.get("zeroQuantityPreserved") is not True:
+        raise RuntimeError(
+            "La captura por barcode perdió el cero en AdjustmentListLine: "
+            + json.dumps(zero, ensure_ascii=False)
+        )
+    if zero.get("adjustmentQuantityIsZero") is not True:
+        raise RuntimeError(
+            "La cantidad cero no llegó a la línea principal de Adjustment: "
+            + json.dumps(zero, ensure_ascii=False)
+        )
+    print("UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true")
+
+    cleared = _stocktake_api_payload(
+        context, api_base + "rubrovaTestStocktakeBarcodeNullApi", "null"
+    )
+    if _stocktake_number(cleared, "listLineCount", "null") != 0:
+        raise RuntimeError(
+            "Enviar NULL al barcode no eliminó la fila de la hoja de conteo: "
+            + json.dumps(cleared, ensure_ascii=False)
+        )
+    print("UI_STOCKTAKE_BARCODE_NULL_CLEARED=true")
+
+    positive = _stocktake_api_payload(
+        context, api_base + "rubrovaTestStocktakeBarcodePositiveApi", "positive"
+    )
+    for field in ("listLineCount", "adjustmentLineCount"):
+        actual = _stocktake_number(positive, field, "positive")
+        if actual != 1:
+            raise RuntimeError(
+                f"Stocktake positivo: {field} debe ser 1, se obtuvo {actual}. "
+                + json.dumps(positive, ensure_ascii=False)
+            )
+    for field in ("listQuantity", "adjustmentLineQuantity"):
+        actual = _stocktake_number(positive, field, "positive")
+        if abs(actual - 2.0) > 0.001:
+            raise RuntimeError(
+                f"Stocktake positivo: {field} debe ser 2, se obtuvo {actual}. "
+                + json.dumps(positive, ensure_ascii=False)
+            )
+    print("UI_STOCKTAKE_BARCODE_AGGREGATE_RECONCILED=true")
+
+
+def verify_stocktake_persistence(context: Any, url: str) -> None:
+    base = application_endpoint_url(url, "exec/Sales.")
+    state = fetch_restart_api_payload(
+        context,
+        base + "rubrovaTestStocktakeBarcodeStateApi",
+        "stocktake",
+    )
+    for field in ("listLineCount", "adjustmentLineCount"):
+        actual = _stocktake_number(state, field, "restart")
+        if actual != 1:
+            raise RuntimeError(
+                f"El conteo no sobrevivió al reinicio en {field}: {actual}. "
+                + json.dumps(state, ensure_ascii=False)
+            )
+    for field in ("listQuantity", "adjustmentLineQuantity"):
+        actual = _stocktake_number(state, field, "restart")
+        if abs(actual - 2.0) > 0.001:
+            raise RuntimeError(
+                f"El conteo no sobrevivió al reinicio en {field}: {actual}. "
+                + json.dumps(state, ensure_ascii=False)
+            )
+    print("UI_RESTART_PERSISTENCE_STOCKTAKE=true")
 
 def inspect_page(url: str) -> int:
     screenshot_path = Path(
@@ -1365,6 +1478,7 @@ def inspect_page(url: str) -> int:
                 verify_replenishment_source_export(context, url)
                 if os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() != "true":
                     verify_return_quantity_guard(context, url)
+                    verify_stocktake_barcode_semantics(context, url)
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 
