@@ -1438,6 +1438,25 @@ test("la arquitectura de terminales documenta los tres modos, diagramas y límit
 });
 
 
+test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras reinicio", () => {
+  assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeZeroApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeNullApi/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodePositiveApi/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), 0\)/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), NULL\)/);
+  assert.match(nativeSalesFixtureSource, /Inventory[.]useList\(stocktakeCI\) <- TRUE/);
+  assert.match(uiSmokeSource, /def verify_stocktake_barcode_semantics\(/);
+  assert.match(uiSmokeSource, /def verify_stocktake_persistence\(/);
+  assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true/);
+  assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_NULL_CLEARED=true/);
+  assert.match(uiSmokeSource, /UI_STOCKTAKE_BARCODE_AGGREGATE_RECONCILED=true/);
+  assert.match(uiSmokeSource, /UI_RESTART_PERSISTENCE_STOCKTAKE=true/);
+  assert.match(nativeSmokeSource, /UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true/);
+  assert.match(nativeSmokeSource, /UI_STOCKTAKE_BARCODE_NULL_CLEARED=true/);
+  assert.match(nativeSmokeSource, /UI_STOCKTAKE_BARCODE_AGGREGATE_RECONCILED=true/);
+  assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_STOCKTAKE=true/);
+});
+
 test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el turno", () => {
   const markdownViewerIsUpstream =
     markdownViewerSource.includes("onWebClientLoad() +") &&
