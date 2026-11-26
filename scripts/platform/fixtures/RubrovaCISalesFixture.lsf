@@ -22,14 +22,14 @@ rubrovaCIStocktakeSeeded = DATA BOOLEAN ();
 rubrovaCIStocktakeAdjustment = DATA Inventory.Adjustment ();
 rubrovaCIStocktakeList = DATA Inventory.AdjustmentList ();
 
-rubrovaCIStocktakeListLineCount() = OVERRIDE
+rubrovaCIStocktakeListLineCount() = (OVERRIDE
     (GROUP SUM 1 IF Inventory.AdjustmentListLine l
         AND Inventory.adjustmentList(l) = rubrovaCIStocktakeList()
         AND Inventory.product(l) = rubrovaCITestProduct()
         AND Inventory.location(l) = rubrovaCITestLocation()),
     0);
 
-rubrovaCIStocktakeAdjustmentLineCount() = OVERRIDE
+rubrovaCIStocktakeAdjustmentLineCount() = (OVERRIDE
     (GROUP SUM 1 IF Inventory.AdjustmentLine l
         AND Inventory.adjustment(l) = rubrovaCIStocktakeAdjustment()
         AND Inventory.product(l) = rubrovaCITestProduct()
