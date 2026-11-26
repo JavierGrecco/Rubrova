@@ -751,11 +751,26 @@ def stop_process(process: subprocess.Popen[Any] | None, name: str, timeout: int 
             process.wait(timeout=5)
         return
     try:
-        process.terminate()
+        # POSIX launchers (notably catalina.sh) spawn child JVMs. Every service is
+        # started in its own session, so signal the complete process group instead
+        # of killing only the shell and leaving an orphan Tomcat process behind.
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        if process.poll() is None:
+            process.send_signal(signal.SIGTERM)
+    try:
         process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
-        process.kill()
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            process.kill()
         process.wait(timeout=10)
+
+
+def handle_shutdown_signal(signum: int, frame: Any) -> None:
+    """Turn SIGTERM into the same orderly shutdown path as Ctrl+C."""
+    raise KeyboardInterrupt(f"received signal {signum}")
 
 
 def postgres_cluster_is_running(pg_ctl: Path, data_dir: Path) -> bool:
@@ -910,6 +925,9 @@ def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> b
 
 
 def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bool) -> None:
+    # The CI smoke sends SIGTERM for a controlled stop/restart. Route it through
+    # KeyboardInterrupt so the finally block stops Tomcat, lsFusion and PostgreSQL.
+    signal.signal(signal.SIGTERM, handle_shutdown_signal)
     config = load_config(config_path)
     if config["execution"]["target"] != "native-local":
         raise RuntimeErrorRubrova(
