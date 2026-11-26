@@ -84,7 +84,7 @@ Antes de integrar código externo:
 
 Se prefieren dependencias y extensiones antes que modificar el núcleo de un proyecto externo. No se incorpora código GPL/AGPL al núcleo ni material Enterprise/comercial sin una decisión expresa y revisión legal. Tampoco se eliminan atribuciones exigidas por la licencia.
 
-Ver [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md) y [Calidad y pruebas](QUALITY_AND_TESTING.md).
+Ver [Estrategia de reutilización de código abierto](OPEN_SOURCE_STRATEGY.md) y el [Manual técnico canónico](ENGINEERING_MASTER.md).
 
 
 ## Mantenimiento de fuentes upstream incorporadas
