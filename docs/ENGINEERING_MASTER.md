@@ -5,7 +5,8 @@
 
 **Corte de estado:** 26 de noviembre de 2026  
 **Base de main antes de consolidar este manual:** [84121794b9570a4418970272349331bed4cc1711](https://github.com/JavierGrecco/Rubrova/commit/84121794b9570a4418970272349331bed4cc1711)  
-**Commit de consolidación documental:** [1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b](https://github.com/JavierGrecco/Rubrova/commit/1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b)  
+**Commit que consolidó los anexos:** [1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b](https://github.com/JavierGrecco/Rubrova/commit/1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b)  
+**Corrección posterior de enlaces internos:** [57118291eaedffe3aa85a90bcc167cd5fee4d69f](https://github.com/JavierGrecco/Rubrova/commit/57118291eaedffe3aa85a90bcc167cd5fee4d69f)  
 **Última revisión de código funcional:** [d9791ff1c7894346d31ea5e0d240077940ba788c](https://github.com/JavierGrecco/Rubrova/commit/d9791ff1c7894346d31ea5e0d240077940ba788c)  
 **Fuentes fijadas:** lsFusion 6.2, commit dd4dbe5bf9b136e73e18fe25d741253929324350; MyCompany 6.2, commit d21ca6978717b98b6300d90267f9767db7414008.
 
@@ -268,12 +269,14 @@ Circuito:
 
 No desarrollar otro motor de stocktake. Extender el existente con conteo ciego, zona/operador, reconteo, tolerancias, aprobación, evidencia y auditoría.
 
-**Defectos potenciales detectados por lectura de fuente (aún no reproducidos en runtime):**
-- Adjustment.fill sólo incorpora líneas donde onHand(location, Product) es verdadero. No incluye artículos con stock cero/nulo automáticamente.
-- AdjustmentListSearch.setRealQuantity elimina la línea cuando q=0. El cero es un conteo válido, pero se trata como ausencia de fila.
-- En modo useList, el realQuantity padre se calcula sumando las líneas. Una línea cero eliminada puede dejar el agregado sin valor y no generar el ajuste negativo esperado.
+**Hallazgos de fuente, separados por alcance:**
 
-**Pruebas requeridas:** artículo en cero, artículo omitido por Fill, artículo sin movimientos, cero ingresado por barcode en hojas, hojas repetidas/particiones, varias ubicaciones, stock que se mueve después de la fecha teórica, reconteo, cancelación, doble validación, lotes, permisos, costo y persistencia.
+1. **Conteo cero por barcode (riesgo concreto):** AdjustmentListSearch.setRealQuantity(a,p,loc,q) usa `IF q THEN` para decidir si guarda la cantidad. Si ya hay una línea y q=0, ejecuta `DELETE AdjustmentListLine`; si no existe línea, tampoco la crea. Cero queda tratado como “sin valor/borrar”, no como cantidad física válida. Es el camino llamado por `@defineBarCodeSearch(adjustmentList, a, l, realQuantity)`.
+2. **Efecto sobre el ajuste padre:** AdjustmentList.listRealQuantity suma las filas de las hojas por (Adjustment, Product, Location). AdjustmentList crea/actualiza la línea principal sólo cuando cambia ese agregado. Al borrar la última fila cero, la clave agregada puede desaparecer y la línea padre no recibe una cantidad física cero. AdjustmentInProgress hace la línea padre de sólo lectura cuando useList está activo, así que el camino de hojas es decisivo. AdjustmentDone calcula `difference = realQuantity - theoreticalQuantity` y crea InvAdjustment sólo cuando hay diferencia.
+3. **Fill y productos con onHand=0 (limitación distinta):** Adjustment.fill incluye productos de ubicaciones descendientes para los que onHand(location, product) es verdadero. Un artículo con onHand positivo en el sistema sí queda disponible para contar físicamente cero; por tanto no es correcto afirmar que Fill impide registrar la falta total de ese artículo. Sí quedan fuera los productos cuyo onHand del sistema ya es cero/nulo, lo que dificulta un inventario amplio que busque excedentes físicos no registrados. Hay que decidir si esa selección es el comportamiento intencional del modo “todos” o una limitación.
+4. **Estado de validación:** estos puntos son observaciones estáticas de lsFusion 6.2 fijado; no se ha ejecutado todavía el circuito en runtime. La corrección prevista distingue NULL (borrar/ausencia) de 0 (conteo exacto), sin cambiar el InvLedger ni crear otro motor de stocktake.
+
+**Pruebas imprescindibles:** barcode con cero sobre una cantidad teórica positiva; cero en hoja sin línea previa; edición manual de una línea a cero; suma de varias hojas con una en cero; borrar explícitamente una línea; comprobar línea padre y diferencia -teórico; validar y comprobar un único InvAdjustment negativo, InvLedger, reportes y persistencia. Además: artículo omitido por Fill; artículo sin movimientos; dos ubicaciones; cambio de stock entre fecha teórica y conteo; recuento; cancelación; validación duplicada; permisos de depósito; lote/serie; costo del ajuste y reinicio.
 
 ### 5.6 Compras, recepciones y costo de inventario
 
@@ -292,7 +295,7 @@ Reutilizar ReceiptCost, ShipmentCost, AdjustmentCost, BillReceiptCost, BillRecei
 
 SalesLedgerInvoiceShipment aporta costo de ShipmentLine; SalesLedgerBillReceipt aporta el costo real de ReceiptLine para devoluciones. No usar sólo costo planificado cuando exista costo real vinculado.
 
-**Riesgo FIFO prioritario:** CostLedger.lsf ordena movimientos de salida por producto/fecha y reparte cantidades desde InCostLedger, pero las dos condiciones temporales dateTime(InCostLedger) <= dateTime(OutCostLedger) aparecen comentadas. Es un riesgo estático fuerte: una salida anterior podría recibir una capa de entrada posterior durante el cálculo/recalculo. No está confirmado por runtime; puede depender de política de backdating/stock negativo.
+**Riesgo FIFO prioritario:** CostLedger.calculateCost() ordena los movimientos de salida marcados para recalcular por fecha y producto. Para cada salida busca capas InCostLedger de igual ubicación/producto y reparte cantidades no costeadas, pero en las dos ramas de asignación FIFO aparece comentado dateTime(il) <= dateTime(ol). Por lo tanto, al recalcular un conjunto que contiene una salida anterior y una entrada posterior, la consulta de capas no impide estáticamente consumir esa entrada futura. Es un riesgo reproducible en principio, no un bug runtime confirmado; hay que establecer la política de inventario negativo/backdating antes de corregir.
 
 Test FIFO: misma ubicación/producto; salida anterior a entrada; entrada anterior a salida; capas con costos distintos; inventario negativo transitorio; transferencias; backdating; recalcular desde fecha; comparar consumo por capa, amount(OutCostLedger), precio unitario y margen de SalesLedger. Definir qué debe suceder ante salida anterior a recepción antes de corregir fuente upstream.
 
@@ -383,7 +386,7 @@ Las claves de intercambio del export de reposición no son necesariamente PK: in
 ### P0 — primero, antes de ampliar el circuito comercial
 
 1. **Devolución parcial:** diagnosticar cuerpo 5-byte y Content-Type; investigar Bill.amount y OutgoingPayment.amount; probar dos credit notes, rechazo real, egresos correctos, Receipt, InvLedger, neto por método, acumulado de reintegros, cancelación y reinicio.
-2. **Stocktake cero:** reproducir zero count en hojas/barcode y producto omitido por Fill; si se confirma, diseñar corrección sobre la extensión adecuada sin ledger paralelo.
+2. **Stocktake cero:** corregir setRealQuantity para guardar q=0 y borrar sólo con NULL; probar cero en barcode, agregación de hojas, diferencia negativa, único InvAdjustment e impacto en InvLedger. Separar la política de Fill para artículos con onHand=0.
 3. **FIFO temporal:** reproducir salida anterior a entrada; definir semántica; sólo entonces cambiar algoritmo y test.
 4. **SalesLedger costo real:** probar sin/partial/full shipment y devoluciones sin/con receipt; confirmar selección/semántica de ABSTRACT VALUE.
 5. **Restore selectivo:** fallo pg_restore, fallo por tabla, import parcial y cleanup; error inequívoco, sin DB temporal huérfana ni aplicación parcial.
