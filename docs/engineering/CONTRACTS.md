@@ -53,7 +53,7 @@ Cuando se incorpore mensajería/eventos:
 
 ## 2. Contrato MyCompany 6.2 — fuente nativa de reposición
 
-<badge>Estado: candidato, no productivo</badge>
+**Estado: candidato, no productivo.**
 
 ### 2.1 Identificación y seguridad
 
