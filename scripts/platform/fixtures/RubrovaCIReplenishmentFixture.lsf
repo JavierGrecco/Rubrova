@@ -1,0 +1,138 @@
+MODULE RubrovaCIReplenishmentFixture;
+
+REQUIRE MyCompany, RubrovaCISalesFixture;
+
+NAMESPACE Rubrova;
+
+// Datos efímeros sólo para smoke CI: disparan los flujos nativos de órdenes,
+// reservas de despacho y recepciones previstas. No se instala en producción.
+rubrovaCIReplenishmentFixtureSeeded = DATA BOOLEAN ();
+rubrovaCIReplenishmentPartner = DATA MasterData.Individual ();
+
+loadDefaultData () + {
+    IF NOT rubrovaCIReplenishmentFixtureSeeded() THEN {
+        NEW partnerCI = MasterData.Individual {
+            MasterData.id(partnerCI) <- 'rubrova-ci-partner';
+            MasterData.firstName(partnerCI) <- 'Proveedor';
+            MasterData.lastName(partnerCI) <- 'de prueba Rubrova';
+            rubrovaCIReplenishmentPartner() <- partnerCI;
+            MasterData.isVendor(partnerCI) <- TRUE;
+            MasterData.isCustomer(partnerCI) <- TRUE;
+        }
+
+        NEW salesOrderCI = Sales.Order {
+            Sales.type(salesOrderCI) <- Sales.orderType('order');
+            Sales.customer(salesOrderCI) <- rubrovaCIReplenishmentPartner();
+            Sales.company(salesOrderCI) <- MasterData.defaultCompany();
+            Sales.location(salesOrderCI) <- Sales.rubrovaCITestLocation();
+            Sales.currency(salesOrderCI) <- MasterData.defaultCurrency();
+            Sales.scheduledDateTime(salesOrderCI) <- currentDateTime();
+            Sales.customerReference(salesOrderCI) <- 'rubrova-ci-outgoing';
+
+            NEW salesLineCI = Sales.OrderLine {
+                Sales.order(salesLineCI) <- salesOrderCI;
+                Sales.item(salesLineCI) <- Sales.rubrovaCITestProduct();
+                Sales.quantity(salesLineCI) <- 2;
+                Sales.price(salesLineCI) <- 1250;
+            }
+            // MyCompany genera Shipment y su ledger de reserva al confirmar.
+            Sales.confirmed(salesOrderCI) <- TRUE;
+        }
+
+        // La recepción se mantiene prevista y no incrementa available antes de ser recibida.
+        Inventory.increaseAvailableStock(Inventory.receiptType('receipt')) <- NULL;
+        NEW purchaseOrderCI = Purchase.Order {
+            Purchase.type(purchaseOrderCI) <- Purchase.orderType('order');
+            Purchase.vendor(purchaseOrderCI) <- rubrovaCIReplenishmentPartner();
+            Purchase.company(purchaseOrderCI) <- MasterData.defaultCompany();
+            Purchase.location(purchaseOrderCI) <- Sales.rubrovaCITestLocation();
+            Purchase.currency(purchaseOrderCI) <- MasterData.defaultCurrency();
+            Purchase.scheduledDateTime(purchaseOrderCI) <- currentDateTime();
+            Purchase.vendorReference(purchaseOrderCI) <- 'rubrova-ci-incoming';
+
+            NEW purchaseLineCI = Purchase.OrderLine {
+                Purchase.order(purchaseLineCI) <- purchaseOrderCI;
+                Purchase.item(purchaseLineCI) <- Sales.rubrovaCITestProduct();
+                Purchase.quantity(purchaseLineCI) <- 3;
+                Purchase.price(purchaseLineCI) <- 1000;
+            }
+            // PurchaseOrderReceipt crea una Receipt ready y ReceiptResLedger.
+            Purchase.confirmed(purchaseOrderCI) <- TRUE;
+        }
+
+        rubrovaCIReplenishmentFixtureSeeded() <- TRUE;
+    }
+}
+
+// Confirmada la orden, el trigger nativo crea un Shipment waiting con su línea.
+// La reserva usa prevAvailableRec, por eso se ejecuta en una llamada API posterior
+// al bootstrap, cuando el stock sintético de CI ya quedó confirmado.
+rubrovaCIOutgoingOrder() = GROUP MAX Sales.Order o
+    IF Sales.customerReference(o) = 'rubrova-ci-outgoing';
+rubrovaCIOutgoingShipment() = Sales.reserveShipment(rubrovaCIOutgoingOrder());
+rubrovaCIOutgoingOrderLine() = GROUP MAX Sales.OrderLine ol
+    IF Sales.order(ol) = rubrovaCIOutgoingOrder();
+
+rubrovaPrepareOutgoingReservation 'Preparar reserva sintética de salida' () {
+    // Replicar el ciclo transaccional de ShipmentReady.checkAvailability:
+    // precheckAvailability calcula la reserva en la sesión actual; APPLY la persiste
+    // para que la exportación, ejecutada en otra petición HTTP, lea el mismo valor.
+    IF rubrovaCIOutgoingShipment() THEN
+        NEWSESSION {
+            Inventory.precheckAvailability(rubrovaCIOutgoingShipment());
+            APPLY;
+        }
+
+    EXPORT JSON FROM
+        outgoingOpenQuantity = (GROUP SUM Sales.toShip(Sales.OrderLine ol)
+            IF Sales.order(ol) = rubrovaCIOutgoingOrder()),
+        outgoingReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Inventory.shipment(sl) = rubrovaCIOutgoingShipment()),
+            0),
+        outgoingShipmentLineCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.shipment(Inventory.ShipmentLine sl) = rubrovaCIOutgoingShipment()),
+            0),
+        outgoingSalesOrderLineCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.order(Sales.OrderLine ol) = rubrovaCIOutgoingOrder()),
+            0),
+        outgoingLinkedShipmentLineCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.orderLine(Inventory.ShipmentLine sl) = rubrovaCIOutgoingOrderLine()),
+            0),
+        outgoingLinkedReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()),
+            0),
+        outgoingLinkedPositiveReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+                    AND Inventory.lineReserved(sl) > 0),
+            0),
+        outgoingLinkedReservableReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+                    AND Inventory.toReserve(Inventory.shipment(sl))),
+            0),
+        outgoingLinkedEffectiveReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+                    AND Inventory.lineReserved(sl) > 0
+                    AND Inventory.toReserve(Inventory.shipment(sl))),
+            0),
+        outgoingNativeSalesReservedQuantity = (OVERRIDE Sales.reserved(rubrovaCIOutgoingOrderLine()), 0),
+        outgoingNativeLedgerReservedQuantity = (OVERRIDE
+            (GROUP SUM Inventory.ledgerReserved(Inventory.ShipmentLine sl)
+                IF Inventory.shipment(sl) = rubrovaCIOutgoingShipment()),
+            0),
+        outgoingShipmentLines = (JSON FROM
+            shipmentLineIndex = Inventory.index(Inventory.ShipmentLine sl),
+            orderLineIndex = Sales.index(Sales.orderLine(sl)),
+            reserved = Inventory.reserved(sl),
+            ledgerReserved = Inventory.ledgerReserved(sl),
+            lineReserved = Inventory.lineReserved(sl),
+            waiting = Inventory.waiting(Inventory.shipment(sl)),
+            ready = Inventory.ready(Inventory.shipment(sl)),
+            linkedToFixtureOrder = Sales.orderLine(sl) = rubrovaCIOutgoingOrderLine()
+            WHERE Inventory.shipment(sl) = rubrovaCIOutgoingShipment()
+        );
+} @@api;

@@ -9,9 +9,15 @@ const read = (relative) => readFileSync(path.join(root, relative), "utf8");
 
 const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
 const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
+const remoteConnectionSource = read("vendor/platform/server/src/main/java/lsfusion/server/physics/admin/authentication/controller/remote/RemoteConnection.java");
 const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
 const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
+const replenishmentExportSource = read("extensions/lsfusion/RubrovaReplenishmentExport.lsf");
+const replenishmentBridgeSource = read("scripts/replenishment/adapt_mycompany_native_export.py");
+const replenishmentBridgeTestsSource = read("scripts/replenishment/test_adapt_mycompany_native_export.py");
+const nativeReplenishmentFixture = JSON.parse(read("docs/fixtures/mycompany-native-replenishment-export.json"));
+const replenishmentPolicyFixture = JSON.parse(read("docs/fixtures/replenishment-planning-policy.json"));
 const paymentArchitectureSource = read("docs/PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
@@ -20,6 +26,7 @@ const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
 const nativeSalesFixtureSource = read("scripts/platform/fixtures/RubrovaCISalesFixture.lsf");
 const nativeRetailFixtureSource = read("scripts/platform/fixtures/RubrovaCIRetailFixture.lsf");
 const nativeIntegrationFixtureSource = read("scripts/platform/fixtures/RubrovaCIIntegrationFixture.lsf");
+const nativeReplenishmentFixtureSource = read("scripts/platform/fixtures/RubrovaCIReplenishmentFixture.lsf");
 const nativeListenerCheckSource = read("scripts/platform/native-listener-check.sh");
 const nativeListenerCheckTestsSource = read("scripts/platform/test-native-listener-check.sh");
 const nativePreviewSource = read("scripts/platform/run-local-native-preview.py");
@@ -41,6 +48,8 @@ const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing
 const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
 const markdownViewerSource = read("vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
+const plannerWorkflowSource = read(".github/workflows/replenishment-planner.yml");
+const localPreflightSource = read("scripts/platform/local-preflight.sh");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
 const runtimeServerDockerfile = read("build/rubrova/runtime/Dockerfile.server");
@@ -92,6 +101,19 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(preparerSource, /Hash SHA-256 incorrecto para el Compose/);
   assert.match(preparerSource, /RUBROVA_SKIP_OFFICIAL_LOGIC_JAR/);
   assert.match(preparerSource, /Omitiendo el JAR oficial de lógica/);
+});
+
+test("la inicialización de conexiones RMI serializa las escrituras de locale por usuario", () => {
+  const init = remoteConnectionSource.split("public void initConnectionContext")[1]?.split("private void initUser")[0] || "";
+  assert.match(remoteConnectionSource, /private static final Object\[\] userContextLocks = createUserContextLocks\(\)/);
+  assert.match(remoteConnectionSource, /Math[.]floorMod\(login == null \? 0 : login[.]hashCode\(\), userContextLocks[.]length\)/);
+  assert.match(init, /String userLogin = securityManager[.]parseToken\(token\)/);
+  assert.match(init, /synchronized \(userContextLock\(userLogin\)\)/);
+  assert.ok(
+    init.indexOf("synchronized (userContextLock(userLogin))") < init.indexOf("getExecSession()"),
+    "El bloqueo por usuario debe adquirirse antes de abrir una transacción PostgreSQL."
+  );
+  assert.match(remoteConnectionSource, /clientLanguage[.]change\(userInfo[.]language, session, user\)/);
 });
 
 test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con opt-in", () => {
@@ -313,13 +335,18 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-runtime-smoke-${{ github.ref }}"));
   assert.match(runtimeWorkflowSource, /build-fork:/);
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-build-fork-${{ github.ref }}"));
+  assert.ok(
+    runtimeWorkflowSource.includes("group: rubrova-platform-${{ github.event.pull_request.number || github.ref }}"),
+    "El workflow completo debe cancelar la corrida anterior del mismo PR cuando llega un commit nuevo."
+  );
   assert.equal(
-    (runtimeWorkflowSource.match(/cancel-in-progress: true/g) || []).length,
+    (runtimeWorkflowSource.match(/^      cancel-in-progress: true$/gm) || []).length,
     4,
-    "El build, los dos smoke nativos y la aceptación Docker deben cancelar ejecuciones obsoletas."
+    "El build, los dos smoke nativos y la aceptación Docker deben conservar sus controles de concurrencia por job."
   );
   assert.doesNotMatch(runtimeWorkflowSource, /cancel-in-progress: false/);
-  assert.match(runtimeWorkflowSource, /native-runtime-smoke:/);
+  assert.match(runtimeWorkflowSource, /native-runtime-smoke:\n    if: github[.]event_name == 'workflow_dispatch'/);
+  assert.match(runtimeWorkflowSource, /runtime-smoke:\n    if: github[.]event_name == 'workflow_dispatch'/);
   assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
   assert.match(runtimeWorkflowSource, /runs-on: macos-26/);
   assert.match(runtimeWorkflowSource, /brew --prefix postgresql@18/);
@@ -334,11 +361,24 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
   assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RUNTIME_SURVIVED_LOCAL_PROBE=true/);
   assert.match(nativeSmokeSource, /mock-integration-provider[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_CI_SALES_FIXTURE=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POS_ACCEPTANCE=passed/);
   assert.match(nativeSmokeSource, /UI_SALE_PAYMENT_RECONCILED=true/);
   assert.match(nativeSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RESTART_PERSISTENCE=passed/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_PORTS_RELEASED=true/);
+  assert.match(nativeSmokeSource, /assert_native_ports_released/);
+  assert.match(nativeSmokeSource, /lsof -nP -t -iTCP:/);
+  assert.match(nativeSmokeSource, /ss -H -ltn/);
+  assert.match(nativeSmokeSource, /RUBROVA_UI_VERIFY_PERSISTED_ONLY=true/);
+  assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_INCIDENTS_RETAINED=true/);
+  assert.match(nativePreviewSource, /signal[.]signal\(signal[.]SIGTERM, handle_shutdown_signal\)/);
+  assert.match(nativePreviewSource, /os[.]killpg\(process[.]pid, signal[.]SIGTERM\)/);
+  assert.match(nativePreviewSource, /os[.]killpg\(process[.]pid, signal[.]SIGKILL\)/);
+  assert.match(nativePreviewSource, /raise KeyboardInterrupt/);
   assert.match(nativePreviewSource, /def ensure_ci_sales_fixture/);
   assert.match(nativePreviewSource, /RUBROVA_CI_SALES_FIXTURE/);
   assert.match(nativeSalesFixtureSource, /REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaCIRetailFixture/);
@@ -346,6 +386,39 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSalesFixtureSource, /rubrovaTestSessionCloseApi/);
   assert.match(nativeRetailFixtureSource, /Caja de prueba Rubrova/);
   assert.match(nativeIntegrationFixtureSource, /rubrovaTestHttpRecovery/);
+  assert.match(nativePreviewSource, /RubrovaCIReplenishmentFixture[.]lsf/);
+  assert.match(nativePreviewSource, /RubrovaCIReplenishmentFixture/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrova-ci-outgoing/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrova-ci-incoming/);
+  const outgoingOrderGrouping = nativeReplenishmentFixtureSource
+    .split("rubrovaCIOutgoingOrder() = ")[1]
+    ?.split(";")[0] ?? "";
+  assert.ok(outgoingOrderGrouping.startsWith("GROUP MAX Sales.Order o"));
+  assert.ok(
+    outgoingOrderGrouping.includes("\n    IF Sales.customerReference(o) = 'rubrova-ci-outgoing'"),
+    "La agrupación lsFusion debe filtrar con IF; WHERE no está permitido en este GroupingType."
+  );
+  assert.ok(
+    !outgoingOrderGrouping.includes("WHERE"),
+    "No introducir WHERE después de GROUP MAX en el fixture nativo."
+  );
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReplenishmentPartner\(\) <- partnerCI/);
+  assert.match(nativeReplenishmentFixtureSource, /Sales[.]customer\(salesOrderCI\) <- rubrovaCIReplenishmentPartner\(\)/);
+  assert.match(nativeReplenishmentFixtureSource, /Purchase[.]vendor\(purchaseOrderCI\) <- rubrovaCIReplenishmentPartner\(\)/);
+  assert.match(nativeReplenishmentFixtureSource, /Sales[.]confirmed\(salesOrderCI\)/);
+  assert.match(nativeReplenishmentFixtureSource, /Purchase[.]confirmed\(purchaseOrderCI\)/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaPrepareOutgoingReservation/);
+  assert.match(nativeReplenishmentFixtureSource, /Inventory[.]precheckAvailability\(rubrovaCIOutgoingShipment\(\)\)/);
+  assert.match(uiSmokeSource, /def prepare_ci_outgoing_reservation\(/);
+  assert.match(uiSmokeSource, /rubrovaPrepareOutgoingReservation/);
+  assert.match(uiSmokeSource, /UI_REPLENISHMENT_CI_RESERVATION_PREPARED=/);
+  assert.match(nativeReplenishmentFixtureSource, /Inventory[.]increaseAvailableStock\(Inventory[.]receiptType\('receipt'\)\) <- NULL/);
+  assert.match(nativeSmokeSource, /RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT=true/);
+  assert.match(uiSmokeSource, /RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT/);
+  assert.match(uiSmokeSource, /UI_REPLENISHMENT_POSITIVE_FIXTURES/);
+  assert.match(uiSmokeSource, /row[.]get\("increaseAvailableStock"\) is not None/);
+  assert.match(uiSmokeSource, /incoming_increase_available is True/);
+  assert.match(nativeReplenishmentFixtureSource, /increaseAvailableStock.*<- NULL/);
   assert.match(nativeSmokeSource, /native-diagnostics[.]log/);
   assert.match(runtimeWorkflowSource, /rubrova-native-smoke\/native-diagnostics[.]log/);
   assert.doesNotMatch(nativeSmokeSource, /(^|[ \\t])docker([ \\t]|$)|docker-compose/);
@@ -357,6 +430,10 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /127[.]0[.]0[.]1:8080\/login/);
   assert.match(nativePreviewSource, /HTTP 404 en el cliente/);
   assert.match(nativePreviewSource, /ET[.]register_namespace\("", namespace\[1:-1\]\)/);
+  assert.match(nativePreviewSource, /manager[.]set\("pathname", ""\)/);
+  assert.match(nativeRuntimeTestsSource, /test_existing_tomcat_session_manager_is_made_non_persistent/);
+  assert.match(nativePreviewSource, /lsFusion's web sessions contain Spring\/lsFusion objects/);
+  assert.match(nativePreviewSource, /PostgreSQL/);
   assert.match(nativePreviewSource, /Tomcat servlet mapping:/);
   assert.match(nativePreviewSource, /Ruta \/login declarada en web.xml/);
   assert.match(nativeRuntimeTestsSource, /self[.]assertIn\('xmlns="http:\/\/java[.]sun[.]com\/xml\/ns\/javaee"'/);
@@ -387,8 +464,17 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /needs: \[validate, build-fork\]/);
   assert.match(runtimeWorkflowSource, /java-version: "21"/);
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f build\/rubrova\/pom[.]xml -Passemble -DskipTests package/);
-  assert.match(runtimeWorkflowSource, /Recompilar servidor y cliente web con dependencias de runtime/);
-  assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor\/platform\/pom[.]xml -pl server,web-client -am -DskipTests package/);
+  assert.match(runtimeWorkflowSource, /Empaquetar servidor y cliente reutilizando GWT/);
+  assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor/);
+  assert.match(runtimeWorkflowSource, /-DskipTests -Dgwt[.]skipCompilation=true package/);
+  assert.match(runtimeWorkflowSource, /GWT compilation is skipped/);
+  assert.match(runtimeWorkflowSource, /if grep -Fq "Compiling module lsfusion[.]gwt[.]main"/);
+  assert.match(runtimeWorkflowSource, /GWT_BOOTSTRAP/);
+  assert.match(runtimeWorkflowSource, /GWT_FRAGMENT/);
+  assert.match(runtimeWorkflowSource, /timeout --signal=TERM --kill-after=30s 8m/);
+  assert.match(runtimeWorkflowSource, /GWT_BOOTSTRAP/);
+  assert.match(runtimeWorkflowSource, /GWT_FRAGMENT/);
+  assert.match(runtimeWorkflowSource, /timeout --signal=TERM --kill-after=30s 8m/);
   assert.doesNotMatch(runtimeWorkflowSource, /-f vendor\/platform\/pom[.]xml -pl server,web-client -am -Passemble/);
   assert.match(runtimeWorkflowSource, /WEB-INF\/lib\/api-6[.]2[.]jar/);
   assert.match(runtimeWorkflowSource, /rubrova-client-api[.]jar/);
@@ -428,14 +514,15 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
   assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES=712/);
   assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
-  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 5'));
+  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 6'));
   assert.match(runtimeSmokeSource, /RubrovaCISalesFixture[.]lsf/);
   assert.match(runtimeSmokeSource, /currency\(priceType\('retail'\)\) <- MasterData[.]defaultCurrency\(\)/);
   assert.match(runtimeSmokeSource, /RUBROVA_CI_SALES_LOG_EVIDENCE/);
   assert.match(uiSmokeSource, /UI_RECEIPT_PRODUCT_LINES/);
   assert.match(uiSmokeSource, /UI_RECEIPT_LINE_COUNT/);
   assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
-  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaCISalesFixture\|topModule/);
+  assert.match(runtimeSmokeSource, /RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaReplenishmentExport\|RubrovaCISalesFixture\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
   assert.match(runtimeSmokeSource, /Exception while starting logics instance/);
   assert.match(runtimeSmokeSource, /missing \.\+ at/);
@@ -509,7 +596,7 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
-  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
@@ -1039,13 +1126,243 @@ test("todas las llamadas HTTP heredadas tienen un límite global efectivo", () =
 });
 
 
+test("la API nativa de reposición sólo exporta hechos MyCompany y conserva magnitudes distintas", () => {
+  assert.match(replenishmentExportSource, /^MODULE RubrovaReplenishmentExport;/m);
+  assert.match(replenishmentExportSource, /^REQUIRE MyCompany;/m);
+  assert.match(replenishmentExportSource, /rubrovaExportReplenishmentSource/);
+  assert.match(replenishmentExportSource, /} @@api;/);
+  const replenishmentApiActions = [
+    ...replenishmentExportSource.matchAll(/^\w+\s+'[^']+'\s+\(\)\s*\{([\s\S]*?)^\}\s*@@api;/gm)
+  ];
+  assert.equal(
+    replenishmentApiActions.length,
+    4,
+    "La exportación y las tres sondas deben seguir siendo endpoints autenticados independientes."
+  );
+  for (const [index, action] of replenishmentApiActions.entries()) {
+    assert.match(
+      action[1],
+      /^\s*EXPORT JSON FROM/m,
+      "El endpoint MyCompany " + (index + 1) + " debe usar EXPORT JSON FROM compatible con lsFusion 6.2."
+    );
+    assert.doesNotMatch(
+      action[1],
+      /^\s*RETURN JSON FROM/m,
+      "RETURN JSON FROM no es sintaxis del RETURN sin expresión de lsFusion 6.2."
+    );
+  }
+  for (const field of [
+    "Inventory.onHand(l, p)",
+    "Inventory.available(l, p)",
+    "onHandNative = Inventory.onHand(l, p)",
+    "availableNative = Inventory.available(l, p)",
+    "OVERRIDE Inventory.available(l, p)",
+    "OVERRIDE Inventory.planned(l, p)",
+    "Inventory.planned(l, p)",
+    "Sales.toShip(ol)",
+    "Sales.order(Sales.OrderLine ol)",
+    "Sales.index(ol)",
+    "Sales.shippedProduct(ol)",
+    "Sales.scheduledDateTime(Sales.order(ol))",
+    "Sales.index(ol)",
+    "Inventory.index(Inventory.line(rr))",
+    "Purchase.index(Purchase.orderLine(Inventory.line(rr)))",
+    "sourceLineId = (CONCAT",
+    "lineId = (CONCAT",
+    "Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))",
+    "Inventory.expected(l, p)",
+    "Inventory.reserved(l, p)",
+    "Inventory.ShipmentLine sl",
+    "Sales.orderLine(sl)",
+    "Inventory.reserved(sl)",
+    "Inventory.ledgerReserved(sl)",
+    "Inventory.toReserve(Inventory.shipment(sl))",
+    "Inventory.ReceiptResLedger",
+    "Inventory.increaseAvailableStock",
+    "expectedReservationSigned = Inventory.reserved(rr)",
+    "Inventory.ready(Inventory.receipt(Inventory.line(rr)))",
+    "NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))",
+    "NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))"
+  ]) {
+    assert.ok(replenishmentExportSource.includes(field), "La extracción debe incluir " + field);
+  }
+  assert.doesNotMatch(replenishmentExportSource, /fillAuto\s*\(/);
+  assert.doesNotMatch(replenishmentExportSource, /NEW\s+\w+\s*=|DELETE\s+/);
+  assert.match(replenishmentExportSource, /snapshotType = 'mycompany-replenishment-source-export'/);
+  assert.match(replenishmentExportSource, /quantityPrecision = 3/);
+  assert.match(replenishmentExportSource, /readOnly = TRUE/);
+  assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
+  assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
+  assert.match(replenishmentExportSource, /emptyCollectionPolicy = 'collection counts are authoritative/);
+  for (const countField of ["inventoryCount", "outgoingCommitmentsCount", "outgoingReservationsCount", "receiptsCount"]) {
+    assert.ok(
+      replenishmentExportSource.includes(countField + " = (OVERRIDE"),
+      countField + " debe usar un conteo agregado con fallback explícito."
+    );
+    assert.ok(
+      replenishmentExportSource.split(countField + " =").length - 1 >= 2,
+      countField + " debe existir tanto en la exportación completa como en su sonda aislada."
+    );
+  }
+  assert.ok(uiSmokeSource.includes("def _native_collection("));
+  assert.ok(uiSmokeSource.includes("expected_count == 0"));
+  assert.ok(uiSmokeSource.includes("outgoingReservationsCount"));
+  assert.ok(uiSmokeSource.includes("reserveEligible"));
+  assert.ok(uiSmokeSource.includes("reservedQuantityNative"));
+  assert.ok(uiSmokeSource.includes("ledgerReservedQuantityNative"));
+  assert.ok(uiSmokeSource.includes("Emit the exact source facts before semantic validation"));
+  assert.ok(uiSmokeSource.includes("len(rows) != expected_count"));
+  assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON="));
+  assert.ok(uiSmokeSource.includes("reserved > commitments_by_id[line_id] + 0.001"));
+  const outgoingExportQuery = replenishmentExportSource.split("outgoingCommitments = (JSON FROM")[1]?.split("outgoingReservations = (JSON FROM")[0] ?? "";
+  assert.ok(outgoingExportQuery.includes("openQuantity = Sales.toShip(ol)"));
+  assert.doesNotMatch(outgoingExportQuery, /effectiveReserved|Sales\.reserved\(ol\)/,
+    "La fila de Sales.OrderLine no debe calcular reservas agregadas dentro de JSON FROM.");
+  const outgoingExportReservationsQuery = replenishmentExportSource.split("outgoingReservations = (JSON FROM")[1]?.split("        receipts = (JSON FROM")[0] ?? "";
+  for (const field of [
+    "Sales.orderLine(Inventory.ShipmentLine sl)",
+    "Inventory.reserved(sl)",
+    "Inventory.ledgerReserved(sl)",
+    "Inventory.toReserve(Inventory.shipment(sl))",
+    "reserveEligible = Inventory.toReserve(Inventory.shipment(sl))",
+    "shipmentLineId = (CONCAT"
+  ]) {
+    assert.ok(outgoingExportReservationsQuery.includes(field), "La API debe exportar el hecho nativo " + field);
+  }
+  assert.doesNotMatch(outgoingExportReservationsQuery, /GROUP SUM|Sales\.reserved\(|Inventory\.lineReserved\(sl\)/,
+    "La colección de reservas expone filas nativas sin agregación correlacionada.");
+  const outgoingProbeQuery = replenishmentExportSource.split("rubrovaProbeOutgoingCommitments")[1]?.split("rubrovaProbeReceipts")[0] ?? "";
+  assert.ok(outgoingProbeQuery.includes("outgoingReservations = (JSON FROM"));
+  assert.ok(outgoingProbeQuery.includes("Inventory.reserved(sl)"));
+  assert.ok(outgoingProbeQuery.includes("Inventory.ledgerReserved(sl)"));
+  assert.doesNotMatch(outgoingProbeQuery, /effectiveReserved =|Sales\.reserved\(ol\)/);
+  assert.equal(
+    (replenishmentExportSource.match(/outgoingReservations = \(JSON FROM/g) ?? []).length,
+    2,
+    "Exportación y sonda deben incluir ambas las líneas nativas de reserva."
+  );
+  assert.equal(
+    (outgoingExportQuery.match(/Sales\.OrderLine ol/g) ?? []).length,
+    1,
+    "Sales.OrderLine debe declararse una sola vez en la consulta de compromisos; el resto de campos reutiliza ol."
+  );
+  assert.ok(
+    !replenishmentExportSource.includes("BPSTRING[10]"),
+    "Los índices de línea deben conservar su fuente de conjunto y no quedar ocultos tras BPSTRING."
+  );
+  assert.match(replenishmentExportSource, /reservedQuantityNative = \(OVERRIDE Inventory\.reserved\(sl\), 0\)/);
+  assert.match(replenishmentExportSource, /ledgerReservedQuantityNative = \(OVERRIDE Inventory\.ledgerReserved\(sl\), 0\)/);
+  assert.doesNotMatch(replenishmentExportSource, /Inventory\.lineReserved\(sl\)/);
+  assert.match(
+    nativeReplenishmentFixtureSource,
+    /NEWSESSION\s*\{\s*Inventory\.precheckAvailability\(rubrovaCIOutgoingShipment\(\)\);\s*APPLY;\s*\}/s,
+    "El fixture debe persistir el precheck nativo en una sesión independiente antes de validar la exportación."
+  );
+  assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
+  assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
+  assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
+  assert.doesNotMatch(replenishmentExportSource, /<>/);
+  assert.equal(
+    (replenishmentExportSource.match(/(?:sourceLineId|lineId|purchaseOrderLineId) = \(CONCAT /g) ?? []).length,
+    8,
+    "Todos los identificadores compuestos deben agrupar CONCAT dentro de JSON FROM para conservar los límites de columnas."
+  );
+  assert.doesNotMatch(
+    replenishmentExportSource,
+    /(?:sourceLineId|lineId|purchaseOrderLineId) = CONCAT\b/,
+    "No se permite CONCAT sin paréntesis en columnas de JSON FROM."
+  );
+  assert.doesNotMatch(replenishmentExportSource, /(?:Sales|Purchase)\.id\(/);
+  assert.doesNotMatch(replenishmentExportSource, /Inventory\.id\(Inventory\.line\(/);
+  assert.doesNotMatch(replenishmentExportSource, /LONG\((?:ol|Sales\.order|Inventory\.line|Inventory\.receipt|Purchase\.order|Purchase\.orderLine)/);
+  assert.match(replenishmentExportSource, /outgoingIdentity = 'Sales\.number\(Order\) \+ Sales\.index\(OrderLine\)'/);
+  assert.match(replenishmentExportSource, /incomingIdentity = 'Receipt\.number \+ ReceiptLine\.index'/);
+  assert.match(replenishmentExportSource, /expectedReservationSigned = Inventory\.reserved\(rr\)/);
+  assert.match(replenishmentExportSource, /Inventory\.expected\(l, p\) != 0/);
+  assert.match(uiSmokeSource, /verify_replenishment_source_export\(context, url\)/);
+  for (const probe of [
+    "rubrovaProbeInventory",
+    "rubrovaProbeOutgoingCommitments",
+    "rubrovaProbeReceipts"
+  ]) {
+    assert.ok(replenishmentExportSource.includes(probe), "Falta la sonda de diagnóstico " + probe);
+    assert.ok(uiSmokeSource.includes(probe), "El smoke debe ejecutar la sonda " + probe);
+  }
+  assert.ok(uiSmokeSource.includes("probe_replenishment_source_sections(context, url)"));
+  assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_CI_RESERVATION_DIAGNOSTICS="));
+  assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_ROWS="));
+  for (const fragment of [
+    "outgoingLinkedShipmentLineCount",
+    "outgoingLinkedReservedQuantity",
+    "outgoingLinkedPositiveReservedQuantity",
+    "outgoingLinkedReservableReservedQuantity",
+    "outgoingLinkedEffectiveReservedQuantity",
+    "outgoingNativeSalesReservedQuantity",
+    "outgoingNativeLedgerReservedQuantity",
+    "linkedToFixtureOrder"
+  ]) {
+    assert.ok(!replenishmentExportSource.includes(fragment),
+      "Los diagnósticos deben quedar aislados en el fixture temporal de CI.");
+    assert.ok(read("scripts/platform/fixtures/RubrovaCIReplenishmentFixture.lsf").includes(fragment),
+      "Falta evidencia temporal del vínculo de reserva: " + fragment);
+  }
+  assert.match(uiSmokeSource, /UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true/);
+});
+
+test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no concilian", () => {
+  for (const fragment of [
+    "from decimal import Decimal",
+    "def _milli(",
+    "if available != on_hand - planned:",
+    "plannedNetReservationMilli",
+    "expectedInboundMilli",
+    "outgoing_reservations",
+    "receipt_quantities",
+    "increaseAvailableStock=true",
+    "Falta una política de planificación explícita",
+    "adapt_snapshot(snapshot)"
+  ]) {
+    assert.ok(replenishmentBridgeSource.includes(fragment), "El puente debe validar " + fragment);
+  }
+  for (const forbidden of ["psycopg", "psycopg2", "sqlalchemy", "requests.", "urllib."]) {
+    assert.equal(replenishmentBridgeSource.includes(forbidden), false, "El puente no debe conectarse directamente a bases o servicios externos.");
+  }
+  assert.ok(replenishmentBridgeTestsSource.includes("test_unmodeled_planned_reservations_block_planning_even_when_available_matches"));
+  assert.ok(replenishmentBridgeTestsSource.includes("test_unrepresented_negative_reservations_block_planning"));
+  assert.ok(replenishmentBridgeTestsSource.includes("test_quantities_with_more_than_three_decimals_are_rejected_not_rounded"));
+  assert.ok(
+    uiSmokeSource.includes("\"outgoingEffectiveReservation\": \"SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)\","),
+    "El inspector debe validar la agregación de hechos ShipmentLine por sourceLineId."
+  );
+  assert.ok(uiSmokeSource.includes("def _outgoing_reservation_totals("));
+  assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_EFFECTIVE_TOTALS="));
+  assert.equal(nativeReplenishmentFixture.snapshotType, "mycompany-replenishment-source-export");
+  assert.equal(nativeReplenishmentFixture.schemaVersion, 2);
+  assert.equal(
+    nativeReplenishmentFixture.sourceSemantics.outgoingEffectiveReservation,
+    "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)"
+  );
+  assert.ok(
+    replenishmentBridgeSource.includes("SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)"),
+    "El puente debe agregar hechos ShipmentLine por sourceLineId con el filtro reserveEligible."
+  );
+  assert.equal(nativeReplenishmentFixture.readOnly, true);
+  assert.ok(nativeReplenishmentFixture.inventory.length > 0);
+  assert.equal(replenishmentPolicyFixture.schemaVersion, 1);
+  assert.equal(replenishmentPolicyFixture.policies.length, nativeReplenishmentFixture.inventory.length);
+});
+
 test("el modelo de terminales se carga desde el punto de entrada y el lock", () => {
   assert.ok(entrypointSource.includes("RubrovaPaymentTerminals"));
+  assert.ok(entrypointSource.includes("RubrovaReplenishmentExport"));
   const terminalModule = lock.extension.modules.find((item) => item.name === "RubrovaPaymentTerminals");
   assert.ok(terminalModule, "El módulo debe estar incluido en el lock reproducible.");
   const customModule = lock.extension.modules.find((item) => item.name === "RubrovaCustom");
   assert.ok(customModule.requires.includes("RubrovaIntegrationResilience"));
   assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
+  const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
+  assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
+  assert.ok(customModule.requires.includes("RubrovaReplenishmentExport"));
   assert.ok(terminalModule.requires.includes("RubrovaIntegrationResilience"));
   for (const entity of [
     "PaymentProviderAccount",
@@ -1086,12 +1403,18 @@ test("el módulo de terminales no contiene credenciales ni datos sensibles de ta
 
 test("la configuración de terminales se despliega en todas las rutas de ejecución", () => {
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(nativePreviewSource.includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaPaymentTerminals.lsf"));
-  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 5))"));
-  assert.ok(runtimeSmokeSource.includes("4 módulos propios de Rubrova + 1 fixture temporal de CI"));
+  assert.ok(runtimeSmokeSource.includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 6))"));
+  assert.ok(runtimeSmokeSource.includes("5 módulos propios de Rubrova + 1 fixture temporal de CI"));
   assert.ok(deploySmokeSource.includes("RubrovaPaymentTerminals.lsf"));
+  assert.ok(deploySmokeSource.includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(deploySmokeSource.includes("replenishment_export_backup_count"));
   assert.ok(deploySmokeSource.includes("payment_terminal_backup_count"));
 });
 
@@ -1130,4 +1453,24 @@ test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el t
   assert.match(uiSmokeSource, /"markdown_requests": \[\]/);
   assert.match(uiSmokeSource, /UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true/);
   assert.match(nativeSmokeSource, /UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true/);
+});
+
+
+test("el preflight rápido se comparte entre el equipo y los workflows CI", () => {
+  assert.match(localPreflightSource, /--platform/);
+  assert.match(localPreflightSource, /--replenishment/);
+  assert.match(localPreflightSource, /--all/);
+  assert.match(localPreflightSource, /validate-mycompany-extension[.]test[.]mjs/);
+  assert.match(localPreflightSource, /test_adapt_mycompany_native_export[.]py/);
+  assert.ok(runtimeWorkflowSource.includes("bash scripts/platform/local-preflight.sh --platform"));
+  assert.ok(plannerWorkflowSource.includes("bash scripts/platform/local-preflight.sh --replenishment"));
+  assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
+  const workflowLines = runtimeWorkflowSource.split(String.fromCharCode(10));
+  const macosJobLine = workflowLines.indexOf("  native-runtime-smoke-macos-arm64:");
+  assert.ok(macosJobLine >= 0, "Debe existir un job nativo específico para macOS ARM64.");
+  const nextJobLine = workflowLines.findIndex((line, index) => index > macosJobLine && /^  [a-z][a-z0-9-]*:$/.test(line));
+  const macosJobSource = workflowLines.slice(macosJobLine, nextJobLine < 0 ? undefined : nextJobLine).join(String.fromCharCode(10));
+  assert.match(macosJobSource, /runs-on: macos-26/);
+  assert.doesNotMatch(macosJobSource, /if: github[.]event_name == 'workflow_dispatch'/,
+    "El smoke nativo macOS ARM64 debe correr automáticamente en cada PR.");
 });

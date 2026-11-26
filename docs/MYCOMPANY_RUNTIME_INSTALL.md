@@ -7,11 +7,13 @@ Para macOS, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
 ## Estado actual de aceptación del runtime
 
-El supervisor nativo ya inicia PostgreSQL, el servidor lsFusion y Tomcat en runners macOS ARM64 y Linux; el cliente web llega al login y permite navegar después de autenticarse. La exportación nativa de reposición incorporada en el PR #8 aún está bajo validación: el último smoke completó el arranque y el login, pero la llamada autenticada respondió HTTP 500 con `Set operation is incorrect`.
+El supervisor nativo inicia PostgreSQL, el servidor lsFusion y Tomcat en runners macOS ARM64 y Linux; el cliente web responde HTTP 200 y el login de CI funciona. Sin embargo, eso no valida todavía el endpoint de reposición.
 
-La expresión sospechosa que construía IDs a partir de índices de línea fue corregida quitando conversiones `BPSTRING[10]`; la nueva ejecución de plataforma [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) está en curso. La exportación no se considera aceptada hasta devolver JSON válido en los smokes nativos y conciliarse contra una base MyCompany local real.
+En [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906), el servidor llegó al estado listo y el navegador se autenticó, pero `/exec/Rubrova.rubrovaExportReplenishmentSource` devolvió HTTP 500 con `Set operation is incorrect`. El error aparece al ejecutar la consulta, no durante el parseo/carga del módulo. Los cambios posteriores de la rama no tienen aún una ejecución de CI que demuestre la corrección.
 
-El runtime sigue siendo una vista previa de desarrollo. No equivale a instalador productivo, homologación ARCA/adquirentes, despliegue limpio offline ni aceptación de backup/restauración.
+La última validación de plataforma [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló antes de compilar por una regresión del matcher estático; el matcher se revisó después. La suite del planificador sí pasó en [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911), pero sólo valida Python y fixtures.
+
+La aceptación requiere que el smoke nativo macOS ARM64 ejecute los cuatro endpoints y que la exportación consolidada devuelva colecciones y conteos conciliables. También falta contrastar las cantidades contra una base MyCompany local real. El runtime es una vista previa de desarrollo, no una instalación productiva.
 
 
 ## Ruta recomendada de desarrollo: runtime nativo
@@ -23,7 +25,7 @@ El servidor, la lógica y el interfaz web pueden ejecutarse directamente en el s
 - Tomcat 9.0.124 publica el `client.war` en loopback.
 - El supervisor Python controla el arranque y la detención; no reemplaza al servidor ni al motor de base de datos.
 
-El runtime nativo es la ruta por defecto para desarrollo y la CI. Docker se conserva como comprobación secundaria/manual de empaquetado; no es requisito para operar el POS local una vez instaladas sus dependencias.
+El runtime nativo es la ruta por defecto para desarrollo y la CI. Docker y Linux nativo quedan como diagnósticos manuales de empaquetado/compatibilidad; no se ejecutan automáticamente en cada PR ni son requisito para operar el POS local una vez instaladas sus dependencias.
 
 
 ## 1. Preparar los artefactos
@@ -103,6 +105,7 @@ lsFusion permite cargar un módulo propio desde el classpath y establecer logics
 - RubrovaPOSLocalization.lsf, que contiene los captions y overrides de presentación del POS.
 - RubrovaIntegrationResilience.lsf, que concentra el manejo seguro de fallos de integraciones externas.
 - RubrovaPaymentTerminals.lsf, que registra cuentas de proveedor, terminales, asignaciones a caja/medio, intenciones, intentos, eventos, reintegros y líneas de liquidación. Es una base de configuración y trazabilidad; todavía no ejecuta cobros reales.
+- RubrovaReplenishmentExport.lsf, que expone cuatro acciones `@@api` autenticadas de solo lectura para inventario, compromisos de venta, recepciones y exportación consolidada. Su contrato está en validación de runtime; no debe usarse como fuente aceptada hasta superar el smoke nativo.
 - MyCompanyResourceBundle_es_AR.properties, con traducciones de recursos base y los identificadores `rubrova.*`.
 
 Una limitación importante: varias cadenas del código 6.2 son literales ingleses en los módulos upstream. Los archivos ResourceBundle por sí solos sólo resuelven las cadenas que utilizan identificadores de localización. Por eso Rubrova cambia los captions necesarios mediante su propio `DESIGN` y claves entre llaves, sin editar los módulos originales. Los mensajes de error heredados y algunas etiquetas de filtros todavía no están traducidos; hay que registrarlos durante la prueba real y decidir si se resuelven con una extensión adicional o un parche de localización pequeño y mantenible.
@@ -169,7 +172,7 @@ El repositorio conserva `scripts/platform/test-runtime-smoke.sh`. Se activa manu
 4. Inicia el stack con un nombre de proyecto efímero y utiliza el mismo `compose.rubrova.override.yaml` que se entrega en la instalación Docker normal.
 5. Añade un segundo override temporal que fija por digest las cuatro imágenes del runtime Linux x86_64, y compara cada imagen descargada contra el lock.
 6. Comprueba dentro del contenedor que están montados los archivos Rubrova, que `settings.properties` contiene el punto de entrada, el idioma y el país, y que `JAVA_OPTS` del overlay compartido llegó al proceso Java.
-7. Espera la respuesta web y el final de la inicialización de la lógica. MyCompany 6.2 inicializa 712 módulos base; el smoke exige 717: los cuatro módulos propios de Rubrova (`RubrovaIntegrationResilience`, `RubrovaPOSLocalization`, `RubrovaPaymentTerminals`, `RubrovaCustom`) y un fixture de venta que sólo se agrega al directorio temporal de CI.
+7. Espera la respuesta web y el final de la inicialización de la lógica. MyCompany 6.2 inicializa 712 módulos base; el smoke exige 718: los cinco módulos propios de Rubrova (`RubrovaIntegrationResilience`, `RubrovaPOSLocalization`, `RubrovaPaymentTerminals`, `RubrovaReplenishmentExport`, `RubrovaCustom`) y un fixture de venta que sólo se agrega al directorio temporal de CI.
 8. Espera a que el servidor escuche en TCP `7652` y complete `Executing onStarted action finished`; el puerto abierto y los módulos cargados no bastan si las acciones de inicio siguen corriendo.
 9. Abre la aplicación con Chromium en locale `es-AR`, reintenta la carga mientras aparezca `NotBoundException` y, sólo en la base efímera de CI, inicia sesión con el usuario inicial `admin` sin contraseña. El test espera la transición a `/main`, tolera el reemplazo temporal del DOM por GWT y confirma el acceso cuando el menú queda estable. Luego navega a `Comercio → Punto de venta`, abre el turno sintético, busca un producto de prueba y lo agrega al recibo mediante la acción nativa de MyCompany. Confirma una venta por ARS 1.250 en efectivo, verifica factura/pago persistidos, entrada de stock 10 → 9 y conciliación de caja; luego cierra el turno y exige estado `CLOSED`, venta y efectivo conciliados. Finalmente simula timeout y respuestas HTTP 400/401/403/408/409/429/503, valida la clasificación/persistencia de ocho incidencias y confirma recuperación del proveedor. El puesto, el producto, las cuentas, los módulos de fixture y el resto de los datos son exclusivos de la base efímera; no se modifica el despliegue ni se incorporan datos de demostración al producto. Las capturas se guardan sólo tras estabilizarse el contenido.
 10. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.

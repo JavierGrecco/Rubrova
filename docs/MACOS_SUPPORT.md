@@ -132,6 +132,25 @@ En GitHub Actions, el diagnóstico Docker/Linux se ejecuta automáticamente en c
 
 Una Mac también puede utilizarse como puesto cliente si el servidor se encuentra en otro equipo de la LAN. El navegador accede a la URL del anfitrión; el acceso debe limitarse a la red privada, con contraseñas cambiadas y firewall configurado. La aceptación final debe comprobar Safari/Chrome, lector, impresora, cajón, balanza y terminal que realmente vayamos a utilizar.
 
+
+## Prevalidación y arranque local sin Docker
+
+Antes de compilar o iniciar el servidor, desde la raíz del repositorio:
+
+```bash
+bash scripts/platform/local-preflight.sh
+python3 scripts/platform/run-local-native-preview.py doctor
+```
+
+La primera orden ejecuta pruebas rápidas compartidas con CI (Node, Python, contratos, fixtures y scripts); no levanta servicios. La segunda verifica Java 21, PostgreSQL 18, artefactos y configuración del runtime nativo. Si el diagnóstico está limpio, iniciá con:
+
+```bash
+bash "Iniciar Rubrova.command"
+```
+
+La alternativa manual es `python3 scripts/platform/run-local-native-preview.py --no-open start`. El entorno conserva una base aislada de desarrollo. No lo expongas a la LAN ni cargues datos reales. La prevalidación rápida no sustituye la carga real de módulos ni la prueba autenticada de la API.
+
+
 ## Qué falta antes de declarar compatibilidad completa
 
 1. Repetir en tu Mac Apple Silicon el recorrido que ya pasó en CI, con Java 21 ARM64 y PostgreSQL 18 ARM64; verificar persistencia y logs locales.

@@ -61,6 +61,22 @@ import static lsfusion.base.BaseUtils.nvl;
 
 public abstract class RemoteConnection extends RemoteRequestObject implements RemoteConnectionInterface {
 
+    // A browser can create the navigator and several form RMI connections concurrently.
+    // Each connection persists the same client locale on CustomUser; serialize only
+    // connection initialization for the same login before opening its database session.
+    private static final Object[] userContextLocks = createUserContextLocks();
+
+    private static Object[] createUserContextLocks() {
+        Object[] locks = new Object[64];
+        for (int i = 0; i < locks.length; i++)
+            locks[i] = new Object();
+        return locks;
+    }
+
+    private static Object userContextLock(String login) {
+        return userContextLocks[Math.floorMod(login == null ? 0 : login.hashCode(), userContextLocks.length)];
+    }
+
     protected SQLSession sql;
 
     public LogicsInstance logicsInstance;
@@ -109,10 +125,15 @@ public abstract class RemoteConnection extends RemoteRequestObject implements Re
 
     // it's important to have all props lazy to make RemoteSession be initialized faster
     public void initConnectionContext(AuthenticationToken token, ConnectionInfo connectionInfo, ExecutionStack stack) throws SQLException, SQLHandledException {
-        try(ExecSession session = getExecSession()) {
-            initUser(token, connectionInfo.userInfo, session.dataSession, stack);
+        // Parse before opening the transaction: otherwise two concurrent connections can
+        // both take a SERIALIZABLE snapshot before either saves clientLanguage/clientCountry.
+        String userLogin = securityManager.parseToken(token);
+        synchronized (userContextLock(userLogin)) {
+            try(ExecSession session = getExecSession()) {
+                initUser(token, connectionInfo.userInfo, session.dataSession, stack);
 
-            initComputer(stack, connectionInfo.computerInfo, session.dataSession);
+                initComputer(stack, connectionInfo.computerInfo, session.dataSession);
+            }
         }
     }
 

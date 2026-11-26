@@ -1,17 +1,24 @@
 # Estado real del proyecto Rubrova
 
-**Corte:** 25 de noviembre de 2026  
+**Corte:** 26 de noviembre de 2026  
 **Rama canónica:** `main`  
-**Integración pendiente:** [PR #8 — exportación nativa de reposición](https://github.com/JavierGrecco/Rubrova/pull/8), rama `feat/mycompany-readonly-replenishment-api`, HEAD `8777842`.
+**Candidato de integración:** [PR #10](https://github.com/JavierGrecco/Rubrova/pull/10), rama `integration/replenishment-mainline-preflight`, basada directamente en `main` (`699eb834`), sin commits por detrás. El [PR #8](https://github.com/JavierGrecco/Rubrova/pull/8) fue cerrado sin fusionar y reemplazado para no arrastrar 118 commits divergentes.
 
 ## Estado de la última validación
 
-- **Suite del planificador:** aprobada en [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825), sobre el commit `8777842`.
-- **Validación estática y Windows:** aprobadas en el commit `8777842`, dentro de [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906).
-- **Compilación completa del fork lsFusion 6.2 + GWT + MyCompany 6.2:** aprobada en [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906); también pasaron la recompilación final de servidor/cliente y la publicación de artefactos. Los smokes macOS ARM64, Linux nativo y Docker/Linux están ahora en ejecución.
-- **Runtime nativo macOS ARM64 y Linux:** servidor, PostgreSQL, Tomcat, login y navegación cargaron. La llamada autenticada a la exportación falló con HTTP 500: `Set operation is incorrect`. El diagnóstico apuntó a las conversiones `BPSTRING[10]` aplicadas a los índices de línea; el commit `8655a98` las quitó y el commit `8777842` agregó una protección estática. El nuevo smoke de macOS ARM64 y los diagnósticos Linux/Docker están en ejecución para confirmar que la llamada autenticada ya devuelve JSON válido.
-- **Docker/Linux:** el job de diagnóstico es no bloqueante. Una anotación reportó que el smoke de POS no llegó a aprobarse; su job en verde no debe interpretarse como aceptación del flujo.
+**SHA del candidato:** `a00e3d669e1fe934a0ffd575d7f87a85d07ed3d1` · [PR #10](https://github.com/JavierGrecco/Rubrova/pull/10), todavía en Draft.
+
+- **Prevalidación compartida:** aprobada en [45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328).
+- **Windows:** validación aprobada en el mismo run.
+- **Compilación del fork:** compilación completa de lsFusion/MyCompany aprobada en el mismo run.
+- **Suite del planificador:** aprobada en [45751756295](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756295). Este resultado valida el planificador y sus fixtures; no demuestra que la API nativa esté aceptada.
+- **Smoke nativo macOS ARM64:** el servidor completó el inicio de la instancia de lógica, pero el paso integral de ejecución terminó con código distinto de cero. El run [45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328) conserva logs y artefactos de diagnóstico.
+- **Indicios en los logs:** aparecen timeouts SQL durante consultas de búsqueda de iconos (`getBestIcons`) y un conflicto de serialización durante la inicialización. Son observaciones de diagnóstico; todavía no se ha confirmado que alguna de ellas sea la causa raíz del fallo del smoke.
+- **Linux nativo y Docker/Linux:** se omitieron en esta ejecución; permanecen como diagnósticos manuales.
 - **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
+- **Estado de integración:** el PR #10 sigue abierto y en borrador. No debe fusionarse hasta que el smoke autenticado demuestre los endpoints y los datos exportados se concilien según los criterios definidos.
+
+La ejecución anterior [45744747100](https://github.com/JavierGrecco/Rubrova/actions/runs/45744747100) había detectado una expresión `GROUP MAX ... WHERE` no admitida por lsFusion. Se corrigió a `IF` y la regresión se incorporó a la prevalidación; el run más reciente ya pasó esa etapa, pero todavía no completa la validación de runtime.
 
 ## Resumen de madurez
 
@@ -19,7 +26,7 @@ La última aceptación funcional completa del POS base sigue siendo el [CI 45637
 
 El repositorio contiene los árboles completos y fijados de lsFusion 6.2 y MyCompany 6.2 en `vendor/`. Su reactor compila el servidor, el cliente GWT y la lógica MyCompany desde las fuentes propias. El camino de desarrollo local prioriza Java 21, PostgreSQL 18 y Tomcat 9 sin Docker, con una vista previa supervisada y datos aislados.
 
-El PR #8 incorpora el módulo autenticado de exportación nativa y su puente Python. La compilación no detecta errores de sintaxis y la suite del planificador aprueba; el problema actual aparece al ejecutar la acción de exportación después del login. Hasta que esa acción responda correctamente en macOS ARM64 y Linux, y sus cifras concilien con una base real, la integración no se considera aceptada.
+El candidato de integración incorpora el módulo autenticado de exportación nativa y su puente Python. Las pruebas rápidas cubren conversión y conciliación con fixtures, pero sólo el servidor real puede demostrar que las consultas lsFusion 6.2 son finitas y correctas. Un smoke anterior devolvió `Set operation is incorrect`; tras los cambios siguientes, el run más reciente logró iniciar la instancia de lógica, pero el paso integral volvió a terminar con error y los logs contienen timeouts SQL durante la inicialización de búsquedas de iconos. Hasta confirmar la causa, completar los endpoints y conciliar cifras con una base real, la integración no se considera aceptada.
 
 ## Resumen ejecutivo
 
@@ -27,7 +34,7 @@ Rubrova está en **Fase 0: piloto integrado POS + ERP**. El núcleo MyCompany/ls
 
 La exportación nueva es de solo lectura. Separa existencia física, disponible nativo, reservas, compromisos por línea de venta y recepciones previstas. El adaptador Python valida las conciliaciones, exige políticas explícitas por producto/ubicación y rechaza escenarios que el planificador todavía no modela. No ejecuta `fillAuto`, ni crea, modifica o confirma órdenes de compra.
 
-El último fallo ya no es de compilación ni de arranque: el servidor y el cliente cargan y el login funciona; la acción de exportación devuelve HTTP 500 por una operación de conjuntos incorrecta. Se retiraron conversiones de tipo sobre los índices de línea y se añadió una guarda estática. La revisión está siendo validada de nuevo.
+El run 45744747100 registró el error de sintaxis en el fixture (`GROUP MAX ... WHERE`), que se corrigió a `IF`. En la ejecución posterior 45751756328 el servidor sí completó el inicio de la instancia lógica, pero el paso integral de runtime terminó con error; los logs registran timeouts SQL en `getBestIcons` y un conflicto de serialización durante la inicialización. Todavía no se estableció una causa raíz confirmada. El siguiente paso es aislar esos problemas y volver a validar el login, las tres sondas, el endpoint consolidado y la conciliación de los datos.
 
 La capa de pagos presenciales tiene arquitectura y entidades iniciales de configuración/trazabilidad, pero no existe todavía un conector homologado ni cobros reales. Tryton 8.0 + tryton-ar 8.0 se conserva como referencia fiscal argentina, no como segundo núcleo operativo.
 
@@ -40,7 +47,7 @@ La capa de pagos presenciales tiene arquitectura y entidades iniciales de config
 | Imágenes propias del runtime Docker | Construcción y smoke aprobados en CI | Artefactos compilados desde fuentes Rubrova; el diagnóstico Docker/Linux completó el ciclo funcional en `45637101959` |
 | Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45641728845`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux sigue como diagnóstico suplementario no bloqueante |
 | Login y navegación al POS | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | Chromium abrió Comercio → Punto de venta y ejecutó el recorrido de venta tanto en macOS ARM64 como en Linux x86_64 sin Docker |
-| API nativa autenticada de reposición | En validación | El servidor y el login cargaron en macOS ARM64 y Linux; la acción devolvió HTTP 500 `Set operation is incorrect`. Se eliminaron las conversiones de índices y el nuevo smoke está en curso. No se declara aceptada hasta verificar el JSON y conciliarlo con datos reales |
+| API nativa autenticada de reposición | En validación | El run más reciente inició la instancia de lógica, pero el paso integral del smoke terminó con error. Los endpoints y la exportación consolidada aún no cuentan con aceptación de extremo a extremo ni conciliación contra datos reales. |
 | Apertura de turno | Aprobado en Docker y macOS ARM64 CI | Turno sintético `SM/000001` en Docker y turno de prueba de Rubrova en macOS nativo |
 | Búsqueda y selección de artículo | Aprobado en Docker y macOS ARM64 CI | Un producto sintético; línea de recibo, cantidad 1 y precio ARS 1.250 |
 | Confirmación del cobro en efectivo | Aprobado en Docker y macOS ARM64 CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |

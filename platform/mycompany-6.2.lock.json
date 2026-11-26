@@ -48,7 +48,8 @@
           "MyCompany",
           "RubrovaPOSLocalization",
           "RubrovaIntegrationResilience",
-          "RubrovaPaymentTerminals"
+          "RubrovaPaymentTerminals",
+          "RubrovaReplenishmentExport"
         ]
       },
       {
@@ -74,6 +75,14 @@
         "requires": [
           "MyCompany",
           "RubrovaIntegrationResilience"
+        ]
+      },
+      {
+        "name": "RubrovaReplenishmentExport",
+        "path": "extensions/lsfusion/RubrovaReplenishmentExport.lsf",
+        "role": "authenticated read-only export of native MyCompany inventory, shipment commitments and expected receipts",
+        "requires": [
+          "MyCompany"
         ]
       }
     ]

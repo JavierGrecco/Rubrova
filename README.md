@@ -30,11 +30,18 @@ Rubrova es una plataforma de gestión comercial en desarrollo. Busca reunir la o
 
 **Dirección de producto:** experiencia simple en el mostrador, control operativo completo para la administración y datos confiables para decidir.
 
-> **Estado del proyecto · 25 de noviembre de 2026**
+### Product Ownership y desarrollo asistido por IA
+
+Rubrova es un producto propio que conduzco como **Product Owner y responsable de su evolución**. Utilizo IA generativa como apoyo para investigar, diseñar e implementar, mientras mantengo la dirección del producto y la aceptación de cada entrega: defino la visión y el alcance funcional, priorizo módulos y roadmap, establezco reglas de negocio y criterios de aceptación, evalúo arquitectura y seguridad, pruebo los resultados y guío nuevas iteraciones cuando una solución no cumple lo esperado.
+
+El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las capacidades planificadas se presentan como visión y evolución progresiva; las tablas de estado y los documentos técnicos indican qué está implementado, probado, en validación o pendiente.
+
+
+> **Estado del proyecto · 26 de noviembre de 2026**
 >
-> Rubrova está en etapa de piloto integrado POS + ERP. El código fuente de lsFusion 6.2 y MyCompany 6.2 está fijado dentro del repositorio. En la revisión actual de CI aprobaron el planificador, las validaciones estáticas, Windows, la compilación propia de servidor/cliente GWT/lógica y la publicación de artefactos; los smokes macOS ARM64 y Linux siguen ejecutándose. Un ciclo POS básico con datos sintéticos fue aceptado anteriormente. La exportación nativa de reposición es de solo lectura y continúa en validación: el último smoke completado permitió iniciar sesión, pero la llamada a la API respondió “Set operation is incorrect”. Se retiraron conversiones de índices que podían ocultar la fuente de los parámetros y la corrección está bajo revalidación. **No es una versión productiva ni está aprobada para operar con datos comerciales reales.**
+> Rubrova continúa como piloto integrado POS + ERP y no es una versión productiva. En la validación más reciente del PR #10, la prevalidación compartida, Windows y la compilación completa de lsFusion/MyCompany aprobaron. El smoke nativo macOS ARM64 logró iniciar el servidor, pero el paso de ejecución integral terminó con error; los logs incluyen timeouts SQL durante la inicialización de búsquedas de iconos y requieren análisis. La causa final todavía no está confirmada. La suite independiente del planificador de reposición sí pasó. **La exportación nativa sigue en validación y el PR permanece en borrador.**
 >
-> Seguimiento: [PR #8 — exportación nativa MyCompany](https://github.com/JavierGrecco/Rubrova/pull/8) · [último diagnóstico completado](https://github.com/JavierGrecco/Rubrova/actions/runs/45721155696) · [revalidación en curso](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
+> Seguimiento: [PR #10 — integración nativa](https://github.com/JavierGrecco/Rubrova/pull/10) · [validación de plataforma #45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328) · [suite del planificador #45751756295](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756295) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
 
 ## Propuesta de producto
 
@@ -151,6 +158,17 @@ También existen los accesos **Iniciar Rubrova.command** y **Iniciar Rubrova - D
 
 **Seguridad de la vista previa:** se enlaza a loopback y usa una configuración local de desarrollo. No la expongas a la red ni cargues información comercial real. La instalación productiva requiere endurecimiento de credenciales, permisos, firewall, backups y restauración verificada.
 
+### Prevalidación rápida antes de compilar
+
+Desde la raíz del repositorio, ejecutá primero:
+
+```bash
+bash scripts/platform/local-preflight.sh
+```
+
+También podés ejecutar una capa por vez con `--platform` o `--replenishment`. Esta rutina compartida con GitHub Actions valida extensiones, contratos, tests Python/Node, fixtures y scripts sin iniciar servidores. No reemplaza Maven ni el smoke autenticado de lsFusion/MyCompany.
+
+
 ## Organización del repositorio
 
 - **main** es la fuente de verdad.
@@ -183,6 +201,7 @@ Ver [Política de ramas e integración](docs/BRANCHING_STRATEGY.md).
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Backups, restore, rollback y fallos |
 | [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Ejecución nativa en Apple Silicon |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de validación y puertas de aceptación |
+| [Base de conocimiento de ingeniería](docs/engineering/README.md) | Contratos, decisiones, relaciones entre módulos e historial de investigaciones |
 
 ## Alcance y responsabilidad
 

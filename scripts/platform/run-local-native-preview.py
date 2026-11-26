@@ -325,6 +325,7 @@ def ensure_extension_files(logics_dir: Path) -> None:
         "RubrovaPOSLocalization.lsf",
         "RubrovaIntegrationResilience.lsf",
         "RubrovaPaymentTerminals.lsf",
+        "RubrovaReplenishmentExport.lsf",
         "MyCompanyResourceBundle_es_AR.properties",
     ]
     for name in module_names:
@@ -350,6 +351,7 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
         "RubrovaCISalesFixture.lsf",
         "RubrovaCIRetailFixture.lsf",
         "RubrovaCIIntegrationFixture.lsf",
+        "RubrovaCIReplenishmentFixture.lsf",
     )
     try:
         mock_port = int(os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT", "18765"))
@@ -374,12 +376,13 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     source = entrypoint.read_text(encoding="utf-8")
     original_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;"
     )
     fixture_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, "
-        "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, "
+        "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture, "
+        "RubrovaCIReplenishmentFixture;"
     )
     if source.count(original_require) == 1:
         entrypoint.write_text(source.replace(original_require, fixture_require, 1), encoding="utf-8")
@@ -411,11 +414,11 @@ def ensure_local_demo_fixture(logics_dir: Path) -> None:
     source = entrypoint.read_text(encoding="utf-8")
     original_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;"
     )
     demo_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, "
         "RubrovaLocalDemoRetail, RubrovaLocalDemoInventory;"
     )
     if source.count(original_require) == 1:
@@ -505,6 +508,40 @@ def prepare_tomcat_base(tomcat_home: Path, base: Path, war: Path, ports: dict[st
         ET.register_namespace("", namespace[1:-1])
     ET.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance")
     tree.write(web_xml, encoding="UTF-8", xml_declaration=True)
+
+    # lsFusion's web sessions contain Spring/lsFusion objects that are not safe
+    # to serialize to Tomcat's default SESSIONS.ser. Browser sessions are
+    # intentionally ephemeral across a full native-runtime restart; business
+    # state remains in PostgreSQL. Avoid stale-session deserialization errors.
+    context_xml = base / "conf" / "context.xml"
+    if not context_xml.is_file():
+        source_context_xml = tomcat_home / "conf" / "context.xml"
+        if not source_context_xml.is_file():
+            raise RuntimeErrorRubrova(
+                f"No se encontró la configuración de contexto Tomcat: {source_context_xml}"
+            )
+        shutil.copy2(source_context_xml, context_xml)
+
+    context_tree = ET.parse(
+        context_xml,
+        parser=ET.XMLParser(target=ET.TreeBuilder(insert_comments=True)),
+    )
+    context_root = context_tree.getroot()
+    if context_root.tag.rsplit("}", 1)[-1] != "Context":
+        raise RuntimeErrorRubrova(
+            f"La raíz de la configuración de contexto Tomcat debe ser Context: {context_xml}"
+        )
+    managers = [
+        child for child in list(context_root)
+        if isinstance(child.tag, str) and child.tag.rsplit("}", 1)[-1] == "Manager"
+    ]
+    if len(managers) > 1:
+        raise RuntimeErrorRubrova(
+            f"La configuración de contexto Tomcat declara más de un Manager: {context_xml}"
+        )
+    manager = managers[0] if managers else ET.SubElement(context_root, "Manager")
+    manager.set("pathname", "")
+    context_tree.write(context_xml, encoding="UTF-8", xml_declaration=True)
 
     server_xml = base / "conf" / "server.xml"
     server_tree = ET.parse(server_xml)
@@ -748,11 +785,26 @@ def stop_process(process: subprocess.Popen[Any] | None, name: str, timeout: int 
             process.wait(timeout=5)
         return
     try:
-        process.terminate()
+        # POSIX launchers (notably catalina.sh) spawn child JVMs. Every service is
+        # started in its own session, so signal the complete process group instead
+        # of killing only the shell and leaving an orphan Tomcat process behind.
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        if process.poll() is None:
+            process.send_signal(signal.SIGTERM)
+    try:
         process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
-        process.kill()
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            process.kill()
         process.wait(timeout=10)
+
+
+def handle_shutdown_signal(signum: int, frame: Any) -> None:
+    """Turn SIGTERM into the same orderly shutdown path as Ctrl+C."""
+    raise KeyboardInterrupt(f"received signal {signum}")
 
 
 def postgres_cluster_is_running(pg_ctl: Path, data_dir: Path) -> bool:
@@ -907,6 +959,9 @@ def ensure_database(pg_bin: Path, data_dir: Path, port: int, log_dir: Path) -> b
 
 
 def run_preview(config_path: Path, open_browser: bool, allow_tomcat_download: bool) -> None:
+    # The CI smoke sends SIGTERM for a controlled stop/restart. Route it through
+    # KeyboardInterrupt so the finally block stops Tomcat, lsFusion and PostgreSQL.
+    signal.signal(signal.SIGTERM, handle_shutdown_signal)
     config = load_config(config_path)
     if config["execution"]["target"] != "native-local":
         raise RuntimeErrorRubrova(

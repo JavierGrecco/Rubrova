@@ -4,6 +4,29 @@
 
 Una capacidad no se considera terminada por mostrar una pantalla. Debe cumplir reglas, permisos, persistencia, integridad, accesibilidad, recuperación y pruebas.
 
+## Memoria técnica y contratos
+
+Toda modificación de lógica, datos o integración debe actualizar la [base de conocimiento de ingeniería](engineering/README.md): [contratos](engineering/CONTRACTS.md), [decisiones](engineering/DECISION_LOG.md), [relaciones entre dominios](engineering/DOMAIN_RELATIONSHIPS.md) e [iteraciones](engineering/ITERATION_LOG.md). La documentación conserva la razón y la evidencia; no reemplaza a los tests.
+
+## Prevalidación local compartida con CI
+
+Antes de publicar cambios, ejecutá desde la raíz:
+
+```bash
+bash scripts/platform/local-preflight.sh
+```
+
+Las capas se pueden ejecutar por separado:
+
+```bash
+bash scripts/platform/local-preflight.sh --platform
+bash scripts/platform/local-preflight.sh --replenishment
+```
+
+El mismo script se invoca en GitHub Actions. Comprueba Node/Python, extensiones estáticas, tests del supervisor, scripts y shell, suite del planificador, fixtures y el puente JSON nativo. Es una primera barrera rápida y repetible; **no** demuestra que el módulo lsFusion pueda cargarse, ni que la API autenticada funcione contra MyCompany.
+
+
+
 ## Estrategia
 
 - Unitarias: cálculos, reglas, validaciones y estados.
@@ -19,15 +42,17 @@ Una capacidad no se considera terminada por mostrar una pantalla. Debe cumplir r
 
 Para el desarrollo local se prioriza el runtime nativo, sin Docker: Java 21, PostgreSQL 18 y Tomcat 9.0.124. El supervisor utiliza una carpeta PostgreSQL exclusiva, no adopta ni detiene servicios personales de la máquina y conserva los datos cuando se detienen los procesos.
 
-En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado después de la compilación completa. Linux nativo y Docker/Linux son diagnósticos suplementarios no bloqueantes. Un job diagnóstico que termina en verde por su política de `continue-on-error` no se debe interpretar como una aceptación del escenario funcional.
+En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado después de la compilación completa. Los diagnósticos Linux nativo y Docker/Linux se ejecutan manualmente mediante `workflow_dispatch`; no retrasan cada pull request y no son gates de aceptación. Un job con `continue-on-error` nunca se interpreta como aprobación funcional.
 
 ### Estado de evidencia
 
-- El POS base completó anteriormente login, apertura de turno, venta en efectivo, factura/pago, stock y cierre básico con una base sintética en [45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959).
-- El runtime nativo de macOS ARM64 y Linux inició PostgreSQL, servidor, RMI y Tomcat en los smokes posteriores. En el PR #8, el login y la navegación cargaron, pero la nueva acción autenticada de exportación devolvió HTTP 500 con `Set operation is incorrect`.
-- La corrección actual quitó conversiones `BPSTRING[10]` de los índices de línea y agregó una guarda estática. La nueva validación de plataforma [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) está en curso; el workflow de reposición [45723325825](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325825) pasó.
-- El diagnóstico Docker/Linux más reciente no se considera aprobado: el servidor o la acción de exportación impidieron completar el smoke POS. Su carácter no bloqueante no convierte un fallo funcional en éxito.
-- La aceptación en el Mac físico, Safari/Chrome, lector, impresora, cajón, balanza y terminales reales sigue pendiente.
+- El POS base completó en una revisión anterior un recorrido sintético de login, turno, venta en efectivo, factura/pago, stock y cierre en [45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959). No valida cambios posteriores ni el puente nativo de reposición.
+- En el PR #10, la prevalidación de plataforma aprobó en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978): 30/30 pruebas Node, 34/34 validaciones de evaluación, 33 pruebas Python, scripts de shell, listener y despliegue. Windows también pasó.
+- El workflow de reposición aprobó en [45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945), ejecutando la misma capa `--replenishment` del preflight local.
+- La compilación completa del fork está en curso en [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Aún no se ha iniciado la aceptación runtime del nuevo SHA.
+- En la última ejecución nativa anterior ([45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906)), el servidor, RMI, Tomcat y login funcionaron, pero la API autenticada consolidada devolvió HTTP 500 `Set operation is incorrect`. El nuevo inspector consulta primero por separado inventario, compromisos y recepciones, para identificar qué operación de conjunto provoca el error.
+- No existe todavía evidencia de una exportación nativa aceptada y conciliada contra una base MyCompany real. Los fixtures del adaptador son sintéticos.
+- La aceptación en un Mac físico, Safari/Chrome, lector, impresora, cajón, balanza y terminales reales sigue pendiente.
 
 ### Controles del smoke nativo
 

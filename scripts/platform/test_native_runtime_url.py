@@ -1,10 +1,42 @@
-"""Regression tests for native runtime endpoint URL construction."""
+"""Regression tests for native runtime endpoint and export contracts."""
 
 from __future__ import annotations
 
+import re
 import unittest
+from pathlib import Path
 
 from native_runtime_url import application_endpoint_url
+
+
+class NativeReplenishmentExportContractTests(unittest.TestCase):
+    def test_ui_smoke_schema_matches_native_exporter_and_adapter(self) -> None:
+        repository = Path(__file__).resolve().parents[2]
+        inspector = (repository / "scripts/platform/inspect-mycompany-ui.py").read_text(encoding="utf-8")
+        adapter = (repository / "scripts/replenishment/adapt_mycompany_native_export.py").read_text(encoding="utf-8")
+        exporter = (repository / "extensions/lsfusion/RubrovaReplenishmentExport.lsf").read_text(encoding="utf-8")
+
+        inspector_version = re.search(
+            r"^NATIVE_EXPORT_SCHEMA_VERSION\s*=\s*(\d+)\s*$", inspector, re.MULTILINE
+        )
+        adapter_version = re.search(r'^\s*"schemaVersion":\s*(\d+),$', adapter, re.MULTILINE)
+        exporter_version = re.search(r"^\s*schemaVersion\s*=\s*(\d+),$", exporter, re.MULTILINE)
+
+        self.assertIsNotNone(inspector_version, "El inspector debe declarar la versión del contrato nativo.")
+        self.assertIsNotNone(adapter_version, "El adaptador debe declarar la versión del contrato nativo.")
+        self.assertIsNotNone(exporter_version, "El exportador lsFusion debe declarar la versión del contrato nativo.")
+        self.assertIn('"schemaVersion": NATIVE_EXPORT_SCHEMA_VERSION', inspector)
+
+        versions = {
+            int(inspector_version.group(1)),
+            int(adapter_version.group(1)),
+            int(exporter_version.group(1)),
+        }
+        self.assertEqual(
+            len(versions),
+            1,
+            "El smoke de interfaz, el adaptador y el exportador nativo deben compartir la misma schemaVersion.",
+        )
 
 
 class ApplicationEndpointUrlTests(unittest.TestCase):

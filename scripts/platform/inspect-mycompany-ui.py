@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import json
+import math
 import os
+from decimal import Decimal, InvalidOperation
 import sys
 import time
 from pathlib import Path
@@ -15,6 +17,9 @@ from native_runtime_url import application_endpoint_url
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
+
+
+NATIVE_EXPORT_SCHEMA_VERSION = 2
 
 
 SERVER_ERROR_MARKERS = (
@@ -724,6 +729,413 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
     return payload
 
 
+
+def _native_collection(payload: dict[str, Any], field: str, label: str) -> list[dict[str, Any]]:
+    count_field = f"{field}Count"
+    expected_count = payload.get(count_field)
+    if isinstance(expected_count, bool) or not isinstance(expected_count, int) or expected_count < 0:
+        raise ValueError(f"{count_field} debe ser un entero no negativo.")
+    rows = payload.get(field)
+    # lsFusion puede omitir el objeto JSON anidado si la consulta no tiene filas.
+    # Sólo se interpreta como [] cuando el contador nativo independiente confirma cero filas.
+    if rows is None and expected_count == 0:
+        rows = []
+    if not isinstance(rows, list):
+        raise ValueError(f"{field} es {type(rows).__name__}; {count_field}={expected_count}.")
+    if len(rows) != expected_count:
+        raise ValueError(f"{count_field}={expected_count} no coincide con {len(rows)} filas en {field}.")
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError(f"Todos los elementos de {field} deben ser objetos JSON.")
+    return rows
+
+
+def _outgoing_reservation_totals(
+    commitments: list[dict[str, Any]],
+    reservation_rows: list[dict[str, Any]],
+) -> dict[str, float]:
+    """Aggregate native ShipmentLine facts by the stable Sales.OrderLine key."""
+    commitments_by_id: dict[str, float] = {}
+    for index, row in enumerate(commitments):
+        label = f"outgoingCommitments[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if not line_id or line_id in commitments_by_id:
+            raise ValueError(f"{label}.sourceLineId está vacío o duplicado.")
+        open_quantity = row.get("openQuantity")
+        if (isinstance(open_quantity, bool) or not isinstance(open_quantity, (int, float))
+                or not math.isfinite(float(open_quantity)) or float(open_quantity) <= 0):
+            raise ValueError(f"{label}.openQuantity debe ser positiva y finita.")
+        commitments_by_id[line_id] = float(open_quantity)
+
+    totals: dict[str, float] = {}
+    seen_shipment_lines: set[str] = set()
+    for index, row in enumerate(reservation_rows):
+        label = f"outgoingReservations[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if line_id not in commitments_by_id:
+            raise ValueError(f"{label}.sourceLineId no referencia una línea de salida exportada.")
+        shipment_line_id = str(row.get("shipmentLineId") or "").strip()
+        if not shipment_line_id or shipment_line_id in seen_shipment_lines:
+            raise ValueError(f"{label}.shipmentLineId está vacío o duplicado.")
+        seen_shipment_lines.add(shipment_line_id)
+        if not str(row.get("shipmentId") or "").strip():
+            raise ValueError(f"{label}.shipmentId está vacío.")
+        eligible = row.get("reserveEligible")
+        if not isinstance(eligible, bool):
+            raise ValueError(f"{label}.reserveEligible debe ser booleano.")
+        def component_milli(field: str) -> int:
+            if field not in row:
+                raise ValueError(f"{label}.{field} debe estar presente (puede ser null).")
+            value = row[field]
+            if value is None:
+                return 0
+            if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+                raise ValueError(f"{label}.{field} debe ser numérico o null.")
+            try:
+                quantity = Decimal(str(value))
+            except InvalidOperation as error:
+                raise ValueError(f"{label}.{field} debe ser numérico o null.") from error
+            if not quantity.is_finite():
+                raise ValueError(f"{label}.{field} debe ser finito.")
+            scaled = quantity * 1000
+            if scaled != scaled.to_integral_value():
+                raise ValueError(f"{label}.{field} supera tres decimales.")
+            return int(scaled)
+
+        reserved_quantity = component_milli("reservedQuantityNative")
+        ledger_reserved_quantity = component_milli("ledgerReservedQuantityNative")
+        line_reserved_milli = reserved_quantity - ledger_reserved_quantity
+        if eligible and line_reserved_milli > 0:
+            line_reserved = line_reserved_milli / 1000.0
+            totals[line_id] = totals.get(line_id, 0.0) + line_reserved
+
+    for line_id, reserved in totals.items():
+        if reserved > commitments_by_id[line_id] + 0.001:
+            raise ValueError(
+                f"La reserva agregada supera el remanente de {line_id}: "
+                f"openQuantity={commitments_by_id[line_id]}, effectiveReserved={reserved}."
+            )
+    return totals
+
+
+def probe_replenishment_source_sections(context: Any, url: str) -> None:
+    """Validate native array shape and count on each independently authenticated endpoint."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    probes = (
+        ("inventory", "inventory", "rubrovaProbeInventory"),
+        ("outgoing_commitments", "outgoingCommitments", "rubrovaProbeOutgoingCommitments"),
+        ("receipts", "receipts", "rubrovaProbeReceipts"),
+    )
+    failures: list[str] = []
+    require_positive = os.environ.get("RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT", "false").lower() == "true"
+    for label, collection_field, action in probes:
+        response = context.request.get(endpoint + action, timeout=20_000)
+        print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
+        if response.status != 200:
+            detail = response.text()[:1800].replace("\r", " ").replace("\n", " ")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ERROR={detail}")
+            failures.append(f"{label}: HTTP {response.status} ({detail[:500]})")
+            continue
+
+        try:
+            payload = response.json()
+            if isinstance(payload, list):
+                payload = payload[0] if len(payload) == 1 else {}
+            if not isinstance(payload, dict):
+                raise ValueError(f"la raíz JSON es {type(payload).__name__}, no un objeto")
+            rows = _native_collection(payload, collection_field, label)
+            if require_positive and label in {"outgoing_commitments", "receipts"} and not rows:
+                raise ValueError(f"{collection_field} debe contener al menos una fila en el fixture positivo de CI.")
+            count_field = f"{collection_field}Count"
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROOT_KEYS=" + json.dumps(sorted(payload)))
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_COLLECTION_TYPE=list")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROWS={len(rows)}")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_SOURCE_COUNT={payload[count_field]}")
+            if label == "outgoing_commitments":
+                reservation_rows = _native_collection(payload, "outgoingReservations", label)
+                # Emit the exact source facts before semantic validation so CI retains
+                # evidence even when a required native JSON key is missing.
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON=" + json.dumps(rows, ensure_ascii=False))
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_RESERVATION_ROWS_JSON=" + json.dumps(reservation_rows, ensure_ascii=False))
+                totals = _outgoing_reservation_totals(rows, reservation_rows)
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_EFFECTIVE_TOTALS=" + json.dumps(totals, ensure_ascii=False, sort_keys=True))
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_RESERVATION_SOURCE_COUNT=" + str(payload["outgoingReservationsCount"]))
+                if require_positive and not any(value > 0 for value in totals.values()):
+                    raise ValueError("El fixture positivo debe tener reservas efectivas positivas agregadas desde ShipmentLine.")
+        except ValueError as error:
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
+            failures.append(f"{label}: respuesta JSON incompatible ({error})")
+    if failures:
+        raise RuntimeError(
+            "Falló la estructura de una consulta aislada de la exportación MyCompany: "
+            + "; ".join(failures)
+        )
+
+def prepare_ci_outgoing_reservation(context: Any, url: str) -> None:
+    """Run MyCompany's own availability precheck for the disposable CI sales order."""
+    if os.environ.get("RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT", "false").lower() != "true":
+        return
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(endpoint + "rubrovaPrepareOutgoingReservation", timeout=20_000)
+    print(f"UI_REPLENISHMENT_CI_RESERVATION_HTTP={response.status}")
+    if response.status != 200:
+        raise RuntimeError(
+            "No se pudo preparar la reserva del fixture de salida: "
+            f"HTTP {response.status}: {response.text()[:1000]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La preparación de reserva CI no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if len(payload) == 1 else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError("La preparación de reserva CI no devolvió un objeto JSON.")
+    print("UI_REPLENISHMENT_CI_RESERVATION_DIAGNOSTICS=" + json.dumps(payload, ensure_ascii=False))
+
+    def quantity(field: str) -> float:
+        value = payload.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"La preparación de reserva CI devolvió {field} no numérico.")
+        return float(value)
+
+    open_quantity = quantity("outgoingOpenQuantity")
+    reserved_quantity = quantity("outgoingReservedQuantity")
+    if open_quantity <= 0 or reserved_quantity <= 0 or reserved_quantity > open_quantity + 0.001:
+        raise RuntimeError(
+            "El precheckAvailability nativo no generó una reserva válida para el pedido CI; "
+            f"openQuantity={open_quantity}, effectiveReserved={reserved_quantity}."
+        )
+    print("UI_REPLENISHMENT_CI_RESERVATION_PREPARED=" + json.dumps({
+        "openQuantity": open_quantity,
+        "effectiveReserved": reserved_quantity,
+    }, ensure_ascii=False))
+
+
+def verify_replenishment_source_export(context: Any, url: str) -> None:
+    """Validate the native MyCompany export without mutating the ERP."""
+    prepare_ci_outgoing_reservation(context, url)
+    probe_replenishment_source_sections(context, url)
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(
+        endpoint + "rubrovaExportReplenishmentSource",
+        timeout=20_000,
+    )
+    if response.status != 200:
+        raise RuntimeError(
+            "La exportación nativa de reposición respondió HTTP "
+            f"{response.status}: {response.text()[:1200]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La exportación nativa de reposición no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError("La exportación nativa de reposición no devolvió un objeto JSON.")
+
+    expected_header = {
+        "schemaVersion": NATIVE_EXPORT_SCHEMA_VERSION,
+        "snapshotType": "mycompany-replenishment-source-export",
+        "sourceSystem": "MyCompany",
+        "sourceVersion": "6.2",
+        "quantityUnit": "product-uom",
+        "quantityPrecision": 3,
+        "readOnly": True,
+    }
+    for field, expected in expected_header.items():
+        if payload.get(field) != expected:
+            raise RuntimeError(
+                f"Contrato de exportación inválido en {field}: "
+                f"esperado {expected!r}, recibido {payload.get(field)!r}."
+            )
+
+    from datetime import date, datetime
+    try:
+        date.fromisoformat(str(payload.get("asOf", ""))[:10])
+        datetime.fromisoformat(str(payload.get("asOfDateTime", "")).replace("Z", "+00:00"))
+    except ValueError as error:
+        raise RuntimeError("La fecha asOf de la exportación no usa YYYY-MM-DD.") from error
+
+    expected_semantics = {
+        "inventoryOnHand": "Inventory.onHand(Location, Product), ubicación exacta",
+        "inventoryAvailable": "Inventory.available(Location, Product), valor nativo MyCompany",
+        "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
+        "inventoryExpectedCoverage": "all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts",
+        "emptyAggregatePolicy": "raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0",
+        "emptyCollectionPolicy": "collection counts are authoritative; an omitted collection is an empty list only when its count is zero",
+        "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
+        "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
+        "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
+        "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line",
+        "outgoingReservationComponents": "Inventory.reserved(ShipmentLine) and Inventory.ledgerReserved(ShipmentLine); NULL components normalize to zero in Rubrova",
+        "outgoingEffectiveReservation": "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)",
+        "incomingIdentity": "Receipt.number + ReceiptLine.index",
+        "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
+        "incomingScheduledDateTime": "Receipt.scheduledDateTime",
+        "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed",
+        "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
+    }
+    if payload.get("sourceSemantics") != expected_semantics:
+        raise RuntimeError("sourceSemantics no coincide con el contrato de exportación MyCompany 6.2.")
+
+    collections: dict[str, list[dict[str, Any]]] = {}
+    source_counts: dict[str, int] = {}
+    for field in ("inventory", "outgoingCommitments", "outgoingReservations", "receipts"):
+        try:
+            rows = _native_collection(payload, field, "export")
+        except ValueError as error:
+            raise RuntimeError(f"Contrato inválido para {field}: {error}") from error
+        collections[field] = rows
+        source_counts[field] = payload[f"{field}Count"]
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_ROWS=" + json.dumps(
+        collections["outgoingCommitments"], ensure_ascii=False
+    ))
+    outgoing_reservation_totals = _outgoing_reservation_totals(collections["outgoingCommitments"], collections["outgoingReservations"])
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_RESERVATION_ROWS=" + json.dumps(collections["outgoingReservations"], ensure_ascii=False))
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_EFFECTIVE_TOTALS=" + json.dumps(outgoing_reservation_totals, ensure_ascii=False, sort_keys=True))
+
+    def numeric(row: dict[str, Any], field: str, row_label: str) -> float:
+        value = row.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"{row_label}.{field} debe ser un número finito.")
+        return float(value)
+
+    inventory_keys: set[tuple[str, str]] = set()
+    for index, row in enumerate(collections["inventory"]):
+        row_label = f"inventory[{index}]"
+        product_id = str(row.get("productId") or "").strip()
+        location_id = str(row.get("locationId") or "").strip()
+        if not product_id or not location_id:
+            raise RuntimeError(f"{row_label} no identifica producto y ubicación.")
+        key = (product_id, location_id)
+        if key in inventory_keys:
+            raise RuntimeError(f"Inventario duplicado para producto/ubicación {product_id}/{location_id}.")
+        inventory_keys.add(key)
+        on_hand = numeric(row, "onHand", row_label)
+        planned = numeric(row, "plannedNetReservation", row_label)
+        available = numeric(row, "available", row_label)
+        numeric(row, "physicalIncoming", row_label)
+        numeric(row, "physicalOutgoing", row_label)
+        gross_reserved = numeric(row, "grossReserved", row_label)
+        planned = numeric(row, "plannedNetReservation", row_label)
+        expected_inbound = numeric(row, "expectedInbound", row_label)
+        native_values = {
+            field: row.get(field)
+            for field in ("onHandNative", "availableNative", "plannedNetReservationNative",
+                          "physicalIncomingNative", "physicalOutgoingNative")
+        }
+        for field, value in native_values.items():
+            if value is not None:
+                numeric(row, field, row_label)
+        if native_values["onHandNative"] is not None and abs(float(native_values["onHandNative"]) - on_hand) > 0.001:
+            raise RuntimeError(f"{row_label}.onHand no coincide con onHandNative.")
+        if native_values["availableNative"] is not None and abs(float(native_values["availableNative"]) - available) > 0.001:
+            raise RuntimeError(f"{row_label}.available no coincide con availableNative.")
+        if native_values["plannedNetReservationNative"] is not None and abs(float(native_values["plannedNetReservationNative"]) - planned) > 0.001:
+            raise RuntimeError(f"{row_label}.plannedNetReservation no coincide con el ledger nativo.")
+        if gross_reserved < 0 or expected_inbound < 0:
+            raise RuntimeError(f"{row_label} contiene una reserva bruta o recepción prevista negativa.")
+        if abs((on_hand - planned) - available) > 0.001:
+            raise RuntimeError(
+                f"Inventory.available no concilia en {product_id}/{location_id}: "
+                f"onHand={on_hand}, planned={planned}, available={available}."
+            )
+
+    outgoing_ids: set[str] = set()
+    for index, row in enumerate(collections["outgoingCommitments"]):
+        row_label = f"outgoingCommitments[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if not line_id or line_id in outgoing_ids:
+            raise RuntimeError(f"{row_label}.sourceLineId está vacío o duplicado.")
+        outgoing_ids.add(line_id)
+        open_quantity = numeric(row, "openQuantity", row_label)
+        reserved = outgoing_reservation_totals.get(line_id, 0.0)
+        if row.get("status") != "confirmed" or open_quantity <= 0 or reserved < 0 or reserved > open_quantity + 0.001:
+            raise RuntimeError(
+                f"{row_label} viola la semántica de compromiso abierto/reserva efectiva: "
+                f"openQuantity={open_quantity}, effectiveReserved={reserved}."
+            )
+        for field in ("sourceDocumentId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
+            if not str(row.get(field) or "").strip():
+                raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    receipt_ids: set[str] = set()
+    for index, row in enumerate(collections["receipts"]):
+        row_label = f"receipts[{index}]"
+        line_id = str(row.get("lineId") or "").strip()
+        if not line_id or line_id in receipt_ids:
+            raise RuntimeError(f"{row_label}.lineId está vacío o duplicado.")
+        receipt_ids.add(line_id)
+        signed_reservation = numeric(row, "expectedReservationSigned", row_label)
+        quantity = numeric(row, "expectedQuantity", row_label)
+        if (
+            quantity <= 0
+            or signed_reservation >= 0
+            or abs(quantity + signed_reservation) > 0.001
+            or row.get("status") != "ready"
+            or row.get("purchaseOrderStatus") != "confirmed"
+            or (row.get("increaseAvailableStock") is not None and not isinstance(row.get("increaseAvailableStock"), bool))
+        ):
+            raise RuntimeError(f"{row_label} no respeta el contrato de recepción pendiente.")
+        for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
+            if not str(row.get(field) or "").strip():
+                raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    require_positive = os.environ.get("RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT", "false").lower() == "true"
+    if require_positive:
+        if source_counts["outgoingCommitments"] < 1 or not collections["outgoingCommitments"]:
+            raise RuntimeError("El fixture positivo debe generar al menos un compromiso de salida.")
+        if source_counts["outgoingReservations"] < 1 or not collections["outgoingReservations"]:
+            raise RuntimeError("El fixture positivo debe generar al menos una línea de reserva nativa.")
+        if source_counts["receipts"] < 1 or not collections["receipts"]:
+            raise RuntimeError("El fixture positivo debe generar al menos una recepción pendiente.")
+        outgoing = collections["outgoingCommitments"][0]
+        outgoing_line_id = str(outgoing.get("sourceLineId") or "")
+        outgoing_quantity = numeric(outgoing, "openQuantity", "outgoingCommitments[0]")
+        outgoing_reserved = outgoing_reservation_totals.get(outgoing_line_id, 0.0)
+        if outgoing_quantity <= 0 or outgoing_reserved <= 0:
+            raise RuntimeError(
+                "El fixture de salida debe tener cantidad abierta y reserva efectiva positivas; "
+                f"openQuantity={outgoing_quantity}, effectiveReserved={outgoing_reserved}."
+            )
+        receipt = collections["receipts"][0]
+        receipt_quantity = numeric(receipt, "expectedQuantity", "receipts[0]")
+        incoming_increase_available = receipt.get("increaseAvailableStock")
+        if receipt_quantity <= 0 or incoming_increase_available is True:
+            raise RuntimeError(
+                "El fixture de recepción debe conservar cantidad pendiente positiva y "
+                "no habilitar increaseAvailableStock."
+            )
+        print("UI_REPLENISHMENT_POSITIVE_FIXTURES=" + json.dumps({
+            "outgoingOpenQuantity": outgoing_quantity,
+            "outgoingEffectiveReserved": outgoing_reserved,
+            "incomingExpectedQuantity": receipt_quantity,
+            "incomingIncreaseAvailableStock": incoming_increase_available is True,
+            "incomingNativeFlag": incoming_increase_available,
+        }, ensure_ascii=False))
+
+    print(
+        "UI_REPLENISHMENT_SOURCE_EXPORT_COUNTS="
+        + json.dumps(
+            {
+                "inventory": {"source": source_counts["inventory"], "rows": len(collections["inventory"])},
+                "outgoingCommitments": {"source": source_counts["outgoingCommitments"], "rows": len(collections["outgoingCommitments"])},
+                "outgoingReservations": {"source": source_counts["outgoingReservations"], "rows": len(collections["outgoingReservations"])},
+                "receipts": {"source": source_counts["receipts"], "rows": len(collections["receipts"])},
+            },
+            ensure_ascii=False,
+        )
+    )
+    print("UI_REPLENISHMENT_NATIVE_NULL_AGGREGATES="
+          + json.dumps({field: sum(row.get(field) is None for row in collections["inventory"])
+                         for field in ("onHandNative", "availableNative", "plannedNetReservationNative")},
+                        ensure_ascii=False))
+    print("UI_REPLENISHMENT_NATIVE_AVAILABLE_RECONCILED=true")
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true")
+
+
 def verify_restarted_persistence(context: Any, url: str) -> None:
     base = application_endpoint_url(url, "exec/")
 
@@ -931,6 +1343,7 @@ def inspect_page(url: str) -> int:
                         )
                 page.screenshot(path=str(after_login_screenshot), full_page=True)
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
+                verify_replenishment_source_export(context, url)
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 

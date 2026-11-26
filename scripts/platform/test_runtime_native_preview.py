@@ -98,7 +98,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -130,7 +130,7 @@ class NativePreviewTests(unittest.TestCase):
             logics_dir = Path(temporary)
             (logics_dir / "RubrovaCustom.lsf").write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -150,7 +150,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
                 encoding="utf-8",
             )
 
@@ -235,6 +235,11 @@ class NativePreviewTests(unittest.TestCase):
                 '<Server><Service><Connector port="8080" protocol="HTTP/1.1"/></Service></Server>',
                 encoding="utf-8",
             )
+            (tomcat_home / "conf" / "context.xml").write_text(
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Context><WatchedResource>WEB-INF/web.xml</WatchedResource></Context>',
+                encoding="utf-8",
+            )
             war = root / "client.war"
             web_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
@@ -302,11 +307,53 @@ class NativePreviewTests(unittest.TestCase):
             self.assertEqual(params.get("host"), "127.0.0.1")
             self.assertEqual(params.get("port"), "17652")
 
+            context_xml = ET.parse(base / "conf" / "context.xml").getroot()
+            managers = context_xml.findall("Manager")
+            self.assertEqual(len(managers), 1)
+            self.assertEqual(managers[0].get("pathname"), "")
+
             server_xml = ET.parse(base / "conf" / "server.xml").getroot()
             connector = server_xml.find(".//Connector")
             self.assertIsNotNone(connector)
             self.assertEqual(connector.get("port"), "18080")
             self.assertEqual(connector.get("address"), "127.0.0.1")
+
+
+    def test_existing_tomcat_session_manager_is_made_non_persistent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tomcat_home = root / "tomcat"
+            (tomcat_home / "conf").mkdir(parents=True)
+            (tomcat_home / "conf" / "server.xml").write_text(
+                '<Server><Service><Connector port="8080"/></Service></Server>',
+                encoding="utf-8",
+            )
+            (tomcat_home / "conf" / "context.xml").write_text(
+                '<Context><Manager pathname="SESSIONS.ser" maxActiveSessions="-1"/></Context>',
+                encoding="utf-8",
+            )
+            war = root / "client.war"
+            web_xml = (
+                '<web-app><context-param><param-name>host</param-name><param-value>localhost</param-value></context-param>'
+                '<context-param><param-name>port</param-name><param-value>7652</param-value></context-param></web-app>'
+            )
+            with zipfile.ZipFile(war, "w") as archive:
+                archive.writestr("WEB-INF/web.xml", web_xml)
+
+            base = root / "tomcat-base"
+            native.prepare_tomcat_base(
+                tomcat_home,
+                base,
+                war,
+                {"postgres": 55432, "rmi": 17652, "web": 18080},
+            )
+
+            context_root = ET.parse(base / "conf" / "context.xml").getroot()
+            managers = context_root.findall("Manager")
+            self.assertEqual(len(managers), 1)
+            self.assertEqual(managers[0].get("pathname"), "")
+            self.assertEqual(managers[0].get("maxActiveSessions"), "-1")
+
 
     def test_missing_rmi_parameters_in_client_war_are_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

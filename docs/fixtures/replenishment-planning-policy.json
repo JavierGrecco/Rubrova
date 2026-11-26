@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "description": "Política local de demostración; no se infiere de los ledgers de MyCompany.",
+  "policies": [
+    {
+      "productId": "PROD-COLA",
+      "locationId": "LOC-LOCAL",
+      "sku": "COLA-2L",
+      "locationName": "Local principal",
+      "dailyDemandMilli": 500,
+      "forecastEligiblePeriods": 24,
+      "forecastTotalPeriods": 36,
+      "supplierLeadTimeDays": 5,
+      "reviewPeriodDays": 5,
+      "safetyStockMilli": 5000,
+      "minimumOrderQuantityMilli": 1000,
+      "orderMultipleMilli": 1000,
+      "nativeAutoOrderQtyMilli": 3000
+    },
+    {
+      "productId": "PROD-PASTA",
+      "locationId": "LOC-LOCAL",
+      "sku": "PASTA-500G",
+      "locationName": "Local principal",
+      "dailyDemandMilli": 500,
+      "forecastEligiblePeriods": 24,
+      "forecastTotalPeriods": 36,
+      "supplierLeadTimeDays": 3,
+      "reviewPeriodDays": 4,
+      "safetyStockMilli": 2000,
+      "minimumOrderQuantityMilli": 1000,
+      "orderMultipleMilli": 500,
+      "nativeAutoOrderQtyMilli": 1000
+    },
+    {
+      "productId": "PROD-ACEITE",
+      "locationId": "LOC-LOCAL",
+      "sku": "ACEITE-900ML",
+      "locationName": "Local principal",
+      "dailyDemandMilli": 100,
+      "forecastEligiblePeriods": 24,
+      "forecastTotalPeriods": 36,
+      "supplierLeadTimeDays": 4,
+      "reviewPeriodDays": 6,
+      "safetyStockMilli": 1000,
+      "minimumOrderQuantityMilli": 0,
+      "orderMultipleMilli": 500
+    }
+  ]
+}
