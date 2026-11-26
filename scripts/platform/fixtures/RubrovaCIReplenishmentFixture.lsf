@@ -74,8 +74,14 @@ rubrovaCIOutgoingOrderLine() = GROUP MAX Sales.OrderLine ol
     IF Sales.order(ol) = rubrovaCIOutgoingOrder();
 
 rubrovaPrepareOutgoingReservation 'Preparar reserva sintética de salida' () {
+    // Replicar el ciclo transaccional de ShipmentReady.checkAvailability:
+    // precheckAvailability calcula la reserva en la sesión actual; APPLY la persiste
+    // para que la exportación, ejecutada en otra petición HTTP, lea el mismo valor.
     IF rubrovaCIOutgoingShipment() THEN
-        Inventory.precheckAvailability(rubrovaCIOutgoingShipment());
+        NEWSESSION {
+            Inventory.precheckAvailability(rubrovaCIOutgoingShipment());
+            APPLY;
+        }
 
     EXPORT JSON FROM
         outgoingOpenQuantity = (GROUP SUM Sales.toShip(Sales.OrderLine ol)

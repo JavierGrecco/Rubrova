@@ -1227,6 +1227,11 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /reservedQuantityNative = \(OVERRIDE Inventory\.reserved\(sl\), 0\)/);
   assert.match(replenishmentExportSource, /ledgerReservedQuantityNative = \(OVERRIDE Inventory\.ledgerReserved\(sl\), 0\)/);
   assert.doesNotMatch(replenishmentExportSource, /Inventory\.lineReserved\(sl\)/);
+  assert.match(
+    nativeReplenishmentFixtureSource,
+    /NEWSESSION\s*\{\s*Inventory\.precheckAvailability\(rubrovaCIOutgoingShipment\(\)\);\s*APPLY;\s*\}/s,
+    "El fixture debe persistir el precheck nativo en una sesión independiente antes de validar la exportación."
+  );
   assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
