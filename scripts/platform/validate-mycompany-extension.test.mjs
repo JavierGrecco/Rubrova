@@ -369,6 +369,10 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /UI_SALE_PAYMENT_RECONCILED=true/);
   assert.match(nativeSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RESTART_PERSISTENCE=passed/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_PORTS_RELEASED=true/);
+  assert.match(nativeSmokeSource, /assert_native_ports_released/);
+  assert.match(nativeSmokeSource, /lsof -nP -t -iTCP:/);
+  assert.match(nativeSmokeSource, /ss -H -ltn/);
   assert.match(nativeSmokeSource, /RUBROVA_UI_VERIFY_PERSISTED_ONLY=true/);
   assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_INCIDENTS_RETAINED=true/);
   assert.match(nativePreviewSource, /signal[.]signal\(signal[.]SIGTERM, handle_shutdown_signal\)/);
