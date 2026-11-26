@@ -475,6 +475,18 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 
 ---
 
+
+### 2026-11-26 — REP-023 — Cálculo de importe en devolución parcial y eventos locales
+
+- **Hecho observado:** en el run 45876903441, el endpoint de CI para devoluciones devolvió HTTP 200 con un cuerpo de 5 bytes; el inspector falló al parsearlo como JSON. En `adjust.log` quedó el mensaje `Property Importe(Invoicing.amount[Invoicing.OutgoingPayment] ...) is not set` para el egreso `OVN/000001`. El contenido exacto de los cinco bytes no se capturó en esa ejecución.
+- **Hechos de fuente:** el POS de MyCompany usa `PosDashboardReturnPayment.posPayment`: limita cada importe por medio al cobrado originalmente, registra `OutgoingPayment` por cada método, asigna `amount(p)` desde el importe ingresado para ese medio y sólo después marca la nota lista y ejecuta `APPLY`. Además, `BillPayment.registerPayment` usa `fill(OutgoingPayment, Bill)`, llama `executeLocalEvents()` y luego calcula `sourceLeft(b)` antes de completar el egreso.
+- **Diferencia detectada en el fixture anterior:** tras `Invoicing.create(b, i)` y el ajuste de cantidad, el fixture creaba `OutgoingPayment` y asignaba `amount(p) <- amount(b)` sin ejecutar explícitamente los eventos locales de la nota. El hook nativo `CreditNote.fill(BillLine, InvoiceLine)` y los eventos que completan precio/impuestos dependen de ese ciclo local.
+- **Hipótesis prioritaria, todavía no causa raíz confirmada:** la lectura de `amount(b)` precedía a la ejecución de eventos locales que materializan precio/impuestos de las líneas, por lo que el valor transferido a la propiedad no nula `OutgoingPayment.amount` quedaba ausente. La secuencia nativa de `BillPayment.registerPayment` respalda la necesidad de ejecutar esos eventos antes de consultar el saldo.
+- **Cambio preparado desde main:** se portó el módulo `RubrovaRetailReturns` y su cableado de despliegue/lock/CI sobre la base vigente. El fixture ahora llama `executeLocalEvents()` después de crear la nota y otra vez después de cambiar la cantidad. El inspector registra Content-Type y cuerpo textual cuando el endpoint no devuelve JSON válido.
+- **Criterio de aceptación:** compilación del fork, prevalidación y scripts Windows, smoke nativo macOS ARM64, dos devoluciones (0,4 y remanente 0,6), rechazo de 0,7, dos reintegros por efectivo, reingreso físico de una unidad, caja neta cero y persistencia tras reinicio. Comprobar también que ninguna devolución por medio supera lo abonado originalmente con ese medio.
+- **Límite:** el fixture actual es de efectivo sintético. El circuito mixto tarjeta/efectivo y la experiencia del operador se deberán probar con el mismo contrato de distribución por medio antes de aceptar operación real.
+- **Estado:** cambio en rama basada en main; compilación y smoke funcional pendientes. El PR #13 original no se fusiona por su divergencia con main.
+
 ## 11. Anexos históricos preservados
 
 Los anexos siguientes contienen el texto completo de las auditorías, contratos, relaciones, decisiones, iteraciones y hojas de trabajo anteriores. Los estados y referencias de sus cabeceras son históricos. Las secciones vigentes 1–10 prevalecen y se actualizan cuando exista evidencia nueva.
