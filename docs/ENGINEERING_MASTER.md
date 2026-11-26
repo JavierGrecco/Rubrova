@@ -129,6 +129,29 @@ Inventario remoto consultado después de integrar PR #14 y del commit automátic
 
 La política es una sola rama persistente (`main`) y como máximo una rama temporal para revisión. Una rama temporal deja de estar activa al fusionarse y debe eliminarse inmediatamente.
 
+### 2.5 Reintegros acumulados por medio de pago: riesgo pendiente
+
+La inspección de fuentes nativas detectó un límite concreto que no cubren las pruebas actuales:
+
+- En `vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/return/PosDashboardReturnPayment.lsf`, `invoicePaid(Bill, PaymentMethod)` calcula lo abonado originalmente en la factura por medio. `invalidAmount` compara el importe del reintegro actual contra ese total, pero no resta los reintegros activos de notas anteriores.
+- En `vendor/mycompany/src/main/lsfusion/retail/sessions/SessionPayment.lsf`, `paymentMethod(Bill, OutgoingPayment)` conserva el método de cada egreso y `paid(Bill, PaymentMethod)` agrega el importe efectivamente asociado al reintegro por método.
+- `CreditNote.lsf` aplica `@defineDocLineRelation(invoice, bill, ...)`. La macro `defineDocLineRelation` de `utils/Doc.lsf` define `in(Invoice, Bill)` a partir de la relación entre las líneas de la factura original y las líneas de cada nota. Así se pueden agrupar reintegros de notas anteriores que pertenecen a la misma factura.
+- `BillCanceled.lsf` define `active(Bill)` como `ready(Bill) AND NOT canceled(Bill)`; las notas canceladas no deben consumir el cupo de reintegro.
+
+**Diseño a validar antes de implementar:** calcular el acumulado de `paid(previousBill, pm)` para otras notas activas enlazadas a la misma factura mediante `in(originalInvoice, previousBill)`, excluir explícitamente la nota actual y restarlo del importe originalmente pagado por ese mismo método. El formulario debe mostrar el remanente y rechazar un exceso. Además debe existir una validación de servidor/transaccional al confirmar el reintegro: deshabilitar el botón o colorear el campo no protege frente a llamadas directas ni a dos reintegros concurrentes. No duplicar la generación de `OutgoingPayment` ni crear un ledger alternativo; extender el control nativo y mantener sus registros.
+
+**Cobertura requerida antes de aceptar el cambio:**
+
+1. Factura original pagada con dos medios (ejemplo: efectivo ARS 500 y tarjeta ARS 750).
+2. Primera devolución distribuida entre ambos medios (ejemplo: efectivo ARS 300 y tarjeta ARS 250).
+3. Rechazar una segunda devolución de tarjeta por ARS 600: individualmente no supera los ARS 750 originales, pero sumada a los ARS 250 anteriores excede el máximo por ARS 100.
+4. Aceptar el remanente válido de tarjeta por ARS 500 y verificar que el acumulado llega exactamente a ARS 750.
+5. Cancelar una nota anterior y comprobar que sus pagos dejan de contar para el límite cuando la nota ya no está activa, sin borrar el historial contable.
+6. Probar reintentos/duplicados y dos confirmaciones concurrentes; nunca permitir que el acumulado confirmado exceda el pago original por método.
+7. Verificar por separado factura original, notas de crédito, egresos, estados, método, caja/banco y persistencia después del reinicio.
+
+**Estado actual:** riesgo confirmado por inspección de código nativo; el fixture automatizado sólo ejercita reintegros sintéticos en efectivo por ARS 1.250 que, acumulados, igualan lo abonado. No prueba mezcla de medios ni un exceso acumulado de un medio específico. No afirmar que el tope acumulado por medio esté resuelto ni que los reintegros tarjeta/QR estén aceptados.
+
 ## 3. Qué incorporamos: versiones, alcance y composición
 
 ### 3.1 Versiones y procedencia
@@ -561,6 +584,16 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Fuentes vendorizadas:** run [#24](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383784) creó el commit `7d9e5bb80e866df87b51baad852c1e6256270dd1`, aplicando a `vendor/mycompany/.../AdjustmentList.lsf` la corrección de agregación validada; su compilación de fuentes estaba en curso al redactar este informe.
 - **Verificación del merge:** run #463, ID `45911383909`, se lanzó sobre `c38fad5`; prevalidación y Windows pasaron, build pendiente al corte. No incluye el commit de fuentes `7d9e5bb`.
 - **Límites:** Linux x86_64 y Docker/Linux fueron omitidos; aceptación offline no probada; egress de red no bloqueado. El Adjustment de conteo permaneció sin validar y no generó movimiento de inventario. Esto prueba semántica de captura y persistencia, no un proceso productivo completo de inventario físico.
+
+### 2026-11-26 — REP-029 — Límite acumulado de reintegros por método de pago
+
+- **Fuente nativa examinada:** `retail/pos/dashboard/return/PosDashboardReturnPayment.lsf`, `retail/sessions/SessionPayment.lsf`, `invoicing/invoices/creditnotes/CreditNote.lsf`, `invoicing/bills/BillCanceled.lsf` y la macro `defineDocLineRelation` de `utils/Doc.lsf`.
+- **Hecho observado:** `invalidAmount(Bill, PaymentMethod)` compara el reintegro actual con `invoicePaid(Bill, PaymentMethod)`, suma original de la factura para ese medio. No resta los pagos de reintegros anteriores.
+- **Relaciones disponibles:** `SessionPayment` define el método de cada `OutgoingPayment` por nota y agrega `paid(Bill, PaymentMethod)`. La relación nativa `in(Invoice, Bill)` enlaza cada nota a su factura original mediante las líneas. `active(Bill)` excluye notas no listas o canceladas.
+- **Riesgo:** dos devoluciones sucesivas podrían ser cada una menor al total originalmente pagado por el medio y, aun así, excederlo al sumarlas. El smoke actual es sólo de efectivo y reembolsa exactamente ARS 1.250; no cubre una sobredevolución acumulada con tarjeta/QR ni múltiples medios.
+- **Diseño por validar:** agregar la suma de egresos de notas anteriores activas ligadas a la misma factura y método, excluyendo la nota actual, restarla al monto originalmente pagado y aplicar el límite tanto en la UI nativa como en una validación de servidor que resista concurrencia y replay.
+- **Estado:** diagnóstico de fuente confirmado; implementación y pruebas de runtime pendientes. No hay aceptación de reintegros mixtos, tarjetas o QR por esta inspección.
+- **Criterio de aceptación:** factura sintética de efectivo ARS 500 + tarjeta ARS 750; primera nota reembolsa ARS 300 + ARS 250; segunda nota por tarjeta ARS 600 se rechaza (acumulado 850); importe válido de ARS 500 se acepta (acumulado 750); cancelar una nota libera su importe sólo si la nota deja de estar activa; dos confirmaciones concurrentes no pueden superar el límite; conciliación de los ledgers nativos y persistencia post-reinicio.
 
 ## 11. Anexos históricos preservados
 
