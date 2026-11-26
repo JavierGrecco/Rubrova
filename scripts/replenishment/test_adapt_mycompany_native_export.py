@@ -113,12 +113,14 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
     def test_duplicate_inventory_keys_are_rejected(self) -> None:
         source = copy.deepcopy(self.native)
         source["inventory"].append(copy.deepcopy(source["inventory"][0]))
+        source["inventoryCount"] += 1
         with self.assertRaisesRegex(ValueError, "producto/ubicación duplicado"):
             self._build(source)
 
     def test_duplicate_outgoing_sales_order_line_is_rejected(self) -> None:
         source = copy.deepcopy(self.native)
         source["outgoingCommitments"].append(copy.deepcopy(source["outgoingCommitments"][0]))
+        source["outgoingCommitmentsCount"] += 1
         with self.assertRaisesRegex(ValueError, "sourceLineId duplicado"):
             self._build(source)
 
