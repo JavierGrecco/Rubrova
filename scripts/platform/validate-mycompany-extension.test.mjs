@@ -642,6 +642,12 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /DESIGN posPayment/);
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency()"));
   assert.match(moduleSource, /Sales[.]currency\(Sales[.]priceType\('retail'\)\) <- defaultCurrency\(\)/);
+  assert.match(moduleSource, /Invoicing[.]checkReturnedQuantity\(Invoicing[.]invoiceType\('retail'\)\) <- TRUE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaReturnSafetyApi/);
+  assert.match(nativeSalesFixtureSource, /retailReturnQuantityGuardEnabled = Invoicing[.]checkReturnedQuantity/);
+  assert.match(uiSmokeSource, /verify_return_quantity_guard\(context, url\)/);
+  assert.match(uiSmokeSource, /UI_RETURN_QUANTITY_GUARD_ENABLED=true/);
+  assert.match(nativeSmokeSource, /UI_RETURN_QUANTITY_GUARD_ENABLED=true/);
   assert.match(moduleSource, /name\(cashPaymentMethod\(\)\) <- 'Efectivo'/);
   assert.match(moduleSource, /name\(paymentMethod\('card'\)\) <- 'Tarjeta'/);
   assert.match(moduleSource, /DESIGN posPaymentReturn/);

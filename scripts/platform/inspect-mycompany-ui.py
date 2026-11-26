@@ -1247,6 +1247,25 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
     print("UI_RESTART_PERSISTENCE_INCIDENTS_RETAINED=true")
 
 
+
+
+def verify_return_quantity_guard(context: Any, url: str) -> None:
+    """Verify that Rubrova enables MyCompany's original invoice return-quantity constraint."""
+    api_base = application_endpoint_url(url, "exec/Sales.")
+    response = context.request.get(api_base + "rubrovaReturnSafetyApi", timeout=12_000)
+    if response.status != 200:
+        raise RuntimeError(
+            "La sonda de protección contra sobredevolución respondió "
+            f"HTTP {response.status}: {response.text()[:1200]}"
+        )
+    payload = response.json()
+    if not isinstance(payload, dict) or payload.get("retailReturnQuantityGuardEnabled") is not True:
+        raise RuntimeError(
+            "MyCompany no tiene activado el límite de cantidad devuelta para el comprobante retail: "
+            + json.dumps(payload, ensure_ascii=False)
+        )
+    print("UI_RETURN_QUANTITY_GUARD_ENABLED=true")
+
 def inspect_page(url: str) -> int:
     screenshot_path = Path(
         os.environ.get("RUBROVA_UI_SCREENSHOT", "/tmp/rubrova-mycompany-ui.png")
@@ -1344,6 +1363,8 @@ def inspect_page(url: str) -> int:
                 page.screenshot(path=str(after_login_screenshot), full_page=True)
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
                 verify_replenishment_source_export(context, url)
+                if os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() != "true":
+                    verify_return_quantity_guard(context, url)
                 if not final_text.strip():
                     raise RuntimeError("La pantalla posterior al acceso está vacía.")
 

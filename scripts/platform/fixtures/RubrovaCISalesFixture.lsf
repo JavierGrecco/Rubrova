@@ -110,3 +110,10 @@ rubrovaTestSessionCloseApi () {
         cashPaid = Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod()),
         cashBalance = Retail.cashBalance(Retail.pos('rubrova-ci'));
 } @@api;
+
+
+// Smoke contract: the retail invoice type must enforce MyCompany's native return quantity guard.
+rubrovaReturnSafetyApi () {
+    EXPORT JSON FROM
+        retailReturnQuantityGuardEnabled = Invoicing.checkReturnedQuantity(Invoicing.invoiceType('retail'));
+} @@api;

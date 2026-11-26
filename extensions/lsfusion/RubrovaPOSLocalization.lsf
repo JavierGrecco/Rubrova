@@ -126,6 +126,11 @@ loadDefaultData () + {
     IF paymentMethod('card') THEN
         name(paymentMethod('card')) <- 'Tarjeta';
 
+    // Evita que una nota de crédito minorista devuelva más unidades que la factura original.
+    // MyCompany suma las devoluciones activas por línea y bloquea el exceso al activar esta política.
+    IF Invoicing.invoiceType('retail') THEN
+        Invoicing.checkReturnedQuantity(Invoicing.invoiceType('retail')) <- TRUE;
+
     // La expresión del FOR filtra por el ID estable: sólo se modifica el cliente genérico.
     FOR MasterData.id(MasterData.Individual i) = 'unknown' DO {
         MasterData.lastName(i) <- 'Consumidor final';
