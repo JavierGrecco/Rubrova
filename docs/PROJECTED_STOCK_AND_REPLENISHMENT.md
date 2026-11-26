@@ -3,7 +3,7 @@
 **Revisión:** 25 de noviembre de 2026  
 **Estado:** planificador sintético + importador de snapshots + primera API nativa `@@api` de sólo lectura. La API ya exporta hechos de MyCompany 6.2; todavía falta conciliar el resultado con una base real y unirlo con pronóstico y políticas externas. No genera ni confirma órdenes de compra.
 
-Este documento registra la primera regla temporal de reposición de Rubrova. Complementa [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) y el [Plan de trabajo](ROADMAP.md). La plataforma operativa sigue siendo MyCompany 6.2 / lsFusion 6.2; este experimento no reemplaza sus ledgers ni su flujo de compras.
+Este documento registra la primera regla temporal de reposición de Rubrova. Complementa [Inteligencia de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) y el [roadmap técnico único](ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado). La plataforma operativa sigue siendo MyCompany 6.2 / lsFusion 6.2; este experimento no reemplaza sus ledgers ni su flujo de compras.
 
 ## 1. Qué encontramos en MyCompany 6.2
 
