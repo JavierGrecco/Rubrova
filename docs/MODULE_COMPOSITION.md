@@ -81,7 +81,7 @@ No se descarta una biblioteca por cubrir solo un OS. Se incorpora detrás de una
 
 Ningún módulo externo pasa a operación real hasta probar contratos, permisos, aislamiento, idempotencia, fallos parciales, recuperación, backup, auditoría, actualización, licencia, sustitución y ausencia de segunda fuente de verdad.
 
-Ver [Arquitectura](ARCHITECTURE.md), [Modelo de dominio](DOMAIN_MODEL.md), [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md) y [Calidad y pruebas](QUALITY_AND_TESTING.md).
+Ver [Arquitectura](ARCHITECTURE.md), [Modelo de dominio](DOMAIN_MODEL.md), [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md) y el [Manual técnico canónico](ENGINEERING_MASTER.md).
 
 
 ## Módulos que habilitan varias áreas de negocio
