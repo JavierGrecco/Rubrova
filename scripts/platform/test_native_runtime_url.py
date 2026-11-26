@@ -1,4 +1,4 @@
-"""Regression tests for native runtime endpoint URL construction."""
+"""Regression tests for native runtime endpoint and export contracts."""
 
 from __future__ import annotations
 
@@ -17,48 +17,10 @@ class NativeReplenishmentExportContractTests(unittest.TestCase):
         exporter = (repository / "extensions/lsfusion/RubrovaReplenishmentExport.lsf").read_text(encoding="utf-8")
 
         inspector_version = re.search(
-            r"^NATIVE_EXPORT_SCHEMA_VERSION\\s*=\\s*(\\d+)\\s*$", inspector, re.MULTILINE
+            r"^NATIVE_EXPORT_SCHEMA_VERSION\s*=\s*(\d+)\s*$", inspector, re.MULTILINE
         )
-        adapter_version = re.search(r'^\\s*"schemaVersion":\\s*(\\d+),
-    def test_login_route_does_not_become_an_api_path_prefix(self) -> None:
-        self.assertEqual(
-            application_endpoint_url(
-                "http://127.0.0.1:8080/login",
-                "exec/Rubrova.rubrovaTestPosConfigurationApi",
-            ),
-            "http://127.0.0.1:8080/exec/Rubrova.rubrovaTestPosConfigurationApi",
-        )
-
-    def test_main_route_does_not_become_an_api_path_prefix(self) -> None:
-        self.assertEqual(
-            application_endpoint_url(
-                "http://127.0.0.1:8080/main",
-                "/exec/Sales.rubrovaTestSalesReconciliationApi",
-            ),
-            "http://127.0.0.1:8080/exec/Sales.rubrovaTestSalesReconciliationApi",
-        )
-
-    def test_root_endpoint_directory_keeps_its_trailing_slash(self) -> None:
-        self.assertEqual(
-            application_endpoint_url("http://localhost:8080/login", "exec/"),
-            "http://localhost:8080/exec/",
-        )
-
-    def test_query_string_from_page_url_is_not_copied(self) -> None:
-        self.assertEqual(
-            application_endpoint_url("http://localhost:8080/login?next=home", "exec/Rubrova.test"),
-            "http://localhost:8080/exec/Rubrova.test",
-        )
-
-    def test_rejects_a_base_without_an_http_host(self) -> None:
-        with self.assertRaises(ValueError):
-            application_endpoint_url("/login", "exec/Rubrova.test")
-
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
-, adapter, re.MULTILINE)
-        exporter_version = re.search(r"^\\s*schemaVersion\\s*=\\s*(\\d+),$", exporter, re.MULTILINE)
+        adapter_version = re.search(r'^\s*"schemaVersion":\s*(\d+),$', adapter, re.MULTILINE)
+        exporter_version = re.search(r"^\s*schemaVersion\s*=\s*(\d+),$", exporter, re.MULTILINE)
 
         self.assertIsNotNone(inspector_version, "El inspector debe declarar la versión del contrato nativo.")
         self.assertIsNotNone(adapter_version, "El adaptador debe declarar la versión del contrato nativo.")
