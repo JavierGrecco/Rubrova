@@ -1527,8 +1527,8 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnedQuantity\(\) = OVERRIDE Invoicing[.]returned/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnCashPaymentCount\(\) = OVERRIDE/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnCashPaymentAmount\(\) = OVERRIDE/);
-  assert.match(nativeSalesFixtureSource, /sourceInvoiceFound = CASE WHEN rubrovaCITestInvoice\(\)/);
-  assert.match(nativeSalesFixtureSource, /sourceInvoiceLineFound = CASE WHEN rubrovaCITestInvoiceLine\(\)/);
+  assert.match(nativeSalesFixtureSource, /sourceInvoiceFound = CASE WHEN rubrovaCITestInvoice\(\) THEN 1 ELSE 0/);
+  assert.match(nativeSalesFixtureSource, /sourceInvoiceLineFound = CASE WHEN rubrovaCITestInvoiceLine\(\) THEN 1 ELSE 0/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIReturnedQuantity\(\)/);
   assert.match(nativeSalesFixtureSource, /rubrovaPartialReturnsReconciliationApi/);
   assert.match(uiSmokeSource, /verify_partial_returns\(context, url\)/);

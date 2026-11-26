@@ -203,8 +203,8 @@ rubrovaTestPartialReturnsApi () {
         }
 
     EXPORT JSON FROM
-        sourceInvoiceFound = CASE WHEN rubrovaCITestInvoice() THEN TRUE ELSE FALSE,
-        sourceInvoiceLineFound = CASE WHEN rubrovaCITestInvoiceLine() THEN TRUE ELSE FALSE,
+        sourceInvoiceFound = CASE WHEN rubrovaCITestInvoice() THEN 1 ELSE 0,
+        sourceInvoiceLineFound = CASE WHEN rubrovaCITestInvoiceLine() THEN 1 ELSE 0,
         overReturnRejected = rubrovaOverReturnRejected(),
         returnBillCount = rubrovaCIReturnCount(),
         returnAmount = rubrovaCIReturnAmount(),
