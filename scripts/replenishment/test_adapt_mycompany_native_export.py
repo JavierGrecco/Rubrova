@@ -5,7 +5,7 @@ import json
 import unittest
 from pathlib import Path
 
-from adapt_mycompany_native_export import build_normalized_snapshot
+from adapt_mycompany_native_export import NATIVE_SOURCE_SEMANTICS, build_normalized_snapshot
 from import_mycompany_snapshot import adapt_snapshot
 
 
@@ -24,6 +24,13 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         return build_normalized_snapshot(
             copy.deepcopy(self.native if native is None else native),
             copy.deepcopy(self.policy if policy is None else policy),
+        )
+
+    def test_native_source_semantics_match_the_fixture_contract(self) -> None:
+        self.assertEqual(self.native["sourceSemantics"], NATIVE_SOURCE_SEMANTICS)
+        self.assertEqual(
+            self.native["sourceSemantics"]["outgoingEffectiveReservation"],
+            "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)",
         )
 
     def test_native_export_becomes_a_planner_snapshot_without_losing_uom_precision(self) -> None:

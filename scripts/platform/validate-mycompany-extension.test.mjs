@@ -1276,6 +1276,14 @@ test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no conc
     "El inspector del smoke debe validar la misma semántica de reserva que exporta MyCompany."
   );
   assert.equal(nativeReplenishmentFixture.snapshotType, "mycompany-replenishment-source-export");
+  assert.equal(
+    nativeReplenishmentFixture.sourceSemantics.outgoingEffectiveReservation,
+    "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)"
+  );
+  assert.ok(
+    replenishmentBridgeSource.includes("SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)"),
+    "El puente Python debe exigir la misma semántica de ShipmentLine que la API nativa."
+  );
   assert.equal(nativeReplenishmentFixture.readOnly, true);
   assert.ok(nativeReplenishmentFixture.inventory.length > 0);
   assert.equal(replenishmentPolicyFixture.schemaVersion, 1);
