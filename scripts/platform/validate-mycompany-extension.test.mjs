@@ -45,6 +45,10 @@ const billSource = read("vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill
 const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf");
 const incomingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf");
 const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf");
+const adjustmentListSearchSource = read("vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentListSearch.lsf");
+const adjustmentListSource = read("vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentList.lsf");
+const adjustmentInProgressSource = read("vendor/mycompany/src/main/lsfusion/inventory/adjustments/AdjustmentInProgress.lsf");
+const adjustmentDoneSource = read("vendor/mycompany/src/main/lsfusion/inventory/adjustments/AdjustmentDone.lsf");
 const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
 const markdownViewerSource = read("vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
@@ -1066,6 +1070,27 @@ test("el historial de facturas y compras registra los cambios de impuestos por l
   assert.ok(sourcePatch.includes("@defineDocHistoryLineProperty(invoice, InvoiceLine, taxes, 'Taxes', nameItem);"));
   assert.ok(sourcePatch.includes("def apply_tax_history_line_tracking()"));
   assert.ok(sourcePatch.includes("if not apply_tax_history_line_tracking():"));
+});
+
+test("el conteo físico por barcode conserva cero como cantidad y usa NULL para limpiar", () => {
+  const signature = "setRealQuantity(AdjustmentList a, Product p, Location loc, NUMERIC[16,3] q) {";
+  const start = adjustmentListSearchSource.indexOf(signature);
+  assert.ok(start >= 0, "No se encontró el helper setRealQuantity del stocktake.");
+  const end = adjustmentListSearchSource.indexOf("\\n}\\n", start);
+  assert.ok(end > start, "No se encontró el cierre del helper setRealQuantity.");
+  const helper = adjustmentListSearchSource.slice(start, end + 3);
+  assert.equal((helper.match(/IF q THEN/g) || []).length, 2);
+  assert.ok(helper.includes("DELETE AdjustmentListLine"), "NULL debe seguir permitiendo limpiar la línea.");
+  assert.ok(adjustmentListSearchSource.includes("@defineBarCodeSearch(adjustmentList, a, l, realQuantity);"));
+  const patched = helper.replaceAll("IF q THEN", "IF q IS NOT NULL THEN");
+  assert.equal((patched.match(/IF q IS NOT NULL THEN/g) || []).length, 2);
+  assert.ok(adjustmentListSource.includes("listRealQuantity (Adjustment, Product, Location) ="));
+  assert.ok(adjustmentInProgressSource.includes("aggregateRealQuantity(l) OR NOT status(adjustment(l)) = AdjustmentStatus.inProgress"));
+  assert.ok(adjustmentDoneSource.includes("realQuantity(l) (-) theoreticalQuantity(l)"));
+  assert.ok(sourcePatch.includes("ADJUSTMENT_LIST_SEARCH_TARGET"));
+  assert.ok(sourcePatch.includes("ADJUSTMENT_ZERO_QUANTITY_MARKER"));
+  assert.ok(sourcePatch.includes("def apply_adjustment_list_zero_quantity()"));
+  assert.ok(sourcePatch.includes("if not apply_adjustment_list_zero_quantity():"));
 });
 
 test("el navegador de atributos usa el caption español y Numerators se traduce desde el motor", () => {
