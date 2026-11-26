@@ -11,10 +11,10 @@
 
 <p align="center">
   <a href="docs/EXECUTIVE_PRODUCT_BRIEF.md">Brief ejecutivo</a> ·
-  <a href="docs/PROJECT_STATUS.md">Estado real</a> ·
+  <a href="docs/ENGINEERING_MASTER.md#estado-actual-de-main">Estado y evidencia</a> ·
   <a href="docs/ARCHITECTURE.md">Arquitectura</a> ·
   <a href="docs/SECURITY_POSTURE.md">Seguridad y evidencia</a> ·
-  <a href="docs/QUALITY_AND_TESTING.md">Calidad y pruebas</a>
+  <a href="docs/ENGINEERING_MASTER.md#cómo-usar-y-mantener-este-manual">Calidad y pruebas</a>
 </p>
 
 <p align="center">
@@ -45,7 +45,7 @@ El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las cap
 >
 > **Estado GitHub:** `main` es la única rama visible y no hay PR abiertos. La rama principal todavía no está protegida por reglas obligatorias. La prueba en el runner Apple Silicon no sustituye la prueba en el Mac físico ni una jornada comercial real.
 >
-> Seguimiento: [validación de plataforma #45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md) · [roadmap](docs/ROADMAP.md).
+> Seguimiento: [validación de plataforma #45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) · [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
 
 ## Propuesta de producto
 
@@ -129,7 +129,7 @@ La [postura de seguridad](docs/SECURITY_POSTURE.md) separa expresamente controle
 | Terminales de pago y ARCA | Sin adquirente homologado ni conexión fiscal productiva |
 | Uso diario con datos reales | No autorizado todavía |
 
-La evidencia y las limitaciones se mantienen en [Estado real del proyecto](docs/PROJECT_STATUS.md); no se infieren de una compilación exitosa.
+La evidencia y las limitaciones se mantienen en el [Manual técnico canónico](docs/ENGINEERING_MASTER.md#estado-actual-de-main); no se infieren de una compilación exitosa.
 
 ## Ejecutar localmente
 
