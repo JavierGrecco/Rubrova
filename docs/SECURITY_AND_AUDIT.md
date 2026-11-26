@@ -1,5 +1,7 @@
 # Seguridad, permisos y auditoría
 
+> **Estado de implementación:** este documento define requisitos y controles objetivo; no es una declaración de que todos estén implementados. Para distinguir las capacidades verificadas en CI de las diseñadas o pendientes, consultar [Postura de seguridad y confianza operacional](SECURITY_POSTURE.md). La vista previa actual es de desarrollo y no está aprobada para datos reales ni exposición a redes.
+
 ## Objetivo
 
 Proteger dinero, inventario, datos personales, información fiscal y continuidad. El sistema debe permitir saber qué ocurrió, quién intervino y qué autorización existió.
