@@ -21,12 +21,13 @@
     "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
     "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
-    "outgoingEffectiveReservation": "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)",
+    "outgoingEffectiveReservation": "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
     "incomingIdentity": "Receipt.number + ReceiptLine.index",
     "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
     "incomingScheduledDateTime": "Receipt.scheduledDateTime",
     "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed",
-    "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse"
+    "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
+    "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line"
   },
   "inventory": [
     {
@@ -97,7 +98,6 @@
       "locationId": "LOC-LOCAL",
       "locationName": "Local principal",
       "openQuantity": 4,
-      "effectiveReserved": 2.5,
       "scheduledDateTime": "2026-11-27T10:00:00",
       "scheduledDate": "2026-11-27",
       "status": "confirmed"
@@ -111,7 +111,6 @@
       "locationId": "LOC-LOCAL",
       "locationName": "Local principal",
       "openQuantity": 4.5,
-      "effectiveReserved": 4.5,
       "scheduledDateTime": "2026-11-26T10:00:00",
       "scheduledDate": "2026-11-26",
       "status": "confirmed"
@@ -135,6 +134,23 @@
       "status": "ready",
       "purchaseOrderStatus": "confirmed",
       "increaseAvailableStock": null
+    }
+  ],
+  "outgoingReservationsCount": 2,
+  "outgoingReservations": [
+    {
+      "sourceLineId": "SO-COLA-001#1",
+      "shipmentId": "SH-COLA-001",
+      "shipmentLineId": "SH-COLA-001#1",
+      "lineReserved": 2.5,
+      "reserveEligible": true
+    },
+    {
+      "sourceLineId": "SO-PASTA-001#1",
+      "shipmentId": "SH-PASTA-001",
+      "shipmentLineId": "SH-PASTA-001#1",
+      "lineReserved": 4.5,
+      "reserveEligible": true
     }
   ]
 }

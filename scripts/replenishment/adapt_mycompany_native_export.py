@@ -28,7 +28,8 @@ NATIVE_SOURCE_SEMANTICS = {
     "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
     "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
-    "outgoingEffectiveReservation": "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)",
+    "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line",
+    "outgoingEffectiveReservation": "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
     "incomingIdentity": "Receipt.number + ReceiptLine.index",
     "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
     "incomingScheduledDateTime": "Receipt.scheduledDateTime",
@@ -227,6 +228,7 @@ def build_normalized_snapshot(
 
     inventory_rows = _counted_rows(source, "inventory")
     outgoing_rows = _counted_rows(source, "outgoingCommitments")
+    outgoing_reservation_rows = _counted_rows(source, "outgoingReservations")
     receipt_rows = _counted_rows(source, "receipts")
 
     inventory: list[dict[str, Any]] = []
@@ -276,7 +278,8 @@ def build_normalized_snapshot(
         raise ValueError("inventory nativo no puede estar vacío.")
 
     outgoing: list[dict[str, Any]] = []
-    outgoing_reservations: dict[tuple[str, str], int] = {}
+    outgoing_by_line: dict[str, dict[str, Any]] = {}
+    outgoing_reservations_by_line: dict[str, int] = {}
     seen_outgoing: set[str] = set()
     for index, row in enumerate(outgoing_rows):
         label = f"outgoingCommitments[{index}]"
@@ -290,9 +293,8 @@ def build_normalized_snapshot(
         if row.get("status") != "confirmed":
             raise ValueError(f"{label}.status no es confirmed; la API debe exportar sólo pedidos confirmados.")
         open_quantity = _milli(row.get("openQuantity"), f"{label}.openQuantity")
-        reserved = _milli(row.get("effectiveReserved"), f"{label}.effectiveReserved")
-        if open_quantity <= 0 or reserved < 0 or reserved > open_quantity:
-            raise ValueError(f"{label} tiene remanente o reserva efectiva fuera de rango.")
+        if open_quantity <= 0:
+            raise ValueError(f"{label}.openQuantity debe ser positiva.")
         related_shipments = row.get("relatedShipmentCount")
         if related_shipments is not None and (
             isinstance(related_shipments, bool)
@@ -300,7 +302,6 @@ def build_normalized_snapshot(
             or related_shipments < 0
         ):
             raise ValueError(f"{label}.relatedShipmentCount debe ser un entero no negativo.")
-        outgoing_reservations[key] = outgoing_reservations.get(key, 0) + reserved
         normalized_outgoing = {
             "sourceLineId": line_id,
             "sourceDocumentId": _text(row.get("sourceDocumentId"), f"{label}.sourceDocumentId"),
@@ -309,11 +310,42 @@ def build_normalized_snapshot(
             "status": "confirmed",
             "scheduledDate": _iso_date(row.get("scheduledDate"), f"{label}.scheduledDate"),
             "openQuantityMilli": open_quantity,
-            "lineReservedMilli": reserved,
         }
         if related_shipments is not None:
             normalized_outgoing["relatedShipmentCount"] = related_shipments
+        outgoing_by_line[line_id] = normalized_outgoing
         outgoing.append(normalized_outgoing)
+
+    seen_shipment_lines: set[str] = set()
+    outgoing_reservation_product_totals: dict[tuple[str, str], int] = {}
+    for index, row in enumerate(outgoing_reservation_rows):
+        label = f"outgoingReservations[{index}]"
+        line_id = _text(row.get("sourceLineId"), f"{label}.sourceLineId")
+        if line_id not in outgoing_by_line:
+            raise ValueError(f"{label}.sourceLineId no referencia una línea de salida exportada: {line_id}.")
+        shipment_line_id = _text(row.get("shipmentLineId"), f"{label}.shipmentLineId")
+        if shipment_line_id in seen_shipment_lines:
+            raise ValueError(f"outgoingReservations contiene shipmentLineId duplicado: {shipment_line_id}.")
+        seen_shipment_lines.add(shipment_line_id)
+        _text(row.get("shipmentId"), f"{label}.shipmentId")
+        reserve_eligible = row.get("reserveEligible")
+        if not isinstance(reserve_eligible, bool):
+            raise ValueError(f"{label}.reserveEligible debe ser booleano.")
+        line_reserved = _milli(row.get("lineReserved"), f"{label}.lineReserved")
+        if reserve_eligible and line_reserved > 0:
+            outgoing_reservations_by_line[line_id] = outgoing_reservations_by_line.get(line_id, 0) + line_reserved
+
+    for line_id, normalized_outgoing in outgoing_by_line.items():
+        reserved = outgoing_reservations_by_line.get(line_id, 0)
+        open_quantity = normalized_outgoing["openQuantityMilli"]
+        if reserved < 0 or reserved > open_quantity:
+            raise ValueError(
+                f"outgoingCommitments {line_id} tiene reserva efectiva fuera de rango: "
+                f"openQuantity={open_quantity}, effectiveReserved={reserved} (milésimas)."
+            )
+        normalized_outgoing["lineReservedMilli"] = reserved
+        key = (normalized_outgoing["productId"], normalized_outgoing["locationId"])
+        outgoing_reservation_product_totals[key] = outgoing_reservation_product_totals.get(key, 0) + reserved
 
     receipts: list[dict[str, Any]] = []
     receipt_quantities: dict[tuple[str, str], int] = {}
@@ -364,7 +396,7 @@ def build_normalized_snapshot(
         })
 
     for key, balance in balances.items():
-        exported_outgoing = outgoing_reservations.get(key, 0)
+        exported_outgoing = outgoing_reservation_product_totals.get(key, 0)
         if balance["plannedNetReservationMilli"] != exported_outgoing:
             raise ValueError(
                 f"Hay reservas que el planificador no modela para {key[0]}/{key[1]}: "

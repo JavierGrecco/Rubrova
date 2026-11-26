@@ -745,6 +745,55 @@ def _native_collection(payload: dict[str, Any], field: str, label: str) -> list[
     return rows
 
 
+def _outgoing_reservation_totals(
+    commitments: list[dict[str, Any]],
+    reservation_rows: list[dict[str, Any]],
+) -> dict[str, float]:
+    """Aggregate native ShipmentLine facts by the stable Sales.OrderLine key."""
+    commitments_by_id: dict[str, float] = {}
+    for index, row in enumerate(commitments):
+        label = f"outgoingCommitments[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if not line_id or line_id in commitments_by_id:
+            raise ValueError(f"{label}.sourceLineId está vacío o duplicado.")
+        open_quantity = row.get("openQuantity")
+        if (isinstance(open_quantity, bool) or not isinstance(open_quantity, (int, float))
+                or not math.isfinite(float(open_quantity)) or float(open_quantity) <= 0):
+            raise ValueError(f"{label}.openQuantity debe ser positiva y finita.")
+        commitments_by_id[line_id] = float(open_quantity)
+
+    totals: dict[str, float] = {}
+    seen_shipment_lines: set[str] = set()
+    for index, row in enumerate(reservation_rows):
+        label = f"outgoingReservations[{index}]"
+        line_id = str(row.get("sourceLineId") or "").strip()
+        if line_id not in commitments_by_id:
+            raise ValueError(f"{label}.sourceLineId no referencia una línea de salida exportada.")
+        shipment_line_id = str(row.get("shipmentLineId") or "").strip()
+        if not shipment_line_id or shipment_line_id in seen_shipment_lines:
+            raise ValueError(f"{label}.shipmentLineId está vacío o duplicado.")
+        seen_shipment_lines.add(shipment_line_id)
+        if not str(row.get("shipmentId") or "").strip():
+            raise ValueError(f"{label}.shipmentId está vacío.")
+        eligible = row.get("reserveEligible")
+        if not isinstance(eligible, bool):
+            raise ValueError(f"{label}.reserveEligible debe ser booleano.")
+        reserved = row.get("lineReserved")
+        if (isinstance(reserved, bool) or not isinstance(reserved, (int, float))
+                or not math.isfinite(float(reserved))):
+            raise ValueError(f"{label}.lineReserved debe ser numérico y finito.")
+        if eligible and float(reserved) > 0:
+            totals[line_id] = totals.get(line_id, 0.0) + float(reserved)
+
+    for line_id, reserved in totals.items():
+        if reserved > commitments_by_id[line_id] + 0.001:
+            raise ValueError(
+                f"La reserva agregada supera el remanente de {line_id}: "
+                f"openQuantity={commitments_by_id[line_id]}, effectiveReserved={reserved}."
+            )
+    return totals
+
+
 def probe_replenishment_source_sections(context: Any, url: str) -> None:
     """Validate native array shape and count on each independently authenticated endpoint."""
     endpoint = application_endpoint_url(url, "exec/Rubrova.")
@@ -780,29 +829,14 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROWS={len(rows)}")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_SOURCE_COUNT={payload[count_field]}")
             if label == "outgoing_commitments":
-                print("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON=" + json.dumps(
-                    rows, ensure_ascii=False
-                ))
-                if require_positive:
-                    for index, row in enumerate(rows):
-                        open_quantity = row.get("openQuantity")
-                        effective_reserved = row.get("effectiveReserved")
-                        if (
-                            isinstance(open_quantity, bool)
-                            or not isinstance(open_quantity, (int, float))
-                            or isinstance(effective_reserved, bool)
-                            or not isinstance(effective_reserved, (int, float))
-                            or not math.isfinite(float(open_quantity))
-                            or not math.isfinite(float(effective_reserved))
-                            or open_quantity <= 0
-                            or effective_reserved <= 0
-                            or effective_reserved > open_quantity + 0.001
-                        ):
-                            raise ValueError(
-                                "La sonda nativa de salida no concilia la reserva efectiva "
-                                f"en outgoingCommitments[{index}]: openQuantity={open_quantity}, "
-                                f"effectiveReserved={effective_reserved}."
-                            )
+                reservation_rows = _native_collection(payload, "outgoingReservations", label)
+                totals = _outgoing_reservation_totals(rows, reservation_rows)
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON=" + json.dumps(rows, ensure_ascii=False))
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_RESERVATION_ROWS_JSON=" + json.dumps(reservation_rows, ensure_ascii=False))
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_EFFECTIVE_TOTALS=" + json.dumps(totals, ensure_ascii=False, sort_keys=True))
+                print("UI_REPLENISHMENT_PROBE_OUTGOING_RESERVATION_SOURCE_COUNT=" + str(payload["outgoingReservationsCount"]))
+                if require_positive and not any(value > 0 for value in totals.values()):
+                    raise ValueError("El fixture positivo debe tener reservas efectivas positivas agregadas desde ShipmentLine.")
         except ValueError as error:
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
             failures.append(f"{label}: respuesta JSON incompatible ({error})")
@@ -909,7 +943,8 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
         "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
         "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
-        "outgoingEffectiveReservation": "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)",
+        "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line",
+        "outgoingEffectiveReservation": "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
         "incomingIdentity": "Receipt.number + ReceiptLine.index",
         "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
         "incomingScheduledDateTime": "Receipt.scheduledDateTime",
@@ -921,7 +956,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
 
     collections: dict[str, list[dict[str, Any]]] = {}
     source_counts: dict[str, int] = {}
-    for field in ("inventory", "outgoingCommitments", "receipts"):
+    for field in ("inventory", "outgoingCommitments", "outgoingReservations", "receipts"):
         try:
             rows = _native_collection(payload, field, "export")
         except ValueError as error:
@@ -931,6 +966,9 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
     print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_ROWS=" + json.dumps(
         collections["outgoingCommitments"], ensure_ascii=False
     ))
+    outgoing_reservation_totals = _outgoing_reservation_totals(collections["outgoingCommitments"], collections["outgoingReservations"])
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_RESERVATION_ROWS=" + json.dumps(collections["outgoingReservations"], ensure_ascii=False))
+    print("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_EFFECTIVE_TOTALS=" + json.dumps(outgoing_reservation_totals, ensure_ascii=False, sort_keys=True))
 
     def numeric(row: dict[str, Any], field: str, row_label: str) -> float:
         value = row.get(field)
@@ -987,9 +1025,12 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             raise RuntimeError(f"{row_label}.sourceLineId está vacío o duplicado.")
         outgoing_ids.add(line_id)
         open_quantity = numeric(row, "openQuantity", row_label)
-        reserved = numeric(row, "effectiveReserved", row_label)
+        reserved = outgoing_reservation_totals.get(line_id, 0.0)
         if row.get("status") != "confirmed" or open_quantity <= 0 or reserved < 0 or reserved > open_quantity + 0.001:
-            raise RuntimeError(f"{row_label} viola la semántica de compromiso abierto/reserva efectiva.")
+            raise RuntimeError(
+                f"{row_label} viola la semántica de compromiso abierto/reserva efectiva: "
+                f"openQuantity={open_quantity}, effectiveReserved={reserved}."
+            )
         for field in ("sourceDocumentId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
             if not str(row.get(field) or "").strip():
                 raise RuntimeError(f"{row_label}.{field} está vacío.")
@@ -1020,11 +1061,14 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
     if require_positive:
         if source_counts["outgoingCommitments"] < 1 or not collections["outgoingCommitments"]:
             raise RuntimeError("El fixture positivo debe generar al menos un compromiso de salida.")
+        if source_counts["outgoingReservations"] < 1 or not collections["outgoingReservations"]:
+            raise RuntimeError("El fixture positivo debe generar al menos una línea de reserva nativa.")
         if source_counts["receipts"] < 1 or not collections["receipts"]:
             raise RuntimeError("El fixture positivo debe generar al menos una recepción pendiente.")
         outgoing = collections["outgoingCommitments"][0]
+        outgoing_line_id = str(outgoing.get("sourceLineId") or "")
         outgoing_quantity = numeric(outgoing, "openQuantity", "outgoingCommitments[0]")
-        outgoing_reserved = numeric(outgoing, "effectiveReserved", "outgoingCommitments[0]")
+        outgoing_reserved = outgoing_reservation_totals.get(outgoing_line_id, 0.0)
         if outgoing_quantity <= 0 or outgoing_reserved <= 0:
             raise RuntimeError(
                 "El fixture de salida debe tener cantidad abierta y reserva efectiva positivas; "
@@ -1052,6 +1096,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             {
                 "inventory": {"source": source_counts["inventory"], "rows": len(collections["inventory"])},
                 "outgoingCommitments": {"source": source_counts["outgoingCommitments"], "rows": len(collections["outgoingCommitments"])},
+                "outgoingReservations": {"source": source_counts["outgoingReservations"], "rows": len(collections["outgoingReservations"])},
                 "receipts": {"source": source_counts["receipts"], "rows": len(collections["receipts"])},
             },
             ensure_ascii=False,

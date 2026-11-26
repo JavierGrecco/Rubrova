@@ -28,7 +28,8 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             outgoingIdentity = 'Sales.number(Order) + Sales.index(OrderLine)',
             outgoingOpenQuantity = 'Sales.toShip(OrderLine_confirmed)',
             outgoingScheduledDateTime = 'Sales.scheduledDateTime(Order)',
-            outgoingEffectiveReservation = 'SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)',
+            outgoingReservationSource = 'ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line',
+            outgoingEffectiveReservation = 'SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)',
             incomingIdentity = 'Receipt.number + ReceiptLine.index',
             incomingExpectedQuantity = '0 - ReceiptResLedger.reserved; signed reservation remains negative',
             incomingScheduledDateTime = 'Receipt.scheduledDateTime',
@@ -48,6 +49,11 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                 AND Sales.toShip(ol) > 0
                 AND Sales.location(Sales.order(ol))
                 AND Sales.shippedProduct(ol) IS MasterData.Product),
+            0),
+        outgoingReservationsCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.orderLine(Inventory.ShipmentLine sl)
+                AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
+                AND Sales.toShip(Sales.orderLine(sl)) > 0),
             0),
         receiptsCount = (OVERRIDE
             (GROUP SUM 1 IF Inventory.ready(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr)))
@@ -92,9 +98,6 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationId = Inventory.id(Sales.location(Sales.order(ol))),
             locationName = Inventory.name(Sales.location(Sales.order(ol))),
             openQuantity = Sales.toShip(ol),
-            effectiveReserved = (OVERRIDE
-                Sales.reserved(ol),
-                0),
             scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol)),
             scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
             status = 'confirmed'
@@ -103,6 +106,18 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
                 AND Sales.location(Sales.order(ol))
                 AND Sales.shippedProduct(ol) IS MasterData.Product
             ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
+        ),
+        outgoingReservations = (JSON FROM
+            sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.orderLine(Inventory.ShipmentLine sl))), '#', Sales.index(Sales.orderLine(sl))),
+            shipmentId = Inventory.number(Inventory.shipment(sl)),
+            shipmentLineId = (CONCAT '', Inventory.number(Inventory.shipment(sl)), '#', Inventory.index(sl)),
+            lineReserved = (OVERRIDE Inventory.lineReserved(sl), 0),
+            reserveEligible = Inventory.toReserve(Inventory.shipment(sl))
+            WHERE Sales.orderLine(sl)
+                AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
+                AND Sales.toShip(Sales.orderLine(sl)) > 0
+            ORDER Sales.number(Sales.order(Sales.orderLine(sl))), Sales.index(Sales.orderLine(sl)),
+                Inventory.number(Inventory.shipment(sl)), Inventory.index(sl)
         ),
         receipts = (JSON FROM
             lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
@@ -171,16 +186,30 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
         productId = MasterData.id(Sales.shippedProduct(ol)),
         locationId = Inventory.id(Sales.location(Sales.order(ol))),
         openQuantity = Sales.toShip(ol),
-        effectiveReserved = (OVERRIDE
-            Sales.reserved(ol),
-            0),
         scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol))
         WHERE Sales.confirmed(Sales.order(ol))
             AND Sales.toShip(ol) > 0
             AND Sales.location(Sales.order(ol))
             AND Sales.shippedProduct(ol) IS MasterData.Product
         ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
-    );
+    ),
+        outgoingReservationsCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.orderLine(Inventory.ShipmentLine sl)
+                AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
+                AND Sales.toShip(Sales.orderLine(sl)) > 0),
+            0),
+        outgoingReservations = (JSON FROM
+            sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.orderLine(Inventory.ShipmentLine sl))), '#', Sales.index(Sales.orderLine(sl))),
+            shipmentId = Inventory.number(Inventory.shipment(sl)),
+            shipmentLineId = (CONCAT '', Inventory.number(Inventory.shipment(sl)), '#', Inventory.index(sl)),
+            lineReserved = (OVERRIDE Inventory.lineReserved(sl), 0),
+            reserveEligible = Inventory.toReserve(Inventory.shipment(sl))
+            WHERE Sales.orderLine(sl)
+                AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
+                AND Sales.toShip(Sales.orderLine(sl)) > 0
+            ORDER Sales.number(Sales.order(Sales.orderLine(sl))), Sales.index(Sales.orderLine(sl)),
+                Inventory.number(Inventory.shipment(sl)), Inventory.index(sl)
+        );
 } @@api;
 
 rubrovaProbeReceipts 'Diagnóstico de recepciones para reposición' () {

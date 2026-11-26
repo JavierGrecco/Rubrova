@@ -30,7 +30,7 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         self.assertEqual(self.native["sourceSemantics"], NATIVE_SOURCE_SEMANTICS)
         self.assertEqual(
             self.native["sourceSemantics"]["outgoingEffectiveReservation"],
-            "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)",
+            "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
         )
 
     def test_native_export_becomes_a_planner_snapshot_without_losing_uom_precision(self) -> None:
@@ -148,8 +148,46 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
 
     def test_effective_reservation_cannot_exceed_open_quantity(self) -> None:
         source = copy.deepcopy(self.native)
-        source["outgoingCommitments"][0]["effectiveReserved"] = 4.1
+        source["outgoingReservations"][0]["lineReserved"] = 4.1
         with self.assertRaisesRegex(ValueError, "fuera de rango"):
+            self._build(source)
+
+    def test_multiple_shipment_lines_are_aggregated_once_by_sales_order_line(self) -> None:
+        source = copy.deepcopy(self.native)
+        extra_reserved = copy.deepcopy(source["outgoingReservations"][0])
+        extra_reserved["shipmentId"] = "SH-COLA-PARTIAL-2"
+        extra_reserved["shipmentLineId"] = "SH-COLA-PARTIAL-2#1"
+        extra_reserved["lineReserved"] = 1.25
+        source["outgoingReservations"].append(extra_reserved)
+        ineligible_reserved = copy.deepcopy(extra_reserved)
+        ineligible_reserved["shipmentId"] = "SH-COLA-DONE"
+        ineligible_reserved["shipmentLineId"] = "SH-COLA-DONE#1"
+        ineligible_reserved["lineReserved"] = 0.5
+        ineligible_reserved["reserveEligible"] = False
+        source["outgoingReservations"].append(ineligible_reserved)
+        source["outgoingReservationsCount"] += 2
+
+        snapshot = self._build(source)
+        cola = next(row for row in snapshot["outgoingCommitments"] if row["productId"] == "PROD-COLA")
+        self.assertEqual(cola["lineReservedMilli"], 3750)
+
+    def test_duplicate_outgoing_shipment_line_is_rejected(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingReservations"].append(copy.deepcopy(source["outgoingReservations"][0]))
+        source["outgoingReservationsCount"] += 1
+        with self.assertRaisesRegex(ValueError, "shipmentLineId duplicado"):
+            self._build(source)
+
+    def test_outgoing_reservation_must_reference_an_exported_order_line(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingReservations"][0]["sourceLineId"] = "UNKNOWN#1"
+        with self.assertRaisesRegex(ValueError, "no referencia una línea de salida exportada"):
+            self._build(source)
+
+    def test_outgoing_reservation_eligibility_must_be_boolean(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingReservations"][0]["reserveEligible"] = "true"
+        with self.assertRaisesRegex(ValueError, "reserveEligible debe ser booleano"):
             self._build(source)
 
     def test_inventory_without_policy_is_not_silently_dropped(self) -> None:
@@ -162,6 +200,8 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         source = copy.deepcopy(self.native)
         source.pop("outgoingCommitments")
         source["outgoingCommitmentsCount"] = 0
+        source.pop("outgoingReservations")
+        source["outgoingReservationsCount"] = 0
         source.pop("receipts")
         source["receiptsCount"] = 0
         for row in source["inventory"]:
