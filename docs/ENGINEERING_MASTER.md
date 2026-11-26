@@ -4,7 +4,8 @@
 **Fuente única de verdad técnica.** Este manual centraliza el conocimiento para mantener y evolucionar Rubrova POS+ERP: qué incorporamos, qué reutilizamos, cómo se conectan los módulos, quién es dueño de cada dato, qué contratos protegen los procesos, qué se ha probado y qué falta demostrar.
 
 **Corte de estado:** 26 de noviembre de 2026  
-**main:** [84121794b9570a4418970272349331bed4cc1711](https://github.com/JavierGrecco/Rubrova/commit/84121794b9570a4418970272349331bed4cc1711)  
+**Base de main antes de consolidar este manual:** [84121794b9570a4418970272349331bed4cc1711](https://github.com/JavierGrecco/Rubrova/commit/84121794b9570a4418970272349331bed4cc1711)  
+**Commit de consolidación documental:** [1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b](https://github.com/JavierGrecco/Rubrova/commit/1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b)  
 **Última revisión de código funcional:** [d9791ff1c7894346d31ea5e0d240077940ba788c](https://github.com/JavierGrecco/Rubrova/commit/d9791ff1c7894346d31ea5e0d240077940ba788c)  
 **Fuentes fijadas:** lsFusion 6.2, commit dd4dbe5bf9b136e73e18fe25d741253929324350; MyCompany 6.2, commit d21ca6978717b98b6300d90267f9767db7414008.
 
@@ -69,7 +70,7 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 
 ### 2.1 Identidad de la revisión
 
-- main apunta a 84121794b9570a4418970272349331bed4cc1711.
+- La documentación canónica se incorporó a main en 1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b. La revisión 84121794b9570a4418970272349331bed4cc1711 fue el HEAD inmediatamente anterior a la consolidación.
 - El último commit con cambios de código funcional es d9791ff1c7894346d31ea5e0d240077940ba788c.
 - La comparación entre d9791ff1 y el HEAD actual muestra nueve commits posteriores, todos documentales; no hay cambios de código fuente. La auditoría de fuentes continúa describiendo la composición actual, con esa procedencia explícita.
 - La comparación desde 475ca9224520d296b23990071b1c79f00d6dced9 también muestra sólo actualizaciones documentales después de la auditoría inicial.
