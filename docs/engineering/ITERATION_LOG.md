@@ -99,3 +99,13 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Corrección:** bloqueo por stripe derivado del login, adquirido antes de `getExecSession()`. La creación de conexiones del mismo usuario queda serializada; los demás usuarios conservan concurrencia.
 - **Regresión:** el preflight comprueba estáticamente el orden bloqueo→sesión; el smoke nativo busca el conflicto específico en los logs y debe imprimir `RUBROVA_AUTH_USER_CONTEXT_SERIALIZATION=passed`.
 - **Estado:** fix subido; compilación y smoke nativo de un SHA nuevo pendientes.
+
+## 2026-11-26 — REP-012 — Error de parseo lsFusion en fixture de reposición
+
+- **PR:** [#10](https://github.com/JavierGrecco/Rubrova/pull/10), rama de integración existente.
+- **Evidencia:** [run 45744747100](https://github.com/JavierGrecco/Rubrova/actions/runs/45744747100), job macOS ARM64.
+- **Síntoma:** el proveedor simulado y PostgreSQL iniciaron, pero el supervisor terminó durante el arranque del servidor. `stderr.log` señaló `RubrovaCIReplenishmentFixture:71:61 — WHERE clause is forbidden with GroupingType`.
+- **Causa raíz:** `rubrovaCIOutgoingOrder() = GROUP MAX Sales.Order o WHERE ...` usa una cláusula no admitida por ese tipo de agrupación en lsFusion 6.2.
+- **Corrección:** se reemplazó `WHERE` por `IF`, siguiendo la sintaxis de agrupación ya usada por `RubrovaCISalesFixture.lsf` y otros módulos del repositorio.
+- **Regresión:** se añadió al preflight una aserción positiva para `GROUP MAX ... IF` y otra negativa para `GROUP MAX ... WHERE`.
+- **Alcance:** esta corrección resuelve el error de parseo identificado; no se declara validada hasta que el servidor arranque y el smoke macOS pase las sondas y la exportación.

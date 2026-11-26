@@ -68,7 +68,7 @@ loadDefaultData () + {
 // La reserva usa prevAvailableRec, por eso se ejecuta en una llamada API posterior
 // al bootstrap, cuando el stock sintético de CI ya quedó confirmado.
 rubrovaCIOutgoingOrder() = GROUP MAX Sales.Order o
-    WHERE Sales.customerReference(o) = 'rubrova-ci-outgoing';
+    IF Sales.customerReference(o) = 'rubrova-ci-outgoing';
 rubrovaCIOutgoingShipment() = Sales.reserveShipment(rubrovaCIOutgoingOrder());
 
 rubrovaPrepareOutgoingReservation 'Preparar reserva sintética de salida' () {

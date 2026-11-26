@@ -6,15 +6,14 @@
 
 ## Estado de la última validación
 
-- **Prevalidación de plataforma compartida:** aprobada en el PR #10, SHA `9b9083c35570675a1bb7055fd86d235bf9ab4fde`, run [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Pasaron 30/30 pruebas Node, 34/34 validaciones de evaluación, 10 + 5 + 18 pruebas Python, chequeos de shell, listener y despliegue.
-- **Windows:** validación sintáctica aprobada en el mismo run.
-- **Prevalidación de reposición:** aprobada en [45735930945](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930945), invocando el mismo `local-preflight.sh --replenishment` usado localmente.
-- **Compilación completa:** en ejecución en el job `build-fork` del run [45735930978](https://github.com/JavierGrecco/Rubrova/actions/runs/45735930978). Todavía no se declara aprobada.
-- **Runtime nativo macOS ARM64:** pendiente de la compilación. La última ejecución completada de una revisión anterior inició PostgreSQL, servidor, RMI y Tomcat; el navegador autenticó correctamente, pero la acción `/exec/Rubrova.rubrovaExportReplenishmentSource` falló con HTTP 500 `Set operation is incorrect`. El nuevo smoke incorpora sondas independientes para inventario, compromisos y recepciones, antes de probar la exportación consolidada.
-- **Linux nativo y Docker/Linux:** ahora se reservan para ejecución manual (`workflow_dispatch`), para conservar sus diagnósticos sin sumar sus tiempos a cada PR. El smoke nativo macOS ARM64 sigue siendo obligatorio.
+- **Prevalidación compartida:** aprobada anteriormente en el PR #10: 30/30 pruebas Node de extensión, 34/34 de evaluación, 33 pruebas Python y verificaciones de shell/listener/despliegue.
+- **Windows:** validación sintáctica aprobada en el run [45744747100](https://github.com/JavierGrecco/Rubrova/actions/runs/45744747100).
+- **Compilación del fork:** aprobada en el mismo run; se compilaron las fuentes propias de lsFusion/MyCompany.
+- **Smoke nativo macOS ARM64:** falló durante la inicialización de lógica, antes de publicar HTTP. El error exacto fue `RubrovaCIReplenishmentFixture:71:61 — WHERE clause is forbidden with GroupingType`. PostgreSQL y el proveedor simulado arrancaron; el servidor terminó al rechazar la expresión.
+- **Causa y corrección:** `rubrovaCIOutgoingOrder()` usaba `GROUP MAX Sales.Order o WHERE ...`. Los fixtures existentes usan `GROUP MAX ... IF ...`; se corrigió la expresión y se añadieron aserciones estáticas para evitar la regresión. El nuevo smoke de macOS todavía debe demostrar el arranque, login, las tres sondas y la exportación consolidada.
+- **Linux nativo y Docker/Linux:** se mantienen como diagnósticos manuales para no sumar tiempos a cada PR.
 - **Datos reales:** no se ha conciliado todavía una exportación tomada de una base MyCompany local. Las fixtures son sintéticas.
-- **PR y ramas:** PR #10 deriva de `main` y está en borrador. PR #8 se cerró sin fusionar; no debe reabrirse ni mezclarse con la rama nueva.
-
+- **PR y ramas:** el único candidato de integración abierto es el PR #10. Esta corrección se aplica a su rama existente; no se crea una rama adicional.
 
 ## Resumen de madurez
 
@@ -30,7 +29,7 @@ Rubrova está en **Fase 0: piloto integrado POS + ERP**. El núcleo MyCompany/ls
 
 La exportación nueva es de solo lectura. Separa existencia física, disponible nativo, reservas, compromisos por línea de venta y recepciones previstas. El adaptador Python valida las conciliaciones, exige políticas explícitas por producto/ubicación y rechaza escenarios que el planificador todavía no modela. No ejecuta `fillAuto`, ni crea, modifica o confirma órdenes de compra.
 
-El último fallo de runtime identificado no es de compilación ni de arranque: el servidor y el cliente cargan y el login funciona; la acción consolidada devuelve HTTP 500 por una operación de conjuntos incorrecta. Se retiraron conversiones de tipo sobre los índices de línea y se reforzó la comprobación estática; la corrección necesita una nueva ejecución del smoke nativo.
+El último fallo del run 45744747100 sí ocurre antes del arranque HTTP: lsFusion rechaza un `WHERE` usado después de `GROUP MAX` en el fixture de reposición. Se cambió a `IF`, que es la forma usada por los fixtures existentes, y se añadió una prueba estática específica. La aceptación queda pendiente de un nuevo smoke nativo macOS ARM64.
 
 La capa de pagos presenciales tiene arquitectura y entidades iniciales de configuración/trazabilidad, pero no existe todavía un conector homologado ni cobros reales. Tryton 8.0 + tryton-ar 8.0 se conserva como referencia fiscal argentina, no como segundo núcleo operativo.
 
@@ -43,7 +42,7 @@ La capa de pagos presenciales tiene arquitectura y entidades iniciales de config
 | Imágenes propias del runtime Docker | Construcción y smoke aprobados en CI | Artefactos compilados desde fuentes Rubrova; el diagnóstico Docker/Linux completó el ciclo funcional en `45637101959` |
 | Arranque, RMI y cliente web | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | En `45641728845`, macOS y Linux nativo iniciaron PostgreSQL, servidor, RMI, Tomcat y cliente web. Docker/Linux sigue como diagnóstico suplementario no bloqueante |
 | Login y navegación al POS | Aprobado en macOS ARM64 y Linux nativo CI; Docker histórico aprobado | Chromium abrió Comercio → Punto de venta y ejecutó el recorrido de venta tanto en macOS ARM64 como en Linux x86_64 sin Docker |
-| API nativa autenticada de reposición | En validación | El servidor y el login cargaron en macOS ARM64 y Linux; la acción devolvió HTTP 500 `Set operation is incorrect`. Se eliminaron las conversiones de índices y el nuevo smoke está en curso. No se declara aceptada hasta verificar el JSON y conciliarlo con datos reales |
+| API nativa autenticada de reposición | En validación | El último smoke falló antes del arranque por sintaxis inválida en el fixture `RubrovaCIReplenishmentFixture.lsf:71` (`GROUP MAX ... WHERE`). La expresión se corrigió a `IF` y tiene una regresión estática; falta revalidar servidor, login y cuatro endpoints. |
 | Apertura de turno | Aprobado en Docker y macOS ARM64 CI | Turno sintético `SM/000001` en Docker y turno de prueba de Rubrova en macOS nativo |
 | Búsqueda y selección de artículo | Aprobado en Docker y macOS ARM64 CI | Un producto sintético; línea de recibo, cantidad 1 y precio ARS 1.250 |
 | Confirmación del cobro en efectivo | Aprobado en Docker y macOS ARM64 CI | Se confirma el diálogo nativo de MyCompany mediante `PROPERTY(overFormOk)` |
