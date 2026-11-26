@@ -152,3 +152,17 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Corrección aplicada:** commit 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53 de la rama del PR #13 cambia los dos campos de diagnóstico a enteros 1/0 y actualiza las aserciones estáticas. Evita usar FALSE, que no es el literal de falso aceptado por el lenguaje/versión.
 - **Validación posterior:** run 45872444450, SHA 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53: prevalidación y Windows aprobados; compilación Maven completa en curso al registrar esta iteración; smoke nativo aún no ha comenzado. No se declara corregido hasta que el parser cargue los módulos y el escenario E2E pase.
 - **Pendientes de investigación:** Compras/abastecimiento; pedidos mayoristas y canales; fiscalidad ARCA; lotes/costos/producción; CRM/cuenta corriente; autorizaciones/auditoría; instalación local Mac físico y Windows; periféricos, desconexión de red y backup completo.
+
+
+## 2026-11-26 — REP-017 — Flujos de compras, ventas mayoristas y analítica comercial
+
+- **Base:** MyCompany 6.2 vendorizado en Rubrova, revisión fijada en platform/mycompany-6.2.lock.json.
+- **Documentación:** se amplió docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md (secciones 6.7–6.11) en commit 5484d1beece3bcc5ec6c40b9c569b1890e1dbf9c.
+- **Compras:** Purchase.Order confirmado puede generar Receipt ready con ReceiptLine/initialDemand. ReceiptResLedger representa la entrada esperada como reserva firmada; increaseAvailableStock condiciona su efecto en available. ReceiptInvLedger sólo incorpora la cantidad efectivamente completada al inventario físico. PurchaseOrderReceipt limita recibido a la cantidad pedida.
+- **Facturación proveedor:** PurchaseOrderBill soporta cantidad pedida no facturada; PurchaseOrderBillReceipt añade facturación por cantidad recibida y evita reutilizar ReceiptLine ya vinculadas. BillDebt y OutgoingPaymentDebt conectan obligaciones y pagos; BillPayment.registerPayment crea OutgoingPayment.
+- **Ventas mayoristas:** SalesOrderShipment crea/reutiliza Shipment waiting para el remanente, ejecuta precheckAvailability y registra reservas antes de la salida física. Los despachos parciales se concilian por Sales.OrderLine; una constraint evita sobre-despacho. ShipmentInvLedger registra la salida física final.
+- **Facturación de venta:** SalesOrderInvoice permite la política ordered; SalesOrderInvoiceShipment añade delivered y factura sólo ShipmentLine completadas, activas y aún no facturadas, preservando los enlaces de línea.
+- **Relación venta-compra:** SalesOrderPurchase enlaza líneas de Sales.OrderLine con Purchase.OrderLine para trazabilidad. No se interpreta como compra automática ni como reserva física sin evidencia adicional.
+- **Analítica:** SalesLedger agrega hechos por producto, cliente, ubicación y tiempo, con cantidad, importe, costo y margen; SalesLedgerInvoice aporta ventas positivas y SalesLedgerBill aporta notas de crédito negativas. La política exacta de costo/retroactividad requiere una investigación específica antes de usar el margen en decisiones productivas.
+- **Reglas incorporadas:** pedido, recepción/despacho, factura y pago son etapas distintas; las cantidades y los importes deben conciliarse por separado; los ledgers nativos siguen siendo la fuente de verdad.
+- **Límites pendientes:** políticas de valoración de stock, lotes y costos ajustados; impuestos/ARCA; compras automáticas, MOQ/múltiplos y proveedor preferente; stock de seguridad, plazo de entrega y abastecimiento multi-sucursal; seguridad/roles y escenarios con datos reales.

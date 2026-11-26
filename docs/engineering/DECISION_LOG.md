@@ -75,3 +75,14 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Consecuencia:** cada cambio registra firma del hook, punto de llamada, selección/multiplicidad, momento transaccional, entidades tocadas y ledger resultante. Se añaden pruebas estáticas y runtime por caso de uso.
 - **Evidencia:** guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md; fuentes 6.2 CreditNote.lsf, InvoiceShipment.lsf, ShipmentInv.lsf, ReceiptInv.lsf, Payment.lsf; PR #13, commit correctivo 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53.
 - **Límites:** el mapa cubre en profundidad POS, devoluciones, pagos, caja e inventario; no afirma que Compras, mayorista, ARCA, fabricación o seguridad estén completamente inventariados.
+
+
+## ADR-0010 — Separar pedido, movimiento físico, factura y liquidación
+
+- **Estado:** Aceptada como regla de modelado; los módulos que la implementan se deben validar con pruebas de escenarios parciales.
+- **Ámbito:** compras, ventas mayoristas, POS, stock, cuentas por cobrar/pagar e informes.
+- **Contexto:** las fuentes MyCompany 6.2 muestran flujos desacoplados por documentos relacionados: Purchase.Order puede originar Receipt y Bill; Sales.Order puede originar Shipment e Invoice; los pagos se registran y concilian en el modelo común Debt/Payment. Las cantidades se enlazan por líneas originales a través de entregas parciales.
+- **Decisión:** Rubrova debe tratar cuatro etapas diferentes: (1) pedido/compromiso comercial; (2) recepción o despacho físico; (3) factura/nota de crédito y deuda; (4) cobro/reintegro/pago y liquidación. El estado de una etapa no implica que las otras hayan ocurrido. Las políticas ordered/delivered se seleccionan explícitamente por tipo de documento.
+- **Consecuencias:** los límites y reportes concilian cantidades ordenadas, recibidas/despachadas, facturadas y dinero pagado en dimensiones independientes. El stock físico procede del ledger de inventario; las reservas proceden del ledger de reservas; las deudas y pagos proceden del modelo financiero. Los reportes de ventas usan SalesLedger y preservan el origen del dato.
+- **Advertencias:** el campo de línea PurchaseOrderBill.paid representa cantidad asociada a Bills done, no un valor monetario. El enlace SalesOrderPurchase une líneas de órdenes, pero por sí mismo no prueba compra automática ni reserva de inventario.
+- **Evidencia:** guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md, secciones 6.7–6.11; fuentes PurchaseOrderReceipt, ReceiptRes, ReceiptInv, PurchaseOrderBill, PurchaseOrderBillReceipt, BillDebt, BillPayment, SalesOrderShipment, ShipmentRes, SalesOrderInvoiceShipment, SalesOrderPurchase y SalesLedger.
