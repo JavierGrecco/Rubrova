@@ -1517,10 +1517,10 @@ def verify_stocktake_persistence(context: Any, url: str) -> None:
         base + "rubrovaTestStocktakeBarcodeStateApi",
         "stocktake",
     )
-    if abs(_stocktake_number(state, "onHand", "restart") - 9.0) > 0.001:
+    if abs(_stocktake_number(state, "onHand", "restart") - 10.0) > 0.001:
         raise RuntimeError(
-            "El conteo pendiente alteró el stock físico tras reiniciar; se esperaba 9 "
-            "después de la venta POS: " + json.dumps(state, ensure_ascii=False)
+            "El conteo pendiente alteró el stock físico tras reiniciar; se esperaba 10 "
+            "después de la venta y las devoluciones POS: " + json.dumps(state, ensure_ascii=False)
         )
     for field in ("listLineCount", "adjustmentLineCount"):
         actual = _stocktake_number(state, field, "restart")
