@@ -83,6 +83,7 @@ Una plataforma que reúne en un solo lugar:
 | [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Roles, permisos, turnos, autorizaciones y trazabilidad |
 | [Perfiles sectoriales](docs/SECTOR_PROFILES.md) | Supermercados, panaderías, rotiserías y gastronomía |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de pruebas, calidad y control de dependencias |
+| [Base de conocimiento de ingeniería](docs/engineering/README.md) | Contratos, decisiones técnicas, reglas de comunicación y registro de iteraciones |
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Fallos de proceso, idempotencia, CAS, backups, restore y pruebas P27–P55 |
 | [Resiliencia de integraciones y errores](docs/INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) | Timeouts, reintentos seguros, circuit breaker, Outbox, mensajes en español y simulación de fallos para cada proveedor |
 | [Herramientas y componentes adicionales](docs/TOOLING_AND_REUSE_RESEARCH_2026_11.md) | Evaluación de librerías de resiliencia, pruebas de fallos, ARCA, conectores y módulos reutilizables |
