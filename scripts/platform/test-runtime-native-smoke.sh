@@ -138,6 +138,28 @@ stop_native_supervisor() {
   echo "RUBROVA_NATIVE_SUPERVISOR_SHUTDOWN_CLEAN=true"
 }
 
+assert_native_ports_released() {
+  local port active
+  for port in 7652 55432; do
+    active=""
+    for _ in $(seq 1 30); do
+      if [[ "$HOST_OS" == "Darwin" ]]; then
+        active="$(lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+      else
+        active="$(ss -H -ltn "sport = :$port" 2>/dev/null || true)"
+      fi
+      [[ -z "$active" ]] && break
+      sleep 1
+    done
+    if [[ -n "$active" ]]; then
+      echo "El puerto nativo $port continúa en escucha después del cierre ordenado:" >&2
+      echo "$active" >&2
+      return 1
+    fi
+  done
+  echo "RUBROVA_NATIVE_PORTS_RELEASED=true"
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT
@@ -354,6 +376,7 @@ fi
 
 echo "5/7 Reiniciando el servidor nativo para verificar la persistencia real en PostgreSQL"
 stop_native_supervisor "$LOG_FILE"
+assert_native_ports_released
 
 if curl --silent --fail --connect-timeout 2 --max-time 3 "$WEB_URL" >/dev/null 2>&1; then
   echo "El cliente web sigue respondiendo después del cierre; los procesos nativos no se liberaron." >&2
