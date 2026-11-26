@@ -46,6 +46,8 @@ const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing
 const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
 const markdownViewerSource = read("vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
+const plannerWorkflowSource = read(".github/workflows/replenishment-planner.yml");
+const localPreflightSource = read("scripts/platform/local-preflight.sh");
 const mockProviderSource = read("scripts/platform/mock-integration-provider.py");
 const runtimeImageBuilderSource = read("scripts/platform/build-rubrova-runtime-images.sh");
 const runtimeServerDockerfile = read("build/rubrova/runtime/Dockerfile.server");
@@ -318,13 +320,18 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-runtime-smoke-${{ github.ref }}"));
   assert.match(runtimeWorkflowSource, /build-fork:/);
   assert.ok(runtimeWorkflowSource.includes("group: rubrova-build-fork-${{ github.ref }}"));
+  assert.ok(
+    runtimeWorkflowSource.includes("group: rubrova-platform-${{ github.event.pull_request.number || github.ref }}"),
+    "El workflow completo debe cancelar la corrida anterior del mismo PR cuando llega un commit nuevo."
+  );
   assert.equal(
-    (runtimeWorkflowSource.match(/cancel-in-progress: true/g) || []).length,
+    (runtimeWorkflowSource.match(/^      cancel-in-progress: true$/gm) || []).length,
     4,
-    "El build, los dos smoke nativos y la aceptación Docker deben cancelar ejecuciones obsoletas."
+    "El build, los dos smoke nativos y la aceptación Docker deben conservar sus controles de concurrencia por job."
   );
   assert.doesNotMatch(runtimeWorkflowSource, /cancel-in-progress: false/);
-  assert.match(runtimeWorkflowSource, /native-runtime-smoke:/);
+  assert.match(runtimeWorkflowSource, /native-runtime-smoke:\n    if: github[.]event_name == 'workflow_dispatch'/);
+  assert.match(runtimeWorkflowSource, /runtime-smoke:\n    if: github[.]event_name == 'workflow_dispatch'/);
   assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
   assert.match(runtimeWorkflowSource, /runs-on: macos-26/);
   assert.match(runtimeWorkflowSource, /brew --prefix postgresql@18/);
@@ -1297,4 +1304,17 @@ test("el visor Markdown no bloquea el inicio POS ni requiere CDN para abrir el t
   assert.match(uiSmokeSource, /"markdown_requests": \[\]/);
   assert.match(uiSmokeSource, /UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true/);
   assert.match(nativeSmokeSource, /UI_MARKDOWN_DEPENDENCIES_LAZY_LOADED=true/);
+});
+
+
+test("el preflight rápido se comparte entre el equipo y los workflows CI", () => {
+  assert.match(localPreflightSource, /--platform/);
+  assert.match(localPreflightSource, /--replenishment/);
+  assert.match(localPreflightSource, /--all/);
+  assert.match(localPreflightSource, /validate-mycompany-extension[.]test[.]mjs/);
+  assert.match(localPreflightSource, /test_adapt_mycompany_native_export[.]py/);
+  assert.ok(runtimeWorkflowSource.includes("bash scripts/platform/local-preflight.sh --platform"));
+  assert.ok(plannerWorkflowSource.includes("bash scripts/platform/local-preflight.sh --replenishment"));
+  assert.match(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:/);
+  assert.doesNotMatch(runtimeWorkflowSource, /native-runtime-smoke-macos-arm64:\\n    if: github[.]event_name == 'workflow_dispatch'/);
 });
