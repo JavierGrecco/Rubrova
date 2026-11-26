@@ -96,7 +96,7 @@ jobs:
           ! grep -Fq 'onWebClientLoad() +' "$MARKDOWN_VIEWER_SOURCE"
       - name: Compilar lsFusion 6.2, cliente GWT y MyCompany 6.2
         run: mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
-      - name: Reempaquetar servidor y cliente sin recompilar GWT
+      - name: Recompilar servidor y cliente web con dependencias de runtime
         shell: bash
         run: |
           # La fase assemble anterior ya compiló las 10 permutaciones GWT.
@@ -129,8 +129,8 @@ jobs:
           unzip -Z1 "$LOGICS_JAR" | grep -Eq '(^|/)MyCompany[.]lsf$'
           # El perfil assemble marca api como provided para la lógica; el WAR web necesita incluirla.
           unzip -Z1 "$CLIENT_WAR" | grep -F -x 'WEB-INF/lib/api-6.2.jar' >/dev/null
-          unzip -Z1 "$CLIENT_WAR" | grep -E '\\.nocache\\.js$' >/dev/null
-          unzip -Z1 "$CLIENT_WAR" | grep -E '\\.cache\\.js$' >/dev/null
+          unzip -Z1 "$CLIENT_WAR" | grep -E '\.nocache\.js$' >/dev/null
+          unzip -Z1 "$CLIENT_WAR" | grep -E '\.cache\.js$' >/dev/null
           unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
           unzip -Z1 "$RUNNER_TEMP/rubrova-client-api.jar" | grep -F -x 'lsfusion/base/DaemonThreadFactory.class' >/dev/null
           mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
