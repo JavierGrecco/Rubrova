@@ -134,7 +134,7 @@
       "scheduledDate": "2026-12-01",
       "status": "ready",
       "purchaseOrderStatus": "confirmed",
-      "increaseAvailableStock": false
+      "increaseAvailableStock": null
     }
   ]
 }

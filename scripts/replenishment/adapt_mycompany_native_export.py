@@ -334,9 +334,12 @@ def build_normalized_snapshot(
         expected = _milli(row.get("expectedQuantity"), f"{label}.expectedQuantity")
         if signed >= 0 or expected <= 0 or expected != -signed:
             raise ValueError(f"{label} no conserva el signo y la magnitud de ReceiptResLedger.reserved.")
-        increase_available = row.get("increaseAvailableStock")
-        if not isinstance(increase_available, bool):
-            raise ValueError(f"{label}.increaseAvailableStock debe ser booleano.")
+        increase_available_native = row.get("increaseAvailableStock")
+        if increase_available_native is not None and not isinstance(increase_available_native, bool):
+            raise ValueError(f"{label}.increaseAvailableStock debe ser booleano o null.")
+        # MyCompany 6.2 represents the disabled/default flag as NULL in its nullable BOOLEAN.
+        # Normalize only this raw source value to the planner's explicit effective false.
+        increase_available = increase_available_native is True
         if increase_available:
             raise ValueError(
                 f"{label} usa increaseAvailableStock=true; el planificador todavía no reproduce esa política."

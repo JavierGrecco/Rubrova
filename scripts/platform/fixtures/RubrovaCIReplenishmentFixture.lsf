@@ -40,7 +40,7 @@ loadDefaultData () + {
         }
 
         // La recepción se mantiene prevista y no incrementa available antes de ser recibida.
-        Inventory.increaseAvailableStock(Inventory.receiptType('receipt')) <- FALSE;
+        Inventory.increaseAvailableStock(Inventory.receiptType('receipt')) <- NULL;
         NEW purchaseOrderCI = Purchase.Order {
             Purchase.type(purchaseOrderCI) <- Purchase.orderType('order');
             Purchase.vendor(purchaseOrderCI) <- rubrovaCIReplenishmentPartner();

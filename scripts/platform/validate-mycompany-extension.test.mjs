@@ -368,10 +368,13 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]vendor\(purchaseOrderCI\) <- rubrovaCIReplenishmentPartner\(\)/);
   assert.match(nativeReplenishmentFixtureSource, /Sales[.]confirmed\(salesOrderCI\)/);
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]confirmed\(purchaseOrderCI\)/);
-  assert.match(nativeReplenishmentFixtureSource, /Inventory[.]increaseAvailableStock\(Inventory[.]receiptType\('receipt'\)\) <- FALSE/);
+  assert.match(nativeReplenishmentFixtureSource, /Inventory[.]increaseAvailableStock\(Inventory[.]receiptType\('receipt'\)\) <- NULL/);
   assert.match(nativeSmokeSource, /RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT=true/);
   assert.match(uiSmokeSource, /RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_POSITIVE_FIXTURES/);
+  assert.match(uiSmokeSource, /row[.]get\("increaseAvailableStock"\) is not None/);
+  assert.match(uiSmokeSource, /incoming_increase_available is True/);
+  assert.match(nativeReplenishmentFixtureSource, /increaseAvailableStock.*<- NULL/);
   assert.match(nativeSmokeSource, /native-diagnostics[.]log/);
   assert.match(runtimeWorkflowSource, /rubrova-native-smoke\/native-diagnostics[.]log/);
   assert.doesNotMatch(nativeSmokeSource, /(^|[ \\t])docker([ \\t]|$)|docker-compose/);

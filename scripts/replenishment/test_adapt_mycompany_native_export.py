@@ -82,6 +82,21 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "increaseAvailableStock=true"):
             self._build(source)
 
+    def test_native_null_increase_available_stock_is_normalized_to_effective_false(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["receipts"][0]["increaseAvailableStock"] = None
+
+        snapshot = self._build(source)
+        self.assertIs(snapshot["receipts"][0]["increaseAvailableStock"], False)
+        report = adapt_snapshot(snapshot)
+        self.assertTrue(report["items"])
+
+    def test_invalid_non_boolean_increase_available_stock_is_rejected(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["receipts"][0]["increaseAvailableStock"] = "false"
+        with self.assertRaisesRegex(ValueError, "booleano o null"):
+            self._build(source)
+
     def test_receipt_positive_quantity_must_match_native_negative_reservation(self) -> None:
         source = copy.deepcopy(self.native)
         source["receipts"][0]["expectedReservationSigned"] = -5.0

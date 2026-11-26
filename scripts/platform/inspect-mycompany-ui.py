@@ -940,7 +940,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             or abs(quantity + signed_reservation) > 0.001
             or row.get("status") != "ready"
             or row.get("purchaseOrderStatus") != "confirmed"
-            or not isinstance(row.get("increaseAvailableStock"), bool)
+            or (row.get("increaseAvailableStock") is not None and not isinstance(row.get("increaseAvailableStock"), bool))
         ):
             raise RuntimeError(f"{row_label} no respeta el contrato de recepción pendiente.")
         for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
@@ -963,16 +963,18 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
             )
         receipt = collections["receipts"][0]
         receipt_quantity = numeric(receipt, "expectedQuantity", "receipts[0]")
-        if receipt_quantity <= 0 or receipt.get("increaseAvailableStock") is not False:
+        incoming_increase_available = receipt.get("increaseAvailableStock")
+        if receipt_quantity <= 0 or incoming_increase_available is True:
             raise RuntimeError(
                 "El fixture de recepción debe conservar cantidad pendiente positiva y "
-                "increaseAvailableStock=false."
+                "no habilitar increaseAvailableStock."
             )
         print("UI_REPLENISHMENT_POSITIVE_FIXTURES=" + json.dumps({
             "outgoingOpenQuantity": outgoing_quantity,
             "outgoingEffectiveReserved": outgoing_reserved,
             "incomingExpectedQuantity": receipt_quantity,
-            "incomingIncreaseAvailableStock": receipt["increaseAvailableStock"],
+            "incomingIncreaseAvailableStock": incoming_increase_available is True,
+            "incomingNativeFlag": incoming_increase_available,
         }, ensure_ascii=False))
 
     print(
