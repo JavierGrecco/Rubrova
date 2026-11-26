@@ -3,7 +3,7 @@
 **Revisión:** 25 de noviembre de 2026  
 **Estado:** diseño funcional y selección preliminar de herramientas; ninguna biblioteca de forecasting o BI está instalada ni aprobada para producción.
 
-Este documento es la referencia de implementación para que las capacidades de demanda, rentabilidad y preferencia entre marcas no se pierdan entre las fases del POS, ERP y analítica. Complementa el [Plan de trabajo](ROADMAP.md), el [Plan maestro](MASTER_IMPLEMENTATION_PLAN.md), la [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md) y el [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md).
+Este documento es la referencia de implementación para que las capacidades de demanda, rentabilidad y preferencia entre marcas no se pierdan entre las fases del POS, ERP y analítica. Complementa el [roadmap técnico único](ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado), la [Inteligencia del negocio](BUSINESS_INTELLIGENCE.md) y el [Catálogo de código reutilizable](CODE_REUSE_CATALOG.md).
 
 ## 1. Principios y límites
 
