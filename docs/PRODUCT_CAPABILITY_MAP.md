@@ -65,7 +65,7 @@ Que algo sea posterior en el roadmap no significa que se haya perdido del diseñ
 
 ## Documentos fuente
 
-[Visión](PRODUCT_VISION.md) · [Alcance funcional](FUNCTIONAL_SCOPE.md) · [Modelo de dominio](DOMAIN_MODEL.md) · [POS](POS_REQUIREMENTS.md) · [Perfiles](SECTOR_PROFILES.md) · [Canales](CHANNELS_AND_INTEGRATIONS.md) · [Inteligencia](BUSINESS_INTELLIGENCE.md) · [Implementación de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) · [Seguridad](SECURITY_AND_AUDIT.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](ROADMAP.md).
+[Visión](PRODUCT_VISION.md) · [Alcance funcional](FUNCTIONAL_SCOPE.md) · [Modelo de dominio](DOMAIN_MODEL.md) · [POS](POS_REQUIREMENTS.md) · [Perfiles](SECTOR_PROFILES.md) · [Canales](CHANNELS_AND_INTEGRATIONS.md) · [Inteligencia](BUSINESS_INTELLIGENCE.md) · [Implementación de demanda, rentabilidad y marcas](DEMAND_AND_MARGIN_INTELLIGENCE.md) · [Seguridad](SECURITY_AND_AUDIT.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap técnico](ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
 
 Este mapa es la referencia de cobertura: una investigación o comparación de POS no debe reducir el proyecto a una caja registradora.
 
