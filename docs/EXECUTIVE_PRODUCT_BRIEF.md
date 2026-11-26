@@ -1,6 +1,6 @@
 # Brief ejecutivo de producto — Rubrova
 
-**Revisión:** 25 de noviembre de 2026  
+**Revisión:** 26 de noviembre de 2026  
 **Etapa:** piloto integrado POS + ERP; no es una versión productiva.
 
 ## 1. Qué es Rubrova
@@ -83,15 +83,18 @@ El código de la plataforma y de MyCompany está en vendor; las extensiones y lo
 
 | Hito | Evidencia | Lectura correcta |
 |---|---|---|
-| Fuentes MyCompany/lsFusion y compilación propia | CI de plataforma | El servidor, cliente GWT y lógica se compilan desde fuentes fijadas |
-| Primer circuito POS | [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959) | Venta, cobro en efectivo, factura/pago, stock y cierre básico con datos sintéticos |
-| Planificador y adaptador de snapshots | CI de reposición | Suites de pruebas aprobadas sobre fixtures sintéticas |
-| Exportación nativa de solo lectura | [PR #8](https://github.com/JavierGrecco/Rubrova/pull/8) | Implementada, pero todavía no aceptada en runtime |
-| Runtime nativo macOS/Linux | Ejecuciones de PR #8 | Servidor, cliente web y login iniciaron; la llamada de exportación falló con HTTP 500 por una operación de conjuntos incorrecta |
-| Windows | CI de extensión | Validaciones estáticas y de despliegue; no equivale a aceptación funcional completa de Windows |
+| Fuentes MyCompany/lsFusion y compilación propia | [CI 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) | Servidor, cliente GWT y lógica se compilan desde fuentes fijadas |
+| Runtime nativo macOS ARM64 | Mismo workflow, job nativo | Java 21 ARM64, PostgreSQL 18 y Tomcat iniciaron sin Docker; Chromium autenticó |
+| POS básico | Mismo smoke | Venta sintética ARS 1.250, efectivo exacto, factura/pago, stock 10 → 9 y cierre de turno conciliados |
+| Exportación nativa de reposición | Mismo smoke | Sondas autenticadas HTTP 200 y colecciones verificadas contra fixtures sintéticas; no es conciliación con surtido comercial real |
+| Persistencia tras reinicio | Mismo smoke | Venta, pago, stock, turno cerrado e incidencias siguieron verificables |
+| Backup/restore PostgreSQL | Mismo smoke | Paquete con SHA-256 verificado y restaurado a `rubrova_restore_ci` sin sobrescribir `rubrova_dev` |
+| Planificador de reposición | [CI 45854940442](https://github.com/JavierGrecco/Rubrova/actions/runs/45854940442) | Suite automatizada aprobada sobre fixtures; no genera órdenes |
+| Windows | Job `validate-windows` del run 45855055565 | Validación sintáctica PowerShell; no equivale a instalación y aceptación funcional |
+| Linux nativo y Docker/Linux | Mismo workflow | Jobs `skipped`; no deben contarse como aprobados |
 | Terminales bancarias y ARCA | Diseño/documentación | Sin adquirente homologado ni conexión fiscal productiva |
 
-La ejecución fallida del PR #8 no demuestra una caída general del runtime: sus artefactos muestran que PostgreSQL, el servidor, Tomcat y el login llegaron a funcionar. El punto pendiente es la acción autenticada de exportación nativa. La última corrección eliminó conversiones `BPSTRING[10]` sobre los índices de línea y añadió una regresión estática. En el run [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) aprobaron validaciones, Windows, compilación completa, recompilación de servidor/cliente y publicación de artefactos; los smokes macOS ARM64, Linux nativo y Docker/Linux siguen en ejecución. El PR #8 permanece abierto.
+El backup probado es **sólo PostgreSQL**; todavía no contiene adjuntos, imágenes, documentos externos ni secretos. El smoke usó salida externa habilitada (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`). La validación del runner Apple Silicon no sustituye la prueba en el Mac físico ni una jornada comercial con datos reales.
 
 ## 8. Qué no está terminado
 

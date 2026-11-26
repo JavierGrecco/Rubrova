@@ -5,11 +5,13 @@
 
 ## Decisión actual
 
-El runtime nativo sin Docker es la ruta prioritaria de desarrollo local y ya superó un smoke integrado de Apple Silicon en CI. La revisión aceptada es `main` en el commit [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139).
+El runtime nativo sin Docker es la ruta prioritaria de desarrollo local. La última validación aceptada es [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), sobre `main` en `ac758d0`.
 
-En [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), el runner macOS ARM64 ejecutó Java 21, PostgreSQL 18, lsFusion/MyCompany y Tomcat sin Docker. Chromium autenticó y navegó al POS; las sondas de inventario, compromisos y recepciones respondieron HTTP 200. Se verificó el export JSON de sólo lectura, una venta sintética por ARS 1.250, pago en efectivo, stock 10 → 9, cierre de turno y persistencia después de reiniciar. La instancia Demo utilizó otra base y puertos separados.
+El runner macOS ARM64 ejecutó Java 21, PostgreSQL 18, lsFusion/MyCompany y Tomcat. Chromium autenticó y navegó al POS; se verificaron las sondas de inventario, compromisos y recepciones, una venta sintética ARS 1.250, pago exacto en efectivo, stock 10 → 9, cierre del turno y persistencia después de reiniciar.
 
-La prueba se ejecutó con salida externa habilitada: `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Los jobs Linux nativo y Docker/Linux se omitieron en ese push. Por tanto, todavía no se certifica operación offline macOS, Windows nativo, instalación limpia, periféricos reales ni uso productivo. La prueba del runner tampoco sustituye la ejecución en el Mac físico del usuario.
+La misma ejecución creó un backup lógico PostgreSQL, validó el manifiesto y SHA-256 y restauró en `rubrova_restore_ci` sin sobrescribir `rubrova_dev`. El paquete es **sólo PostgreSQL**; documentos, adjuntos y demás archivos externos no están incluidos.
+
+La prueba utilizó salida externa habilitada (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`). Los diagnósticos Linux nativo y Docker/Linux fueron omitidos y el job Windows sólo comprobó sintaxis PowerShell. Por tanto no se certifican aún modo offline macOS, instalación Windows completa, periféricos, instalación limpia ni uso productivo. La prueba del runner no sustituye la ejecución en el Mac físico.
 
 El camino macOS sigue siendo:
 - Java 21 ARM64 para el servidor y la lógica compilados desde Rubrova.
@@ -17,8 +19,6 @@ El camino macOS sigue siendo:
 - Apache Tomcat 9.0.124 para el cliente web en loopback.
 - Supervisor Python para arranque, verificación y parada sin borrar los datos.
 - Docker no es requisito de ejecución local.
-
-El smoke de plataforma también incorpora en esta revisión una prueba lógica de backup/restore: crear y verificar el paquete y restaurarlo en una base nueva. La copia cubre PostgreSQL únicamente; los documentos, adjuntos y demás archivos todavía no forman parte de un respaldo completo.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -109,15 +109,14 @@ La base de esta vista previa es de desarrollo. No debe cargarse información com
 
 ## Validación en CI y estado de aceptación
 
-La puerta obligatoria de plataforma es el smoke macOS ARM64 nativo, después de compilar servidor, cliente GWT y lógica MyCompany desde el mismo SHA.
+La puerta principal es el smoke macOS ARM64 nativo, después de compilar servidor, cliente GWT y lógica MyCompany desde el mismo SHA.
 
-- **macOS ARM64 nativo:** [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), aprobado. Verificó Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat, Chromium, login, exportación nativa, venta, pago, stock, cierre, reinicio/persistencia y Demo aislada. La conectividad externa estuvo habilitada.
-- **Linux x86_64 nativo y Docker/Linux:** fueron omitidos en ese push (`skipped`). Se conservan como diagnósticos complementarios; no deben contarse como aprobados por el run actual.
-- **Windows:** el trabajo reciente validó sintaxis de scripts PowerShell; no equivale a una instalación y aceptación funcional completa.
+- **macOS ARM64 nativo:** [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), aprobado. Validó Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat, Chromium, login, exportación nativa, POS básico, persistencia tras reinicio, backup PostgreSQL y restauración a una base nueva.
+- **Offline macOS:** no probado en ese run; la salida externa estuvo habilitada.
+- **Linux x86_64 nativo y Docker/Linux:** fueron omitidos (`skipped`) en ese push.
+- **Windows:** el job reciente validó sintaxis PowerShell; no equivale a instalación y aceptación funcional completa.
 
-La continuidad offline en macOS sigue abierta. El run 45847755524 declara explícitamente `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Linux nativo había completado históricamente pruebas con salida bloqueada en ejecuciones previas, pero esa evidencia no sustituye repetir la prueba sobre el SHA actual.
-
-El usuario todavía debe ejecutar el runtime en el Mac físico. La compatibilidad del runner CI tampoco certifica Safari/Chrome, lector, impresora, cajón, balanza, terminal, rendimiento de una jornada ni recuperación en un equipo nuevo.
+El usuario todavía debe ejecutar el runtime en el Mac físico. La compatibilidad del runner tampoco certifica Safari/Chrome, periféricos, rendimiento de una jornada ni restauración desde un disco externo.
 
 ## Ruta Docker para empaquetado y validación CI
 

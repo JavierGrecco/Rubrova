@@ -125,4 +125,16 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Implementación:** `scripts/platform/native-postgres-backup.py` crea un paquete de base PostgreSQL en formato custom, con manifiesto y SHA-256; verifica el paquete y restaura sólo a una base nueva, nunca sobre `rubrova_dev`.
 - **Seguridad:** comprueba que el servidor sea PostgreSQL 18 y que el directorio de datos y puerto correspondan al clúster privado de Rubrova; sólo conecta a loopback; no exporta secretos; ante un fallo intenta retirar únicamente la base nueva incompleta.
 - **Pruebas añadidas:** corrupción de dump/manifiesto, entradas extra, directorio de datos ajeno, confirmación explícita, base ya existente y limpieza de una restauración fallida.
-- **Límite:** este incremento protege PostgreSQL, no adjuntos, documentos, configuración del SO ni credenciales. La aceptación real queda condicionada al preflight y al smoke PostgreSQL del SHA de esta iteración, y luego a una prueba local en Mac/Windows.
+- **Aceptación:** preflight y smoke nativo macOS ARM64 aprobados en [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565). El log confirma creación, SHA-256, verificación y restauración a `rubrova_restore_ci`; se emitió `RUBROVA_NATIVE_POSTGRES_BACKUP_RESTORE=passed`.
+- **Límite:** protege PostgreSQL, no adjuntos, documentos, configuración del SO ni credenciales. La aceptación local en Mac físico/Windows y el paquete completo siguen pendientes.
+
+
+## 2026-11-26 — REP-015 — Aceptación nativa integrada y restauración PostgreSQL
+
+- **Commit probado:** `ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a`.
+- **Workflow:** [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), terminado con `success`.
+- **Build:** preflight compartido, validación sintáctica Windows y compilación completa del servidor, cliente GWT y lógica MyCompany aprobados.
+- **Smoke macOS ARM64:** login, API autenticada de reposición sobre fixtures, venta ARS 1.250, efectivo exacto, factura/pago, stock 10 → 9, cierre de turno, reinicio/persistencia y Demo aislada aprobados.
+- **Backup/restore:** paquete PostgreSQL creado y verificado por SHA-256 y `pg_restore --list`; restauración a `rubrova_restore_ci`; la base original `rubrova_dev` no se sobrescribió.
+- **Límites:** egress estuvo habilitado (`offline acceptance not tested`); Linux/Docker fueron `skipped`; Windows sólo comprobó sintaxis; aún no hay prueba en Mac físico, base comercial real, periféricos ni jornada real.
+- **Siguiente iteración:** proteger devolución parcial/total y reintegro contra sobredevolución; luego movimientos y arqueo físico, utilizando los ledgers originales de MyCompany sin duplicarlos.

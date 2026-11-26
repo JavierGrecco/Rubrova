@@ -1,85 +1,96 @@
 # Estado real del proyecto Rubrova
 
-**Corte:** 26 de noviembre de 2026, 15:45 UTC  
+**Corte:** 26 de noviembre de 2026, 16:16 UTC  
 **Rama canónica:** `main`  
-**Commit integrado:** [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139)  
-**Estado GitHub:** una sola rama (`main`), cero pull requests abiertos. No quedan ramas de desarrollo separadas visibles.
+**Commit integrado:** [`ac758d0`](https://github.com/JavierGrecco/Rubrova/commit/ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a)  
+**Estado GitHub:** una única rama visible (`main`), cero pull requests abiertos. La rama no está protegida por ruleset de GitHub.
 
 ## Resumen ejecutivo
 
-Rubrova ya dispone de un runtime propio compilado desde las fuentes fijadas de MyCompany 6.2 + lsFusion 6.2 y acaba de superar el smoke nativo de Apple Silicon con PostgreSQL 18, Java 21 y Tomcat 9, sin Docker. La validación ya no se limita a iniciar el servidor: autenticó, consultó la exportación nativa de inventario, ejecutó una venta sintética, concilió caja y stock, cerró el turno, reinició el servidor y comprobó la persistencia.
+Rubrova dispone de un runtime propio de MyCompany 6.2 + lsFusion 6.2, compilado desde fuentes fijadas en el repositorio. El workflow [Validación del arranque de plataforma #417](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó correctamente e incluyó un smoke nativo macOS ARM64 sin Docker. La prueba pasó de inicio/login a venta, conciliación, cierre, reinicio y restauración lógica de PostgreSQL en una base nueva.
 
-Esto confirma una base técnica prometedora para continuar el piloto POS + ERP. **No significa que Rubrova esté listo para uso comercial diario o producción.** Los datos son sintéticos y aún faltan flujos importantes de caja, devoluciones, pagos, fiscalidad, instalación y recuperación completa.
+Esto habilita una siguiente etapa de ingeniería funcional sobre una base reproducible. **No significa que Rubrova esté listo para operación diaria ni producción.** Los datos del smoke son sintéticos, la exportación de reposición aún no se ha conciliado con una base comercial real y no se ha probado el runtime en el Mac físico del usuario.
 
 ## Última validación de plataforma
 
-El workflow [Validación del arranque de plataforma, run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), ejecutado sobre el SHA `f545c907`, terminó en `success`.
+[Run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), SHA `ac758d01`, terminó con `success`.
 
 | Trabajo | Resultado | Alcance real |
 |---|---|---|
-| Prevalidación local compartida | Aprobado | Tests Node/Python, contratos, scripts, configuración, listener y despliegue |
-| Validación Windows | Aprobado | Comprobación de sintaxis PowerShell; no es todavía una instalación funcional completa |
+| Prevalidación local compartida | Aprobado | Suites Node/Python, contratos, scripts, configuración, listener y tests del backup |
+| Validación Windows | Aprobado parcialmente | Sintaxis PowerShell; no instalación ni smoke funcional de Windows |
 | Compilación del fork | Aprobado | Servidor lsFusion, cliente GWT y lógica MyCompany desde fuentes Rubrova |
-| Smoke macOS ARM64 nativo | Aprobado | Java 21, PostgreSQL 18, servidor lsFusion, Tomcat y Chromium; sin Docker |
-| Docker/Linux y Linux nativo complementarios | Omitidos en este push | `skipped`; no deben contarse como aprobados por esta ejecución |
+| Smoke macOS ARM64 nativo | Aprobado | Java 21 ARM64, PostgreSQL 18, lsFusion/MyCompany, Tomcat y Chromium; sin Docker |
+| Diagnóstico Linux nativo | Omitido | `skipped`; no es aprobación |
+| Diagnóstico Docker/Linux | Omitido | `skipped`; no es aprobación |
 
-La evaluación del planificador también terminó correctamente en [run 45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643).
+La suite del planificador también aprobó en [run 45854940442](https://github.com/JavierGrecco/Rubrova/actions/runs/45854940442), sobre el commit anterior `c0dacb7`; el commit final `ac758d0` sólo corrigió el simulador de fallo de restauración.
 
 ## Evidencia funcional del smoke nativo
 
-La ejecución [45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524) registró:
+La ejecución [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) registró:
 
-- Login autenticado en Chromium y navegación al módulo Comercio → Punto de venta.
-- Las sondas autenticadas de inventario, compromisos de salida y recepciones respondieron HTTP 200.
-- La exportación nativa devolvió JSON verificable: una fila de inventario, una línea de compromiso, una reserva vinculada y una recepción en el fixture de prueba. La reserva de 2 unidades quedó asociada a la línea de salida, sin duplicar el compromiso.
-- Una venta sintética por ARS 1.250: una factura, un pago en efectivo por el mismo importe y una salida de una unidad (stock 10 → 9).
-- Cierre del turno conciliado: estado `CLOSED`, venta neta y efectivo ARS 1.250.
-- Reinicio de servidor y cliente, conservando PostgreSQL; factura, pago, existencia, turno cerrado y ocho incidencias permanecieron verificables.
-- Segunda instancia de demostración con PostgreSQL, configuración y puertos separados; abrió turno y encontró su producto de muestra.
+- Login autenticado con Chromium y navegación a Comercio → Punto de venta.
+- Sondas autenticadas de inventario, compromisos de salida y recepciones con HTTP 200.
+- Exportación nativa de sólo lectura, con colecciones verificadas contra fixtures sintéticas; no es aún conciliación con una base comercial real.
+- Venta sintética de ARS 1.250, factura y pago en efectivo exacto; el inventario pasó de 10 a 9 unidades.
+- Cierre del turno `SM/000001`, estado `CLOSED`, neto y efectivo de ARS 1.250.
+- Reinicio de PostgreSQL/servidor/cliente y verificación de persistencia de factura, pago, stock, turno cerrado e incidencias.
+- Segunda instancia Demo con configuración, puertos y base separada; abrió turno y encontró el artículo de muestra.
+- Creación de respaldo lógico PostgreSQL; paquete y SHA-256 verificados; restauración a `rubrova_restore_ci`; la base activa `rubrova_dev` no se sobrescribió.
+- Marcador de aceptación: `RUBROVA_NATIVE_POSTGRES_BACKUP_RESTORE=passed`.
 
-La prueba usó `RUBROVA_NATIVE_EGRESS_BLOCKED=false`; el log dejó explícito `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Los diagnósticos Linux/Docker fueron omitidos en ese push.
+El backup es **sólo PostgreSQL**. No incluye adjuntos, documentos externos, imágenes, binarios ni secretos. Tampoco existe todavía un asistente visual de restauración.
+
+La ejecución usó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y dejó `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. No se certifica aún continuidad offline en macOS.
 
 ## Estado por capacidad
 
 | Capacidad | Estado | Límite pendiente |
 |---|---|---|
-| Fuentes fijadas y propiedad del código | Aprobado | Mantener los locks y la revisión de licencias/origen |
-| Compilación MyCompany/lsFusion propia | Aprobado en CI | Repetir en el equipo local y conservar artefactos por SHA |
-| Runtime nativo macOS ARM64 | Aprobado en runner CI | Validar en el Mac físico del usuario |
-| Login, navegación y POS básico | Aprobado con fixture sintético | No equivale a una jornada de operación real |
-| Venta, factura, pago exacto y stock | Aprobado | Vuelto, pagos mixtos, descuentos complejos y cancelaciones |
-| Cierre básico del turno | Aprobado | Arqueo contado, diferencias, ingresos y retiros |
-| Persistencia tras reinicio | Aprobado | Backups externos, restauración completa y rollback |
-| Exportación nativa de reposición | Aprobada contra fixtures de MyCompany | Conciliar con una base real y mantener el modo sólo lectura |
-| Planificador de reposición | Suite aprobada | Datos históricos reales, política por proveedor y evaluación fuera de muestra |
-| Terminales de pago | Modelo y trazabilidad iniciales | SDK/proveedor, sandbox, hardware y homologación |
-| ARCA y fiscalidad argentina | Diseño e investigación | Integración y homologación; evitar doble facturación de canales externos |
-| Offline en macOS | Pendiente | Repetir el recorrido con egress bloqueado |
-| Windows nativo | Parcial | La validación reciente sólo comprobó sintaxis; falta instalación y smoke funcional |
-| Instalador offline y periféricos | Pendiente | PC limpia, lector, impresora, cajón, balanza y terminal |
-| Backup/restore completo del negocio | Pendiente | El primer incremento cubre sólo PostgreSQL; faltan adjuntos, documentos y asistente guiado |
+| Fuentes propias fijadas y compilación | Aprobado en CI | Mantener locks y revisión upstream |
+| Runtime nativo macOS ARM64 | Smoke aprobado en runner | Ejecutar en el Mac físico |
+| Login, navegación y POS básico | Aprobado con fixture sintético | No equivale a una jornada real |
+| Venta, factura, pago y stock | Aprobado | Vuelto, medios mixtos, descuentos complejos y cancelaciones |
+| Cierre básico de turno | Aprobado | Arqueo físico, diferencias e ingresos/retiros end-to-end |
+| Persistencia tras reinicio | Aprobado | Recuperación integral y rollback |
+| Exportación de reposición | API y fixtures aprobadas | Conciliar con base MyCompany local real |
+| Planificador | Suite aprobada | Datos reales, cobertura y desempeño fuera de muestra |
+| Backup lógico PostgreSQL | Creación, verificación y restore a nueva DB aprobados | Adjuntos, documentos, retención, disco externo y asistente |
+| Devolución y reintegro | Componentes upstream existentes identificados | Activación del control de cantidad y recorrido E2E |
+| Terminales de pago | Modelo y trazabilidad inicial | Proveedor, sandbox, hardware y homologación |
+| ARCA/fiscalidad | Diseño e investigación | Integración y homologación |
+| Offline macOS | Pendiente | Repetir con egress bloqueado |
+| Windows nativo | Parcial | Instalación, operación, reinicio y persistencia funcional |
+| Linux/Docker en último push | Omitido | Diagnóstico manual separado |
+| Instalador y periféricos | Pendiente | PC limpia, lector, impresora, cajón, balanza y terminal |
+| Uso productivo | No autorizado | Jornada supervisada, recuperación externa y homologación |
 
 ## Arquitectura y propiedad
 
 - `vendor/platform/`: fuentes fijadas de lsFusion 6.2.
 - `vendor/mycompany/`: fuentes fijadas de MyCompany 6.2.
-- `extensions/lsfusion/`: módulos y localización propios.
+- `extensions/lsfusion/`: módulos Rubrova y localización propia.
 - `patches/lsfusion/`: cambios directos al motor sólo cuando una extensión no alcanza.
-- `build/rubrova/pom.xml`: reactor que compila los componentes desde el repositorio.
-- Runtime local prioritario: Java 21 + PostgreSQL 18 + Tomcat 9, sin Docker como dependencia de ejecución.
+- `build/rubrova/pom.xml`: reactor de compilación propio.
+- Runtime local prioritario: Java 21 + PostgreSQL 18 + Tomcat 9, sin Docker como requisito de ejecución.
 
-La extensión de reposición es de sólo lectura. No ejecuta `fillAuto`, no crea órdenes de compra y no altera inventario. Las integraciones externas deben fallar de forma aislada y nunca convertirse en requisito para operar la caja local.
+La reposición es estrictamente de lectura: no ejecuta `fillAuto`, no crea órdenes ni altera inventario. Devoluciones, pagos y caja deben seguir usando los ledgers de MyCompany; Rubrova no debe introducir un segundo registro de existencias o efectivo.
 
 ## Próximas prioridades
 
-1. **Validar el primer backup lógico PostgreSQL** con el mismo clúster nativo: crear paquete, verificar checksum/legibilidad y restaurar a una base nueva sin tocar `rubrova_dev`.
-2. **Probar el runtime en el Mac físico** con los artefactos y herramientas instaladas localmente; revisar arranque, cierre, logs y persistencia.
-3. **Completar caja y POS:** arqueo contado, diferencias, ingresos/retiros, vuelto, pagos mixtos, cancelaciones y devolución parcial/total vinculada a la venta original.
-4. **Probar continuidad offline en macOS** con salida externa bloqueada, incluyendo estados pendientes de proveedores y recuperación posterior.
-5. **Cerrar Windows x64** con instalación, rutas, permisos, arranque, parada y persistencia nativos.
-6. **Desarrollar backup completo y restauración guiada:** adjuntos, documentos, manifiesto, verificaciones de relaciones/ledgers y recuperación en otra PC.
-7. Después de consolidar el núcleo, avanzar en compras/recepciones, costos, cuentas corrientes, fiscalidad, reportes e inteligencia comercial.
+1. **Devolución segura:** activar y probar el control de cantidad retornada contra la factura original; validar devolución parcial/total, reintegro al medio original y stock restaurado sin duplicaciones.
+2. **Caja completa:** probar ingreso/retiro nativos, saldo teórico por medio y arqueo físico con diferencia registrada, responsable y hora.
+3. **Prueba local en el Mac físico:** ejecutar preflight, doctor, arranque, venta, backup, restore y revisión de logs con Java 21 y PostgreSQL 18 ARM64.
+4. **Continuidad offline macOS:** repetir el smoke con salida externa bloqueada y recuperación de integraciones pendientes.
+5. **Windows x64:** instalación y smoke nativos completos.
+6. **Backup integral:** adjuntos, documentos, manifiesto, checksums, retención, copia externa desconectable y restauración guiada en otro equipo.
+7. **Reposición real:** capturar exportación autenticada de una base MyCompany local y conciliarla con sus ledgers antes de sugerir compras con datos reales.
+
+## Protección de la rama principal
+
+GitHub informa `protected: false` para `main`. No se debe confundir tener una sola rama con tener protección obligatoria. La protección debe activarse desde GitHub Settings con un ruleset que requiera los workflows aplicables, impida force-push y defina quién puede integrar. No se declara habilitada hasta verificarla.
 
 ## Límites de aceptación
 
-No se debe habilitar uso productivo hasta demostrar una jornada repetible con datos controlados y luego una prueba piloto supervisada: venta, pagos, caja, stock, devolución, documentos fiscales, auditoría, modo offline, copia externa y restauración. Ningún smoke sintético sustituye esa aceptación.
+No habilitar uso productivo hasta demostrar una jornada repetible con venta, devolución, pago/reintegro, caja, arqueo físico, stock, documentos fiscales, auditoría, modo offline, copia externa y restauración. Ningún smoke sintético sustituye esa aceptación.

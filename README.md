@@ -39,9 +39,13 @@ El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las cap
 
 > **Estado del proyecto · 26 de noviembre de 2026**
 >
-> Rubrova continúa como piloto integrado POS + ERP y no es una versión productiva. En la validación más reciente del PR #10, la prevalidación compartida, Windows y la compilación completa de lsFusion/MyCompany aprobaron. El smoke nativo macOS ARM64 logró iniciar el servidor, pero el paso de ejecución integral terminó con error; los logs incluyen timeouts SQL durante la inicialización de búsquedas de iconos y requieren análisis. La causa final todavía no está confirmada. La suite independiente del planificador de reposición sí pasó. **La exportación nativa sigue en validación y el PR permanece en borrador.**
+> Rubrova continúa como piloto integrado POS + ERP; no es una versión productiva. En [la validación de plataforma #417](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), el preflight, la compilación completa y el smoke nativo macOS ARM64 terminaron correctamente. El smoke autenticó, verificó la exportación nativa de reposición sobre fixtures, completó una venta sintética, concilió caja y stock, cerró el turno, reinició el runtime y comprobó la persistencia.
 >
-> Seguimiento: [PR #10 — integración nativa](https://github.com/JavierGrecco/Rubrova/pull/10) · [validación de plataforma #45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328) · [suite del planificador #45751756295](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756295) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
+> La misma ejecución creó un respaldo lógico de PostgreSQL, verificó sus checksums y lo restauró en una base nueva (`rubrova_restore_ci`) sin sobrescribir `rubrova_dev`. Es una primera recuperación **sólo de PostgreSQL**: todavía no incluye adjuntos ni documentos externos. El modo offline macOS no se probó; Linux/Docker fueron omitidos y Windows sólo pasó validación sintáctica.
+>
+> **Estado GitHub:** `main` es la única rama visible y no hay PR abiertos. La rama principal todavía no está protegida por reglas obligatorias. La prueba en el runner Apple Silicon no sustituye la prueba en el Mac físico ni una jornada comercial real.
+>
+> Seguimiento: [validación de plataforma #45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md) · [roadmap](docs/ROADMAP.md).
 
 ## Propuesta de producto
 
@@ -113,18 +117,19 @@ La [postura de seguridad](docs/SECURITY_POSTURE.md) separa expresamente controle
 
 | Área | Estado actual |
 |---|---|
-| Fuentes y compilación propia lsFusion/MyCompany | Implementado y compilado en CI |
-| POS base MyCompany | Recorrido sintético básico aceptado en una ejecución anterior |
-| Runtime nativo | Inicio y login verificados en runners macOS ARM64 y Linux; falta completar la aceptación del endpoint nuevo |
-| Resiliencia de integraciones | Base inicial y pruebas de fallos HTTP; faltan conectores productivos y más escenarios de escritura |
-| Terminales de pago | Modelo y trazabilidad inicial; sin adquirente ni cobro real homologado |
-| Planificador de reposición | Motor y adaptador de snapshots con pruebas; puente nativo pendiente de aceptación |
-| ARCA y fiscalidad productiva | Pendiente |
-| Devoluciones, arqueo completo, vuelto y pagos mixtos | Cobertura funcional pendiente |
-| Instalación limpia offline y backup/restore | Pendiente |
+| Fuentes y compilación propia lsFusion/MyCompany | Compilación completa aprobada en CI |
+| Runtime nativo macOS ARM64 | Smoke integrado aprobado en CI; falta prueba en el Mac físico |
+| POS básico | Venta sintética en efectivo, factura/pago, stock y cierre conciliados |
+| Exportación de reposición | API autenticada y exportación probadas contra fixtures sintéticas; conciliación con una base comercial real pendiente |
+| Planificador de reposición | Motor y adaptadores con suites aprobadas; no genera órdenes de compra |
+| Backup PostgreSQL | Creación, verificación y restauración a base nueva aprobadas en PostgreSQL 18 real de CI |
+| Backup completo del negocio | Pendiente: adjuntos, documentos externos, retención, copia a disco y asistente guiado |
+| Devoluciones, reintegros y arqueo físico | Pendiente de aceptación end-to-end |
+| Offline macOS y Windows nativo | Pendiente de prueba funcional completa |
+| Terminales de pago y ARCA | Sin adquirente homologado ni conexión fiscal productiva |
 | Uso diario con datos reales | No autorizado todavía |
 
-La evidencia y las limitaciones se mantienen en [Estado real del proyecto](docs/PROJECT_STATUS.md), no se infieren de una compilación exitosa.
+La evidencia y las limitaciones se mantienen en [Estado real del proyecto](docs/PROJECT_STATUS.md); no se infieren de una compilación exitosa.
 
 ## Ejecutar localmente
 
@@ -172,10 +177,11 @@ También podés ejecutar una capa por vez con `--platform` o `--replenishment`. 
 ## Organización del repositorio
 
 - **main** es la fuente de verdad.
-- Se mantiene una rama de funcionalidad activa; una segunda sólo para un arreglo urgente e independiente.
-- Cada hito entra por un PR directo a main, después de validar el alcance afectado.
-- Se prefiere squash merge y se elimina la rama después de integrar.
-- Las ramas históricas no se vuelven a fusionar sin una diferencia de código comprobada.
+- `main` es la única línea de trabajo persistente y la fuente de verdad.
+- No mantener ramas de desarrollo abiertas una vez validado e integrado un hito.
+- Usar una rama temporal sólo cuando el cambio necesite revisión aislada; integrarla y eliminarla al cerrar el hito.
+- No apilar PR ni reabrir ramas históricas sin diferencias de contenido demostrables.
+- Mantener los checks de CI como puerta previa; la protección obligatoria de `main` debe configurarse en GitHub Settings.
 
 Ver [Política de ramas e integración](docs/BRANCHING_STRATEGY.md).
 

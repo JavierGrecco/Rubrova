@@ -1,7 +1,7 @@
 # Mapa de dominios, relaciones y propiedad de datos
 
 **Alcance inicial:** integración de reposición con MyCompany 6.2.  
-**Estado:** mapa de relaciones observado en el módulo LSF del PR #8; pendiente de conciliación con una base de MyCompany real.  
+**Estado:** extensión integrada en `main`; el smoke macOS ARM64 [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) ejecutó las sondas y verificó las colecciones de exportación contra fixtures sintéticas. Sigue pendiente la conciliación contra una base MyCompany local con datos comerciales controlados.  
 **Regla de lectura:** una expresión de relación usada por el código es evidencia de cómo el módulo navega el modelo; no implica que conozcamos todas las restricciones internas, cardinalidades o claves físicas del ERP.
 
 ## 1. Recorrido entre componentes

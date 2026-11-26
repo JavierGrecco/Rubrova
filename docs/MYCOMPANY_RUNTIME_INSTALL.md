@@ -7,14 +7,18 @@ Para macOS, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
 ## Estado actual de aceptación del runtime
 
-El supervisor nativo inicia PostgreSQL, el servidor lsFusion y Tomcat en runners macOS ARM64 y Linux; el cliente web responde HTTP 200 y el login de CI funciona. Sin embargo, eso no valida todavía el endpoint de reposición.
+La validación integrada más reciente es [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), sobre el commit `ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a`. Terminó con `success`: preflight, validación sintáctica Windows, compilación completa y smoke nativo macOS ARM64.
 
-En [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906), el servidor llegó al estado listo y el navegador se autenticó, pero `/exec/Rubrova.rubrovaExportReplenishmentSource` devolvió HTTP 500 con `Set operation is incorrect`. El error aparece al ejecutar la consulta, no durante el parseo/carga del módulo. Los cambios posteriores de la rama no tienen aún una ejecución de CI que demuestre la corrección.
+El smoke nativo ejecutó Java 21 ARM64, PostgreSQL 18 ARM64, servidor lsFusion/MyCompany, Tomcat 9 y Chromium sin Docker. Verificó login, navegación, sondas autenticadas de inventario/compromisos/recepciones, exportación nativa de sólo lectura contra fixtures, venta sintética ARS 1.250, pago exacto en efectivo, factura/pago y stock 10 → 9. También cerró el turno, reinició el runtime y comprobó la persistencia de las operaciones.
 
-La última validación de plataforma [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló antes de compilar por una regresión del matcher estático; el matcher se revisó después. La suite del planificador sí pasó en [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911), pero sólo valida Python y fixtures.
+El smoke creó un backup lógico PostgreSQL, verificó el manifiesto y SHA-256 y restauró en `rubrova_restore_ci` sin sobrescribir `rubrova_dev`. El paquete declara alcance `postgresql-database-only`; no incluye adjuntos, documentos externos, imágenes ni secretos.
 
-La aceptación requiere que el smoke nativo macOS ARM64 ejecute los cuatro endpoints y que la exportación consolidada devuelva colecciones y conteos conciliables. También falta contrastar las cantidades contra una base MyCompany local real. El runtime es una vista previa de desarrollo, no una instalación productiva.
-
+Límites de la ejecución:
+- `RUBROVA_NATIVE_EGRESS_BLOCKED=false`; el modo offline macOS quedó `not_tested`.
+- Linux nativo y Docker/Linux fueron `skipped`.
+- Windows sólo validó sintaxis PowerShell; no es una instalación nativa funcional.
+- La exportación de reposición aún debe conciliarse con una base comercial MyCompany real.
+- Falta ejecutar el runtime en el Mac físico, con periféricos y una jornada supervisada.
 
 ## Ruta recomendada de desarrollo: runtime nativo
 

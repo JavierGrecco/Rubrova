@@ -1,8 +1,8 @@
 # Política de ramas e integración
 
-**Revisión:** 25 de noviembre de 2026  
+**Revisión:** 26 de noviembre de 2026  
 **Rama canónica:** `main`  
-**Límite operativo:** una rama de funcionalidad activa; una segunda sólo para una corrección urgente e independiente.
+**Límite operativo:** `main` como única línea persistente; ramas temporales sólo para cambios aislados y con cierre inmediato.
 
 ## Objetivo
 
@@ -10,15 +10,14 @@ Mantener una línea principal fácil de revisar, probar, ejecutar localmente y r
 
 ## Reglas
 
-1. **`main` es la fuente de verdad.** No se desarrolla directamente sobre ella. Los cambios funcionales entran mediante pull request.
-2. **Máximo dos ramas de trabajo activas.** La norma es una sola rama de funcionalidad. La segunda se reserva para un hotfix independiente; no se crean ramas auxiliares por cada corrección o commit.
-3. **Las ramas nacen de `main` actualizado.** No se apilan funcionalidades dependientes ni se abren PR encadenados.
-4. **Un PR por hito coherente.** Debe explicar objetivo, alcance, riesgos, evidencia, limitaciones y criterio de aceptación. Siempre apunta directamente a `main`.
-5. **Integrar por hitos.** Agrupar cambios relacionados, ejecutar las validaciones del alcance y revisar el diff completo antes del merge.
-6. **Preferir squash merge.** Cada hito queda como un commit claro en `main`, sin arrastrar commits intermedios de prueba.
-7. **Eliminar la rama después del merge.** Antes de borrarla, verificar que todo el contenido útil está integrado.
-8. **No revivir ramas históricas por su historial.** Comparar archivos contra `main` y recuperar selectivamente sólo cambios útiles que falten.
-9. **No confundir CI verde con aceptación funcional.** Distinguir pruebas estáticas, unitarias, compilación, arranque, login, API autenticada, smoke POS y conciliación con datos reales.
+1. **`main` es la única fuente de verdad y la rama persistente.** No mantener ramas de desarrollo abiertas cuando el hito ya está integrado.
+2. **Ramas temporales sólo por necesidad de revisión aislada.** Deben nacer del SHA actual de `main`, tener alcance único y cerrarse al terminar.
+3. **No apilar funcionalidades ni PR encadenados.** Cada cambio se valida contra la revisión exacta que se pretende integrar.
+4. **Integrar pronto y de forma coherente.** Revisar el diff, ejecutar preflight, build y smoke afectados; actualizar `main` sólo con evidencia.
+5. **Eliminar referencias temporales al integrar.** Cerrar PR y borrar la rama en el mismo hito; no acumular ramas históricas.
+6. **No revivir ramas por su historial.** Recuperar selectivamente sólo contenido que falte y comprobarlo contra `main`.
+7. **No confundir CI verde con aceptación funcional.** Separar unitarias, compilación, arranque, login, API autenticada, smoke POS y conciliación de datos.
+8. **Mantener una vía de recuperación.** Los cambios de runtime/esquema deben tener backup antes de migraciones y evidencia de restore.
 
 ## Convención de nombres
 
@@ -41,51 +40,20 @@ Para cambios del runtime o de MyCompany, la puerta mínima contempla:
 
 Las fixtures sintéticas son regresión automatizada, no sustituyen datos reales.
 
-## Estado del repositorio — 25 de noviembre de 2026
+## Estado del repositorio — 26 de noviembre de 2026
 
-Hay **9 ramas remotas**: `main`, una rama activa del PR #8 y siete ramas históricas. La comparación de contenido confirmó que estas siete últimas no deben volver a utilizarse para desarrollo; sus resultados útiles ya están incorporados en `main` o fueron superados por versiones posteriores:
+La consulta actual a GitHub confirma:
 
-- `diagnostic/docker-client-connectivity`
-- `feature/mycompany-readonly-replenishment-adapter`
-- `feature/order-line-replenishment-contract`
-- `feature/projected-stock-replenishment-planner`
-- `feature/stockout-aware-demand-planning`
-- `fix/demo-pos-smoke-register-name`
-- `test/complete-ci-regression-coverage`
+- Ramas remotas visibles: **1**, únicamente `main`.
+- Pull requests abiertos: **0**.
+- SHA actual: `ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a`.
+- El workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó correctamente.
 
-La única rama funcional activa debe seguir siendo `feat/mycompany-readonly-replenishment-api` hasta que se acepte o descarte el PR #8. El PR todavía no está integrado: la compilación pasó y el login funciona en los smokes nativos, pero la API de exportación tiene pendiente resolver un HTTP 500 de lsFusion.
+No hay ramas feature pendientes de integrar. No se deben ejecutar los comandos históricos de borrado que aparecían en versiones anteriores de esta guía: ya no describen el estado actual.
 
-### Limpieza de las siete ramas históricas
+### Protección de la rama principal
 
-Una vez sincronizado el clon local con `main`, se pueden eliminar las siete ramas históricas remotas sin tocar la rama activa del PR #8:
-
-```bash
-git switch main
-git fetch origin --prune
-git pull --ff-only origin main
-
-git push origin --delete \
-  diagnostic/docker-client-connectivity \
-  feature/mycompany-readonly-replenishment-adapter \
-  feature/order-line-replenishment-contract \
-  feature/projected-stock-replenishment-planner \
-  feature/stockout-aware-demand-planning \
-  fix/demo-pos-smoke-register-name \
-  test/complete-ci-regression-coverage
-
-git fetch origin --prune
-git branch -r
-```
-
-Después de integrar y verificar el PR #8, eliminar también su rama:
-
-```bash
-git push origin --delete feat/mycompany-readonly-replenishment-api
-git fetch origin --prune
-git branch -r
-```
-
-La limpieza de las ramas históricas es administrativa: no se vuelven a fusionar ni se pierden cambios ya integrados. No se deben borrar las ramas hasta comprobar que el PR #8 se encuentra preservado y que el clon local está sincronizado.
+La API de GitHub informa `protected: false` para `main`. Tener una única rama no impide por sí solo un push directo ni obliga a que pasen los checks. La protección de rama/ruleset debe activarse desde GitHub Settings por alguien con permisos administrativos. La política recomendada es exigir los workflows aplicables, impedir force-push y exigir revisión cuando haya más colaboradores. No se declara esa protección activa hasta verificarla.
 
 ## Rutina por hito
 

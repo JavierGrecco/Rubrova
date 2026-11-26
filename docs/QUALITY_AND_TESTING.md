@@ -46,14 +46,16 @@ En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado
 
 ### Estado de evidencia
 
-- La última revisión integrada de `main` es `f545c907`. El workflow [45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524) terminó con `success`: preflight compartido, compilación completa y smoke nativo macOS ARM64.
-- El smoke nativo autenticó mediante Chromium, confirmó las sondas de inventario/compromisos/recepciones (HTTP 200), verificó el JSON de exportación de reposición y completó una venta sintética por ARS 1.250, pago exacto en efectivo, salida de stock 10 → 9 y cierre del turno.
-- Tras reiniciar el runtime, la factura, el pago, el stock, el turno cerrado y las incidencias siguieron conciliados en PostgreSQL. Una segunda instancia Demo se ejecutó con base y puertos separados.
-- La evaluación del planificador aprobó en [45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643). Sus fixtures siguen siendo sintéticos y no prueban compras reales ni ejecutan `fillAuto`.
-- La ejecución 45847755524 dejó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`; no demuestra continuidad offline en macOS.
-- Los jobs Docker/Linux y Linux nativo fueron `skipped` en el push actual. La validación Windows ejecutó comprobaciones de sintaxis PowerShell, no una instalación completa.
-- Se añade una herramienta de backup lógico PostgreSQL con checksum, verificación `pg_restore --list` y restauración sólo a una base nueva. Su preflight y el recorrido real crear/verificar/restaurar quedan incluidos en esta revisión; no sustituye el backup completo de adjuntos/documentos.
-- Sigue pendiente conciliar reposición con una base MyCompany real, probar el runtime en un Mac físico, instalar en Windows, usar periféricos reales y realizar una jornada comercial supervisada.
+- La revisión canónica actual es `ac758d01`. El workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó con `success`: preflight compartido, compilación completa y smoke nativo macOS ARM64.
+- El smoke autenticó mediante Chromium, confirmó las sondas de inventario/compromisos/recepciones HTTP 200 y verificó la exportación de reposición contra fixtures.
+- La prueba ejecutó venta sintética ARS 1.250, pago exacto en efectivo, factura/pago persistidos, salida de stock 10 → 9 y cierre de turno conciliado.
+- Tras reiniciar el runtime, factura, pago, stock, turno e incidencias siguieron disponibles en PostgreSQL. La Demo usó otra base y puertos aislados.
+- El backup lógico PostgreSQL se ejecutó contra PostgreSQL 18 real de CI: paquete custom, manifiesto, SHA-256 y verificación `pg_restore --list`; la restauración a `rubrova_restore_ci` terminó correctamente sin modificar `rubrova_dev`.
+- La suite de backup contiene 9 pruebas; contempla checksum/manifiesto alterados, entradas extra, clúster ajeno, nombre/confirmación de destino, base ya existente y limpieza tras restauración fallida.
+- El alcance del paquete es **sólo PostgreSQL**. No contiene archivos adjuntos, imágenes, documentos externos, secretos ni binarios; no equivale a un backup portable completo.
+- La ejecución dejó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. El modo offline macOS sigue pendiente.
+- Linux nativo y Docker/Linux fueron `skipped` en el push actual. La validación Windows fue de sintaxis, no de instalación funcional.
+- La exportación de reposición requiere conciliación con una base MyCompany local real; los fixtures son sintéticos. También falta aceptación en el Mac físico, periféricos y jornada supervisada.
 
 ### Controles del smoke nativo
 

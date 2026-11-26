@@ -1,7 +1,7 @@
 # Copias de seguridad y recuperación de Rubrova
 
 **Revisión:** 26 de noviembre de 2026  
-**Estado:** primer incremento técnico implementado para backup lógico PostgreSQL nativo. No es todavía el paquete portable completo ni una recuperación de negocio certificada.
+**Estado:** primer incremento de backup lógico PostgreSQL implementado y aprobado en smoke nativo macOS ARM64; no es todavía el paquete portable completo ni una recuperación de negocio certificada.
 
 ## 1. Objetivo para el negocio
 
@@ -195,7 +195,7 @@ El comando `restore` no sustituye la base activa ni actualiza `runtime-config.js
 - [x] Primera herramienta de backup lógico PostgreSQL con manifiesto y SHA-256.
 - [x] Verificación estructural mediante checksum y `pg_restore --list`.
 - [x] Restauración protegida que sólo crea una base nueva, con limpieza ante fallo.
-- [ ] Superar la suite automatizada y el smoke real de PostgreSQL del nuevo SHA.
+- [x] Suite automatizada y smoke real PostgreSQL: paquete creado, checksums verificados y restore a una base nueva en [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565).
 - [ ] Validar en el Mac físico y en Windows las rutas reales y recuperación de datos.
 - [ ] Incorporar adjuntos, documentos, configuración funcional y exportación portable.
 - [ ] Implementar programación, catálogo, retención y copia verificada a disco externo.
@@ -204,4 +204,4 @@ El comando `restore` no sustituye la base activa ni actualiza `runtime-config.js
 
 **Decisión vigente:** el backup de Rubrova no tendrá cifrado a nivel de aplicación en la primera versión. La protección opcional del disco se delega al sistema operativo.
 
-**Estado real:** ya existe una primera copia lógica de PostgreSQL; la recuperación completa del negocio sigue sin estar implementada ni aceptada.
+**Evidencia de aceptación inicial:** [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) registró `RUBROVA_NATIVE_POSTGRES_BACKUP_RESTORE=passed`: `rubrova_dev` se respaldó y se restauró en `rubrova_restore_ci`. El paquete es sólo PostgreSQL; la recuperación completa del negocio sigue sin estar implementada ni aceptada.

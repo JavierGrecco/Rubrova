@@ -3,11 +3,11 @@
 **Revisión:** 26 de noviembre de 2026  
 **Base técnica:** MyCompany 6.2 + lsFusion 6.2, con fuentes completas fijadas en el repositorio; Tryton 8.0 + tryton-ar 8.0 se conserva como contraste fiscal argentino, no como segundo núcleo operativo.
 
-**Estado real:** el fork compila servidor, cliente GWT y lógica desde fuentes propias. En [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), el smoke nativo macOS ARM64 aprobó login, exportación autenticada de reposición, una venta en efectivo, stock, cierre y persistencia tras reinicio. El commit integrado es `f545c907` en `main`; no hay PR abierto ni rama feature adicional. No existe todavía aceptación para uso productivo.
+**Estado real:** el fork compila servidor, cliente GWT y lógica desde fuentes propias. El workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó con `success` en el SHA `ac758d01`: preflight, compilación y smoke nativo macOS ARM64 aprobados. El POS básico sintético, persistencia tras reinicio, exportación de reposición contra fixtures y backup/restore PostgreSQL a una base nueva fueron verificados. No existe aceptación productiva.
 
-**Hito activo:** el runtime nativo es la ruta local prioritaria (Java 21, PostgreSQL 18 y Tomcat 9, sin Docker obligatorio). El puente de reposición es de sólo lectura y ya devuelve datos verificables sobre fixtures; falta conciliar una exportación contra una base MyCompany real. La nueva herramienta de backup lógico PostgreSQL genera, verifica y restaura a una base nueva sin sobrescribir la activa; debe superar el preflight y el smoke real de esta revisión. Su alcance no incluye documentos ni adjuntos.
+**Hito activo:** consolidar el circuito comercial y su recuperación. El backup lógico PostgreSQL ya restaura a una base nueva sin sobrescribir la activa, pero aún no incluye adjuntos/documentos ni tiene asistente guiado. El puente de reposición sigue siendo sólo lectura y falta conciliarlo con una base MyCompany real. El siguiente bloque funcional reutiliza los módulos nativos de devolución/reintegro y caja de MyCompany, comenzando por activar y probar el límite de cantidad devuelta contra la factura original.
 
-**Límites pendientes:** devoluciones/reintegros, arqueo y movimientos de caja completos, vuelto y pagos mixtos, ARCA/adquirentes reales, conciliación de reposición con datos reales, modo offline macOS, prueba física en Mac, Windows nativo, instalación limpia, periféricos y backup/restore completo del negocio.
+**Límites pendientes:** devoluciones/reintegros E2E, arqueo físico y diferencias de caja, ingresos/retiros probados, vuelto y pagos mixtos, ARCA/adquirentes reales, exportación conciliada con base real, offline macOS, Mac físico, Windows nativo, instalación limpia y backup portable completo.
 
 ## 1. Decisión ejecutiva
 
