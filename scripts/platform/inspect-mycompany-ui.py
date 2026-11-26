@@ -1324,6 +1324,11 @@ def verify_stocktake_barcode_semantics(context: Any, url: str) -> None:
             "La cantidad cero no llegó a la línea principal de Adjustment: "
             + json.dumps(zero, ensure_ascii=False)
         )
+    if abs(_stocktake_number(zero, "onHand", "zero") - 10.0) > 0.001:
+        raise RuntimeError(
+            "El conteo descartable alteró el stock físico al guardar cero: "
+            + json.dumps(zero, ensure_ascii=False)
+        )
     print("UI_STOCKTAKE_BARCODE_ZERO_PRESERVED=true")
 
     cleared = _stocktake_api_payload(
@@ -1332,6 +1337,21 @@ def verify_stocktake_barcode_semantics(context: Any, url: str) -> None:
     if _stocktake_number(cleared, "listLineCount", "null") != 0:
         raise RuntimeError(
             "Enviar NULL al barcode no eliminó la fila de la hoja de conteo: "
+            + json.dumps(cleared, ensure_ascii=False)
+        )
+    if _stocktake_number(cleared, "adjustmentLineCount", "null") != 1:
+        raise RuntimeError(
+            "Borrar la hoja eliminó la línea padre nativa en vez de dejarla sin cantidad: "
+            + json.dumps(cleared, ensure_ascii=False)
+        )
+    if cleared.get("adjustmentQuantityIsNull") is not True:
+        raise RuntimeError(
+            "Enviar NULL al barcode no limpió la cantidad de AdjustmentLine: "
+            + json.dumps(cleared, ensure_ascii=False)
+        )
+    if abs(_stocktake_number(cleared, "onHand", "null") - 10.0) > 0.001:
+        raise RuntimeError(
+            "El conteo descartable alteró el stock físico al borrar la fila: "
             + json.dumps(cleared, ensure_ascii=False)
         )
     print("UI_STOCKTAKE_BARCODE_NULL_CLEARED=true")
@@ -1353,6 +1373,11 @@ def verify_stocktake_barcode_semantics(context: Any, url: str) -> None:
                 f"Stocktake positivo: {field} debe ser 2, se obtuvo {actual}. "
                 + json.dumps(positive, ensure_ascii=False)
             )
+    if abs(_stocktake_number(positive, "onHand", "positive") - 10.0) > 0.001:
+        raise RuntimeError(
+            "El conteo descartable alteró el stock físico al guardar cantidad positiva: "
+            + json.dumps(positive, ensure_ascii=False)
+        )
     print("UI_STOCKTAKE_BARCODE_AGGREGATE_RECONCILED=true")
 
 
@@ -1363,6 +1388,11 @@ def verify_stocktake_persistence(context: Any, url: str) -> None:
         base + "rubrovaTestStocktakeBarcodeStateApi",
         "stocktake",
     )
+    if abs(_stocktake_number(state, "onHand", "restart") - 9.0) > 0.001:
+        raise RuntimeError(
+            "El conteo pendiente alteró el stock físico tras reiniciar; se esperaba 9 "
+            "después de la venta POS: " + json.dumps(state, ensure_ascii=False)
+        )
     for field in ("listLineCount", "adjustmentLineCount"):
         actual = _stocktake_number(state, field, "restart")
         if actual != 1:

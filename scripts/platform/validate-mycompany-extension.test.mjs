@@ -46,6 +46,7 @@ const invoiceSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoice
 const incomingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf");
 const outgoingPaymentSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf");
 const itemAttributeSource = read("vendor/mycompany/src/main/lsfusion/masterdata/items/attributes/ItemAttribute.lsf");
+const adjustmentListSource = read("vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentList.lsf");
 const markdownViewerSource = read("vendor/mycompany/src/main/lsfusion/utils/MarkdownViewer.lsf");
 const runtimeWorkflowSource = read(".github/workflows/platform-extension.yml");
 const plannerWorkflowSource = read(".github/workflows/replenishment-planner.yml");
@@ -1439,12 +1440,22 @@ test("la arquitectura de terminales documenta los tres modos, diagramas y límit
 
 
 test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras reinicio", () => {
+  assert.match(adjustmentListSource, /WHEN SETCHANGED\(listRealQuantity/);
+  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATION_BEFORE"));
+  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATION_AFTER"));
+  assert.match(sourcePatch, /WHEN SETCHANGED\(realQuantity\(AdjustmentListLine l\)\)/);
+  assert.ok(sourcePatch.includes("if not apply_stocktake_list_zero_line_aggregation():"));
+  assert.match(sourcePatch, /realQuantity\(al\) <- listRealQuantity\(adjustment\(adjustmentList\(l\)\), product\(l\), location\(l\)\);/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeZeroApi/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeNullApi/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodePositiveApi/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), 0\)/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), NULL\)/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]useList\(stocktakeCI\) <- TRUE/);
+  assert.match(nativeSalesFixtureSource, /adjustmentQuantityIsNull = Inventory[.]realQuantity\(rubrovaCIStocktakeAdjustmentLine\(\)\) IS NULL/);
+  assert.match(nativeSalesFixtureSource, /onHand = Inventory[.]onHand\(rubrovaCITestLocation\(\), rubrovaCITestProduct\(\)\)/);
+  assert.match(uiSmokeSource, /el conteo descartable alteró el stock físico/);
+  assert.match(uiSmokeSource, /adjustmentQuantityIsNull/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeListLineCount\(\) = \(OVERRIDE/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeAdjustmentLineCount\(\) = \(OVERRIDE/);
   assert.match(uiSmokeSource, /def verify_stocktake_barcode_semantics\(/);

@@ -483,7 +483,16 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - El Adjustment queda sin validar. No crea InvAdjustment ni modifica InvLedger/onHand, por lo que no contamina la venta POS ni su conciliación.
 - La misma cantidad positiva se consulta después del reinicio del runtime para verificar persistencia de la hoja y del Adjustment padre.
 - **Límite explícito:** esto no acepta todavía `Adjustment.fill` para la distinción entre `onHand=0` y `onHand=NULL`, ni prueba conteo ciego, reconteo, tolerancias, permisos o doble validación. Tampoco equivale a una prueba física con lector barcode real; la ruta de backend se ejercita invocando el helper que usa la pantalla.
-- **Estado inicial:** cambios preparados para PR sobre `main`; compilación lsFusion, preflight y smoke runtime pendientes. No presentar esta prueba como pasada hasta disponer de SHA, run/job y marcadores de aceptación.
+- **Evidencia inicial (run #454, SHA `38805f47cc3697034e73c1b7837e5dab8d26ddea`):** preflight, Windows y compilación pasaron; el smoke nativo arrancó, pero falló porque `AdjustmentListLine` tenía una fila con `0` y no existía la `AdjustmentLine` agregada (`listLineCount=1`, `adjustmentLineCount=0`). El cero quedó almacenado en la hoja, pero no se propagó al documento padre. La corrección se valida en el registro REP-024; aún no se acepta el circuito.
+
+### 2026-11-26 — REP-024 — Materialización de cero en la línea padre del conteo (corrección en validación)
+
+- **Revisión observada:** PR #14, SHA `38805f47cc3697034e73c1b7837e5dab8d26ddea`, ejecución #454, job macOS ARM64 nativo.
+- **Hecho del runtime:** el endpoint de prueba devolvió HTTP 200 y `listLineCount=1`, pero `adjustmentLineCount=0` al ingresar la primera cantidad `0`. El servidor nativo y la compilación habían completado correctamente. El fallo es funcional y está localizado en la materialización de la hoja al ajuste principal.
+- **Fuente propietaria:** MyCompany mantiene `AdjustmentListLine` y `AdjustmentLine`; el evento original creaba la línea padre sólo con `WHEN SETCHANGED(listRealQuantity(...))`. El ajuste Rubrova cambia el disparador de creación a `SETCHANGED(realQuantity(AdjustmentListLine))`, que observa el valor almacenado de la fila (incluido cero no nulo), y conserva el evento nativo `WHEN CHANGED(listRealQuantity(...))` para reconciliar ediciones posteriores y el borrado con `NULL`.
+- **Implementación:** el cambio se aplica mediante `scripts/platform/apply-rubrova-source-patches.py`, con anclas exactas, verificación de marcadores e idempotencia. No se sustituye el modelo ni se crea un ledger/entidad paralela.
+- **Cobertura añadida al smoke:** después de `NULL`, la hoja debe quedar vacía, la línea padre debe seguir existiendo con cantidad nula; el stock físico debe permanecer en 10 durante el conteo pendiente. Tras la venta POS y reinicio se espera onHand=9 y que la cantidad positiva 2 siga persistida.
+- **Estado:** corrección preparada en PR #14 y pendiente de nueva compilación y runtime. No afirmar que el cero, el borrado o la persistencia quedaron corregidos hasta obtener los marcadores de aceptación en un run nuevo.
 
 ## 11. Anexos históricos preservados
 

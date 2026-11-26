@@ -143,6 +143,33 @@ MARKDOWN_VIEWER_REQUIRED_MARKERS = (
     "marked-gfm-heading-id@4.1.4/lib/index.umd.js",
 )
 
+# Preserve zero-valued inventory counts in the native AdjustmentList -> AdjustmentLine flow.
+# A row-level SETCHANGED trigger creates the parent line when its first stored quantity is 0;
+# the existing aggregate CHANGED event continues reconciling subsequent list edits.
+STOCKTAKE_LIST_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentList.lsf"
+STOCKTAKE_LIST_AGGREGATION_BEFORE = """WHEN SETCHANGED(listRealQuantity(Adjustment a, Product p, Location l)) AND useList(a) AND NOT lastAdjustmentLine(a, p, l) DO
+    NEW al = AdjustmentLine {
+        adjustment(al) <- a;
+        product(al) <- p;
+        location(al) <- l;
+        realQuantity(al) <- listRealQuantity(a, p, l);
+    }"""
+STOCKTAKE_LIST_AGGREGATION_AFTER = """WHEN SETCHANGED(realQuantity(AdjustmentListLine l))
+    AND useList(adjustment(adjustmentList(l)))
+    AND NOT lastAdjustmentLine(adjustment(adjustmentList(l)), product(l), location(l)) DO
+    NEW al = AdjustmentLine {
+        adjustment(al) <- adjustment(adjustmentList(l));
+        product(al) <- product(l);
+        location(al) <- location(l);
+        realQuantity(al) <- listRealQuantity(adjustment(adjustmentList(l)), product(l), location(l));
+    }"""
+STOCKTAKE_LIST_AGGREGATION_MARKERS = (
+    "WHEN SETCHANGED(realQuantity(AdjustmentListLine l))",
+    "realQuantity(al) <- listRealQuantity(adjustment(adjustmentList(l)), product(l), location(l));",
+    "WHEN CHANGED(listRealQuantity(Adjustment a, Product p, Location l))",
+)
+
+
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
 # Tax changes are part of the document-line audit trail, alongside quantity and amount.
 TAX_HISTORY_TARGETS = (
@@ -393,6 +420,50 @@ def apply_cash_movement_date_captions() -> bool:
     return True
 
 
+def apply_stocktake_list_zero_line_aggregation() -> bool:
+    target = STOCKTAKE_LIST_TARGET
+    if not target.is_file():
+        print(f"No se encontró el módulo de hojas de inventario: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATION_MARKERS if marker not in source]
+    if not missing and STOCKTAKE_LIST_AGGREGATION_BEFORE not in source:
+        print("La conciliación nativa de conteo ya conserva cantidades cero y agrega la línea padre.")
+        return True
+
+    if STOCKTAKE_LIST_AGGREGATION_AFTER in source:
+        print("El parche de conteo existe, pero el bloque anterior o los marcadores difieren.", file=sys.stderr)
+        return False
+
+    occurrences = source.count(STOCKTAKE_LIST_AGGREGATION_BEFORE)
+    if occurrences != 1:
+        print(
+            "No se ajustó la agregación de hojas de inventario. Se esperaba exactamente "
+            f"una coincidencia del evento upstream y se encontraron {occurrences}.",
+            file=sys.stderr,
+        )
+        return False
+
+    source = source.replace(
+        STOCKTAKE_LIST_AGGREGATION_BEFORE,
+        STOCKTAKE_LIST_AGGREGATION_AFTER,
+        1,
+    )
+    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATION_MARKERS if marker not in source]
+    if missing or STOCKTAKE_LIST_AGGREGATION_BEFORE in source:
+        print(
+            "El parche de cantidad cero de AdjustmentList quedó incompleto: "
+            + ", ".join(missing or ["el evento upstream original sigue presente"]),
+            file=sys.stderr,
+        )
+        return False
+
+    target.write_text(source, encoding="utf-8")
+    print("Agregación nativa de AdjustmentList corregida: una cantidad cero crea su AdjustmentLine.")
+    return True
+
+
 def apply_tax_history_line_tracking() -> bool:
     for target, anchor, replacement in TAX_HISTORY_TARGETS:
         if not target.is_file():
@@ -525,6 +596,9 @@ def main() -> int:
         print("El control de cuentas de caja de Rubrova ya está aplicado.")
 
     if not apply_newsession_guards():
+        return 1
+
+    if not apply_stocktake_list_zero_line_aggregation():
         return 1
 
     if not apply_cash_account_query_filters():

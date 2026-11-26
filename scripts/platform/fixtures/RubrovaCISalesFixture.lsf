@@ -176,7 +176,8 @@ rubrovaTestStocktakeBarcodeZeroApi () {
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
         zeroQuantityPreserved = rubrovaCIStocktakeListQuantity() = 0,
-        adjustmentQuantityIsZero = rubrovaCIStocktakeAdjustmentLineQuantity() = 0;
+        adjustmentQuantityIsZero = rubrovaCIStocktakeAdjustmentLineQuantity() = 0,
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
 rubrovaTestStocktakeBarcodeNullApi () {
@@ -185,7 +186,9 @@ rubrovaTestStocktakeBarcodeNullApi () {
     IF canceled() THEN RETURN;
     EXPORT JSON FROM
         listLineCount = rubrovaCIStocktakeListLineCount(),
-        adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount();
+        adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
+        adjustmentQuantityIsNull = Inventory.realQuantity(rubrovaCIStocktakeAdjustmentLine()) IS NULL,
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
 rubrovaTestStocktakeBarcodePositiveApi () {
@@ -196,7 +199,8 @@ rubrovaTestStocktakeBarcodePositiveApi () {
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
         listQuantity = rubrovaCIStocktakeListQuantity(),
-        adjustmentLineQuantity = rubrovaCIStocktakeAdjustmentLineQuantity();
+        adjustmentLineQuantity = rubrovaCIStocktakeAdjustmentLineQuantity(),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
 // Sonda de sólo lectura usada después del reinicio del servidor.
@@ -205,5 +209,6 @@ rubrovaTestStocktakeBarcodeStateApi () {
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
         listQuantity = rubrovaCIStocktakeListQuantity(),
-        adjustmentLineQuantity = rubrovaCIStocktakeAdjustmentLineQuantity();
+        adjustmentLineQuantity = rubrovaCIStocktakeAdjustmentLineQuantity(),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
