@@ -173,4 +173,4 @@ Los análisis de margen, rentabilidad por área, rotación y pronósticos se amp
 14. Restaurar backup y repetir consulta de venta, pago, caja e inventario.
 15. El cajero no puede ejecutar una operación administrativa no autorizada.
 
-Ver [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md), [Plan maestro de implementación](MASTER_IMPLEMENTATION_PLAN.md) y [Calidad y pruebas](QUALITY_AND_TESTING.md) para el flujo completo y las pruebas transversales.
+Ver [Checkout y terminales](CHECKOUT_AND_PAYMENT_TERMINALS.md) y el [Manual técnico canónico](ENGINEERING_MASTER.md) para la integración nativa y las pruebas transversales.
