@@ -2928,7 +2928,7 @@ Una capacidad no se considera terminada por mostrar una pantalla. Debe cumplir r
 
 ## Memoria técnica y contratos
 
-Toda modificación de lógica, datos o integración debe actualizar la [base de conocimiento de ingeniería](engineering/README.md): [contratos](engineering/CONTRACTS.md), [decisiones](engineering/DECISION_LOG.md), [relaciones entre dominios](engineering/DOMAIN_RELATIONSHIPS.md) e [iteraciones](engineering/ITERATION_LOG.md). La documentación conserva la razón y la evidencia; no reemplaza a los tests.
+Toda modificación de lógica, datos o integración debe actualizar este manual: [contratos](#c-contracts), [decisiones](#e-decisions), [relaciones entre dominios](#d-domain-relationships) e [iteraciones](#f-iterations). La documentación conserva la razón y la evidencia; no reemplaza a los tests.
 
 ## Prevalidación local compartida con CI
 
