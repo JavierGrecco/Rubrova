@@ -351,6 +351,7 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
         "RubrovaCISalesFixture.lsf",
         "RubrovaCIRetailFixture.lsf",
         "RubrovaCIIntegrationFixture.lsf",
+        "RubrovaCIReplenishmentFixture.lsf",
     )
     try:
         mock_port = int(os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT", "18765"))
@@ -380,7 +381,8 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     fixture_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
         "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, "
-        "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture;"
+        "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture, "
+        "RubrovaCIReplenishmentFixture;"
     )
     if source.count(original_require) == 1:
         entrypoint.write_text(source.replace(original_require, fixture_require, 1), encoding="utf-8")

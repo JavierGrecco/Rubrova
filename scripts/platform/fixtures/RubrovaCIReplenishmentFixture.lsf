@@ -1,0 +1,63 @@
+MODULE RubrovaCIReplenishmentFixture;
+
+REQUIRE MyCompany, RubrovaCISalesFixture;
+
+NAMESPACE Rubrova;
+
+// Datos efímeros sólo para smoke CI: disparan los flujos nativos de órdenes,
+// reservas de despacho y recepciones previstas. No se instala en producción.
+rubrovaCIReplenishmentFixtureSeeded = DATA BOOLEAN ();
+
+loadDefaultData () + {
+    IF NOT rubrovaCIReplenishmentFixtureSeeded() THEN {
+        NEW partnerCI = MasterData.Individual {
+            MasterData.id(partnerCI) <- 'rubrova-ci-partner';
+            MasterData.firstName(partnerCI) <- 'Proveedor';
+            MasterData.lastName(partnerCI) <- 'de prueba Rubrova';
+            MasterData.isVendor(partnerCI) <- TRUE;
+            MasterData.isCustomer(partnerCI) <- TRUE;
+        }
+
+        NEW salesOrderCI = Sales.Order {
+            Sales.type(salesOrderCI) <- Sales.orderType('order');
+            Sales.customer(salesOrderCI) <- partnerCI;
+            Sales.company(salesOrderCI) <- MasterData.defaultCompany();
+            Sales.location(salesOrderCI) <- Sales.rubrovaCITestLocation();
+            Sales.currency(salesOrderCI) <- MasterData.defaultCurrency();
+            Sales.scheduledDateTime(salesOrderCI) <- currentDateTime();
+            Sales.customerReference(salesOrderCI) <- 'rubrova-ci-outgoing';
+
+            NEW salesLineCI = Sales.OrderLine {
+                Sales.order(salesLineCI) <- salesOrderCI;
+                Sales.item(salesLineCI) <- Sales.rubrovaCITestProduct();
+                Sales.quantity(salesLineCI) <- 2;
+                Sales.price(salesLineCI) <- 1250;
+            }
+            // MyCompany genera Shipment y su ledger de reserva al confirmar.
+            Sales.confirmed(salesOrderCI) <- TRUE;
+        }
+
+        // La recepción se mantiene prevista y no incrementa available antes de ser recibida.
+        Inventory.increaseAvailableStock(Inventory.receiptType('receipt')) <- FALSE;
+        NEW purchaseOrderCI = Purchase.Order {
+            Purchase.type(purchaseOrderCI) <- Purchase.orderType('order');
+            Purchase.vendor(purchaseOrderCI) <- partnerCI;
+            Purchase.company(purchaseOrderCI) <- MasterData.defaultCompany();
+            Purchase.location(purchaseOrderCI) <- Sales.rubrovaCITestLocation();
+            Purchase.currency(purchaseOrderCI) <- MasterData.defaultCurrency();
+            Purchase.scheduledDateTime(purchaseOrderCI) <- currentDateTime();
+            Purchase.vendorReference(purchaseOrderCI) <- 'rubrova-ci-incoming';
+
+            NEW purchaseLineCI = Purchase.OrderLine {
+                Purchase.order(purchaseLineCI) <- purchaseOrderCI;
+                Purchase.item(purchaseLineCI) <- Sales.rubrovaCITestProduct();
+                Purchase.quantity(purchaseLineCI) <- 3;
+                Purchase.price(purchaseLineCI) <- 1000;
+            }
+            // PurchaseOrderReceipt crea una Receipt ready y ReceiptResLedger.
+            Purchase.confirmed(purchaseOrderCI) <- TRUE;
+        }
+
+        rubrovaCIReplenishmentFixtureSeeded() <- TRUE;
+    }
+}

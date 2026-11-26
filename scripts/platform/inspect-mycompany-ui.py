@@ -754,6 +754,7 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
         ("receipts", "receipts", "rubrovaProbeReceipts"),
     )
     failures: list[str] = []
+    require_positive = os.environ.get("RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT", "false").lower() == "true"
     for label, collection_field, action in probes:
         response = context.request.get(endpoint + action, timeout=20_000)
         print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
@@ -770,6 +771,8 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
             if not isinstance(payload, dict):
                 raise ValueError(f"la raíz JSON es {type(payload).__name__}, no un objeto")
             rows = _native_collection(payload, collection_field, label)
+            if require_positive and label in {"outgoing_commitments", "receipts"} and not rows:
+                raise ValueError(f"{field if False else collection_field} debe contener al menos una fila en el fixture positivo de CI.")
             count_field = f"{collection_field}Count"
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROOT_KEYS=" + json.dumps(sorted(payload)))
@@ -943,6 +946,34 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         for field in ("receiptId", "purchaseOrderId", "purchaseOrderLineId", "productId", "locationId", "scheduledDate", "scheduledDateTime"):
             if not str(row.get(field) or "").strip():
                 raise RuntimeError(f"{row_label}.{field} está vacío.")
+
+    require_positive = os.environ.get("RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT", "false").lower() == "true"
+    if require_positive:
+        if source_counts["outgoingCommitments"] < 1 or not collections["outgoingCommitments"]:
+            raise RuntimeError("El fixture positivo debe generar al menos un compromiso de salida.")
+        if source_counts["receipts"] < 1 or not collections["receipts"]:
+            raise RuntimeError("El fixture positivo debe generar al menos una recepción pendiente.")
+        outgoing = collections["outgoingCommitments"][0]
+        outgoing_quantity = numeric(outgoing, "openQuantity", "outgoingCommitments[0]")
+        outgoing_reserved = numeric(outgoing, "effectiveReserved", "outgoingCommitments[0]")
+        if outgoing_quantity <= 0 or outgoing_reserved <= 0:
+            raise RuntimeError(
+                "El fixture de salida debe tener cantidad abierta y reserva efectiva positivas; "
+                f"openQuantity={outgoing_quantity}, effectiveReserved={outgoing_reserved}."
+            )
+        receipt = collections["receipts"][0]
+        receipt_quantity = numeric(receipt, "expectedQuantity", "receipts[0]")
+        if receipt_quantity <= 0 or receipt.get("increaseAvailableStock") is not False:
+            raise RuntimeError(
+                "El fixture de recepción debe conservar cantidad pendiente positiva y "
+                "increaseAvailableStock=false."
+            )
+        print("UI_REPLENISHMENT_POSITIVE_FIXTURES=" + json.dumps({
+            "outgoingOpenQuantity": outgoing_quantity,
+            "outgoingEffectiveReserved": outgoing_reserved,
+            "incomingExpectedQuantity": receipt_quantity,
+            "incomingIncreaseAvailableStock": receipt["increaseAvailableStock"],
+        }, ensure_ascii=False))
 
     print(
         "UI_REPLENISHMENT_SOURCE_EXPORT_COUNTS="
