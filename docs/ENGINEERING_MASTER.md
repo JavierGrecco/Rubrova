@@ -75,57 +75,59 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 
 ### 2.1 Identidad de la revisión
 
-- La auditoría de fuentes y contratos conserva como referencia la revisión `d9791ff1c7894346d31ea5e0d240077940ba788c`; sus conclusiones describen el snapshot completo de MyCompany/lsFusion, no una afirmación de que todo esté ya probado en runtime.
-- `main` está en `04249dc983c3af066a386f1e1b022da2d9587ec0`, que integra por squash el PR #15 (devoluciones parciales) desde `8d9ebd06cad6c3ee9f3894fcaf6257841683bfba`.
-- El trabajo activo de stocktake está aislado en `work/stocktake-barcode-runtime-acceptance`; al corte de esta revisión su HEAD es `92786b7258378b063bed9ce3a5b71fdf3d2b505a`, PR #14. Aún no está integrado.
-- La comparación de fuentes debe referirse a la revisión exacta indicada en cada informe; los anexos conservan sus observaciones históricas. Las secciones 2–10 reflejan el estado operativo más reciente.
-
+- La auditoría de fuentes y contratos conserva como referencia `d9791ff1c7894346d31ea5e0d240077940ba788c`; describe el código de MyCompany/lsFusion examinado y no implica que cada capacidad esté aceptada en runtime.
+- El PR #15 integró las devoluciones parciales por squash en `main`, commit `04249dc983c3af066a386f1e1b022da2d9587ec0`.
+- El PR #14 integró el conteo nativo por barcode por squash en `main`, commit `c38fad581f669bd7e1a2795123cc8ecca242e010`, desde el HEAD validado `12f29a47e7b89f6f162c85a7e3684e24f9fe793b`.
+- El workflow de incorporación de fuentes fijadas creó después el commit `7d9e5bb80e866df87b51baad852c1e6256270dd1`; incorporó en el árbol vendorizado la corrección de `AdjustmentList.lsf` ya probada por #462 y está compilando ese snapshot.
+- Los resultados históricos permanecen en los reportes numerados. Las secciones 2–10 describen el estado operativo actual y distinguen validación pre-merge de validación del SHA integrado.
 
 ### 2.2 Evidencia de aceptación vigente
 
 | Área | Evidencia | Resultado exacto |
 |---|---|---|
-| Prevalidación, Windows y compilación de `main` | [Run 45906455407](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407), SHA `04249dc` | Éxito: prevalidación, validación PowerShell, fork lsFusion + MyCompany, cliente GWT y artefactos de runtime |
-| Runtime nativo macOS ARM64 de `main` | Run 45906455407 | Éxito: servidor, RMI, PostgreSQL, UI autenticada, POS, cierre de turno, backup/restore PostgreSQL, reinicio y demo nativa |
-| Devoluciones parciales en `main` | Run 45906455407 | Éxito: 0,4 + 0,6 unidades, rechazo de 0,7, dos reintegros en efectivo por ARS 1.250, stock final 10 y caja neta cero |
-| Exportación de reposición | Run 45906455407 y fixtures | API autenticada de sólo lectura sobre datos sintéticos; falta conciliar con una base comercial real |
-| Conteo por barcode (PR #14) | [Run 45907277530](https://github.com/JavierGrecco/Rubrova/actions/runs/45907277530), SHA `92786b7` | Prevalidación, Windows y compilación pasaron. Smoke ARM64 falló en la expectativa post-reinicio: cero, NULL y positivo pasaron; la API devolvió stock 10, correcto tras venta de 1 y devolución completa de 1. El inspector esperaba 9 incorrectamente |
-| Backup PostgreSQL | Run 45906455407 | Backup, verificación y restauración en DB aislada pasaron dentro del smoke nativo |
-| Offline macOS | `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested` | Pendiente; no confundir runtime local con aceptación offline |
+| Prevalidación, Windows y compilación del conteo por barcode | [Run #462](https://github.com/JavierGrecco/Rubrova/actions/runs/45909363575), SHA `12f29a4` | Éxito: prevalidación compartida, validación PowerShell, compilación completa de lsFusion + MyCompany 6.2, cliente GWT y artefactos de runtime |
+| Runtime nativo macOS ARM64 del PR #14 | Run #462, job `140215704940` | Éxito: servidor y RMI nativos, PostgreSQL ARM64, UI autenticada y ejecución funcional sobre MyCompany 6.2 |
+| Conteo por barcode | Run #462 | Cero preservado en hoja y AdjustmentLine; NULL elimina la fila de lista y deja la línea principal sin cantidad; positivo 2 reconciliado en ambas líneas; el conteo pendiente no modifica `onHand=10` |
+| Persistencia del conteo | Run #462 | Tras reiniciar el servidor permanecen la hoja, ambas líneas y cantidad 2; `onHand=10` sigue intacto |
+| Devoluciones parciales y caja | Runs [#458](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407) y #462 | 0,4 + 0,6 unidades; rechazo de 0,7; dos reintegros en efectivo por ARS 1.250; stock reingresado; caja neta cero; persistencia tras reinicio |
+| Backup PostgreSQL | Run #458 | Backup, verificación y restauración en una DB aislada pasaron dentro del smoke nativo |
+| Exportación de reposición | Run #458 y fixtures | API autenticada de sólo lectura sobre datos sintéticos; falta conciliar con una base comercial real |
+| Post-merge del commit funcional | [Run #463](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383909), SHA `c38fad5` | Prevalidación y Windows pasaron; build seguía en curso al corte. Este run no incluye el commit de fuentes posterior `7d9e5bb` |
+| Incorporación de fuentes completas | [Run #24](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383784), commit generado `7d9e5bb` | Árboles, licencias y rutas Maven pasaron; corrección aplicada a `AdjustmentList.lsf`; compilación de fuentes incorporadas en curso |
+| Offline macOS | `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested` | Pendiente; runtime local no equivale a aceptación offline |
 | Egreso de red | `RUBROVA_NATIVE_EGRESS_BLOCKED=false` | La prueba no bloqueó egress; no afirmar aislamiento de red |
-| Linux/Docker | Jobs omitidos en los runs #458 y #459 | No aprobado por omisión |
+| Linux/Docker | Jobs omitidos en #458 y #462 | No aprobado por omisión |
 | Windows | Validación de sintaxis PowerShell | No equivale a instalación ni smoke funcional nativo |
 | Producción | Sin homologación integral con datos reales | No autorizado |
 
-El run #458 es la evidencia verde del SHA integrado de `main`. El run #459 es evidencia de la rama del PR #14 y no se hereda a `main`; su único fallo observado fue la expectativa incorrecta de stock después de la devolución completa. La corrección de esa expectativa requiere una nueva ejecución antes de integrar stocktake.
-
+El run #462 terminó correctamente sobre el HEAD del PR #14 y aportó evidencia funcional completa del conteo por barcode. El cambio se integró después en `main` mediante `c38fad5`. El workflow #24 incorporó la misma corrección a la fuente vendorizada y está compilándola; el run #463 valida el commit `c38fad5`, anterior al commit de fuente `7d9e5bb`. No declarar el snapshot más reciente como plenamente validado hasta que termine la compilación #24 y se complete la verificación nativa correspondiente.
 
 ### 2.3 Devoluciones parciales: integradas y probadas en `main`
 
-PR [#15](https://github.com/JavierGrecco/Rubrova/pull/15) fue integrado por squash en `main`, commit [04249dc](https://github.com/JavierGrecco/Rubrova/commit/04249dc983c3af066a386f1e1b022da2d9587ec0). PR #13 quedó cerrado como reemplazado; su historial de fallos se conserva como evidencia, no como línea de desarrollo vigente.
+PR [#15](https://github.com/JavierGrecco/Rubrova/pull/15) fue integrado por squash en `main`, commit [04249dc](https://github.com/JavierGrecco/Rubrova/commit/04249dc983c3af066a386f1e1b022da2d9587ec0). PR #13 quedó cerrado como reemplazado; su historial de fallos se conserva como evidencia histórica.
 
 - `RubrovaRetailReturns` está incluido en `RubrovaCustom` y en `platform/mycompany-6.2.lock.json`.
 - La extensión reutiliza `CreditNote.fill(BillLine, InvoiceLine)` para completar sólo la cantidad no devuelta. Mantiene la protección de `checkReturnedQuantity` de MyCompany y reutiliza documentos, pagos, recibos y ledgers nativos.
 - El fixture ejecuta los eventos locales después de crear la nota de crédito y después de ajustar la cantidad, antes de calcular y asignar el importe del reintegro.
-- [Run 45906455407](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407), SHA `04249dc`, pasó completo: prevalidación, Windows, compilación, smoke nativo macOS ARM64, cierre, backup/restore PostgreSQL, reinicio y demo.
-- El escenario verificó venta de ARS 1.250, primera devolución 0,4, rechazo de 0,7 cuando quedaban 0,6, segunda devolución automática de 0,6, dos notas y dos reintegros por efectivo por ARS 1.250, cantidad devuelta total 1, stock físico final 10, caja neta cero y persistencia tras reinicio.
-- Linux x86_64 y Docker/Linux se omitieron. El escenario es una fixture sintética de efectivo; pagos mixtos, reintegros tarjeta/QR, conciliación de adquirentes y terminales reales siguen pendientes.
+- [Run #458](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407), SHA `04249dc`, pasó en `main`: prevalidación, Windows, compilación, smoke nativo macOS ARM64, cierre, backup/restore PostgreSQL, reinicio y demo.
+- El escenario verificó venta de ARS 1.250, devolución 0,4, rechazo de 0,7 cuando quedaban 0,6, segunda devolución de 0,6, dos notas y dos reintegros en efectivo por ARS 1.250, stock físico final 10, caja neta cero y persistencia tras reinicio.
+- El run #462 volvió a ejecutar la conciliación de devoluciones mientras probaba stocktake y confirmó cierre de turno, caja conciliada y persistencia.
+- Linux x86_64 y Docker/Linux se omitieron. La fixture es de efectivo sintético; pagos mixtos, reintegros tarjeta/QR, conciliación de adquirentes y terminales reales siguen pendientes.
 
 No trasladar esta aceptación a medios de pago o entornos no cubiertos por el escenario.
 
-
 ### 2.4 Estado de ramas
 
-Inventario remoto verificado tras cerrar PR #13 e integrar PR #15:
+Inventario remoto consultado después de integrar PR #14 y del commit automático de fuentes:
 
-- `main`: SHA `04249dc983c3af066a386f1e1b022da2d9587ec0`; rama canónica.
-- `work/stocktake-barcode-runtime-acceptance`: único trabajo temporal y PR #14 abierto (borrador), SHA `92786b7258378b063bed9ce3a5b71fdf3d2b505a`. Debe permanecer aislado hasta completar una nueva ejecución nativa.
+- El snapshot de código de `main` incluye el merge funcional `c38fad581f669bd7e1a2795123cc8ecca242e010` y la incorporación de fuentes `7d9e5bb80e866df87b51baad852c1e6256270dd1`; esta actualización documental se realiza sobre ese estado.
+- Ramas remotas visibles: **2** — `main` y `work/stocktake-barcode-runtime-acceptance`.
+- La rama `work/stocktake-barcode-runtime-acceptance`, HEAD `12f29a47e7b89f6f162c85a7e3684e24f9fe793b`, es la fuente del PR #14 ya fusionado. No tiene trabajo pendiente y debe eliminarse.
+- Pull requests abiertos: **0**. PR #13 fue cerrado como reemplazado; PR #15 y PR #14 están integrados.
 - Las ramas `work/pos-partial-return-remaining-quantity`, `work/pos-partial-returns-runtime-fix` y `work/retail-return-quantity-guard` ya no aparecen en la lista remota. No recrearlas.
-- GitHub informa `protected=false` para `main`. También informa `delete_branch_on_merge=false`: la eliminación automática de la rama fuente tras merge todavía no está activada. La conexión utilizada no permite cambiar esos ajustes administrativos.
-- Al corte, PR #13 está cerrado sin merge, PR #15 está integrado y PR #14 es el único PR abierto.
+- GitHub informa `protected=false` para `main` y `delete_branch_on_merge=false`. La conexión actual no permite cambiar esos ajustes ni borrar referencias Git. Hasta activar el borrado automático, la rama fuente fusionada requiere eliminación manual.
 
-La política es una sola rama de trabajo activa, nacida del SHA exacto de `main`, y cierre inmediato después de integrar o descartar.
-
+La política es una sola rama persistente (`main`) y como máximo una rama temporal para revisión. Una rama temporal deja de estar activa al fusionarse y debe eliminarse inmediatamente.
 
 ## 3. Qué incorporamos: versiones, alcance y composición
 
@@ -544,6 +546,21 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Causa:** el flujo E2E no termina sólo con la venta de una unidad. Después de vender 1 (stock 10→9), ejecuta la devolución completa en dos partes (0,4 + 0,6), que reingresa la unidad (stock 9→10). El valor persistido correcto al final del escenario es 10, y coincide con `UI_PARTIAL_RETURNS_INVENTORY` y la sonda de reinicio del POS. No es evidencia de que el Adjustment pendiente haya alterado stock.
 - **Corrección:** la sonda de persistencia espera 10 y el mensaje explica que se compara después de venta y devoluciones. La regresión estática exige ese contrato para impedir una expectativa desfasada.
 - **Límite:** cero, NULL, positivo y persistencia de fila pasan en la ejecución #459; el run global quedó rojo únicamente por la expectativa de stock. El circuito no se declara aceptado hasta que un nuevo smoke completo termine verde con la expectativa corregida.
+
+### 2026-11-26 — REP-028 — Aceptación nativa del conteo por barcode e integración en main
+
+- **Ejecución:** run #462, ID `45909363575`; job nativo macOS ARM64 `140215704940`; HEAD probado `12f29a47e7b89f6f162c85a7e3684e24f9fe793b`.
+- **Checks:** prevalidación compartida, validación Windows, compilación completa del fork lsFusion + MyCompany 6.2, cliente GWT y smoke funcional nativo finalizaron correctamente.
+- **Cero:** `AdjustmentListLine` y `AdjustmentLine` permanecieron presentes; la cantidad cero se conservó y el stock físico siguió en 10.
+- **NULL:** la fila de la hoja se eliminó, la línea principal del ajuste permaneció sin cantidad y el stock físico siguió en 10.
+- **Positivo:** la cantidad 2 se reconcilió entre la fila de hoja y la línea principal; el stock físico siguió en 10.
+- **Reinicio:** tras reiniciar servidor, hoja, líneas y cantidad 2 persistieron; el stock físico permaneció en 10.
+- **Escenario POS simultáneo:** el smoke confirmó rechazo del exceso de devolución, cantidades remanentes, dos reintegros en efectivo, cierre de turno, caja conciliada y persistencia de devoluciones.
+- **Resultado:** todos los marcadores obligatorios de conteo y persistencia se emitieron; el run #462 terminó `success`. El run #459, documentado en REP-027, había quedado rojo por una expectativa incorrecta de stock final (9 en vez de 10); la expectativa corregida pasó en #462.
+- **Integración:** PR [#14](https://github.com/JavierGrecco/Rubrova/pull/14) se fusionó por squash en `main`, commit [c38fad5](https://github.com/JavierGrecco/Rubrova/commit/c38fad581f669bd7e1a2795123cc8ecca242e010).
+- **Fuentes vendorizadas:** run [#24](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383784) creó el commit `7d9e5bb80e866df87b51baad852c1e6256270dd1`, aplicando a `vendor/mycompany/.../AdjustmentList.lsf` la corrección de agregación validada; su compilación de fuentes estaba en curso al redactar este informe.
+- **Verificación del merge:** run #463, ID `45911383909`, se lanzó sobre `c38fad5`; prevalidación y Windows pasaron, build pendiente al corte. No incluye el commit de fuentes `7d9e5bb`.
+- **Límites:** Linux x86_64 y Docker/Linux fueron omitidos; aceptación offline no probada; egress de red no bloqueado. El Adjustment de conteo permaneció sin validar y no generó movimiento de inventario. Esto prueba semántica de captura y persistencia, no un proceso productivo completo de inventario físico.
 
 ## 11. Anexos históricos preservados
 
