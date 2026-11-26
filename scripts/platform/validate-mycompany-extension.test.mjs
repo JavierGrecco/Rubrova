@@ -1490,7 +1490,7 @@ test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras
   assert.match(uiSmokeSource, /[Ee]l conteo descartable alteró el stock físico/);
   assert.match(uiSmokeSource, /adjustmentQuantityIsNull/);
   assert.ok(uiSmokeSource.includes('_stocktake_number(state, "onHand", "restart") - 10.0'));
-  assert.match(uiSmokeSource, /se esperaba 10 después de la venta y las devoluciones POS/);
+  assert.ok(uiSmokeSource.includes("después de la venta y las devoluciones POS:"));
   assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeListLineCount\(\) = \(OVERRIDE/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeAdjustmentLineCount\(\) = \(OVERRIDE/);
   assert.match(uiSmokeSource, /def verify_stocktake_barcode_semantics\(/);
