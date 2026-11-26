@@ -527,7 +527,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /UI_RECEIPT_LINE_COUNT/);
   assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
   assert.match(runtimeSmokeSource, /RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE/);
-  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaReplenishmentExport\|RubrovaCISalesFixture\|topModule/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaReplenishmentExport\|RubrovaRetailReturns\|RubrovaCISalesFixture\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
   assert.match(runtimeSmokeSource, /Exception while starting logics instance/);
   assert.match(runtimeSmokeSource, /missing \.\+ at/);
