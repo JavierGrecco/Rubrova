@@ -1,6 +1,6 @@
 # Política de ramas e integración
 
-**Revisión:** 25 de noviembre de 2026  
+**Revisión:** 26 de noviembre de 2026  
 **Rama canónica:** `main`  
 **Límite operativo:** una rama de funcionalidad activa; una segunda sólo para una corrección urgente e independiente.
 
@@ -41,51 +41,13 @@ Para cambios del runtime o de MyCompany, la puerta mínima contempla:
 
 Las fixtures sintéticas son regresión automatizada, no sustituyen datos reales.
 
-## Estado del repositorio — 25 de noviembre de 2026
+## Estado del repositorio — 26 de noviembre de 2026
 
-Hay **9 ramas remotas**: `main`, una rama activa del PR #8 y siete ramas históricas. La comparación de contenido confirmó que estas siete últimas no deben volver a utilizarse para desarrollo; sus resultados útiles ya están incorporados en `main` o fueron superados por versiones posteriores:
+La rama canónica `main` quedó en `ac758d01` después de integrar el backup lógico PostgreSQL y la prueba nativa de restauración. En ese punto el repositorio tenía una sola rama y cero PR abiertos.
 
-- `diagnostic/docker-client-connectivity`
-- `feature/mycompany-readonly-replenishment-adapter`
-- `feature/order-line-replenishment-contract`
-- `feature/projected-stock-replenishment-planner`
-- `feature/stockout-aware-demand-planning`
-- `fix/demo-pos-smoke-register-name`
-- `test/complete-ci-regression-coverage`
+El único trabajo funcional en curso es `work/retail-return-quantity-guard`, creado desde ese SHA. Su objetivo es activar el límite de devolución acumulada en el tipo de comprobante minorista mediante `RubrovaRetailControls`, sin editar el código upstream de CreditNote. Esta rama está en preparación y todavía debe superar los gates antes de integrarse.
 
-La única rama funcional activa debe seguir siendo `feat/mycompany-readonly-replenishment-api` hasta que se acepte o descarte el PR #8. El PR todavía no está integrado: la compilación pasó y el login funciona en los smokes nativos, pero la API de exportación tiene pendiente resolver un HTTP 500 de lsFusion.
-
-### Limpieza de las siete ramas históricas
-
-Una vez sincronizado el clon local con `main`, se pueden eliminar las siete ramas históricas remotas sin tocar la rama activa del PR #8:
-
-```bash
-git switch main
-git fetch origin --prune
-git pull --ff-only origin main
-
-git push origin --delete \
-  diagnostic/docker-client-connectivity \
-  feature/mycompany-readonly-replenishment-adapter \
-  feature/order-line-replenishment-contract \
-  feature/projected-stock-replenishment-planner \
-  feature/stockout-aware-demand-planning \
-  fix/demo-pos-smoke-register-name \
-  test/complete-ci-regression-coverage
-
-git fetch origin --prune
-git branch -r
-```
-
-Después de integrar y verificar el PR #8, eliminar también su rama:
-
-```bash
-git push origin --delete feat/mycompany-readonly-replenishment-api
-git fetch origin --prune
-git branch -r
-```
-
-La limpieza de las ramas históricas es administrativa: no se vuelven a fusionar ni se pierden cambios ya integrados. No se deben borrar las ramas hasta comprobar que el PR #8 se encuentra preservado y que el clon local está sincronizado.
+No deben revivirse ramas de los antiguos PR #8/#10 ni ramas históricas de reposición. Su trabajo útil ya está integrado en `main`. Antes de cerrar este hito, se debe crear un solo PR corto hacia `main`, comprobar el diff y esperar la evidencia de preflight, compilación y smoke nativo.
 
 ## Rutina por hito
 

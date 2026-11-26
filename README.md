@@ -39,9 +39,13 @@ El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las cap
 
 > **Estado del proyecto · 26 de noviembre de 2026**
 >
-> Rubrova continúa como piloto integrado POS + ERP y no es una versión productiva. En la validación más reciente del PR #10, la prevalidación compartida, Windows y la compilación completa de lsFusion/MyCompany aprobaron. El smoke nativo macOS ARM64 logró iniciar el servidor, pero el paso de ejecución integral terminó con error; los logs incluyen timeouts SQL durante la inicialización de búsquedas de iconos y requieren análisis. La causa final todavía no está confirmada. La suite independiente del planificador de reposición sí pasó. **La exportación nativa sigue en validación y el PR permanece en borrador.**
+> Rubrova sigue en etapa de piloto de ingeniería, no en producción. En [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), el runtime nativo macOS ARM64, la compilación propia MyCompany/lsFusion, la prevalidación y la validación de scripts Windows terminaron correctamente. El recorrido autenticado verificó una venta sintética de ARS 1.250, pago, stock 10 → 9, cierre de turno y persistencia tras reinicio.
 >
-> Seguimiento: [PR #10 — integración nativa](https://github.com/JavierGrecco/Rubrova/pull/10) · [validación de plataforma #45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328) · [suite del planificador #45751756295](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756295) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
+> El mismo smoke creó y verificó una copia lógica de PostgreSQL y la restauró en una base nueva sin modificar `rubrova_dev`. El respaldo aún cubre sólo PostgreSQL; los documentos y adjuntos quedan fuera. Linux nativo y Docker/Linux fueron omitidos, la prueba offline no se ejecutó y Windows todavía no tiene aceptación funcional completa.
+>
+> **Hito en desarrollo:** `work/retail-return-quantity-guard` activa mediante una extensión Rubrova el límite de devoluciones acumuladas de MyCompany para las ventas minoristas. La integración y la validación de ese cambio están pendientes.
+>
+> Seguimiento: [smoke nativo y backup/restore 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) · [estado, riesgos y próximos hitos](docs/PROJECT_STATUS.md).
 
 ## Propuesta de producto
 

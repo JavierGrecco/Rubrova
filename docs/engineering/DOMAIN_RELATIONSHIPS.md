@@ -1,7 +1,7 @@
 # Mapa de dominios, relaciones y propiedad de datos
 
-**Alcance inicial:** integración de reposición con MyCompany 6.2.  
-**Estado:** mapa de relaciones observado en el módulo LSF del PR #8; pendiente de conciliación con una base de MyCompany real.  
+**Alcance:** relaciones de reposición y del circuito POS minorista sobre MyCompany 6.2.  
+**Estado:** la exportación nativa de reposición está aceptada contra fixtures; falta conciliarla con una base de negocio real. El flujo de devolución usa documentos upstream enlazados a la factura original; Rubrova está activando el guard de cantidad devuelta.  
 **Regla de lectura:** una expresión de relación usada por el código es evidencia de cómo el módulo navega el modelo; no implica que conozcamos todas las restricciones internas, cardinalidades o claves físicas del ERP.
 
 ## 1. Recorrido entre componentes
@@ -141,3 +141,21 @@ Cada módulo nuevo debe añadir:
 - comportamiento ante ausencia, duplicado, borrado lógico y cambio de versión.
 
 La falta de conocimiento se registra como desconocida; nunca se completa inventando una relación.
+
+
+## 6. POS minorista: devolución, reintegro y caja
+
+MyCompany conserva las autoridades de los documentos y movimientos:
+
+| Hecho | Entidad/relación propietaria | Regla que debe conservar Rubrova |
+|---|---|---|
+| Venta original | `Invoicing.Invoice` / `InvoiceLine` | La devolución conserva la referencia a la factura y a su línea original |
+| Nota de crédito/retorno | `Bill` / `BillLine`, `CreditNote.invoiceLine` | No crear una devolución independiente sin vínculo a la venta |
+| Cantidad ya devuelta | `CreditNote.returned(InvoiceLine)` | La suma de retornos activos no puede exceder la cantidad original cuando `checkReturnedQuantity` está activo |
+| Reingreso físico | `BillReceipt` / `CreditNoteReceipt` | Usar el recibo de devolución que crea el movimiento del ledger; no modificar existencias directamente |
+| Reintegro | `OutgoingPayment` ligado al Bill y medio de pago | El importe por medio no puede exceder lo cobrado originalmente por ese medio |
+| Ingresos/retiros de efectivo | `IncomingPayment` / `OutgoingPayment` | Mantener la relación con el turno y la cuenta de efectivo de MyCompany |
+
+`RubrovaRetailControls` habilita la restricción nativa `checkReturnedQuantity` para el `InvoiceType` minorista `retail`. No redefine el cálculo de devoluciones ni reimplementa los ledgers. La activación debe cargarse en el top module y verificarse en el runtime del mismo SHA.
+
+El saldo teórico del cajón (`cashBalance`) es un agregado de movimientos, no un arqueo contado. El arqueo físico, la diferencia firmada, el responsable y la fecha/hora del conteo son un requisito Rubrova separado que aún debe diseñarse y probarse.

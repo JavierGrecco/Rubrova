@@ -1,6 +1,6 @@
 # Brief ejecutivo de producto — Rubrova
 
-**Revisión:** 25 de noviembre de 2026  
+**Revisión:** 26 de noviembre de 2026  
 **Etapa:** piloto integrado POS + ERP; no es una versión productiva.
 
 ## 1. Qué es Rubrova
@@ -83,15 +83,19 @@ El código de la plataforma y de MyCompany está en vendor; las extensiones y lo
 
 | Hito | Evidencia | Lectura correcta |
 |---|---|---|
-| Fuentes MyCompany/lsFusion y compilación propia | CI de plataforma | El servidor, cliente GWT y lógica se compilan desde fuentes fijadas |
-| Primer circuito POS | [CI 45637101959](https://github.com/JavierGrecco/Rubrova/actions/runs/45637101959) | Venta, cobro en efectivo, factura/pago, stock y cierre básico con datos sintéticos |
-| Planificador y adaptador de snapshots | CI de reposición | Suites de pruebas aprobadas sobre fixtures sintéticas |
-| Exportación nativa de solo lectura | [PR #8](https://github.com/JavierGrecco/Rubrova/pull/8) | Implementada, pero todavía no aceptada en runtime |
-| Runtime nativo macOS/Linux | Ejecuciones de PR #8 | Servidor, cliente web y login iniciaron; la llamada de exportación falló con HTTP 500 por una operación de conjuntos incorrecta |
-| Windows | CI de extensión | Validaciones estáticas y de despliegue; no equivale a aceptación funcional completa de Windows |
+| Fuentes MyCompany/lsFusion y compilación propia | [CI 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) | Servidor, cliente GWT y lógica compilados desde fuentes vendorizadas |
+| POS nativo macOS ARM64 | [CI 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) | Login, venta sintética, pago, stock, cierre y persistencia tras reinicio |
+| Backup lógico PostgreSQL | [CI 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) | Creación, SHA-256, verificación `pg_restore --list` y restore en una base nueva |
+| Planificador y adaptador de snapshots | CI de reposición | Suites sobre fixtures sintéticas; aún falta contrastar con una base MyCompany de negocio |
+| Windows | CI 45855055565 | Comprobación de sintaxis PowerShell; no equivale a instalación funcional completa |
+| Linux nativo y Docker/Linux | CI 45855055565 | Jobs omitidos; no se cuentan como aprobados |
 | Terminales bancarias y ARCA | Diseño/documentación | Sin adquirente homologado ni conexión fiscal productiva |
 
-La ejecución fallida del PR #8 no demuestra una caída general del runtime: sus artefactos muestran que PostgreSQL, el servidor, Tomcat y el login llegaron a funcionar. El punto pendiente es la acción autenticada de exportación nativa. La última corrección eliminó conversiones `BPSTRING[10]` sobre los índices de línea y añadió una regresión estática. En el run [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906) aprobaron validaciones, Windows, compilación completa, recompilación de servidor/cliente y publicación de artefactos; los smokes macOS ARM64, Linux nativo y Docker/Linux siguen en ejecución. El PR #8 permanece abierto.
+La venta de CI fue por ARS 1.250: el pago en efectivo quedó vinculado a la factura, el stock bajó de 10 a 9 y el turno quedó cerrado con importes conciliados. Después del reinicio se recuperaron factura, pago, existencia, turno y ocho incidencias.
+
+El respaldo de prueba se creó desde `rubrova_dev`, se verificó con SHA-256 y se restauró en `rubrova_restore_ci`. La base activa y la configuración del runtime no se modificaron. Su alcance es PostgreSQL únicamente: no contiene documentos externos, imágenes, adjuntos, certificados ni secretos.
+
+**Límites de la evidencia:** la salida externa estuvo habilitada y `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`; Linux y Docker/Linux se omitieron; Windows fue sintáctico; las ventas son fixtures. No hay todavía una jornada de operación real ni aceptación física en el Mac del usuario.
 
 ## 8. Qué no está terminado
 

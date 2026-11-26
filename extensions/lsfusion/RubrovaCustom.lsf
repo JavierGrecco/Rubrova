@@ -1,2 +1,2 @@
 MODULE RubrovaCustom;
-REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;
+REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailControls;

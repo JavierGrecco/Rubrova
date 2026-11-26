@@ -14,6 +14,11 @@ const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
 const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
 const replenishmentExportSource = read("extensions/lsfusion/RubrovaReplenishmentExport.lsf");
+const retailControlsSource = read("extensions/lsfusion/RubrovaRetailControls.lsf");
+const creditNoteSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoices/creditnotes/CreditNote.lsf");
+const creditNoteReceiptInitialSource = read("vendor/mycompany/src/main/lsfusion/invoicing/inventory/receipts/CreditNoteReceiptInitial.lsf");
+const returnPaymentSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/return/PosDashboardReturnPayment.lsf");
+const cashMovementSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/cash/PosDashboardCash.lsf");
 const replenishmentBridgeSource = read("scripts/replenishment/adapt_mycompany_native_export.py");
 const replenishmentBridgeTestsSource = read("scripts/replenishment/test_adapt_mycompany_native_export.py");
 const nativeReplenishmentFixture = JSON.parse(read("docs/fixtures/mycompany-native-replenishment-export.json"));
@@ -596,7 +601,7 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
-  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailControls;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
@@ -1355,11 +1360,16 @@ test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no conc
 test("el modelo de terminales se carga desde el punto de entrada y el lock", () => {
   assert.ok(entrypointSource.includes("RubrovaPaymentTerminals"));
   assert.ok(entrypointSource.includes("RubrovaReplenishmentExport"));
+  assert.ok(entrypointSource.includes("RubrovaRetailControls"));
   const terminalModule = lock.extension.modules.find((item) => item.name === "RubrovaPaymentTerminals");
   assert.ok(terminalModule, "El módulo debe estar incluido en el lock reproducible.");
   const customModule = lock.extension.modules.find((item) => item.name === "RubrovaCustom");
   assert.ok(customModule.requires.includes("RubrovaIntegrationResilience"));
   assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
+  const retailControlsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailControls");
+  assert.ok(retailControlsModule, "El control de devoluciones minoristas debe estar incluido en el lock reproducible.");
+  assert.deepEqual(retailControlsModule.requires, ["MyCompany"]);
+  assert.ok(customModule.requires.includes("RubrovaRetailControls"));
   const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
   assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
   assert.ok(customModule.requires.includes("RubrovaReplenishmentExport"));
@@ -1404,14 +1414,18 @@ test("el módulo de terminales no contiene credenciales ni datos sensibles de ta
 test("la configuración de terminales se despliega en todas las rutas de ejecución", () => {
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaRetailControls.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaRetailControls.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaReplenishmentExport.lsf"));
+  assert.ok(nativePreviewSource.includes("RubrovaRetailControls.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaReplenishmentExport.lsf"));
-  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 6))"));
-  assert.ok(runtimeSmokeSource.includes("5 módulos propios de Rubrova + 1 fixture temporal de CI"));
+  assert.ok(runtimeSmokeSource.includes("RubrovaRetailControls.lsf"));
+  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 7))"));
+  assert.ok(runtimeSmokeSource.includes("6 módulos propios de Rubrova + 1 fixture temporal de CI"));
   assert.ok(deploySmokeSource.includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(deploySmokeSource.includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(deploySmokeSource.includes("replenishment_export_backup_count"));
@@ -1473,4 +1487,25 @@ test("el preflight rápido se comparte entre el equipo y los workflows CI", () =
   assert.match(macosJobSource, /runs-on: macos-26/);
   assert.doesNotMatch(macosJobSource, /if: github[.]event_name == 'workflow_dispatch'/,
     "El smoke nativo macOS ARM64 debe correr automáticamente en cada PR.");
+});
+
+
+test("las devoluciones minoristas limitan cantidades y reutilizan los ledgers originales", () => {
+  assert.match(entrypointSource, /RubrovaRetailControls/);
+  assert.match(retailControlsSource, /^MODULE RubrovaRetailControls;/m);
+  assert.match(retailControlsSource, /^REQUIRE MyCompany;/m);
+  assert.match(retailControlsSource, /checkReturnedQuantity\(InvoiceType it\) <- TRUE WHERE id\(it\) = 'retail'/);
+  assert.match(creditNoteSource, /@defineDocLineRelation\(invoice, bill, 'Invoice', 'Return', i, b\)/);
+  assert.match(creditNoteSource, /returned 'Returned' \(InvoiceLine il\) =/);
+  assert.match(creditNoteSource, /CONSTRAINT SET\(returned\(InvoiceLine il\) > OVERRIDE quantity\(il\), 0[.]0\) AND checkReturnedQuantity\(type\(il\)\)/);
+  assert.match(creditNoteReceiptInitialSource, /receiptType\(BillType t\) <- receiptType\('return'\) WHERE id\(t\) = 'creditnote' OR id\(t\) = 'retailreturn'/);
+  assert.match(creditNoteReceiptInitialSource, /autoCreateReceipt\(BillType t\) <- TRUE WHERE id\(t\) = 'retailreturn'/);
+  assert.match(returnPaymentSource, /invoicePaid 'Paid' \(Bill b, PaymentMethod pm\) = GROUP SUM paid\(Invoice i, pm\) IF in\(i, b\)/);
+  assert.match(returnPaymentSource, /invalidAmount\(Bill b, PaymentMethod pm\) = amount\(pm\) > OVERRIDE invoicePaid\(b, pm\), 0[.]0/);
+  assert.match(returnPaymentSource, /done\(p\) <- TRUE/);
+  assert.match(returnPaymentSource, /ready\(b\) <- TRUE/);
+  assert.match(cashMovementSource, /deposit 'Deposit cash' \(Pos p\)/);
+  assert.match(cashMovementSource, /withdraw 'Withdraw' \(Pos p\)/);
+  assert.match(cashMovementSource, /session\(ip\) <- openedSession\(p\)/);
+  assert.match(cashMovementSource, /session\(op\) <- openedSession\(p\)/);
 });

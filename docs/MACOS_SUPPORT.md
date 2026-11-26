@@ -5,20 +5,13 @@
 
 ## Decisión actual
 
-El runtime nativo sin Docker es la ruta prioritaria de desarrollo local y ya superó un smoke integrado de Apple Silicon en CI. La revisión aceptada es `main` en el commit [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139).
+El runtime nativo sin Docker es la ruta prioritaria de desarrollo local y ya superó un smoke integrado de Apple Silicon en CI. La revisión aceptada es `main` en el commit [`ac758d0`](https://github.com/JavierGrecco/Rubrova/commit/ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a).
 
-En [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), el runner macOS ARM64 ejecutó Java 21, PostgreSQL 18, lsFusion/MyCompany y Tomcat sin Docker. Chromium autenticó y navegó al POS; las sondas de inventario, compromisos y recepciones respondieron HTTP 200. Se verificó el export JSON de sólo lectura, una venta sintética por ARS 1.250, pago en efectivo, stock 10 → 9, cierre de turno y persistencia después de reiniciar. La instancia Demo utilizó otra base y puertos separados.
+En [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), el runner macOS ARM64 compiló y ejecutó Java 21, PostgreSQL 18, lsFusion/MyCompany, Tomcat y Chromium sin Docker. Se autenticó, completó una venta sintética por ARS 1.250, pago en efectivo, stock 10 → 9, cierre de turno y persistencia después de reiniciar. También creó y verificó un paquete lógico PostgreSQL y lo restauró a `rubrova_restore_ci` sin sobrescribir la base activa.
 
-La prueba se ejecutó con salida externa habilitada: `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Los jobs Linux nativo y Docker/Linux se omitieron en ese push. Por tanto, todavía no se certifica operación offline macOS, Windows nativo, instalación limpia, periféricos reales ni uso productivo. La prueba del runner tampoco sustituye la ejecución en el Mac físico del usuario.
+La prueba usó salida externa habilitada: `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. Linux nativo y Docker/Linux fueron omitidos; Windows sólo ejecutó validación sintáctica. Por tanto, todavía no se certifica operación offline, Windows nativo, instalación limpia, periféricos reales ni uso productivo. El runner CI tampoco sustituye la ejecución en el Mac físico.
 
-El camino macOS sigue siendo:
-- Java 21 ARM64 para el servidor y la lógica compilados desde Rubrova.
-- PostgreSQL 18 ARM64 en un directorio privado persistente.
-- Apache Tomcat 9.0.124 para el cliente web en loopback.
-- Supervisor Python para arranque, verificación y parada sin borrar los datos.
-- Docker no es requisito de ejecución local.
-
-El smoke de plataforma también incorpora en esta revisión una prueba lógica de backup/restore: crear y verificar el paquete y restaurarlo en una base nueva. La copia cubre PostgreSQL únicamente; los documentos, adjuntos y demás archivos todavía no forman parte de un respaldo completo.
+El backup validado cubre sólo PostgreSQL, no archivos adjuntos, documentos, imágenes o certificados. La recuperación completa en otro equipo continúa pendiente.
 
 ## Diferencia entre Intel y Apple Silicon
 
@@ -27,7 +20,7 @@ El servidor y la lógica de lsFusion/MyCompany se ejecutan como bytecode Java. E
 | Equipo | Runtime nativo esperado | Estado |
 |---|---|---|
 | Mac Intel (`x86_64`) | Java 21 x64, PostgreSQL 18 x64, Tomcat 9 y Python | Supervisor implementado; aceptación completa pendiente |
-| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Smoke integrado y exportación nativa aprobados en CI 45847755524; prueba en el Mac físico, modo offline, periféricos e instalación limpia pendientes |
+| Mac Apple Silicon (`arm64`) | Java 21 ARM64, PostgreSQL 18 ARM64, Tomcat 9 y Python | Smoke integrado, persistencia y backup/restore PostgreSQL aprobados en CI 45855055565; prueba en el Mac físico, modo offline, periféricos e instalación limpia pendientes |
 
 La imagen Docker de lógica MyCompany 6.2 publica `linux/amd64`. Esto afecta a la ruta Docker sobre Apple Silicon y obliga a emular esa imagen. **No obliga a emular el JAR** cuando se ejecuta el runtime nativo descrito arriba.
 

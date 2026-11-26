@@ -195,7 +195,7 @@ El comando `restore` no sustituye la base activa ni actualiza `runtime-config.js
 - [x] Primera herramienta de backup lógico PostgreSQL con manifiesto y SHA-256.
 - [x] Verificación estructural mediante checksum y `pg_restore --list`.
 - [x] Restauración protegida que sólo crea una base nueva, con limpieza ante fallo.
-- [ ] Superar la suite automatizada y el smoke real de PostgreSQL del nuevo SHA.
+- [x] Superar la suite automatizada y el smoke real de PostgreSQL en [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565).
 - [ ] Validar en el Mac físico y en Windows las rutas reales y recuperación de datos.
 - [ ] Incorporar adjuntos, documentos, configuración funcional y exportación portable.
 - [ ] Implementar programación, catálogo, retención y copia verificada a disco externo.
@@ -204,4 +204,4 @@ El comando `restore` no sustituye la base activa ni actualiza `runtime-config.js
 
 **Decisión vigente:** el backup de Rubrova no tendrá cifrado a nivel de aplicación en la primera versión. La protección opcional del disco se delega al sistema operativo.
 
-**Estado real:** ya existe una primera copia lógica de PostgreSQL; la recuperación completa del negocio sigue sin estar implementada ni aceptada.
+**Evidencia real:** [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) creó el paquete `rubrova-db-backup.rubrova-db-backup`, SHA-256 `a33397a27bed48f166b69549160fdbf82dd6ebfbea839ab6c57716adb4434bab`, lo verificó y restauró en `rubrova_restore_ci`. La base activa no se tocó. La recuperación completa del negocio sigue sin estar implementada ni aceptada.

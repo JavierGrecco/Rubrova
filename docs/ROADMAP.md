@@ -6,17 +6,15 @@
 
 ## Estado real
 
-Rubrova está en **Fase 0: piloto integrado POS + ERP**, con el runtime nativo y el puente de reposición ya aceptados en la última revisión de `main`. El commit canónico es [`f545c90`](https://github.com/JavierGrecco/Rubrova/commit/f545c907b12a9eed4cf5e532edd3434babb64139). El run [45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524) aprobó preflight, compilación completa y smoke macOS ARM64 sin Docker; el planificador aprobó en [45847755643](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755643).
+Rubrova está en **Fase 0: piloto integrado POS + ERP**. El commit canónico de `main` es `ac758d01`; el workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) aprobó preflight, validación sintáctica Windows, compilación completa y smoke nativo macOS ARM64 sin Docker.
 
-El smoke autenticado de macOS verificó login, sondas HTTP 200 y exportación nativa de inventario, compromisos, reservas y recepciones. También completó una venta sintética de ARS 1.250, un pago exacto en efectivo, salida de stock 10 → 9, cierre de turno y persistencia después de reiniciar PostgreSQL/servidor/cliente. La segunda instancia Demo utilizó su propia base y puertos.
+El smoke autenticado verificó login, venta sintética ARS 1.250, pago exacto en efectivo, salida de stock 10 → 9, cierre de turno, persistencia tras reinicio y una segunda instancia Demo aislada. También creó, verificó y restauró una copia PostgreSQL en `rubrova_restore_ci`, sin tocar `rubrova_dev`.
 
-La ejecución reciente **no probó el modo offline en macOS** (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`) y omitió los diagnósticos Linux nativo y Docker/Linux. La validación Windows de ese workflow fue sintáctica, no una instalación completa. No hay aceptación en un Mac físico, periféricos reales ni datos comerciales.
+El backup está aceptado sólo como **backup lógico de PostgreSQL**. Todavía no contiene documentos, adjuntos, imágenes ni credenciales y no hay evidencia de restauración en otra computadora. La prueba offline macOS no se ejecutó (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested)); Linux nativo y Docker/Linux se omitieron; Windows fue sintáctico, no funcional.
 
-Los árboles fuente completos de lsFusion 6.2 y MyCompany 6.2 siguen fijados en `vendor/platform/` y `vendor/mycompany/`; servidor, cliente GWT y lógica MyCompany se compilan desde Rubrova. El camino local prioritario continúa siendo Java 21, PostgreSQL 18 y Tomcat 9 sin Docker.
+El próximo cambio está en `work/retail-return-quantity-guard`: un módulo Rubrova activa `checkReturnedQuantity` de MyCompany para ventas minoristas. MyCompany ya relaciona las notas de crédito con factura/línea original, limita el reintegro al monto abonado por medio de pago y usa el recibo de devolución para registrar la entrada física. El cambio debe compilar/cargar y pasar una prueba runtime parcial antes de integrarse.
 
-El planificador y el adaptador de snapshots ya forman parte de `main`; la exportación nativa de reposición también está integrada y respondió correctamente contra fixtures. Es estrictamente de sólo lectura y aún debe conciliarse contra una base MyCompany real. La primera herramienta de backup lógico de PostgreSQL se incorpora en esta iteración; cubre únicamente la base de datos y debe pasar el smoke real antes de considerarse verificada. La recuperación completa también debe incluir adjuntos, documentos y configuración portable.
-
-La capa de pagos presenciales conserva arquitectura y trazabilidad iniciales, pero no existe un conector homologado ni cobros reales. Las prioridades funcionales que siguen abiertas son devoluciones/reintegros, arqueo y movimientos de caja, vuelto, pagos mixtos y cancelaciones.
+El planificador y el adaptador de snapshots están integrados, pero la exportación de reposición sólo está probada con fixtures; falta conciliarla contra una base MyCompany de negocio real. No se crean órdenes de compra automáticamente.
 
 ## Prioridad del producto
 

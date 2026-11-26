@@ -1,0 +1,11 @@
+MODULE RubrovaRetailControls;
+REQUIRE MyCompany;
+
+NAMESPACE Invoicing;
+
+// El POS minorista debe impedir devoluciones acumuladas superiores a las unidades
+// vendidas en la factura original. MyCompany calcula el neto de devoluciones activas
+// por línea; activamos su restricción para el tipo de comprobante minorista.
+loadDefaultData () + {
+    checkReturnedQuantity(InvoiceType it) <- TRUE WHERE id(it) = 'retail';
+}

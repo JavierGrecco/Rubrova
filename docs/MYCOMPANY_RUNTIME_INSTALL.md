@@ -1,20 +1,21 @@
 # Instalación y carga de la extensión Rubrova — MyCompany 6.2
 
 **Versión objetivo:** MyCompany 6.2 / lsFusion 6.x  
-**Estado:** lsFusion 6.2 y MyCompany 6.2 están vendorizados; el build produce servidor, lógica y cliente desde nuestras fuentes. El recorrido comercial completo fue aceptado anteriormente sobre Docker. El camino principal ahora es el runtime nativo sin Docker; su supervisor y su smoke de login están implementados, pero el ciclo de venta nativo, la instalación offline y la aceptación final siguen pendientes.
+**Estado:** lsFusion 6.2 y MyCompany 6.2 están vendorizados; el build produce servidor, lógica y cliente desde nuestras fuentes. El camino principal es el runtime nativo sin Docker. En [CI 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) se aceptaron el smoke nativo macOS ARM64, la venta sintética, el cierre, la persistencia y el primer backup/restore lógico PostgreSQL. No representa todavía una instalación comercial ni una jornada productiva.
 
 Para macOS, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
 ## Estado actual de aceptación del runtime
 
-El supervisor nativo inicia PostgreSQL, el servidor lsFusion y Tomcat en runners macOS ARM64 y Linux; el cliente web responde HTTP 200 y el login de CI funciona. Sin embargo, eso no valida todavía el endpoint de reposición.
+El workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) completó con éxito la prevalidación compartida, validación sintáctica Windows, compilación MyCompany/lsFusion/GWT y smoke nativo macOS ARM64 sin Docker.
 
-En [45723325906](https://github.com/JavierGrecco/Rubrova/actions/runs/45723325906), el servidor llegó al estado listo y el navegador se autenticó, pero `/exec/Rubrova.rubrovaExportReplenishmentSource` devolvió HTTP 500 con `Set operation is incorrect`. El error aparece al ejecutar la consulta, no durante el parseo/carga del módulo. Los cambios posteriores de la rama no tienen aún una ejecución de CI que demuestre la corrección.
+El runtime inició PostgreSQL 18, servidor lsFusion y Tomcat, autenticó en Chromium, completó una venta sintética por ARS 1.250, vinculó el pago, verificó stock 10 → 9 y cerró el turno. Tras reiniciar, los documentos, el stock, el turno y las incidencias se mantuvieron.
 
-La última validación de plataforma [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752) falló antes de compilar por una regresión del matcher estático; el matcher se revisó después. La suite del planificador sí pasó en [45732147911](https://github.com/JavierGrecco/Rubrova/actions/runs/45732147911), pero sólo valida Python y fixtures.
+El mismo smoke creó una copia lógica de `rubrova_dev`, verificó checksums y legibilidad, y la restauró a `rubrova_restore_ci`. El restore nunca sobrescribe la base activa. La copia incluye **sólo PostgreSQL**; documentos, adjuntos y certificados todavía no forman parte del paquete de recuperación completa.
 
-La aceptación requiere que el smoke nativo macOS ARM64 ejecute los cuatro endpoints y que la exportación consolidada devuelva colecciones y conteos conciliables. También falta contrastar las cantidades contra una base MyCompany local real. El runtime es una vista previa de desarrollo, no una instalación productiva.
+Los jobs Linux nativo y Docker/Linux se omitieron. La ejecución usó egress habilitado (`RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`) y la validación Windows fue sintáctica. La prueba de CI no sustituye la ejecución en el Mac físico ni una instalación limpia de Windows.
 
+El próximo bloque activa el límite de cantidades devueltas de MyCompany para el comprobante minorista, mediante un módulo propio `RubrovaRetailControls`. La prueba funcional completa de devolución/reintegro y el reingreso de stock todavía deben incorporarse al smoke antes de considerarlos aceptados.
 
 ## Ruta recomendada de desarrollo: runtime nativo
 

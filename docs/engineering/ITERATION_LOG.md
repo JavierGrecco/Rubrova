@@ -126,3 +126,22 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Seguridad:** comprueba que el servidor sea PostgreSQL 18 y que el directorio de datos y puerto correspondan al clúster privado de Rubrova; sólo conecta a loopback; no exporta secretos; ante un fallo intenta retirar únicamente la base nueva incompleta.
 - **Pruebas añadidas:** corrupción de dump/manifiesto, entradas extra, directorio de datos ajeno, confirmación explícita, base ya existente y limpieza de una restauración fallida.
 - **Límite:** este incremento protege PostgreSQL, no adjuntos, documentos, configuración del SO ni credenciales. La aceptación real queda condicionada al preflight y al smoke PostgreSQL del SHA de esta iteración, y luego a una prueba local en Mac/Windows.
+
+
+## 2026-11-26 — REP-015 — Aceptación del primer backup lógico PostgreSQL
+
+- **SHA integrado:** `ac758d01`.
+- **Evidencia:** [workflow de plataforma 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), concluido con `success`.
+- **Recorrido:** backup de `rubrova_dev`, comprobación de manifiesto y SHA-256, enumeración del dump mediante `pg_restore --list`, restauración a `rubrova_restore_ci` y verificación de tablas. La base activa y la configuración runtime no fueron modificadas.
+- **Resultado:** `RUBROVA_NATIVE_POSTGRES_BACKUP_RESTORE=passed`; reinicio/persistencia y smoke POS también aprobados.
+- **Límite:** paquete PostgreSQL solamente; faltan adjuntos, documentos externos, copia externa, GUI y restore de PC limpia. Egress estaba habilitado y la aceptación offline sigue pendiente.
+
+## 2026-11-26 — REP-016 — Protección de cantidad devuelta minorista en desarrollo
+
+- **Rama:** `work/retail-return-quantity-guard`, creada desde `ac758d01`.
+- **Motivo:** habilitar la protección de cantidades devueltas ya incorporada en MyCompany para que una nota de crédito minorista no supere las unidades vendidas originalmente.
+- **Implementación propuesta:** módulo Rubrova `RubrovaRetailControls` activa `CreditNote.checkReturnedQuantity` en el `InvoiceType` `retail`; no se cambia el módulo upstream ni se crea un segundo ledger.
+- **Flujo upstream reutilizado:** nota de crédito relacionada con `InvoiceLine`, suma de devoluciones activas, límite de reintegro por medio de pago y recibo de devolución que registra la entrada física del stock. Ingresos/retiros siguen en los pagos nativos asociados al turno.
+- **Regresiones añadidas:** contrato estático, lock de módulos, despliegue shell/PowerShell, supervisor local, smoke Docker y tests de composición para verificar la relación de factura, guard, pagos, receipt y movimientos de caja.
+- **Estado:** implementación preparada; preflight, compilación, carga real y prueba UI/API de devolución parcial/sobredevolución/reintegro/stock todavía deben aprobarse antes del merge. El arqueo físico contado se mantiene como funcionalidad distinta y pendiente.
+

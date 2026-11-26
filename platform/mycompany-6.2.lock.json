@@ -49,7 +49,8 @@
           "RubrovaPOSLocalization",
           "RubrovaIntegrationResilience",
           "RubrovaPaymentTerminals",
-          "RubrovaReplenishmentExport"
+          "RubrovaReplenishmentExport",
+          "RubrovaRetailControls"
         ]
       },
       {
@@ -81,6 +82,14 @@
         "name": "RubrovaReplenishmentExport",
         "path": "extensions/lsfusion/RubrovaReplenishmentExport.lsf",
         "role": "authenticated read-only export of native MyCompany inventory, shipment commitments and expected receipts",
+        "requires": [
+          "MyCompany"
+        ]
+      },
+      {
+        "name": "RubrovaRetailControls",
+        "path": "extensions/lsfusion/RubrovaRetailControls.lsf",
+        "role": "activates MyCompany's original-document return quantity cap for the retail invoice type",
         "requires": [
           "MyCompany"
         ]

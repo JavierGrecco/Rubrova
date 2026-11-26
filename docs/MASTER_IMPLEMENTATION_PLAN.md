@@ -3,11 +3,11 @@
 **Revisión:** 26 de noviembre de 2026  
 **Base técnica:** MyCompany 6.2 + lsFusion 6.2, con fuentes completas fijadas en el repositorio; Tryton 8.0 + tryton-ar 8.0 se conserva como contraste fiscal argentino, no como segundo núcleo operativo.
 
-**Estado real:** el fork compila servidor, cliente GWT y lógica desde fuentes propias. En [run 45847755524](https://github.com/JavierGrecco/Rubrova/actions/runs/45847755524), el smoke nativo macOS ARM64 aprobó login, exportación autenticada de reposición, una venta en efectivo, stock, cierre y persistencia tras reinicio. El commit integrado es `f545c907` en `main`; no hay PR abierto ni rama feature adicional. No existe todavía aceptación para uso productivo.
+**Estado real:** el fork compila servidor, cliente GWT y lógica MyCompany desde fuentes propias. El commit integrado `ac758d01` superó en [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) la prevalidación, compilación, runtime nativo macOS ARM64, venta, pago, stock, cierre, reinicio/persistencia y backup/restore PostgreSQL. No existe todavía aceptación para uso productivo.
 
-**Hito activo:** el runtime nativo es la ruta local prioritaria (Java 21, PostgreSQL 18 y Tomcat 9, sin Docker obligatorio). El puente de reposición es de sólo lectura y ya devuelve datos verificables sobre fixtures; falta conciliar una exportación contra una base MyCompany real. La nueva herramienta de backup lógico PostgreSQL genera, verifica y restaura a una base nueva sin sobrescribir la activa; debe superar el preflight y el smoke real de esta revisión. Su alcance no incluye documentos ni adjuntos.
+**Hito activo:** el runtime nativo es la ruta local prioritaria (Java 21, PostgreSQL 18 y Tomcat 9, sin Docker obligatorio). El respaldo lógico fue restaurado en una base nueva sin sobrescribir `rubrova_dev`, pero sólo cubre PostgreSQL. La exportación de reposición sigue limitada a fixtures y debe conciliarse contra una base MyCompany real. La rama `work/retail-return-quantity-guard` activa mediante una extensión Rubrova el límite upstream de cantidad devuelta para el comprobante minorista; su integración y validación de runtime están pendientes.
 
-**Límites pendientes:** devoluciones/reintegros, arqueo y movimientos de caja completos, vuelto y pagos mixtos, ARCA/adquirentes reales, conciliación de reposición con datos reales, modo offline macOS, prueba física en Mac, Windows nativo, instalación limpia, periféricos y backup/restore completo del negocio.
+**Límites pendientes:** devolución/reintegro runtime, arqueo contado y movimientos de caja, vuelto y pagos mixtos, ARCA/adquirentes reales, conciliación de reposición con datos reales, modo offline macOS, prueba física en Mac, Windows funcional, instalación limpia, periféricos y backup/restore completo del negocio.
 
 ## 1. Decisión ejecutiva
 
