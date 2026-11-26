@@ -37,6 +37,9 @@ esac
 WORK_DIR="${RUBROVA_NATIVE_SMOKE_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/rubrova-native-smoke.XXXXXX")}"
 mkdir -p "$WORK_DIR"
 LOG_FILE="$WORK_DIR/native-runtime.log"
+RESTART_LOG_FILE="$WORK_DIR/native-runtime-restart.log"
+RESTART_UI_LOG_FILE="$WORK_DIR/restart-ui-smoke.log"
+SUPERVISOR_LOG_FILE="$WORK_DIR/native-runtime.log"
 WEB_URL="${RUBROVA_NATIVE_WEB_URL:-http://127.0.0.1:8080/login}"
 SCREENSHOT="${RUBROVA_NATIVE_SCREENSHOT:-$WORK_DIR/rubrova-native-login.png}"
 PLAYWRIGHT_PYTHON="${RUBROVA_PLAYWRIGHT_PYTHON:-}"
@@ -101,6 +104,38 @@ MOCK_PROVIDER_PORT="${RUBROVA_CI_MOCK_PROVIDER_PORT:-18765}"
 MOCK_PROVIDER_LOG_FILE="$WORK_DIR/mock-provider.log"
 EGRESS_RULES_INSTALLED=false
 
+stop_native_supervisor() {
+  local supervisor_log="${1:-$SUPERVISOR_LOG_FILE}"
+  if [[ -n "$SUPERVISOR_PID" ]]; then
+    if kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
+      echo "Solicitando cierre ordenado del supervisor nativo..."
+      kill -TERM "$SUPERVISOR_PID" 2>/dev/null || true
+      for _ in $(seq 1 90); do
+        kill -0 "$SUPERVISOR_PID" 2>/dev/null || break
+        sleep 1
+      done
+      if kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
+        echo "El supervisor no cerró en 90 segundos; se fuerza su terminación." >&2
+        kill -KILL "$SUPERVISOR_PID" 2>/dev/null || true
+        wait "$SUPERVISOR_PID" 2>/dev/null || true
+        SUPERVISOR_PID=""
+        return 1
+      fi
+    fi
+    wait "$SUPERVISOR_PID" || {
+      echo "El supervisor terminó con error durante el cierre ordenado." >&2
+      SUPERVISOR_PID=""
+      return 1
+    }
+    SUPERVISOR_PID=""
+  fi
+  grep -Fq "Rubrova quedó detenido. Los datos locales se conservaron." "$supervisor_log" || {
+    echo "El supervisor no confirmó el cierre ordenado de Tomcat, lsFusion y PostgreSQL." >&2
+    return 1
+  }
+  echo "RUBROVA_NATIVE_SUPERVISOR_SHUTDOWN_CLEAN=true"
+}
+
 cleanup() {
   local exit_code=$?
   trap - EXIT
@@ -111,18 +146,8 @@ cleanup() {
     sudo -n iptables -D OUTPUT -o lo -j ACCEPT >/dev/null 2>&1 || true
   fi
 
-  if [[ -n "$SUPERVISOR_PID" ]] && kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
-    echo "Deteniendo supervisor nativo..."
-    kill -TERM "$SUPERVISOR_PID" 2>/dev/null || true
-    for _ in $(seq 1 45); do
-      kill -0 "$SUPERVISOR_PID" 2>/dev/null || break
-      sleep 1
-    done
-    if kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
-      echo "El supervisor no cerró dentro del plazo; se fuerza su terminación." >&2
-      kill -KILL "$SUPERVISOR_PID" 2>/dev/null || true
-    fi
-    wait "$SUPERVISOR_PID" 2>/dev/null || true
+  if [[ -n "$SUPERVISOR_PID" ]]; then
+    stop_native_supervisor "$SUPERVISOR_LOG_FILE" || true
   fi
 
   if [[ -n "$MOCK_PROVIDER_PID" ]] && kill -0 "$MOCK_PROVIDER_PID" 2>/dev/null; then
@@ -134,6 +159,8 @@ cleanup() {
   if [[ "$exit_code" -ne 0 ]]; then
     echo "=== Últimos registros del runtime nativo ===" >&2
     if [[ -s "$LOG_FILE" ]]; then tail -n 180 "$LOG_FILE" >&2; fi
+      "$RESTART_LOG_FILE" \
+      "$RESTART_UI_LOG_FILE" \
     echo "=== Diagnóstico del cliente web nativo ===" >&2
     if [[ -s "$DIAGNOSTICS_FILE" ]]; then cat "$DIAGNOSTICS_FILE" >&2; fi
     if [[ -s "$DEMO_LOG_FILE" ]]; then tail -n 180 "$DEMO_LOG_FILE" >&2; fi
@@ -188,6 +215,7 @@ echo "RUBROVA_NATIVE_MOCK_PROVIDER_READY=true"
 RUBROVA_CI_SALES_FIXTURE=true RUBROVA_CI_MOCK_PROVIDER_PORT="$MOCK_PROVIDER_PORT" \
   python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$LOG_FILE" 2>&1 &
 SUPERVISOR_PID=$!
+SUPERVISOR_LOG_FILE="$LOG_FILE"
 
 STARTUP_TIMEOUT="${RUBROVA_NATIVE_STARTUP_TIMEOUT_SECONDS:-1200}"
 SECONDS=0
@@ -322,12 +350,63 @@ if [[ "${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
   echo "RUBROVA_NATIVE_RUNTIME_SURVIVED_OFFLINE_CHECK=true"
 fi
 
-echo "5/6 Cerrando la primera instancia y liberando sus puertos"
-if [[ -n "$SUPERVISOR_PID" ]] && kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
-  kill -TERM "$SUPERVISOR_PID" 2>/dev/null || true
-  wait "$SUPERVISOR_PID" 2>/dev/null || true
+echo "5/7 Reiniciando el servidor nativo para verificar la persistencia real en PostgreSQL"
+stop_native_supervisor "$LOG_FILE"
+
+if curl --silent --fail --connect-timeout 2 --max-time 3 "$WEB_URL" >/dev/null 2>&1; then
+  echo "El cliente web sigue respondiendo después del cierre; los procesos nativos no se liberaron." >&2
+  exit 1
 fi
-SUPERVISOR_PID=""
+
+RUBROVA_CI_SALES_FIXTURE=true RUBROVA_CI_MOCK_PROVIDER_PORT="$MOCK_PROVIDER_PORT" python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$RESTART_LOG_FILE" 2>&1 &
+SUPERVISOR_PID=$!
+SUPERVISOR_LOG_FILE="$RESTART_LOG_FILE"
+RESTART_STARTUP_TIMEOUT="${RUBROVA_NATIVE_RESTART_TIMEOUT_SECONDS:-600}"
+SECONDS=0
+RESTART_HTTP_STATUS=""
+while (( SECONDS < RESTART_STARTUP_TIMEOUT )); do
+  if ! kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
+    echo "El supervisor nativo terminó durante el reinicio de persistencia." >&2
+    tail -n 180 "$RESTART_LOG_FILE" >&2 || true
+    exit 1
+  fi
+  RESTART_HTTP_STATUS="$(curl --silent --output "$WORK_DIR/restart-web-response.html" --write-out '%{http_code}' --connect-timeout 2 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
+  if [[ "$RESTART_HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then break; fi
+  if (( SECONDS % 30 < 3 )); then
+    echo "Esperando servidor después del reinicio: HTTP=$RESTART_HTTP_STATUS, tiempo=${SECONDS}s."
+  fi
+  sleep 3
+done
+if [[ ! "$RESTART_HTTP_STATUS" =~ ^[23][0-9][0-9]$ ]]; then
+  echo "El cliente local no volvió a responder tras el reinicio dentro de ${RESTART_STARTUP_TIMEOUT}s (último: $RESTART_HTTP_STATUS)." >&2
+  tail -n 180 "$RESTART_LOG_FILE" >&2 || true
+  exit 1
+fi
+grep -Fq "Servidor Rubrova y PostgreSQL están listos." "$RESTART_LOG_FILE" || {
+  echo "El supervisor no confirmó la inicialización completa después del reinicio." >&2
+  tail -n 180 "$RESTART_LOG_FILE" >&2 || true
+  exit 1
+}
+
+RUBROVA_UI_SCREENSHOT="$SCREENSHOT" RUBROVA_UI_TEST_LOGIN=true RUBROVA_UI_TEST_USERNAME=admin RUBROVA_UI_STOP_AFTER_LOGIN=false RUBROVA_UI_VERIFY_PERSISTED_ONLY=true RUBROVA_UI_REQUIRE_POSITIVE_REPLENISHMENT=true "$PLAYWRIGHT_PYTHON" "$SCRIPT_DIR/inspect-mycompany-ui.py" "$WEB_URL" 2>&1 | tee "$RESTART_UI_LOG_FILE"
+RESTART_REQUIRED_MARKERS=(
+  "UI_RESTART_PERSISTENCE_SALE_RECONCILED=true"
+  "UI_RESTART_PERSISTENCE_STOCK_RECONCILED=true"
+  "UI_RESTART_PERSISTENCE_SESSION_CLOSED=true"
+  "UI_RESTART_PERSISTENCE_CASH_RECONCILED=true"
+  "UI_RESTART_PERSISTENCE_INCIDENTS_RETAINED=true"
+  "UI_RESTART_PERSISTENCE_VERIFIED=true"
+)
+for marker in "${RESTART_REQUIRED_MARKERS[@]}"; do
+  grep -Fq "$marker" "$RESTART_UI_LOG_FILE" || {
+    echo "La comprobación de persistencia tras reinicio no confirmó el resultado esperado: $marker" >&2
+    exit 1
+  }
+done
+echo "RUBROVA_NATIVE_RESTART_PERSISTENCE=passed"
+
+echo "6/7 Cerrando la instancia de persistencia y liberando sus puertos"
+stop_native_supervisor "$RESTART_LOG_FILE"
 
 if [[ -n "$MOCK_PROVIDER_PID" ]] && kill -0 "$MOCK_PROVIDER_PID" 2>/dev/null; then
   kill -TERM "$MOCK_PROVIDER_PID" 2>/dev/null || true
@@ -335,6 +414,7 @@ if [[ -n "$MOCK_PROVIDER_PID" ]] && kill -0 "$MOCK_PROVIDER_PID" 2>/dev/null; th
 fi
 MOCK_PROVIDER_PID=""
 
+echo "7/7 Iniciando una segunda instancia con datos de demostración y PostgreSQL separado"
 echo "6/6 Iniciando una segunda instancia con datos de demostración y PostgreSQL separado"
 mkdir -p "$DEMO_USER_DATA_ROOT"
 export RUBROVA_RUNTIME_CONFIG_PATH="$DEMO_CONFIG_PATH"
@@ -342,6 +422,7 @@ python3 "$SCRIPT_DIR/run-local-native-preview.py" init-demo
 
 RUBROVA_LOCAL_DEMO_DATA=true python3 -u "$SCRIPT_DIR/run-local-native-preview.py" --no-open start >"$DEMO_LOG_FILE" 2>&1 &
 SUPERVISOR_PID=$!
+SUPERVISOR_LOG_FILE="$DEMO_LOG_FILE"
 DEMO_WEB_URL="http://127.0.0.1:8081/login"
 DEMO_STARTUP_TIMEOUT="${RUBROVA_NATIVE_DEMO_STARTUP_TIMEOUT_SECONDS:-900}"
 SECONDS=0
