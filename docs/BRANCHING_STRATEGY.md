@@ -40,15 +40,16 @@ Las fixtures sintéticas son regresión automatizada, no sustituyen una prueba c
 
 ## Estado del repositorio — 26 de noviembre de 2026
 
-Última consulta a GitHub:
+Última consulta a GitHub después de fusionar PR #14 y del commit automático de fuentes:
 
 - Ramas remotas: **2** — `main` y `work/stocktake-barcode-runtime-acceptance`.
-- Pull requests abiertos: **1** — PR [#14](https://github.com/JavierGrecco/Rubrova/pull/14), en borrador.
-- `main`: `04249dc983c3af066a386f1e1b022da2d9587ec0`.
-- Rama del PR #14: `92786b7258378b063bed9ce3a5b71fdf3d2b505a`, sincronizada con `main` (`ahead 12 / behind 0` al último diff).
-- PR #13 está cerrado como reemplazado; PR #15 está integrado.
-- El run [45906455407](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407) de `main` terminó correctamente, incluido el smoke nativo macOS ARM64.
-- El run [45907277530](https://github.com/JavierGrecco/Rubrova/actions/runs/45907277530) del PR #14 terminó rojo sólo por una expectativa incorrecta: tras venta de 1 y devolución completa de 1, el stock final persistido es 10, no 9. Los casos barcode cero/NULL/positivo pasaron. Se corrige la expectativa y se exige un run nuevo.
+- Pull requests abiertos: **0**.
+- `main` incluye la integración funcional de stocktake `c38fad581f669bd7e1a2795123cc8ecca242e010` y la incorporación de fuentes `7d9e5bb80e866df87b51baad852c1e6256270dd1`.
+- La rama `work/stocktake-barcode-runtime-acceptance` permanece en el remoto en el HEAD `12f29a47e7b89f6f162c85a7e3684e24f9fe793b`, pero PR #14 ya está fusionado. No es trabajo activo: debe borrarse.
+- El run #462 terminó correctamente en su SHA. El run #463 valida el commit funcional `c38fad5`; prevalidación y Windows pasaron, build pendiente al corte.
+- El run #24 incorporó la corrección a `vendor/mycompany/.../AdjustmentList.lsf`; la validación de árboles, licencias y rutas pasó, la compilación estaba en curso.
+- PR #13 está cerrado como reemplazado; PR #15 y PR #14 están integrados.
+- Las ramas antiguas de devoluciones y guardas ya no aparecen en el listado remoto y no deben recrearse.
 
 ### Protección de la rama principal
 
@@ -56,7 +57,17 @@ La lista de ramas informa `protected=false` para `main`. La consulta del endpoin
 
 ### Borrado automático de ramas
 
-La API de repositorio informa `delete_branch_on_merge=false`. Esa opción no puede cambiarse desde las acciones habilitadas en esta conexión. Hasta activarla desde Settings, la rutina de cierre debe borrar manualmente la rama fuente y verificar después que sólo quede `main`.
+La API del repositorio informa `delete_branch_on_merge=false`. La rama fuente del PR #14 no se eliminó automáticamente. La conexión actual no ofrece una acción para borrar referencias Git ni modificar ajustes administrativos.
+
+Después de confirmar que `main` contiene el merge, borrar desde una terminal local la rama remota fusionada:
+
+```bash
+git push origin --delete work/stocktake-barcode-runtime-acceptance
+git fetch origin --prune
+git branch -r
+```
+
+El resultado esperado del último comando es que sólo aparezca `origin/main`. Desde GitHub Settings → General → Pull Requests se puede activar “Automatically delete head branches” para que los próximos merges no dejen ramas huérfanas.
 
 ## Rutina por hito
 
