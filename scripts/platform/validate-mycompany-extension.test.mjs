@@ -1441,18 +1441,19 @@ test("la arquitectura de terminales documenta los tres modos, diagramas y límit
 
 test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras reinicio", () => {
   assert.match(adjustmentListSource, /WHEN SETCHANGED\(listRealQuantity/);
-  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATION_BEFORE"));
-  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATION_AFTER"));
-  assert.match(sourcePatch, /WHEN SETCHANGED\(realQuantity\(AdjustmentListLine l\)\)/);
-  assert.ok(sourcePatch.includes("if not apply_stocktake_list_zero_line_aggregation():"));
-  assert.match(sourcePatch, /realQuantity\(al\) <- listRealQuantity\(adjustment\(adjustmentList\(l\)\), product\(l\), location\(l\)\);/);
+  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATE_BEFORE"));
+  assert.ok(sourcePatch.includes("STOCKTAKE_LIST_AGGREGATE_AFTER"));
+  assert.match(sourcePatch, /GROUP MAX 0[.]000 IF realQuantity\(AdjustmentListLine l\)/);
+  assert.match(sourcePatch, /OVERRIDE listRealQuantitySum\(a, p, loc\), listRealQuantityZeroFallback\(a, p, loc\)/);
+  assert.ok(sourcePatch.includes("if not apply_stocktake_list_zero_aware_aggregate():"));
   assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeZeroApi/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodeNullApi/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestStocktakeBarcodePositiveApi/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), 0\)/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]setRealQuantity\(rubrovaCIStocktakeList\(\), rubrovaCITestProduct\(\), rubrovaCITestLocation\(\), NULL\)/);
   assert.match(nativeSalesFixtureSource, /Inventory[.]useList\(stocktakeCI\) <- TRUE/);
-  assert.match(nativeSalesFixtureSource, /adjustmentQuantityIsNull = Inventory[.]realQuantity\(rubrovaCIStocktakeAdjustmentLine\(\)\) IS NULL/);
+  assert.match(nativeSalesFixtureSource, /adjustmentQuantityIsNull = NOT Inventory[.]realQuantity\(rubrovaCIStocktakeAdjustmentLine\(\)\)/);
+  assert.doesNotMatch(nativeSalesFixtureSource, /\bIS NULL\b/);
   assert.match(nativeSalesFixtureSource, /onHand = Inventory[.]onHand\(rubrovaCITestLocation\(\), rubrovaCITestProduct\(\)\)/);
   assert.match(uiSmokeSource, /[Ee]l conteo descartable alteró el stock físico/);
   assert.match(uiSmokeSource, /adjustmentQuantityIsNull/);

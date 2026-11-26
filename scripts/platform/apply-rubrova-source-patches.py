@@ -143,30 +143,26 @@ MARKDOWN_VIEWER_REQUIRED_MARKERS = (
     "marked-gfm-heading-id@4.1.4/lib/index.umd.js",
 )
 
-# Preserve zero-valued inventory counts in the native AdjustmentList -> AdjustmentLine flow.
-# A row-level SETCHANGED trigger creates the parent line when its first stored quantity is 0;
-# the existing aggregate CHANGED event continues reconciling subsequent list edits.
+# Preserve the distinction between an empty adjustment-list group and a group whose
+# recorded quantities sum to zero. In lsFusion, GROUP SUM returns NULL for a zero sum.
 STOCKTAKE_LIST_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentList.lsf"
-STOCKTAKE_LIST_AGGREGATION_BEFORE = """WHEN SETCHANGED(listRealQuantity(Adjustment a, Product p, Location l)) AND useList(a) AND NOT lastAdjustmentLine(a, p, l) DO
-    NEW al = AdjustmentLine {
-        adjustment(al) <- a;
-        product(al) <- p;
-        location(al) <- l;
-        realQuantity(al) <- listRealQuantity(a, p, l);
-    }"""
-STOCKTAKE_LIST_AGGREGATION_AFTER = """WHEN SETCHANGED(realQuantity(AdjustmentListLine l))
-    AND useList(adjustment(adjustmentList(l)))
-    AND NOT lastAdjustmentLine(adjustment(adjustmentList(l)), product(l), location(l)) DO
-    NEW al = AdjustmentLine {
-        adjustment(al) <- adjustment(adjustmentList(l));
-        product(al) <- product(l);
-        location(al) <- location(l);
-        realQuantity(al) <- listRealQuantity(adjustment(adjustmentList(l)), product(l), location(l));
-    }"""
-STOCKTAKE_LIST_AGGREGATION_MARKERS = (
-    "WHEN SETCHANGED(realQuantity(AdjustmentListLine l))",
-    "realQuantity(al) <- listRealQuantity(adjustment(adjustmentList(l)), product(l), location(l));",
-    "WHEN CHANGED(listRealQuantity(Adjustment a, Product p, Location l))",
+STOCKTAKE_LIST_AGGREGATE_BEFORE = """listRealQuantity (Adjustment, Product, Location) = 
+    GROUP SUM realQuantity(AdjustmentListLine l) BY adjustment(adjustmentList(l)), product(l), location(l);"""
+STOCKTAKE_LIST_AGGREGATE_AFTER = """listRealQuantitySum (Adjustment, Product, Location) =
+    GROUP SUM realQuantity(AdjustmentListLine l) BY adjustment(adjustmentList(l)), product(l), location(l);
+
+listRealQuantityZeroFallback (Adjustment, Product, Location) =
+    GROUP MAX 0.000 IF realQuantity(AdjustmentListLine l)
+        BY adjustment(adjustmentList(l)), product(l), location(l);
+
+listRealQuantity (Adjustment a, Product p, Location loc) =
+    (OVERRIDE listRealQuantitySum(a, p, loc), listRealQuantityZeroFallback(a, p, loc));"""
+STOCKTAKE_LIST_AGGREGATE_MARKERS = (
+    "listRealQuantitySum (Adjustment, Product, Location) =",
+    "GROUP MAX 0.000 IF realQuantity(AdjustmentListLine l)",
+    "listRealQuantity (Adjustment a, Product p, Location loc) =",
+    "(OVERRIDE listRealQuantitySum(a, p, loc), listRealQuantityZeroFallback(a, p, loc))",
+    "WHEN SETCHANGED(listRealQuantity(Adjustment a, Product p, Location l))",
 )
 
 
@@ -420,47 +416,47 @@ def apply_cash_movement_date_captions() -> bool:
     return True
 
 
-def apply_stocktake_list_zero_line_aggregation() -> bool:
+def apply_stocktake_list_zero_aware_aggregate() -> bool:
     target = STOCKTAKE_LIST_TARGET
     if not target.is_file():
         print(f"No se encontró el módulo de hojas de inventario: {target}", file=sys.stderr)
         return False
 
     source = target.read_text(encoding="utf-8")
-    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATION_MARKERS if marker not in source]
-    if not missing and STOCKTAKE_LIST_AGGREGATION_BEFORE not in source:
-        print("La conciliación nativa de conteo ya conserva cantidades cero y agrega la línea padre.")
+    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATE_MARKERS if marker not in source]
+    if not missing and STOCKTAKE_LIST_AGGREGATE_BEFORE not in source:
+        print("El agregado nativo de conteo conserva cero y NULL sin confundir grupos vacíos.")
         return True
 
-    if STOCKTAKE_LIST_AGGREGATION_AFTER in source:
-        print("El parche de conteo existe, pero el bloque anterior o los marcadores difieren.", file=sys.stderr)
+    if STOCKTAKE_LIST_AGGREGATE_AFTER in source:
+        print("El parche de agregado de conteo existe, pero faltan marcadores esperados.", file=sys.stderr)
         return False
 
-    occurrences = source.count(STOCKTAKE_LIST_AGGREGATION_BEFORE)
+    occurrences = source.count(STOCKTAKE_LIST_AGGREGATE_BEFORE)
     if occurrences != 1:
         print(
-            "No se ajustó la agregación de hojas de inventario. Se esperaba exactamente "
-            f"una coincidencia del evento upstream y se encontraron {occurrences}.",
+            "No se ajustó el agregado de hojas de inventario. Se esperaba exactamente "
+            f"una coincidencia del agregado upstream y se encontraron {occurrences}.",
             file=sys.stderr,
         )
         return False
 
     source = source.replace(
-        STOCKTAKE_LIST_AGGREGATION_BEFORE,
-        STOCKTAKE_LIST_AGGREGATION_AFTER,
+        STOCKTAKE_LIST_AGGREGATE_BEFORE,
+        STOCKTAKE_LIST_AGGREGATE_AFTER,
         1,
     )
-    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATION_MARKERS if marker not in source]
-    if missing or STOCKTAKE_LIST_AGGREGATION_BEFORE in source:
+    missing = [marker for marker in STOCKTAKE_LIST_AGGREGATE_MARKERS if marker not in source]
+    if missing or STOCKTAKE_LIST_AGGREGATE_BEFORE in source:
         print(
-            "El parche de cantidad cero de AdjustmentList quedó incompleto: "
-            + ", ".join(missing or ["el evento upstream original sigue presente"]),
+            "El parche de agregado cero/NULL de AdjustmentList quedó incompleto: "
+            + ", ".join(missing or ["el agregado upstream original sigue presente"]),
             file=sys.stderr,
         )
         return False
 
     target.write_text(source, encoding="utf-8")
-    print("Agregación nativa de AdjustmentList corregida: una cantidad cero crea su AdjustmentLine.")
+    print("Agregado nativo de AdjustmentList corregido: cero presente y grupo vacío NULL.")
     return True
 
 
@@ -598,7 +594,7 @@ def main() -> int:
     if not apply_newsession_guards():
         return 1
 
-    if not apply_stocktake_list_zero_line_aggregation():
+    if not apply_stocktake_list_zero_aware_aggregate():
         return 1
 
     if not apply_cash_account_query_filters():

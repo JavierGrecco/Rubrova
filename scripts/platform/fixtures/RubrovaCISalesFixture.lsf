@@ -187,7 +187,7 @@ rubrovaTestStocktakeBarcodeNullApi () {
     EXPORT JSON FROM
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
-        adjustmentQuantityIsNull = Inventory.realQuantity(rubrovaCIStocktakeAdjustmentLine()) IS NULL,
+        adjustmentQuantityIsNull = NOT Inventory.realQuantity(rubrovaCIStocktakeAdjustmentLine()),
         onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
