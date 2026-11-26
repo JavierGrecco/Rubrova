@@ -377,14 +377,16 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativePreviewSource, /RubrovaCIReplenishmentFixture/);
   assert.match(nativeReplenishmentFixtureSource, /rubrova-ci-outgoing/);
   assert.match(nativeReplenishmentFixtureSource, /rubrova-ci-incoming/);
-  assert.match(
-    nativeReplenishmentFixtureSource,
-    /rubrovaCIOutgoingOrder\\(\\)\\s*=\\s*GROUP MAX Sales[.]Order o\\s+IF Sales[.]customerReference\\(o\\) = 'rubrova-ci-outgoing';/,
+  const outgoingOrderGrouping = nativeReplenishmentFixtureSource
+    .split("rubrovaCIOutgoingOrder() = ")[1]
+    ?.split(";")[0] ?? "";
+  assert.ok(outgoingOrderGrouping.startsWith("GROUP MAX Sales.Order o"));
+  assert.ok(
+    outgoingOrderGrouping.includes("\n    IF Sales.customerReference(o) = 'rubrova-ci-outgoing'"),
     "La agrupación lsFusion debe filtrar con IF; WHERE no está permitido en este GroupingType."
   );
-  assert.doesNotMatch(
-    nativeReplenishmentFixtureSource,
-    /GROUP MAX Sales[.]Order o\\s+WHERE/,
+  assert.ok(
+    !outgoingOrderGrouping.includes("WHERE"),
     "No introducir WHERE después de GROUP MAX en el fixture nativo."
   );
   assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReplenishmentPartner\(\) <- partnerCI/);
