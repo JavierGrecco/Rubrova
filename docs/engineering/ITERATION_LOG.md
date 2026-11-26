@@ -66,3 +66,14 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Integración de ramas:** se creó `integration/replenishment-mainline-preflight` desde `main` (base `699eb8343706acd9631ca83150eb54ba8fba71e3`) para reconstruir un PR corto y evitar arrastrar los 118 commits divergentes del PR #8.
 - **Límite de validación:** esta entrada registra la decisión y la implementación del preflight/workflows; hasta que el nuevo PR ejecute Actions, no se marca la nueva capa como aprobada. El script rápido tampoco carga lsFusion ni consulta una base MyCompany.
 - **Próximo criterio de cierre:** nueva ejecución de CI para el commit integrado; build + smoke macOS ARM64 + respuesta JSON válida de las cuatro acciones y conteos conciliados; después probar el runtime en el MacBook local.
+
+
+## 2026-11-26 — REP-007 — Primera ejecución del preflight unificado
+
+- **PR:** [#10](https://github.com/JavierGrecco/Rubrova/pull/10).
+- **Run:** [45735337191](https://github.com/JavierGrecco/Rubrova/actions/runs/45735337191), SHA `5ac3c75f`.
+- **Hecho observado:** el workflow ejecutó el nuevo preflight. En la suite Node pasaron 28 de 29 pruebas; falló una aserción de concurrencia en `validate-mycompany-extension.test.mjs`, que esperaba cuatro apariciones globales de `cancel-in-progress: true`.
+- **Causa:** el nuevo `concurrency` a nivel workflow añadió una quinta regla global, mientras que los cuatro controles por job siguen siendo correctos. La aserción existente contaba ambos niveles como si fueran una sola política.
+- **Corrección:** distinguir en el test la regla global por PR de las cuatro reglas por job; añadir una regresión que verifica que Linux/Docker son manuales y que el smoke macOS ARM64 permanece automático; comprobar que ambos workflows invocan el mismo preflight local.
+- **Alcance del fallo:** no llegó a la compilación Maven ni al smoke de runtime porque el job `validate` es una dependencia previa. Windows pasó y el workflow del planificador terminó en verde.
+- **Estado:** corrección subida al branch; la segunda ejecución sobre el nuevo SHA debe confirmar el arreglo.
