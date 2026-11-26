@@ -36,3 +36,12 @@ Registro cronológico de hechos y resultados. No reemplaza a los commits ni a lo
 ## Plantilla de nuevo registro
 
 Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar también las hipótesis descartadas y las limitaciones que siguen abiertas.
+
+## 2026-11-25 — REP-004 — Regresión del matcher estático y verificación de endpoints
+
+- **Workflow afectado:** [45732148752](https://github.com/JavierGrecco/Rubrova/actions/runs/45732148752).
+- **Hecho observado:** el job de validación estática falló antes de compilar; `assert.equal(replenishmentApiActions.length, 4)` recibió cero acciones.
+- **Causa raíz:** la expresión regular del test se escribió con escapes duplicados. El archivo fuente tenía cuatro acciones; el matcher no las reconocía por un defecto del test.
+- **Corrección:** se fijó el patrón de captura y se comprobó contra el contenido real de `RubrovaReplenishmentExport.lsf`: cuatro acciones detectadas, las cuatro empiezan con `EXPORT JSON FROM` y ninguna con `RETURN JSON FROM`.
+- **Commit correctivo:** `073a22915b34baf0816a456d2b815bb355726be8`.
+- **Estado:** el matcher quedó corregido y verificado contra los archivos recuperados del branch; todavía falta una ejecución de CI que confirme el test en GitHub Actions.
