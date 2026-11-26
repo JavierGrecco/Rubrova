@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import json
 import math
+from concurrent.futures import ThreadPoolExecutor
 import os
 from decimal import Decimal, InvalidOperation
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -1174,8 +1177,8 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
         "inventory",
     )
     for field, expected in {
-        "incomingQuantity": 11,
-        "outgoingQuantity": 1,
+        "incomingQuantity": 12,
+        "outgoingQuantity": 2,
         "onHand": 10,
     }.items():
         try:
@@ -1262,6 +1265,7 @@ def verify_restarted_persistence(context: Any, url: str) -> None:
         )
     print("UI_RESTART_PERSISTENCE_PARTIAL_RETURNS=true")
 
+    verify_cumulative_refunds_persistence(context, url)
     verify_stocktake_persistence(context, url)
 
     incidents = fetch_restart_api_payload(
@@ -1302,6 +1306,259 @@ def verify_return_quantity_guard(context: Any, url: str) -> None:
     print("UI_RETURN_QUANTITY_GUARD_ENABLED=true")
 
 
+
+
+def _native_api_get_with_browser_cookies(context: Any, base_url: str, endpoint: str) -> dict[str, Any]:
+    cookies = context.cookies(base_url)
+    cookie_header = "; ".join(
+        f"{cookie['name']}={cookie['value']}"
+        for cookie in cookies
+        if cookie.get("name") and cookie.get("value") is not None
+    )
+    if not cookie_header:
+        raise RuntimeError("No se encontraron cookies de sesión autenticada para la prueba concurrente.")
+
+    request = urllib.request.Request(
+        base_url + endpoint,
+        headers={"Cookie": cookie_header, "Accept": "application/json"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            status = response.status
+            body = response.read().decode("utf-8", errors="replace")
+            content_type = response.headers.get("content-type", "")
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"La API concurrente {endpoint} respondió HTTP {error.code}: {body[:1600]!r}"
+        ) from error
+    if status != 200:
+        raise RuntimeError(f"La API concurrente {endpoint} respondió HTTP {status}: {body[:1600]!r}")
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError as error:
+        raise RuntimeError(
+            f"La API concurrente {endpoint} no devolvió JSON; "
+            f"Content-Type={content_type!r}, cuerpo={body[:1600]!r}"
+        ) from error
+    if isinstance(payload, list):
+        payload = payload[0] if payload else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"La API concurrente {endpoint} no devolvió un objeto JSON.")
+    return payload
+
+
+def verify_cumulative_refunds(context: Any, url: str) -> None:
+    """Exercise per-method cumulative caps, serializable competing applies and native cancellations."""
+    api_base = application_endpoint_url(url, "exec/Sales.")
+    initial = context.request.get(api_base + "rubrovaTestCumulativeRefundsApi", timeout=60_000)
+    if initial.status != 200:
+        raise RuntimeError(
+            f"La preparación de reintegros mixtos respondió HTTP {initial.status}: {initial.text()[:1600]}"
+        )
+    initial_payload = initial.json()
+    if isinstance(initial_payload, list):
+        initial_payload = initial_payload[0] if initial_payload else {}
+    if not isinstance(initial_payload, dict):
+        raise RuntimeError("La preparación de reintegros mixtos no devolvió un objeto JSON.")
+    expected_initial = {
+        "sourceInvoiceFound": 1,
+        "originalCashPaid": 500,
+        "originalCardPaid": 750,
+        "activeReturnCount": 1,
+        "activeReturnAmount": 500,
+        "returnedQuantity": 0.4,
+        "activeCashRefundCount": 1,
+        "activeCashRefundAmount": 200,
+        "activeCardRefundCount": 1,
+        "activeCardRefundAmount": 300,
+    }
+    for field, expected in expected_initial.items():
+        try:
+            actual = float(initial_payload.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(f"La preparación mixta devolvió un valor no numérico en {field}.") from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"La preparación de reintegros mixtos no coincide en {field}: "
+                f"esperado {expected}, recibido {actual}. "
+                f"{json.dumps(initial_payload, ensure_ascii=False)}"
+            )
+    if initial_payload.get("overLimitRejected") is not True:
+        raise RuntimeError(
+            "No se rechazó la segunda devolución acumulada de tarjeta (300 + 600 > 750): "
+            + json.dumps(initial_payload, ensure_ascii=False)
+        )
+    if "El total reintegrado por medio de pago supera el importe cobrado originalmente" not in str(
+        initial_payload.get("overLimitMessage") or ""
+    ):
+        raise RuntimeError(
+            "El rechazo acumulado no provino de la restricción global por método: "
+            + json.dumps(initial_payload, ensure_ascii=False)
+        )
+    print("UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true")
+    print("UI_CUMULATIVE_REFUNDS_INITIAL=" + json.dumps(initial_payload, ensure_ascii=False))
+
+    # Ambas peticiones compiten sobre el mismo cupo restante de tarjeta (ARS 450).
+    # Cada una pide ARS 300; sólo una puede confirmar bajo SERIALIZABLE.
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="rubrova-refund") as executor:
+        future_a = executor.submit(
+            _native_api_get_with_browser_cookies, context, url, "rubrovaTestCumulativeRefundRaceAApi"
+        )
+        future_b = executor.submit(
+            _native_api_get_with_browser_cookies, context, url, "rubrovaTestCumulativeRefundRaceBApi"
+        )
+        race_a = future_a.result()
+        race_b = future_b.result()
+
+    accepted = [race_a.get("accepted") is True, race_b.get("accepted") is True]
+    if sum(accepted) != 1:
+        raise RuntimeError(
+            "Las dos confirmaciones simultáneas no quedaron serializadas: "
+            + json.dumps({"A": race_a, "B": race_b}, ensure_ascii=False)
+        )
+    rejected = race_b if accepted[0] else race_a
+    if rejected.get("accepted") is not False:
+        raise RuntimeError("La confirmación perdedora no informó rechazo.")
+    print("UI_CUMULATIVE_REFUNDS_RACE_A=" + json.dumps(race_a, ensure_ascii=False))
+    print("UI_CUMULATIVE_REFUNDS_RACE_B=" + json.dumps(race_b, ensure_ascii=False))
+    print("UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true")
+
+    finished = context.request.get(
+        api_base + "rubrovaTestCumulativeRefundFinishApi", timeout=60_000
+    )
+    if finished.status != 200:
+        raise RuntimeError(
+            f"La conciliación final de reintegros mixtos respondió HTTP {finished.status}: "
+            f"{finished.text()[:1600]}"
+        )
+    finished_payload = finished.json()
+    if isinstance(finished_payload, list):
+        finished_payload = finished_payload[0] if finished_payload else {}
+    for field, expected in {
+        "activeReturnCount": 3,
+        "activeReturnAmount": 1250,
+        "returnedQuantity": 1,
+        "activeCashRefundAmount": 500,
+        "activeCardRefundAmount": 750,
+    }.items():
+        try:
+            actual = float(finished_payload.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(f"La conciliación de reintegros devolvió un valor inválido en {field}.") from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"La conciliación posterior a la carrera no coincide en {field}: "
+                f"esperado {expected}, recibido {actual}. "
+                f"{json.dumps(finished_payload, ensure_ascii=False)}"
+            )
+
+    # Anular la nota no anula los egresos que ya movieron dinero: el cupo debe seguir ocupado.
+    cancelled_bill = context.request.get(
+        api_base + "rubrovaTestCumulativeRefundBillCancelApi", timeout=60_000
+    )
+    if cancelled_bill.status != 200:
+        raise RuntimeError(
+            f"La prueba de cancelación de nota respondió HTTP {cancelled_bill.status}: "
+            f"{cancelled_bill.text()[:1600]}"
+        )
+    cancelled_payload = cancelled_bill.json()
+    if isinstance(cancelled_payload, list):
+        cancelled_payload = cancelled_payload[0] if cancelled_payload else {}
+    if (
+        cancelled_payload.get("originalBillActive") is not False
+        or float(cancelled_payload.get("originalBillOutgoingActiveCount") or 0) != 2
+        or cancelled_payload.get("overLimitRejected") is not True
+    ):
+        raise RuntimeError(
+            "Cancelar la nota liberó incorrectamente el cupo o no conservó sus egresos activos: "
+            + json.dumps(cancelled_payload, ensure_ascii=False)
+        )
+    if "El total reintegrado por medio de pago supera el importe cobrado originalmente" not in str(
+        cancelled_payload.get("overLimitMessage") or ""
+    ):
+        raise RuntimeError(
+            "El rechazo tras cancelar sólo la nota no provino del límite acumulado: "
+            + json.dumps(cancelled_payload, ensure_ascii=False)
+        )
+    print("UI_CUMULATIVE_REFUNDS_BILL_CANCEL_DOES_NOT_RELEASE_CAP=true")
+
+    # Cancelar los dos egresos nativos libera sólo esos importes; la nota histórica permanece.
+    released = context.request.get(
+        api_base + "rubrovaTestCumulativeRefundReleaseApi", timeout=60_000
+    )
+    if released.status != 200:
+        raise RuntimeError(
+            f"La liberación del cupo por cancelación de egresos respondió HTTP {released.status}: "
+            f"{released.text()[:1600]}"
+        )
+    released_payload = released.json()
+    if isinstance(released_payload, list):
+        released_payload = released_payload[0] if released_payload else {}
+    expected_release = {
+        "originalBillActive": 0,
+        "originalBillOutgoingActiveCount": 0,
+        "activeReturnCount": 3,
+        "activeReturnAmount": 1250,
+        "returnedQuantity": 1,
+        "activeCashRefundCount": 2,
+        "activeCashRefundAmount": 500,
+        "activeCardRefundCount": 3,
+        "activeCardRefundAmount": 750,
+        "onHand": 10,
+    }
+    for field, expected in expected_release.items():
+        try:
+            actual = float(released_payload.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(f"La liberación de cupo devolvió un valor no numérico en {field}.") from error
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"La conciliación tras cancelar egresos no coincide en {field}: "
+                f"esperado {expected}, recibido {actual}. "
+                f"{json.dumps(released_payload, ensure_ascii=False)}"
+            )
+    print("UI_CUMULATIVE_REFUNDS_PAYMENT_CANCEL_RELEASES_CAP=true")
+    print("UI_CUMULATIVE_REFUNDS_RECONCILED=true")
+    print("UI_CUMULATIVE_REFUNDS_FINAL=" + json.dumps(released_payload, ensure_ascii=False))
+
+
+def verify_cumulative_refunds_persistence(context: Any, url: str) -> None:
+    base = application_endpoint_url(url, "exec/Sales.")
+    state = fetch_restart_api_payload(
+        context,
+        base + "rubrovaCumulativeRefundsReconciliationApi",
+        "cumulative refunds",
+    )
+    expected = {
+        "sourceInvoiceFound": 1,
+        "originalCashPaid": 500,
+        "originalCardPaid": 750,
+        "originalBillOutgoingActiveCount": 0,
+        "activeReturnCount": 3,
+        "activeReturnAmount": 1250,
+        "returnedQuantity": 1,
+        "activeCashRefundCount": 2,
+        "activeCashRefundAmount": 500,
+        "activeCardRefundCount": 3,
+        "activeCardRefundAmount": 750,
+        "onHand": 10,
+    }
+    for field, wanted in expected.items():
+        try:
+            actual = float(state.get(field) or 0)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(f"El estado de reintegros acumulados no es numérico en {field}.") from error
+        if abs(actual - wanted) > 0.001:
+            raise RuntimeError(
+                f"El reintegro acumulado no sobrevivió al reinicio en {field}: "
+                f"esperado {wanted}, recibido {actual}. "
+                f"{json.dumps(state, ensure_ascii=False)}"
+            )
+    if state.get("originalBillActive") is not False:
+        raise RuntimeError("La nota de crédito anulada reapareció activa después del reinicio.")
+    print("UI_RESTART_PERSISTENCE_CUMULATIVE_REFUNDS=true")
 
 def verify_partial_returns(context: Any, url: str) -> None:
     """Exercise partial returns, a rejected over-return, refunds and stock receipt in disposable CI data."""
@@ -2003,6 +2260,7 @@ def inspect_page(url: str) -> int:
 
                 # Ejecuta el circuito de crédito nativo y comprueba reintegro y reingreso de stock.
                 verify_partial_returns(context, url)
+                verify_cumulative_refunds(context, url)
 
                 sale_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-sale" + screenshot_path.suffix
