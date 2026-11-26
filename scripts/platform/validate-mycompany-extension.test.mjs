@@ -1079,11 +1079,12 @@ test("el conteo físico por barcode conserva cero como cantidad y usa NULL para 
   const end = adjustmentListSearchSource.indexOf("// barcode", start);
   assert.ok(end > start, "No se encontró el límite del helper setRealQuantity antes de la búsqueda por barcode.");
   const helper = adjustmentListSearchSource.slice(start, end + 3);
-  assert.equal((helper.match(/IF q THEN/g) || []).length, 2);
+  assert.equal((helper.match(/IF q IS NOT NULL THEN/g) || []).length, 2);
+  assert.equal((helper.match(/IF q THEN/g) || []).length, 0);
   assert.ok(helper.includes("DELETE AdjustmentListLine"), "NULL debe seguir permitiendo limpiar la línea.");
+  assert.ok(helper.includes("// Rubrova: zero is a valid physical count; only NULL clears the barcode entry."));
   assert.ok(adjustmentListSearchSource.includes("@defineBarCodeSearch(adjustmentList, a, l, realQuantity);"));
-  const patched = helper.replaceAll("IF q THEN", "IF q IS NOT NULL THEN");
-  assert.equal((patched.match(/IF q IS NOT NULL THEN/g) || []).length, 2);
+  assert.ok(sourcePatch.includes("block.replace(\\"IF q THEN\\", \\"IF q IS NOT NULL THEN\\")"));
   assert.ok(adjustmentListSource.includes("listRealQuantity (Adjustment, Product, Location) ="));
   assert.ok(adjustmentInProgressSource.includes("aggregateRealQuantity(l) OR NOT status(adjustment(l)) = AdjustmentStatus.inProgress"));
   assert.ok(adjustmentDoneSource.includes("realQuantity(l) (-) theoreticalQuantity(l)"));
