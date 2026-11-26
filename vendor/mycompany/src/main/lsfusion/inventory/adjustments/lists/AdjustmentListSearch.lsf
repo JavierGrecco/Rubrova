@@ -8,15 +8,14 @@ realQuantity 'Real quantity' (AdjustmentList, Product, Location) =
     GROUP SUM realQuantity(AdjustmentListLine l) BY adjustmentList(l), product(l), location(l);
 
 setRealQuantity(AdjustmentList a, Product p, Location loc, NUMERIC[16,3] q) {
-    // Rubrova: zero is a valid physical count; only NULL clears the barcode entry.
     IF lastAdjustmentListLine(a, p, loc) THEN {
-        IF q IS NOT NULL THEN
+        IF q THEN
             realQuantity(AdjustmentListLine l) <- q IF l = lastAdjustmentListLine(a, p, loc)
                 WHERE adjustmentList(l) = a AND product(l) = p AND location(l) = loc;
         ELSE
             DELETE AdjustmentListLine l WHERE adjustmentList(l) = a AND product(l) = p AND location(l) = loc;
     } ELSE
-        IF q IS NOT NULL THEN
+        IF q THEN
             NEW l = AdjustmentListLine {
                 adjustmentList(l) <- a;
                 product(l) <- p;
