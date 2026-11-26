@@ -138,3 +138,17 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Backup/restore:** paquete PostgreSQL creado y verificado por SHA-256 y `pg_restore --list`; restauración a `rubrova_restore_ci`; la base original `rubrova_dev` no se sobrescribió.
 - **Límites:** egress estuvo habilitado (`offline acceptance not tested`); Linux/Docker fueron `skipped`; Windows sólo comprobó sintaxis; aún no hay prueba en Mac físico, base comercial real, periféricos ni jornada real.
 - **Siguiente iteración:** proteger devolución parcial/total y reintegro contra sobredevolución; luego movimientos y arqueo físico, utilizando los ledgers originales de MyCompany sin duplicarlos.
+
+
+## 2026-11-26 — REP-016 — Investigación de contratos lsFusion/MyCompany y parser de booleanos
+
+- **Repositorio:** https://github.com/JavierGrecco/Rubrova
+- **Documentación consolidada:** commit ef008fe0f3bf6bad5bf27aa1440c8acb760cf0fb; guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md, índice de ingeniería y contrato general.
+- **Fuentes fijadas:** lsFusion 6.2 commit dd4dbe5bf9b136e73e18fe25d741253929324350; MyCompany 6.2 commit d21ca6978717b98b6300d90267f9767db7414008.
+- **Alcance investigado:** modelo de módulos y dependencias; REQUIRE/NAMESPACE; propiedades declarativas y DATA; acciones; hooks abstractos; constraints; formularios; eventos; APPLY/CANCEL/NEWSESSION/NESTEDSESSION; Action API y EXTERNAL; POS, facturas, notas de crédito, cobros/reintegros, sesiones, caja, despachos, recepciones, ledger físico y reservas.
+- **Hechos observados:** runtime LSF integrado, no conjunto de microservicios; el POS conecta Session/Invoice/IncomingPayment/Shipment/InvLedger y la devolución conecta Bill/BillLine/OutgoingPayment/Receipt/InvLedger. onHand y available son magnitudes distintas. La fórmula active(...) varía según el documento. Los agregados vacíos pueden retornar NULL y no deben compararse como cero sin normalización explícita.
+- **Riesgo de negocio descubierto:** el formulario nativo de reintegro limita cada nota frente a lo cobrado originalmente por medio de pago, pero no resta los reintegros de devoluciones anteriores; la validación acumulativa es una brecha a proteger en Rubrova.
+- **Hecho observado de CI:** run 45870077864, SHA 698cba2db3567f07478dede2950b07b6e4a265f5: preflight, validación Windows y compilación pasaron; el arranque macOS ARM64 falló al inicializar la lógica con RubrovaCISalesFixture:206:83 use NULL instead of FALSE. El parser llegó a procesar 719 de 722 módulos; no fue un fallo de PostgreSQL ni de compilación.
+- **Corrección aplicada:** commit 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53 de la rama del PR #13 cambia los dos campos de diagnóstico a enteros 1/0 y actualiza las aserciones estáticas. Evita usar FALSE, que no es el literal de falso aceptado por el lenguaje/versión.
+- **Validación posterior:** run 45872444450, SHA 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53: prevalidación y Windows aprobados; compilación Maven completa en curso al registrar esta iteración; smoke nativo aún no ha comenzado. No se declara corregido hasta que el parser cargue los módulos y el escenario E2E pase.
+- **Pendientes de investigación:** Compras/abastecimiento; pedidos mayoristas y canales; fiscalidad ARCA; lotes/costos/producción; CRM/cuenta corriente; autorizaciones/auditoría; instalación local Mac físico y Windows; periféricos, desconexión de red y backup completo.

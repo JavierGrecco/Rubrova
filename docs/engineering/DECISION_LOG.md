@@ -64,3 +64,14 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Consecuencia:** las escrituras de contexto de un mismo usuario se ordenan al crear conexiones, sin serializar peticiones normales ni conexiones de otros usuarios.
 - **Regresión:** la prueba estática exige adquirir el bloqueo antes de `getExecSession()`. El smoke nativo busca el `SQLConflictException` específico en los logs del runtime y falla si reaparece.
 - **Límite:** la protección cubre inicialización de `RemoteConnection` dentro de un mismo proceso de servidor. No reemplaza la gestión de conflictos de negocio ni resuelve escrituras concurrentes ajenas al contexto del usuario.
+
+## ADR-0009 — Extender contratos abstractos y preservar los ledgers nativos
+
+- **Estado:** Aceptada como regla de diseño para extensiones LSF; las implementaciones deben validar sus escenarios de runtime.
+- **Ámbito:** módulos Rubrova integrados en MyCompany 6.2.
+- **Contexto:** la investigación de CreditNote, CreditNoteContract, CreditNoteReceipt e InvoiceShipment confirmó que MyCompany expone puntos explícitos como fill ABSTRACT LIST (...), mientras que acciones como CreditNote.create(Bill, Invoice) son concretas. Extender una acción concreta con ACTION+ no es el contrato disponible. Los flujos POS ya conectan factura, pago, despacho/recepción y ledgers.
+- **Decisión:** antes de implementar un caso de uso se localiza el dueño del dato, se reconstruye el flujo y se prefiere un punto abstracto declarado. Las extensiones agregan sólo reglas/datos Rubrova. Los hechos financieros y físicos continúan en los objetos y ledgers nativos; no se crean balances paralelos.
+- **Reglas derivadas:** (1) propiedad abstracta se amplía con la forma de extensión de propiedades (+ = +=); acción abstracta con el hook compatible (ACTION+ / +); no asumir que el operador sirve para ambos; (2) una acción concreta no se transforma en hook por pertenecer a un módulo requerido; (3) UI invoca el caso de uso, pero constraints y reglas transaccionales viven en el modelo/acción; (4) HTTP se reserva para fronteras externas, no módulos de la misma instancia.
+- **Consecuencia:** cada cambio registra firma del hook, punto de llamada, selección/multiplicidad, momento transaccional, entidades tocadas y ledger resultante. Se añaden pruebas estáticas y runtime por caso de uso.
+- **Evidencia:** guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md; fuentes 6.2 CreditNote.lsf, InvoiceShipment.lsf, ShipmentInv.lsf, ReceiptInv.lsf, Payment.lsf; PR #13, commit correctivo 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53.
+- **Límites:** el mapa cubre en profundidad POS, devoluciones, pagos, caja e inventario; no afirma que Compras, mayorista, ARCA, fabricación o seguridad estén completamente inventariados.
