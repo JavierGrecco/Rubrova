@@ -28,7 +28,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             outgoingIdentity = 'Sales.number(Order) + Sales.index(OrderLine)',
             outgoingOpenQuantity = 'Sales.toShip(OrderLine_confirmed)',
             outgoingScheduledDateTime = 'Sales.scheduledDateTime(Order)',
-            outgoingEffectiveReservation = 'SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)',
+            outgoingEffectiveReservation = 'SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)',
             incomingIdentity = 'Receipt.number + ReceiptLine.index',
             incomingExpectedQuantity = '0 - ReceiptResLedger.reserved; signed reservation remains negative',
             incomingScheduledDateTime = 'Receipt.scheduledDateTime',
@@ -93,8 +93,10 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             locationName = Inventory.name(Sales.location(Sales.order(ol))),
             openQuantity = Sales.toShip(ol),
             effectiveReserved = (OVERRIDE
-                (GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
-                    IF Sales.orderLine(Inventory.line(rr)) = ol),
+                (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                    IF Sales.orderLine(sl) = ol
+                        AND Inventory.lineReserved(sl) > 0
+                        AND Inventory.toReserve(Inventory.shipment(sl))),
                 0),
             scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol)),
             scheduledDate = DATE(Sales.scheduledDateTime(Sales.order(ol))),
@@ -173,8 +175,10 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
         locationId = Inventory.id(Sales.location(Sales.order(ol))),
         openQuantity = Sales.toShip(ol),
         effectiveReserved = (OVERRIDE
-            (GROUP SUM Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))
-                IF Sales.orderLine(Inventory.line(rr)) = ol),
+            (GROUP SUM Inventory.lineReserved(Inventory.ShipmentLine sl)
+                IF Sales.orderLine(sl) = ol
+                    AND Inventory.lineReserved(sl) > 0
+                    AND Inventory.toReserve(Inventory.shipment(sl))),
             0),
         scheduledDateTime = Sales.scheduledDateTime(Sales.order(ol))
         WHERE Sales.confirmed(Sales.order(ol))

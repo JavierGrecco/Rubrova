@@ -1144,8 +1144,9 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "sourceLineId = (CONCAT",
     "lineId = (CONCAT",
     "Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))",
-    "Inventory.ShipmentResLedger",
-    "Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))",
+    "Inventory.lineReserved(Inventory.ShipmentLine sl)",
+    "Sales.orderLine(sl)",
+    "Inventory.toReserve(Inventory.shipment(sl))",
     "Inventory.expected(l, p)",
     "Inventory.reserved(l, p)",
     "Inventory.ReceiptResLedger",
@@ -1179,6 +1180,32 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.ok(uiSmokeSource.includes("expected_count == 0"));
   assert.ok(uiSmokeSource.includes("len(rows) != expected_count"));
   const outgoingExportQuery = replenishmentExportSource.split("outgoingCommitments = (JSON FROM")[1]?.split("        receipts = (JSON FROM")[0] ?? "";
+  assert.ok(
+    outgoingExportQuery.includes("Inventory.lineReserved(Inventory.ShipmentLine sl)")
+      && outgoingExportQuery.includes("Sales.orderLine(sl) = ol")
+      && outgoingExportQuery.includes("Inventory.lineReserved(sl) > 0")
+      && outgoingExportQuery.includes("Inventory.toReserve(Inventory.shipment(sl))"),
+    "La reserva efectiva debe salir directamente de ShipmentLine y conservar los predicados del ledger nativo."
+  );
+  assert.doesNotMatch(
+    outgoingExportQuery,
+    /ShipmentResLedger/,
+    "La consulta no debe atravesar la clase agregada ShipmentResLedger para sumar reservas por línea."
+  );
+  const outgoingProbeQuery = replenishmentExportSource.split("rubrovaProbeOutgoingCommitments")[1]?.split("rubrovaProbeReceipts")[0] ?? "";
+  assert.ok(
+    outgoingProbeQuery.includes("Inventory.lineReserved(Inventory.ShipmentLine sl)")
+      && outgoingProbeQuery.includes("Sales.orderLine(sl) = ol")
+      && outgoingProbeQuery.includes("Inventory.lineReserved(sl) > 0")
+      && outgoingProbeQuery.includes("Inventory.toReserve(Inventory.shipment(sl))"),
+    "La sonda aislada debe usar el mismo agregado nativo directo que la exportación consolidada."
+  );
+  assert.doesNotMatch(outgoingProbeQuery, /ShipmentResLedger/);
+  assert.equal(
+    (replenishmentExportSource.match(/Inventory.lineReserved\(Inventory\.ShipmentLine sl\)/g) ?? []).length,
+    2,
+    "La exportación y la sonda deben compartir ambas la agregación directa de ShipmentLine."
+  );
   assert.equal(
     (outgoingExportQuery.match(/Sales\.OrderLine ol/g) ?? []).length,
     1,
