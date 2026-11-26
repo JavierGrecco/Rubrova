@@ -448,7 +448,11 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /java-version: "21"/);
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f build\/rubrova\/pom[.]xml -Passemble -DskipTests package/);
   assert.match(runtimeWorkflowSource, /Recompilar servidor y cliente web con dependencias de runtime/);
-  assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor\/platform\/pom[.]xml -pl server,web-client -am -DskipTests package/);
+  assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor/);
+  assert.match(runtimeWorkflowSource, /-DskipTests -Dgwt[.]compiler[.]skip=true package/);
+  assert.match(runtimeWorkflowSource, /GWT_BOOTSTRAP/);
+  assert.match(runtimeWorkflowSource, /GWT_FRAGMENT/);
+  assert.match(runtimeWorkflowSource, /timeout --signal=TERM --kill-after=30s 8m/);
   assert.doesNotMatch(runtimeWorkflowSource, /-f vendor\/platform\/pom[.]xml -pl server,web-client -am -Passemble/);
   assert.match(runtimeWorkflowSource, /WEB-INF\/lib\/api-6[.]2[.]jar/);
   assert.match(runtimeWorkflowSource, /rubrova-client-api[.]jar/);
