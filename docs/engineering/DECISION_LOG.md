@@ -31,3 +31,13 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Contexto:** el build de artefactos del run [45730502272](https://github.com/JavierGrecco/Rubrova/actions/runs/45730502272) terminó correctamente, pero ambos servidores nativos fallaron al cargar el módulo por sintaxis inválida.
 - **Decisión:** la aceptación requiere ejecutar el servidor recién construido, esperar la carga de módulos y ejecutar una acción autenticada de contrato. Los tests estáticos y la compilación son gates previos, no evidencia final de runtime.
 - **Consecuencia:** el smoke nativo es obligatorio para afirmar que un módulo lsFusion puede ejecutarse. Un job marcado `continue-on-error` queda clasificado como diagnóstico y no como aceptación.
+
+## ADR-0004 — Usar una clave compuesta de negocio para serializar líneas de venta
+
+- **Estado:** Aceptada para el contrato de exportación; su estabilidad con distintas series/compañías requiere prueba de instalación real.
+- **Ámbito:** identidad de compromisos de salida en la exportación nativa.
+- **Contexto:** el agregado de negocio que se consolida es `Sales.OrderLine`, pero la capa de exportación no debe asumir que toda clase tenga un `id()` utilizable. La lógica actual serializa cada línea con el número comercial de la orden y el índice de la línea.
+- **Decisión:** dentro de MyCompany se agrupa y suma por el objeto `Sales.OrderLine`; hacia JSON se expone `sourceLineId = Sales.number(Order) + Sales.index(OrderLine)`. Esta es una clave de intercambio, no una sustitución del agregado interno ni una promesa de clave primaria universal.
+- **Consecuencia:** el adaptador rechaza claves compuestas duplicadas; la documentación de proyección debe describir la misma identidad. La versión de `main` consultada todavía contiene una redacción anterior que menciona `Sales.OrderLine.id`; esa diferencia se debe reconciliar al actualizar la rama contra `main`, sin reintroducir un ID que el contrato actual no usa.
+- **Evidencia:** `RubrovaReplenishmentExport.lsf`, `scripts/replenishment/adapt_mycompany_native_export.py`, `docs/PROJECTED_STOCK_AND_REPLENISHMENT.md` de esta rama. Las pruebas estáticas prohíben el uso de `Sales.id(...)` y `Purchase.id(...)`.
+- **Pendiente:** verificar unicidad de número de orden + índice dentro de las series, compañías y particiones del MyCompany real que se soporten. Si el ámbito de unicidad necesita compañía/serie, ampliar el contrato con una versión explícita.
