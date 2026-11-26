@@ -24,6 +24,7 @@ NATIVE_SOURCE_SEMANTICS = {
     "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
     "inventoryExpectedCoverage": "all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts",
     "emptyAggregatePolicy": "raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0",
+    "emptyCollectionPolicy": "collection counts are authoritative; an omitted collection is an empty list only when its count is zero",
     "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
     "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
@@ -55,6 +56,23 @@ def _rows(value: Any, field: str) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise ValueError(f"{field} debe ser una lista.")
     return [_object(row, f"{field}[{index}]") for index, row in enumerate(value)]
+
+
+def _counted_rows(source: dict[str, Any], field: str) -> list[dict[str, Any]]:
+    count_field = f"{field}Count"
+    count = source.get(count_field)
+    if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        raise ValueError(f"{count_field} debe ser un entero no negativo.")
+    value = source.get(field)
+    if value is None and count == 0:
+        rows: list[dict[str, Any]] = []
+    else:
+        rows = _rows(value, field)
+    if len(rows) != count:
+        raise ValueError(
+            f"{count_field}={count} no coincide con la cantidad de filas de {field} ({len(rows)})."
+        )
+    return rows
 
 
 def _text(value: Any, field: str) -> str:
@@ -207,9 +225,9 @@ def build_normalized_snapshot(
     policy = _object(policy, "policy")
     _validate_native_source(source)
 
-    inventory_rows = _rows(source.get("inventory"), "inventory")
-    outgoing_rows = _rows(source.get("outgoingCommitments"), "outgoingCommitments")
-    receipt_rows = _rows(source.get("receipts"), "receipts")
+    inventory_rows = _counted_rows(source, "inventory")
+    outgoing_rows = _counted_rows(source, "outgoingCommitments")
+    receipt_rows = _counted_rows(source, "receipts")
 
     inventory: list[dict[str, Any]] = []
     balances: dict[tuple[str, str], dict[str, int]] = {}
