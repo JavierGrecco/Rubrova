@@ -1051,7 +1051,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /rubrovaExportReplenishmentSource/);
   assert.match(replenishmentExportSource, /} @@api;/);
   const replenishmentApiActions = [
-    ...replenishmentExportSource.matchAll(/^\w+\s+'[^']+'\s+\(\)\s*\{([\s\S]*?)^\}\s*@@api;/gm)
+    ...replenishmentExportSource.matchAll(/^\\w+\\s+'[^']+'\\s+\\(\\)\\s*\\{([\\s\\S]*?)^\\}\\s*@@api;/gm)
   ];
   assert.equal(
     replenishmentApiActions.length,
@@ -1061,13 +1061,13 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   for (const [index, action] of replenishmentApiActions.entries()) {
     assert.match(
       action[1],
-      /^\s*RETURN JSON FROM/m,
-      `El endpoint MyCompany ${index + 1} debe devolver JSON al cliente HTTP; EXPORT sólo guarda el resultado en la sesión.`
+      /^\\s*EXPORT JSON FROM/m,
+      `El endpoint MyCompany ${index + 1} debe usar la exportación JSON compatible con lsFusion 6.2.`
     );
     assert.doesNotMatch(
       action[1],
-      /^\s*EXPORT JSON FROM/m,
-      "No se permite usar EXPORT como respuesta de una API externa."
+      /^\\s*RETURN JSON FROM/m,
+      "RETURN JSON FROM no es sintaxis del RETURN sin expresión de lsFusion 6.2."
     );
   }
   for (const field of [
