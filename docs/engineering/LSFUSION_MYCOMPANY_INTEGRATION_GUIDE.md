@@ -332,6 +332,93 @@ En el código inspeccionado, active se define de forma distinta según el docume
 
 ready y done son propiedades separadas y su significado varía según el módulo. No diseñar código Rubrova que concluya contabilizado, pagado o stock movido sólo por la presencia del documento o por un estado visual. Seguir exactamente la expresión active(...) que consume el ledger que interesa.
 
+### 6.7 Compras y recepción: procure-to-pay
+
+~~~text
+Purchase.Order / OrderLine
+  └─ confirm Order
+       └─ Inventory.Receipt (ready; expected inbound)
+            └─ ReceiptLine (initialDemand = residual ordered quantity)
+                 ├─ ReceiptResLedger (negative reservation / expected)
+                 └─ mark Receipt done
+                      └─ ReceiptInvLedger (positive physical stock)
+       └─ Invoicing.Bill / BillLine
+            └─ Invoicing.BillDebt (supplier liability)
+                 └─ OutgoingPayment (supplier payment)
+                      └─ Payment / account ledger
+~~~
+
+**Confirmación y recepción:**
+
+- Purchase.Order pertenece al namespace Purchase; contiene vendor, company, location, currency, payment terms, representative, lines, quantity y price.
+- PurchaseOrderConfirmed.confirm(Order) cambia el pedido a confirmed dentro de una sesión nueva y APPLY.
+- PurchaseOrderReceipt relaciona Order/OrderLine con Receipt/ReceiptLine. Calcula recibido como suma de done(ReceiptLine) para recepciones activas y toReceive = ordered - received.
+- Cuando el pedido está confirmado, tiene ubicación y su tipo tiene receiptType, el automatismo crea o reutiliza una recepción ready, añade líneas con el remanente toReceive y actualiza sus cantidades previstas. Esto no significa que la mercadería ya haya ingresado físicamente.
+- La constraint impide recibir por encima de la cantidad pedida. Varias recepciones parciales se suman por la referencia a la línea de orden original.
+- ReceiptResLedger registra reservas esperadas con signo negativo mientras la recepción está ready y no done. La opción increaseAvailableStock(ReceiptType) determina si la recepción esperada se descuenta o no del disponible. No asumir que toda compra confirmada incrementa el stock vendible.
+- Al completar la recepción, ReceiptInvLedger crea la entrada física; la existencia pasa a onHand a través del ledger, no por el estado de la orden de compra.
+- La recepción enlazada conserva proveedor, ubicación, orden y línea original. La configuración del tipo de orden puede impedir bloquear pedidos con recepciones activas o con faltantes pendientes.
+
+**Costo de mercadería:**
+
+- PurchaseOrderReceiptCost aporta costo de ReceiptLine desde el precio de la línea de orden y la cantidad recibida, ajustada por el coeficiente SKU.
+- Es una fuente para enlazar el costo de compra con el movimiento físico, pero no basta por sí sola para aceptar toda la valoración de inventario: todavía hay que mapear lotes, diferencias de precio, moneda, impuestos, ajustes posteriores y política de costo efectiva del resto de módulos.
+
+### 6.8 Factura de proveedor y pago
+
+- PurchaseOrderBill relaciona Order/OrderLine con Bill/BillLine.
+- La política InvoicingPolicy.ordered permite facturar el remanente de cantidad pedida que todavía no aparece facturado. La cantidad facturada se calcula desde BillLine de Bills ready y no canceladas.
+- La extensión PurchaseOrderBillReceipt añade la política delivered: sólo habilita cantidades de ReceiptLine activas, completadas (done > 0) y todavía no asociadas a una BillLine. Al crear la Bill, copia las cantidades efectivamente recibidas y mantiene los enlaces a la línea original de compra y a la recepción.
+- Por ello, pedido, recepción y factura son documentos relacionados pero distintos. Facturar una cantidad no es prueba de que se haya recibido; recibir una cantidad no es prueba de que el proveedor ya haya sido pagado.
+- **Precaución de lectura:** en PurchaseOrderBill, la propiedad de línea llamada paid agrega quantity(BillLine) para Bills done. Es una medida basada en estado/cantidad de documento, no un monto monetario liquidado al proveedor. No reutilizarla como importe de caja ni saldo de deuda.
+- BillDebt integra Bill al modelo de deuda como IncomingDebt. OutgoingPaymentDebt integra OutgoingPayment como OutgoingDebt; sus acciones de matching relacionan obligaciones y pagos mediante importes pagados y pendientes.
+- BillPayment.registerPayment crea un OutgoingPayment vinculado al proveedor, sus cuentas, empresa, moneda y Bill; propone el saldo pendiente y permite registrar el pago. Al completar la conciliación configurada, BillDebt puede cambiar el estado de la Bill a done. Las cuentas y los saldos financieros continúan siendo propiedad del ledger común Payment.
+
+**Invariantes que Rubrova debe preservar:** límite de recibido <= pedido; límite de facturado según la política (pedido o recibido); la misma cantidad recibida/facturada no puede duplicarse por recepciones parciales; deuda y pago se concilian por importe, no por cantidad de producto.
+
+### 6.9 Ventas mayoristas: pedido, reserva, despacho parcial y factura
+
+~~~text
+Sales.Order / OrderLine
+  └─ confirm Order
+       └─ Inventory.Shipment (waiting / reserve)
+            ├─ ShipmentResLedger (planned outgoing reservation)
+            └─ mark as Ready / Done
+                 └─ ShipmentInvLedger (physical outgoing stock)
+       └─ Invoicing.Invoice / InvoiceLine
+            └─ SalesLedgerInvoice (sales reporting)
+~~~
+
+**Pedido y despacho:**
+
+- Sales.Order mantiene customer/department, ubicación, dirección de entrega, moneda, plazo de pago, referencia del cliente, cantidades, precios, descuentos y datos fiscales del pedido.
+- SalesOrderConfirmed confirma el pedido con APPLY/NEWSESSION.
+- SalesOrderShipment crea o reutiliza un Shipment waiting para el remanente de cada línea confirmada. Ejecuta precheckAvailability, que compara la demanda contra disponible y registra reservas; por tanto, la reserva no es todavía una salida física.
+- done(OrderLine) suma unidades despachadas en Shipment activos; toShip es la cantidad pedida menos la despachada. Una constraint impide sobre-despachar.
+- El circuito contempla despachos parciales: shipPartially genera un Shipment para el remanente no reservado. Los links a OrderLine permiten conciliar el total despachado a lo largo de varios documentos.
+- ShipmentResLedger agrega las reservas netas no completadas; ShipmentInvLedger registra la diferencia efectivamente completada. El stock físico se reduce en el ledger cuando el despacho pasa a su estado final correspondiente, no cuando se confirma el pedido.
+
+**Facturación:**
+
+- SalesOrderInvoice permite facturar lo que queda de la cantidad pedida (InvoicingPolicy.ordered).
+- SalesOrderInvoiceShipment agrega la política delivered. La inicialización de ese módulo fija delivered como política predeterminada para los OrderType de Sales.
+- Bajo delivered, toInvoiceShipped suma cantidades done de ShipmentLine activas que todavía no tienen InvoiceLine asociada. El hook fill(Invoice, Order) copia sólo las cantidades ya despachadas, mantiene referencia a OrderLine y marca la relación ShipmentLine → InvoiceLine para evitar facturación duplicada.
+- En consecuencia, el pedido comercial, la reserva, la salida física y la factura son etapas separadas. Hay que conciliar cada cantidad y no utilizar el estado confirmado como sinónimo de despachado o facturado.
+
+### 6.10 Relación entre venta y aprovisionamiento
+
+SalesOrderPurchase relaciona líneas de Sales.OrderLine con Purchase.OrderLine y permite navegar desde un pedido de venta a sus órdenes de compra relacionadas y viceversa. Suma cantidades de las líneas vinculadas y conserva la trazabilidad de ambas órdenes.
+
+Esto es un vínculo de negocio importante para compras bajo pedido, faltantes, distribución y futura planificación. **No se debe inferir sólo por esta relación que MyCompany compra automáticamente todo lo vendido ni que cada vínculo representa una reserva física**: la generación de compra, las políticas de aprovisionamiento, MOQ, múltiplos, proveedor preferente y cobertura deben mapearse y probarse en módulos separados antes de crear automatismos Rubrova.
+
+### 6.11 Analítica comercial y costo
+
+SalesLedger proporciona una clase abstracta de hechos para informes por producto, cliente, ubicación, fecha, cantidad, precio, costo, margen, impuestos e importe. SalesLedgerInvoice incorpora las líneas de facturas activas con cantidades/importes positivos; SalesLedgerBill incorpora notas de crédito activas con cantidades/importes negativos.
+
+El costo base se deriva de cost(item, date) por cantidad. Esta estructura es preferible a reconstruir ventas desde el formulario POS. Antes de utilizar el margen para decisiones productivas, Rubrova debe verificar la política de costo temporal, ajustes retroactivos, devoluciones parciales, descuentos, impuestos y moneda, y reconciliarlo contra el ledger de costos de inventario.
+
+**Implicación de arquitectura:** los canales local, POS y mayorista deben converger a los documentos y ledgers de origen adecuados; los informes analíticos deben leer esas fuentes con claves de canal/área preservadas. No generar un segundo inventario o una tabla de ventas paralela para cada canal.
+
 ## 7. Hallazgos que se deben convertir en regresiones
 
 | Hallazgo | Evidencia en fuente 6.2 | Regla para Rubrova |
