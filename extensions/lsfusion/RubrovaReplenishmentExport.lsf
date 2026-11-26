@@ -34,6 +34,26 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             incomingEligibility = 'Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed',
             incomingAvailabilityPolicy = 'ReceiptType.increaseAvailableStock; skipAvailable is its inverse'
         ),
+        // Los conteos son explícitos: JSON FROM puede omitir una colección anidada sin filas.
+        // El consumidor sólo normaliza una colección ausente a [] cuando su contador es cero.
+        inventoryCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.active(Inventory.Location l) AND MasterData.active(MasterData.Product p)
+                AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                    OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                    OR Inventory.expected(l, p) != 0)),
+            0),
+        outgoingCommitmentsCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.confirmed(Sales.order(Sales.OrderLine ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product),
+            0),
+        receiptsCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.ready(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr)))
+                AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+                AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))),
+            0),
         inventory = (JSON FROM
             productId = MasterData.id(MasterData.Product p),
             productName = MasterData.name(p),
@@ -114,7 +134,14 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
 
 // Endpoints temporales de diagnóstico: aíslan cada consulta sin modificar datos.
 rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
-    RETURN JSON FROM inventory = (JSON FROM
+    RETURN JSON FROM
+        inventoryCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.active(Inventory.Location l) AND MasterData.active(MasterData.Product p)
+                AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
+                    OR Inventory.reserved(l, p) != 0 OR Inventory.planned(l, p) != 0
+                    OR Inventory.expected(l, p) != 0)),
+            0),
+        inventory = (JSON FROM
         productId = MasterData.id(MasterData.Product p),
         locationId = Inventory.id(Inventory.Location l),
         physicalIncoming = (OVERRIDE Inventory.inQuantity(l, p), 0),
@@ -131,7 +158,14 @@ rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
 } @@api;
 
 rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para reposición' () {
-    RETURN JSON FROM outgoingCommitments = (JSON FROM
+    RETURN JSON FROM
+        outgoingCommitmentsCount = (OVERRIDE
+            (GROUP SUM 1 IF Sales.confirmed(Sales.order(Sales.OrderLine ol))
+                AND Sales.toShip(ol) > 0
+                AND Sales.location(Sales.order(ol))
+                AND Sales.shippedProduct(ol) IS MasterData.Product),
+            0),
+        outgoingCommitments = (JSON FROM
         sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol)),
         sourceDocumentId = Sales.number(Sales.order(ol)),
         productId = MasterData.id(Sales.shippedProduct(ol)),
@@ -151,7 +185,14 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
 } @@api;
 
 rubrovaProbeReceipts 'Diagnóstico de recepciones para reposición' () {
-    RETURN JSON FROM receipts = (JSON FROM
+    RETURN JSON FROM
+        receiptsCount = (OVERRIDE
+            (GROUP SUM 1 IF Inventory.ready(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr)))
+                AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
+                AND NOT Inventory.canceled(Inventory.receipt(Inventory.line(rr)))
+                AND Purchase.confirmed(Purchase.order(Purchase.orderLine(Inventory.line(rr))))),
+            0),
+        receipts = (JSON FROM
         lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
         receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
         purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
