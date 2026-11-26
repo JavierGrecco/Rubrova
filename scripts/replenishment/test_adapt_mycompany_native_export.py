@@ -166,6 +166,11 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         ineligible_reserved["reserveEligible"] = False
         source["outgoingReservations"].append(ineligible_reserved)
         source["outgoingReservationsCount"] += 2
+        source["inventory"][0]["grossReserved"] = 3.75
+        source["inventory"][0]["plannedNetReservation"] = 3.75
+        source["inventory"][0]["plannedNetReservationNative"] = 3.75
+        source["inventory"][0]["available"] = 12.25
+        source["inventory"][0]["availableNative"] = 12.25
 
         snapshot = self._build(source)
         cola = next(row for row in snapshot["outgoingCommitments"] if row["productId"] == "PROD-COLA")
