@@ -475,6 +475,16 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 
 ---
 
+
+### 2026-11-26 — REP-022 — Aceptación runtime de captura por barcode (en validación)
+
+- Se añade a la fixture descartable de CI un Adjustment en progreso con una AdjustmentList nativa, enlazada al mismo producto/ubicación sintéticos de POS.
+- La prueba invoca el helper upstream `Inventory.setRealQuantity`, que es el utilizado por `@defineBarCodeSearch`: primero ingresa `0`, verifica que exista una fila y que `listRealQuantity` se agregue a `AdjustmentLine`; luego ingresa `NULL` y verifica que la fila se elimine; finalmente reingresa `2` y concilia ambas cantidades.
+- El Adjustment queda sin validar. No crea InvAdjustment ni modifica InvLedger/onHand, por lo que no contamina la venta POS ni su conciliación.
+- La misma cantidad positiva se consulta después del reinicio del runtime para verificar persistencia de la hoja y del Adjustment padre.
+- **Límite explícito:** esto no acepta todavía `Adjustment.fill` para la distinción entre `onHand=0` y `onHand=NULL`, ni prueba conteo ciego, reconteo, tolerancias, permisos o doble validación. Tampoco equivale a una prueba física con lector barcode real; la ruta de backend se ejercita invocando el helper que usa la pantalla.
+- **Estado inicial:** cambios preparados para PR sobre `main`; compilación lsFusion, preflight y smoke runtime pendientes. No presentar esta prueba como pasada hasta disponer de SHA, run/job y marcadores de aceptación.
+
 ## 11. Anexos históricos preservados
 
 Los anexos siguientes contienen el texto completo de las auditorías, contratos, relaciones, decisiones, iteraciones y hojas de trabajo anteriores. Los estados y referencias de sus cabeceras son históricos. Las secciones vigentes 1–10 prevalecen y se actualizan cuando exista evidencia nueva.
