@@ -1,0 +1,30 @@
+MODULE RubrovaRetailReturns;
+REQUIRE MyCompany;
+
+NAMESPACE Invoicing;
+
+// Cantidad devuelta antes del documento que se está creando.
+// Se excluye el Bill actual para no contar dos veces sus líneas recién copiadas.
+rubrovaPreviouslyReturnedQuantity (Bill currentBill, InvoiceLine originalLine) =
+    OVERRIDE (GROUP SUM quantity(BillLine previousLine)
+        IF invoiceLine(previousLine) = originalLine
+        AND bill(previousLine) != currentBill
+        AND active(bill(previousLine))), 0.0;
+
+// MyCompany CreditNote.create copia inicialmente la cantidad completa.
+// En el tipo retail, reducimos la nueva nota al saldo todavía no devuelto.
+// Así se pueden hacer varias devoluciones parciales sin crear otro ledger.
+rubrovaRemainingReturnQuantity (Bill currentBill, BillLine currentLine) =
+    max(quantity(invoiceLine(currentLine)) (-)
+        rubrovaPreviouslyReturnedQuantity(currentBill, invoiceLine(currentLine)), 0.0);
+
+create (Bill b, Invoice i) + {
+    IF type(i) = invoiceType('retail') THEN {
+        FOR bill(BillLine bl) = b DO {
+            IF rubrovaRemainingReturnQuantity(b, bl) > 0.0 THEN
+                quantity(bl) <- rubrovaRemainingReturnQuantity(b, bl);
+            ELSE
+                DELETE bl;
+        }
+    }
+}

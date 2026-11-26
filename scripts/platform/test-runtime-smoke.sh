@@ -447,14 +447,14 @@ import sys
 
 path = Path(sys.argv[1])
 source = path.read_text(encoding="utf-8")
-old = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;"
-new = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaCISalesFixture;"
+old = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;"
+new = "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaCISalesFixture;"
 if source.count(old) != 1:
     raise SystemExit("No se encontró una única lista de REQUIRE esperada en RubrovaCustom.lsf.")
 path.write_text(source.replace(old, new, 1), encoding="utf-8")
 PY
 
-for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf RubrovaPaymentTerminals.lsf RubrovaReplenishmentExport.lsf RubrovaCISalesFixture.lsf MyCompanyResourceBundle_es_AR.properties; do
+for module_file in RubrovaCustom.lsf RubrovaPOSLocalization.lsf RubrovaIntegrationResilience.lsf RubrovaPaymentTerminals.lsf RubrovaReplenishmentExport.lsf RubrovaRetailReturns.lsf RubrovaCISalesFixture.lsf MyCompanyResourceBundle_es_AR.properties; do
   [[ -s "$COMPOSE_DIR/docker-server/$module_file" ]] || {
     echo "No se preparó el archivo de extensión: $module_file" >&2
     exit 1
@@ -940,7 +940,7 @@ LOG_DIR="$COMPOSE_DIR/docker-server/logs"
 START_LOG="$LOG_DIR/start.log"
 STDOUT_LOG="$LOG_DIR/stdout.log"
 EXPECTED_UPSTREAM_MODULES=712
-EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 6))
+EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 7))
 MODULES_READY=false
 LAST_MODULE_PROGRESS=""
 MODULE_PROGRESS_CHANGED_AT=0
@@ -979,7 +979,7 @@ while (( SECONDS < STARTUP_TIMEOUT_SECONDS )); do
     if (( current_module == total_modules && total_modules >= EXPECTED_TOTAL_MODULES )); then
       ALL_MODULES_READY=true
     elif (( current_module == total_modules && total_modules < EXPECTED_TOTAL_MODULES && SECONDS - MODULE_PROGRESS_CHANGED_AT >= 60 )); then
-      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 5 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
+      echo "La inicialización terminó con $total_modules módulos; se esperaban al menos $EXPECTED_TOTAL_MODULES (MyCompany + 6 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
       exit 1
     fi
   fi
@@ -1018,7 +1018,7 @@ fi
 }
 if [[ "$MODULES_READY" != "true" ]]; then
   echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
-  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 5 módulos Rubrova + 1 fixture temporal de CI)." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 6 módulos Rubrova + 1 fixture temporal de CI)." >&2
   echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
   exit 1
 fi
@@ -1313,6 +1313,7 @@ RUBROVA_CUSTOM_LOG_EVIDENCE=false
 RUBROVA_LOCALIZATION_LOG_EVIDENCE=false
 RUBROVA_RESILIENCE_LOG_EVIDENCE=false
 RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE=false
+RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE=false
 RUBROVA_CI_SALES_LOG_EVIDENCE=false
 echo "Archivos creados en docker-server (primeros 80):"
 find "$COMPOSE_DIR/docker-server" -maxdepth 3 -type f -print | sort | head -n 80 || true
@@ -1327,7 +1328,7 @@ if [[ -d "$LOG_DIR" ]]; then
         tail -n 80 "$log_file"
         ;;
     esac
-    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|RubrovaPaymentTerminals|RubrovaReplenishmentExport|RubrovaCISalesFixture|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
+    matches="$(grep -Ein 'RubrovaCustom|RubrovaPOSLocalization|RubrovaIntegrationResilience|RubrovaPaymentTerminals|RubrovaReplenishmentExport|RubrovaRetailReturns|RubrovaCISalesFixture|topModule|Exception|ERROR|Failed|not found|syntax|module|successfully started' "$log_file" | tail -n 40 || true)"
     if [[ -n "$matches" ]]; then
       printf '%s\n%s\n' "--- Coincidencias: $(basename "$log_file") ---" "$matches"
       if grep -Fq 'RubrovaCustom' <<< "$matches"; then
@@ -1341,6 +1342,9 @@ if [[ -d "$LOG_DIR" ]]; then
       fi
       if grep -Fq 'RubrovaReplenishmentExport' <<< "$matches"; then
         RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE=true
+      fi
+      if grep -Fq 'RubrovaRetailReturns' <<< "$matches"; then
+        RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE=true
       fi
       if grep -Fq 'RubrovaCISalesFixture' <<< "$matches"; then
         RUBROVA_CI_SALES_LOG_EVIDENCE=true
@@ -1368,6 +1372,9 @@ if [[ -n "$SERVER_MATCHES" ]]; then
   if grep -Fq 'RubrovaReplenishmentExport' <<< "$SERVER_MATCHES"; then
     RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE=true
   fi
+  if grep -Fq 'RubrovaRetailReturns' <<< "$SERVER_MATCHES"; then
+    RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE=true
+  fi
   if grep -Fq 'RubrovaCISalesFixture' <<< "$SERVER_MATCHES"; then
     RUBROVA_CI_SALES_LOG_EVIDENCE=true
   fi
@@ -1376,8 +1383,8 @@ else
   printf '%s\n' "$SERVER_LOGS" | tail -n 60
 fi
 
-if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" || "$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE" != "true" || "$RUBROVA_CI_SALES_LOG_EVIDENCE" != "true" ]]; then
-  echo "No se encontró evidencia de carga de los cinco módulos Rubrova y el fixture de precios CI: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE, RubrovaReplenishmentExport=$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE, RubrovaCISalesFixture=$RUBROVA_CI_SALES_LOG_EVIDENCE." >&2
+if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" || "$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE" != "true" || "$RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE" != "true" || "$RUBROVA_CI_SALES_LOG_EVIDENCE" != "true" ]]; then
+  echo "No se encontró evidencia de carga de los seis módulos Rubrova y el fixture de precios CI: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE, RubrovaReplenishmentExport=$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE, RubrovaRetailReturns=$RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE, RubrovaCISalesFixture=$RUBROVA_CI_SALES_LOG_EVIDENCE." >&2
   exit 1
 fi
 echo "Los registros confirman los módulos Rubrova y el fixture de precios CI."

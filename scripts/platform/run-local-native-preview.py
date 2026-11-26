@@ -326,6 +326,7 @@ def ensure_extension_files(logics_dir: Path) -> None:
         "RubrovaIntegrationResilience.lsf",
         "RubrovaPaymentTerminals.lsf",
         "RubrovaReplenishmentExport.lsf",
+        "RubrovaRetailReturns.lsf",
         "MyCompanyResourceBundle_es_AR.properties",
     ]
     for name in module_names:
@@ -376,7 +377,7 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     source = entrypoint.read_text(encoding="utf-8")
     original_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;"
     )
     fixture_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
@@ -414,7 +415,7 @@ def ensure_local_demo_fixture(logics_dir: Path) -> None:
     source = entrypoint.read_text(encoding="utf-8")
     original_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;"
     )
     demo_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
