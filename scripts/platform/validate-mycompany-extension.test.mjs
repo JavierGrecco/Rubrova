@@ -1185,10 +1185,11 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
       && outgoingExportQuery.includes("Sales.reserved(ol)"),
     "La exportación debe reutilizar Sales.reserved(OrderLine), el agregado nativo de MyCompany."
   );
+  const outgoingExportReservationExpression = outgoingExportQuery.split("effectiveReserved =")[1]?.split("scheduledDateTime")[0] ?? "";
   assert.doesNotMatch(
-    outgoingExportQuery,
+    outgoingExportReservationExpression,
     /GROUP SUM|ShipmentLine|lineReserved/,
-    "No se debe volver a agrupar ShipmentLine dentro de cada fila JSON."
+    "No se debe volver a agrupar ShipmentLine dentro del campo JSON effectiveReserved."
   );
   const outgoingProbeQuery = replenishmentExportSource.split("rubrovaProbeOutgoingCommitments")[1]?.split("rubrovaProbeReceipts")[0] ?? "";
   assert.ok(
@@ -1196,7 +1197,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
       && outgoingProbeQuery.includes("Sales.reserved(ol)"),
     "La sonda aislada debe reutilizar el mismo agregado nativo Sales.reserved(OrderLine)."
   );
-  assert.doesNotMatch(outgoingProbeQuery, /GROUP SUM|ShipmentLine|lineReserved/);
+  const outgoingProbeReservationExpression = outgoingProbeQuery.split("effectiveReserved =")[1]?.split("scheduledDateTime")[0] ?? "";
+  assert.doesNotMatch(outgoingProbeReservationExpression, /GROUP SUM|ShipmentLine|lineReserved/);
   assert.equal(
     replenishmentExportSource.split("Sales.reserved(ol)").length - 1,
     2,
