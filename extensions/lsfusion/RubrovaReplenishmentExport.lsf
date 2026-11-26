@@ -8,7 +8,7 @@ NAMESPACE Rubrova;
 // Las cantidades conservan la precisión NUMERIC[16,3] de MyCompany (unidad del SKU).
 
 rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
-    RETURN JSON FROM
+    EXPORT JSON FROM
         schemaVersion = 1,
         snapshotType = 'mycompany-replenishment-source-export',
         sourceSystem = 'MyCompany',
@@ -135,7 +135,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
 
 // Endpoints temporales de diagnóstico: aíslan cada consulta sin modificar datos.
 rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
-    RETURN JSON FROM
+    EXPORT JSON FROM
         inventoryCount = (OVERRIDE
             (GROUP SUM 1 IF Inventory.active(Inventory.Location l) AND MasterData.active(MasterData.Product p)
                 AND (Inventory.inQuantity(l, p) != 0 OR Inventory.outQuantity(l, p) != 0
@@ -159,7 +159,7 @@ rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
 } @@api;
 
 rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para reposición' () {
-    RETURN JSON FROM
+    EXPORT JSON FROM
         outgoingCommitmentsCount = (OVERRIDE
             (GROUP SUM 1 IF Sales.confirmed(Sales.order(Sales.OrderLine ol))
                 AND Sales.toShip(ol) > 0
@@ -186,7 +186,7 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
 } @@api;
 
 rubrovaProbeReceipts 'Diagnóstico de recepciones para reposición' () {
-    RETURN JSON FROM
+    EXPORT JSON FROM
         receiptsCount = (OVERRIDE
             (GROUP SUM 1 IF Inventory.ready(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr)))
                 AND NOT Inventory.done(Inventory.receipt(Inventory.line(rr)))
