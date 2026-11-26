@@ -187,13 +187,49 @@ El operador EXTERNAL permite que la instancia haga llamadas a otro sistema, entr
 - guardar referencia local, referencia remota opaca e ID de correlación;
 - validar firma de webhooks y deduplicar eventos de proveedor.
 
-Rubrova ya tiene RubrovaIntegrationResilience para registrar incidencias, clasificar HTTP y establecer límites de timeout. RubrovaPaymentTerminals añade intenciones, intentos, eventos del proveedor, liquidaciones y reintegros. Son datos auxiliares de integración; no deben convertirse en un segundo ledger contable.
+RubrovaIntegrationResilience ya persiste incidencias, clasifica HTTP y aplica un máximo de 30 segundos a su helper GET; no reintenta automáticamente y no implementa todavía un cliente HTTP genérico para POST/PUT/DELETE. RubrovaPaymentTerminals define el modelo persistente y las pantallas de configuración/trazabilidad de cuentas, terminales, asignaciones, intenciones, intentos, eventos, reintegros y liquidaciones. **Es infraestructura de dominio preparada, no una integración operativa:** el módulo no contiene aún la acción que inicia un cobro real ni la recepción/validación de webhooks o el protocolo del puente local. En todos los casos, estos datos auxiliares no deben convertirse en un segundo ledger contable.
 
 ### 5.3 Frontera de autoridad
 
 Un módulo de adaptación es dueño de la conversación con el proveedor (credenciales, correlación, reintentos, payload normalizado y reconciliación). No es dueño de la venta, el dinero en caja o el stock nativo.
 
 Ejemplo: una intención de cobro puede referenciar Invoice, Retail.Pos y Retail.PaymentMethod; el resultado confirmado se registra como Invoicing.IncomingPayment. La referencia del proveedor y la conciliación pertenecen a Rubrova; el movimiento financiero oficial pertenece a MyCompany.
+
+### 5.4 Estado real de terminales y próximos contratos
+
+La revisión de extensions/lsfusion/RubrovaPaymentTerminals.lsf confirma que actualmente están modeladas las entidades:
+
+- PaymentProviderAccount: proveedor, ambiente, referencia de comercio y referencia al secreto del sistema. No guarda el secreto en claro.
+- PaymentTerminal y PaymentTerminalAssignment: terminal, transporte, bridge host/port y asociación a caja y medio de pago.
+- PaymentTerminalIntent y PaymentTerminalAttempt: factura/caja/medio, importe, moneda, estado, referencias locales/remotas y claves de idempotencia.
+- PaymentProviderEvent: clave de evento, tipo, operación, intento, verificación de firma y estado de procesamiento. No se persiste el cuerpo HTTP completo.
+- PaymentRefund: relación con intento original, Bill y OutgoingPayment.
+- PaymentSettlement y PaymentSettlementLine: bruto, comisiones, impuestos/retenciones, neto y conciliación con IncomingPayment.
+
+El archivo implementa clases, datos, relaciones y formularios de consulta/configuración. No implementa aún el protocolo de cobro contra una terminal, el HTTP POST del proveedor, el worker local, el receptor de webhooks ni las transiciones operativas de los estados. El documento de instalación del runtime ya describe esta pieza como base de configuración y trazabilidad y aclara que todavía no ejecuta cobros reales. La ausencia de acciones EXTERNAL HTTP POST en el código LSF inspeccionado confirma que no se debe vender como integración de terminal terminada.
+
+RubrovaIntegrationResilience:
+
+- Persiste IntegrationIncident en una sesión independiente (NEWSESSION/APPLY); si falla la base principal, intenta un log local de emergencia.
+- Clasifica 429, 408/425, 5xx, 401, 403, 409 y fallos de red/timeout.
+- Su helper rubrovaHttpGet ejecuta EXTERNAL HTTP GET, tiene timeout configurable de 1 a 30.000 ms, y devuelve estado/categoría para que el llamador decida.
+- No reintenta por sí mismo, no expone un cliente HTTP genérico POST/PUT/DELETE y el helper no demuestra todavía firma/verificación de webhooks ni protocolo de terminal local.
+- La respuesta, URL completa, cabeceras sensibles y excepción cruda no se persisten en la incidencia.
+
+**Contrato pendiente antes de una integración real:**
+
+1. Definir adapter por proveedor/terminal con operaciones Create/Charge, QueryStatus, Cancel y Refund, más el protocolo de puente local cuando corresponda.
+2. Congelar una intención de cobro ligada a una Invoice exacta, caja, medio, moneda e importe; una venta editada debe invalidar o expirar la intención anterior.
+3. Derivar una clave estable por intención. Cada reintento de la misma operación remota debe reutilizar la misma clave; una nueva operación comercial recibe otra clave.
+4. Distinguir estados terminales confirmados de respuestas inciertas. Timeout después de enviar el cobro significa resultado desconocido y requiere conciliación, no rechazo. Consultar por referencia antes de reintentar.
+5. Verificar firma/autenticidad del evento, deduplicar por clave de evento de manera durable y relacionarlo con PaymentTerminalAttempt. Manejar eventos tardíos y fuera de orden.
+6. Sólo después de confirmar el cobro, registrar el movimiento autoritativo como Invoicing.IncomingPayment; la intención y el intento no son dinero contabilizado.
+7. Conciliar bruto, comisión, impuestos/retenciones y neto en PaymentSettlement/PaymentSettlementLine con el cobro nativo. Las comisiones no deben reducir silenciosamente el total de venta ni duplicarse como egreso.
+8. Para un reintegro, enlazar PaymentRefund con el Bill y el OutgoingPayment; distinguir pedido al proveedor, confirmado, rechazado y desconocido. No registrar como reintegrado un importe que sólo fue solicitado.
+9. El adaptador debe fallar de manera aislada: efectivo y otras funciones locales siguen operativas aunque el proveedor o el puente estén desconectados.
+10. Validar con simulador determinista y luego hardware real: desconexión antes/después de enviar; respuesta perdida; doble click; webhook duplicado/tardío/firma inválida; reinicio; pago parcial; cancelación; reintegro; liquidación con comisión; conciliación tras recuperar red.
+
+El modo offline local no implica que una terminal bancaria o un QR puedan autorizar un pago sin conectividad. Debe preservarse la venta local en efectivo y dejar explícitamente pendiente cualquier método que requiera el proveedor, según las capacidades reales del dispositivo y adquirente. No inventar un pago aprobado offline.
 
 ## 6. Mapa de dominios y circuitos comprobados en MyCompany 6.2
 

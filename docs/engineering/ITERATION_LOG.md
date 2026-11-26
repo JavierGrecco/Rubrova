@@ -166,3 +166,13 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Analítica:** SalesLedger agrega hechos por producto, cliente, ubicación y tiempo, con cantidad, importe, costo y margen; SalesLedgerInvoice aporta ventas positivas y SalesLedgerBill aporta notas de crédito negativas. La política exacta de costo/retroactividad requiere una investigación específica antes de usar el margen en decisiones productivas.
 - **Reglas incorporadas:** pedido, recepción/despacho, factura y pago son etapas distintas; las cantidades y los importes deben conciliarse por separado; los ledgers nativos siguen siendo la fuente de verdad.
 - **Límites pendientes:** políticas de valoración de stock, lotes y costos ajustados; impuestos/ARCA; compras automáticas, MOQ/múltiplos y proveedor preferente; stock de seguridad, plazo de entrega y abastecimiento multi-sucursal; seguridad/roles y escenarios con datos reales.
+
+
+## 2026-11-26 — REP-018 — Del modelo de terminales al estado real de integración
+
+- **Fuentes inspeccionadas:** extensions/lsfusion/RubrovaPaymentTerminals.lsf, extensions/lsfusion/RubrovaIntegrationResilience.lsf, scripts/platform/fixtures/RubrovaCIIntegrationFixture.lsf, docs/MYCOMPANY_RUNTIME_INSTALL.md.
+- **Hecho observado:** PaymentTerminals define persistencia y formularios para cuenta de proveedor, terminal, asignación POS/medio, intención, intento, evento, reintegro y liquidación. Contiene claves de idempotencia y una bandera de firma verificada, y deliberadamente no guarda el cuerpo HTTP entero.
+- **Límite probado por inspección:** no hay acciones de cobro real ni EXTERNAL HTTP POST en el código LSF del módulo; no hay receptor de webhook ni bridge local implementado. El propio documento de instalación califica el módulo como configuración/trazabilidad y dice que aún no ejecuta cobros reales.
+- **Resiliencia actual:** rubrovaHttpGet clasifica respuestas 429, 408/425, 5xx, 401, 403, 409 y fallo de conexión/timeout, establece timeout entre 1 y 30.000 ms y persiste una incidencia separada. No realiza reintentos automáticos ni implementa métodos HTTP de escritura.
+- **Decisión:** la integración electrónica queda clasificada como modelo preparado, no operativa. Los intentos e intenciones no son el movimiento contable. El cobro confirmado debe registrarse como IncomingPayment; el reintegro confirmado debe conciliarse con Bill y OutgoingPayment; las liquidaciones separan bruto, comisión, retenciones y neto.
+- **Pruebas requeridas:** doble envío, timeout con resultado remoto desconocido, consulta de estado, webhook duplicado/tardío/firma inválida, reinicio, reintegro y conciliación con liquidación; pruebas con bridge y hardware real.
