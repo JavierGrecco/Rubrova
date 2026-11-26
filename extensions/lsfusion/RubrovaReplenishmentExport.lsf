@@ -24,6 +24,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             inventoryPlannedNet = 'Inventory.planned(Location, Product), reservas firmadas que participan en available',
             inventoryExpectedCoverage = 'all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts',
             emptyAggregatePolicy = 'raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0',
+            emptyCollectionPolicy = 'collection counts are authoritative; an omitted collection is an empty list only when its count is zero',
             outgoingIdentity = 'Sales.number(Order) + Sales.index(OrderLine)',
             outgoingOpenQuantity = 'Sales.toShip(OrderLine_confirmed)',
             outgoingScheduledDateTime = 'Sales.scheduledDateTime(Order)',
