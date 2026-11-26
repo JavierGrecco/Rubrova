@@ -106,7 +106,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -139,7 +139,7 @@ class NativePreviewTests(unittest.TestCase):
             logics_dir = Path(temporary)
             (logics_dir / "RubrovaCustom.lsf").write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -159,7 +159,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
                 encoding="utf-8",
             )
 
