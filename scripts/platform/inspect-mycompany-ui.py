@@ -884,7 +884,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
         "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
         "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
-        "outgoingEffectiveReservation": "SUM(ShipmentResLedger.lineReserved by Sales.OrderLine)",
+        "outgoingEffectiveReservation": "SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)",
         "incomingIdentity": "Receipt.number + ReceiptLine.index",
         "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
         "incomingScheduledDateTime": "Receipt.scheduledDateTime",

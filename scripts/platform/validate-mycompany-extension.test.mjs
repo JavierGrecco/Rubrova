@@ -1271,6 +1271,10 @@ test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no conc
   assert.ok(replenishmentBridgeTestsSource.includes("test_unmodeled_planned_reservations_block_planning_even_when_available_matches"));
   assert.ok(replenishmentBridgeTestsSource.includes("test_unrepresented_negative_reservations_block_planning"));
   assert.ok(replenishmentBridgeTestsSource.includes("test_quantities_with_more_than_three_decimals_are_rejected_not_rounded"));
+  assert.ok(
+    uiSmokeSource.includes("\"outgoingEffectiveReservation\": \"SUM(ShipmentLine.lineReserved > 0 where shipment is waiting or ready, grouped by Sales.OrderLine)\","),
+    "El inspector del smoke debe validar la misma semántica de reserva que exporta MyCompany."
+  );
   assert.equal(nativeReplenishmentFixture.snapshotType, "mycompany-replenishment-source-export");
   assert.equal(nativeReplenishmentFixture.readOnly, true);
   assert.ok(nativeReplenishmentFixture.inventory.length > 0);
