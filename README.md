@@ -190,9 +190,9 @@ Ver [Política de ramas e integración](docs/BRANCHING_STRATEGY.md).
 | Documento | Contenido |
 |---|---|
 | [Brief ejecutivo](docs/EXECUTIVE_PRODUCT_BRIEF.md) | Propuesta de producto, segmentos, valor, diferenciadores y estado honesto |
-| [Estado del proyecto](docs/PROJECT_STATUS.md) | Evidencia de CI, capacidades aceptadas, brechas y próximos criterios |
-| [Plan de trabajo](docs/ROADMAP.md) | Fases, prioridades y próximos hitos |
-| [Plan maestro](docs/MASTER_IMPLEMENTATION_PLAN.md) | Secuencia ejecutiva y alcance funcional |
+| [Manual técnico canónico](docs/ENGINEERING_MASTER.md) | Estado, evidencia, arquitectura, contratos, decisiones, reutilización y roadmap técnico en una sola fuente |
+
+
 | [Visión de producto](docs/PRODUCT_VISION.md) | Problema, usuarios, objetivos y principios |
 | [Alcance funcional](docs/FUNCTIONAL_SCOPE.md) | Capacidades del producto y límites |
 | [Requisitos del POS](docs/POS_REQUIREMENTS.md) | Venta, caja, cobro, devoluciones y operación diaria |
@@ -206,8 +206,8 @@ Ver [Política de ramas e integración](docs/BRANCHING_STRATEGY.md).
 | [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Requisitos de identidad, permisos, privacidad, pagos y auditoría |
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Backups, restore, rollback y fallos |
 | [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Ejecución nativa en Apple Silicon |
-| [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de validación y puertas de aceptación |
-| [Base de conocimiento de ingeniería](docs/engineering/README.md) | Contratos, decisiones, relaciones entre módulos e historial de investigaciones |
+
+
 
 ## Alcance y responsabilidad
 
