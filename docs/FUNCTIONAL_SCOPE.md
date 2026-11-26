@@ -65,4 +65,4 @@ Los perfiles agregan flujos, campos y pantallas sobre el mismo núcleo; no dupli
 - [Interoperabilidad contable](ACCOUNTING_INTEROPERABILITY.md)
 - [Investigación de necesidades PyME](PYME_NEEDS_AND_PRODUCT_BACKLOG.md)
 - [Arquitectura](ARCHITECTURE.md)
-- [Roadmap](ROADMAP.md)
+- [Roadmap técnico único](ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado)
