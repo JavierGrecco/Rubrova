@@ -12,6 +12,7 @@ Esta documentación es parte del producto técnico. Se versiona en Git, se revis
 ## Documentos
 
 - [Contratos de integración](CONTRACTS.md): reglas normativas de intercambio, propiedad de datos, seguridad, formatos, versiones y compatibilidad.
+- [Mapa de dominios y relaciones](DOMAIN_RELATIONSHIPS.md): propiedad de datos, relaciones observadas, claves y dependencias entre módulos.
 - [Registro de decisiones](DECISION_LOG.md): decisiones técnicas/arquitectónicas con contexto, alternativas, fundamento, consecuencias y estado.
 - [Registro de iteraciones](ITERATION_LOG.md): investigaciones cronológicas con síntoma, evidencia, diagnóstico, cambio y validación.
 - [Plantilla de registro](RECORD_TEMPLATE.md): estructura para nuevas decisiones e iteraciones.
