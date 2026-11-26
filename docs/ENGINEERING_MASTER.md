@@ -273,14 +273,14 @@ Circuito:
 
 No desarrollar otro motor de stocktake. Extender el existente con conteo ciego, zona/operador, reconteo, tolerancias, aprobación, evidencia y auditoría.
 
-**Hallazgos de fuente, separados por alcance:**
+**Semántica comprobada por fuente y documentación del lenguaje:**
 
-1. **Conteo cero por barcode (riesgo concreto):** AdjustmentListSearch.setRealQuantity(a,p,loc,q) usa `IF q THEN` para decidir si guarda la cantidad. Si ya hay una línea y q=0, ejecuta `DELETE AdjustmentListLine`; si no existe línea, tampoco la crea. Cero queda tratado como “sin valor/borrar”, no como cantidad física válida. Es el camino llamado por `@defineBarCodeSearch(adjustmentList, a, l, realQuantity)`.
-2. **Efecto sobre el ajuste padre:** AdjustmentList.listRealQuantity suma las filas de las hojas por (Adjustment, Product, Location). AdjustmentList crea/actualiza la línea principal sólo cuando cambia ese agregado. Al borrar la última fila cero, la clave agregada puede desaparecer y la línea padre no recibe una cantidad física cero. AdjustmentInProgress hace la línea padre de sólo lectura cuando useList está activo, así que el camino de hojas es decisivo. AdjustmentDone calcula `difference = realQuantity - theoreticalQuantity` y crea InvAdjustment sólo cuando hay diferencia.
-3. **Fill y productos con onHand=0 (limitación distinta):** Adjustment.fill incluye productos de ubicaciones descendientes para los que onHand(location, product) es verdadero. Un artículo con onHand positivo en el sistema sí queda disponible para contar físicamente cero; por tanto no es correcto afirmar que Fill impide registrar la falta total de ese artículo. Sí quedan fuera los productos cuyo onHand del sistema ya es cero/nulo, lo que dificulta un inventario amplio que busque excedentes físicos no registrados. Hay que decidir si esa selección es el comportamiento intencional del modo “todos” o una limitación.
-4. **Estado de validación:** estos puntos son observaciones estáticas de lsFusion 6.2 fijado; no se ha ejecutado todavía el circuito en runtime. La corrección prevista distingue NULL (borrar/ausencia) de 0 (conteo exacto), sin cambiar el InvLedger ni crear otro motor de stocktake.
+1. `AdjustmentListSearch.setRealQuantity(a,p,loc,q)` recibe una cantidad `NUMERIC[16,3]` y usa `IF q THEN` en las ramas de actualización/creación; el `ELSE` elimina la línea. En lsFusion, una condición se cumple cuando su valor no es `NULL`, no cuando el número es distinto de cero. Por eso `q=0` es un valor presente y entra en la rama de guardar; el borrado corresponde a `q=NULL`. Ver la documentación v6 de [IF ... THEN](https://docs.lsfusion.org/v6/IF_..._THEN_action_operator/) y [operadores de selección](https://docs.lsfusion.org/v6/Selection_CASE_IF_MULTI_OVERRIDE_EXCLUSIVE/).
+2. `AdjustmentList.listRealQuantity` agrega las filas de las hojas por (Adjustment, Product, Location). Una fila existente cuya cantidad sea cero mantiene una fila para ese agregado; una colección sin filas puede, en cambio, producir un agregado `NULL`. `Adjustment` crea/actualiza la línea principal desde ese agregado; `AdjustmentDone` calcula `difference = realQuantity - theoreticalQuantity` y genera `InvAdjustment` cuando corresponde.
+3. `Adjustment.fill` filtra con `level(...) AND onHand(location, product)`. Esa condición de lsFusion prueba que `onHand` no sea `NULL`; no es un filtro `onHand > 0`. Un saldo numérico cero no se excluye por ser cero. Los productos cuyo `onHand` resulte `NULL` sí pueden quedar fuera del autollenado; probar especialmente productos sin movimientos y decidir cómo incorporarlos a un conteo amplio.
+4. **Corrección de auditoría:** la hipótesis anterior de que `IF q THEN` trataba `0` como falso era incorrecta y se retira. No se debe parchear `AdjustmentListSearch` con `IS NOT NULL` ni crear lógica paralela. El fuente vendorizado se restauró byte por byte al original fijado; queda pendiente una prueba de runtime de `q=0`, `q=NULL`, agregado en hojas y `Fill` para convertir la semántica documentada en evidencia de instalación.
 
-**Pruebas imprescindibles:** barcode con cero sobre una cantidad teórica positiva; cero en hoja sin línea previa; edición manual de una línea a cero; suma de varias hojas con una en cero; borrar explícitamente una línea; comprobar línea padre y diferencia -teórico; validar y comprobar un único InvAdjustment negativo, InvLedger, reportes y persistencia. Además: artículo omitido por Fill; artículo sin movimientos; dos ubicaciones; cambio de stock entre fecha teórica y conteo; recuento; cancelación; validación duplicada; permisos de depósito; lote/serie; costo del ajuste y reinicio.
+**Pruebas imprescindibles:** capturar por barcode cero en una hoja sin línea y con línea existente; probar `NULL` como borrado; verificar que una fila cero se conserva y propaga a la línea principal y `difference=-teórico`; probar el efecto de validación/InvLedger en una ubicación aislada; probar `onHand=0` no nulo frente a `onHand=NULL`/sin movimientos; además varias hojas, dos ubicaciones, cambios de stock tras la fecha teórica, reconteo, cancelación, doble validación, permisos, lotes, costo y persistencia.
 
 ### 5.6 Compras, recepciones y costo de inventario
 
@@ -313,7 +313,7 @@ SalesLedger.costAmount es ABSTRACT VALUE con implementación planificada y exten
 | MasterData.getCategories | Categorías y jerarquía | Identidad y vigencia por versionar |
 | MasterData.getItemAttributes | Atributos por producto | Esquema dinámico/opcional |
 | Sales.getPrices | Precio por tipo/lista/fecha | Moneda, impuestos, UOM y vigencia |
-| Inventory.getInventory | onHand por producto/ubicación | No es available; omite filas sin saldo relevante |
+| Inventory.getInventory | onHand por producto/ubicación | No es available; el filtro `onHand(...)` excluye valores NULL, no saldos numéricos cero |
 | Sales.newOrders | Crear pedido desde JSON | Create-only por número; si existe lo ignora, no upsert |
 | Sales.deleteOrders | Borrar pedido | Sólo borrador |
 | ProjectManagement.getTasks/addTasks | Consultar/crear/actualizar tareas | IDs y relaciones; idempotencia externa no garantizada |
@@ -390,7 +390,7 @@ Las claves de intercambio del export de reposición no son necesariamente PK: in
 ### P0 — primero, antes de ampliar el circuito comercial
 
 1. **Devolución parcial:** diagnosticar cuerpo 5-byte y Content-Type; investigar Bill.amount y OutgoingPayment.amount; probar dos credit notes, rechazo real, egresos correctos, Receipt, InvLedger, neto por método, acumulado de reintegros, cancelación y reinicio.
-2. **Stocktake cero:** corregir setRealQuantity para guardar q=0 y borrar sólo con NULL; probar cero en barcode, agregación de hojas, diferencia negativa, único InvAdjustment e impacto en InvLedger. Separar la política de Fill para artículos con onHand=0.
+2. **Stocktake: aceptación runtime de NULL/cero y selección Fill:** probar que q=0 se crea/actualiza, q=NULL limpia y una hoja con cantidad cero se agrega al Adjustment padre; comprobar `difference`, InvAdjustment e InvLedger en ubicación aislada. Diferenciar `onHand=0` (valor presente) de `onHand=NULL` (sin balance derivado) en el autollenado y definir cómo agregar productos sin movimientos.
 3. **FIFO temporal:** reproducir salida anterior a entrada; definir semántica; sólo entonces cambiar algoritmo y test.
 4. **SalesLedger costo real:** probar sin/partial/full shipment y devoluciones sin/con receipt; confirmar selección/semántica de ABSTRACT VALUE.
 5. **Restore selectivo:** fallo pg_restore, fallo por tabla, import parcial y cleanup; error inequívoco, sin DB temporal huérfana ni aplicación parcial.
@@ -464,6 +464,14 @@ Cada nueva entrada se añade en orden cronológico aquí:
 - Hito de roadmap.
 
 No llamar “solucionado” a un error sin reproducir la solución en la prueba que fallaba.
+
+### 2026-11-26 — REP-021 — Corrección de semántica NULL/cero en stocktake
+
+- La hipótesis inicial de que `IF q THEN` borraba la cantidad `0` se basó en interpretar la condición como truthiness numérica. Esa interpretación era incorrecta para lsFusion: la condición se considera cumplida cuando el valor no es `NULL`; `NUMERIC 0` es un valor no nulo.
+- La misma precisión aplica a `Adjustment.fill` y `InvLedgerAPI`: usar `onHand(...)` como condición comprueba presencia, no `onHand > 0`. Un valor numérico cero puede pasar; un resultado `NULL` puede quedar fuera.
+- Se retiró el parche temporal de `IS NOT NULL`, se eliminó la prueba estática derivada de la hipótesis y se restauró `AdjustmentListSearch.lsf` exactamente al blob original fijado (`557ab54dc51c14a06b45d952295db58c33ca9d66`). El script de parches Rubrova ya no contiene esa transformación.
+- **Estado:** fuente y semántica documental corregidas; runtime de conteo por barcode y política de `Fill` siguen pendientes. No afirmar que el circuito se validó en ejecución.
+
 
 ---
 
@@ -681,7 +689,7 @@ Los módulos siguientes están en los árboles de dominio requeridos y aportan a
 | MasterData.getCategories | jerarquía de categorías | versionado y claves |
 | MasterData.getItemAttributes | valores de atributos por artículo | atributos opcionales/dinámicos |
 | Sales.getPrices | precio por tipo/lista y fecha | moneda, impuestos y vigencia |
-| Inventory.getInventory | onHand por producto/ubicación | no devuelve available/reservas |
+| Inventory.getInventory | onHand por producto/ubicación | no devuelve available/reservas; condiciona por presencia de onHand, no por saldo positivo |
 | Sales.newOrders | importar pedidos y líneas desde JSON | sólo alta; número existente hace que se ignore la fila |
 | Sales.deleteOrders | borrar pedidos por número | sólo estado draft; no cancela confirmados |
 | ProjectManagement.getTasks/addTasks | consultar/importar tareas | mapear relaciones, IDs y asignados |
