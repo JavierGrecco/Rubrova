@@ -726,8 +726,27 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
 
 
 
+def _native_collection(payload: dict[str, Any], field: str, label: str) -> list[dict[str, Any]]:
+    count_field = f"{field}Count"
+    expected_count = payload.get(count_field)
+    if isinstance(expected_count, bool) or not isinstance(expected_count, int) or expected_count < 0:
+        raise ValueError(f"{count_field} debe ser un entero no negativo.")
+    rows = payload.get(field)
+    # lsFusion puede omitir el objeto JSON anidado si la consulta no tiene filas.
+    # Sólo se interpreta como [] cuando el contador nativo independiente confirma cero filas.
+    if rows is None and expected_count == 0:
+        rows = []
+    if not isinstance(rows, list):
+        raise ValueError(f"{field} es {type(rows).__name__}; {count_field}={expected_count}.")
+    if len(rows) != expected_count:
+        raise ValueError(f"{count_field}={expected_count} no coincide con {len(rows)} filas en {field}.")
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError(f"Todos los elementos de {field} deben ser objetos JSON.")
+    return rows
+
+
 def probe_replenishment_source_sections(context: Any, url: str) -> None:
-    """Locate and validate each MyCompany source collection before the combined export."""
+    """Validate native array shape and count on each independently authenticated endpoint."""
     endpoint = application_endpoint_url(url, "exec/Rubrova.")
     probes = (
         ("inventory", "inventory", "rubrovaProbeInventory"),
@@ -739,7 +758,7 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
         response = context.request.get(endpoint + action, timeout=20_000)
         print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
         if response.status != 200:
-            detail = response.text()[:1800].replace("\r", " ").replace("\n", " ")
+            detail = response.text()[:1800].replace("\\r", " ").replace("\\n", " ")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ERROR={detail}")
             failures.append(f"{label}: HTTP {response.status} ({detail[:500]})")
             continue
@@ -750,16 +769,13 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
                 payload = payload[0] if len(payload) == 1 else {}
             if not isinstance(payload, dict):
                 raise ValueError(f"la raíz JSON es {type(payload).__name__}, no un objeto")
-            rows = payload.get(collection_field)
+            rows = _native_collection(payload, collection_field, label)
+            count_field = f"{collection_field}Count"
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROOT_KEYS=" + json.dumps(sorted(payload)))
-            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_COLLECTION_TYPE={type(rows).__name__}")
-            if not isinstance(rows, list):
-                raise ValueError(
-                    f"{collection_field} es {type(rows).__name__}; "
-                    f"claves recibidas={sorted(payload)}"
-                )
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_COLLECTION_TYPE=list")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROWS={len(rows)}")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_SOURCE_COUNT={payload[count_field]}")
         except ValueError as error:
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
             failures.append(f"{label}: respuesta JSON incompatible ({error})")
@@ -768,7 +784,6 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
             "Falló la estructura de una consulta aislada de la exportación MyCompany: "
             + "; ".join(failures)
         )
-
 
 def verify_replenishment_source_export(context: Any, url: str) -> None:
     """Validate the native MyCompany export without mutating the ERP."""
@@ -821,6 +836,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "inventoryPlannedNet": "Inventory.planned(Location, Product), reservas firmadas que participan en available",
         "inventoryExpectedCoverage": "all negative ResLedger reservations for exact product/location; not limited to confirmed purchase receipts",
         "emptyAggregatePolicy": "raw *Native fields preserve NULL; effective numeric fields use OVERRIDE fallback 0",
+        "emptyCollectionPolicy": "collection counts are authoritative; an omitted collection is an empty list only when its count is zero",
         "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
         "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
         "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
@@ -835,13 +851,14 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         raise RuntimeError("sourceSemantics no coincide con el contrato de exportación MyCompany 6.2.")
 
     collections: dict[str, list[dict[str, Any]]] = {}
+    source_counts: dict[str, int] = {}
     for field in ("inventory", "outgoingCommitments", "receipts"):
-        rows = payload.get(field)
-        if not isinstance(rows, list):
-            raise RuntimeError(f"La colección {field} debe ser una lista JSON.")
-        if any(not isinstance(row, dict) for row in rows):
-            raise RuntimeError(f"Todos los elementos de {field} deben ser objetos JSON.")
+        try:
+            rows = _native_collection(payload, field, "export")
+        except ValueError as error:
+            raise RuntimeError(f"Contrato inválido para {field}: {error}") from error
         collections[field] = rows
+        source_counts[field] = payload[f"{field}Count"]
 
     def numeric(row: dict[str, Any], field: str, row_label: str) -> float:
         value = row.get(field)
@@ -931,9 +948,9 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "UI_REPLENISHMENT_SOURCE_EXPORT_COUNTS="
         + json.dumps(
             {
-                "inventory": len(collections["inventory"]),
-                "outgoingCommitments": len(collections["outgoingCommitments"]),
-                "receipts": len(collections["receipts"]),
+                "inventory": {"source": source_counts["inventory"], "rows": len(collections["inventory"])},
+                "outgoingCommitments": {"source": source_counts["outgoingCommitments"], "rows": len(collections["outgoingCommitments"])},
+                "receipts": {"source": source_counts["receipts"], "rows": len(collections["receipts"])},
             },
             ensure_ascii=False,
         )
