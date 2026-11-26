@@ -184,7 +184,11 @@ class NativePostgresBackupTests(unittest.TestCase):
 
         def failing_restore(command, **kwargs):
             calls.append(command)
-            if Path(command[0]).name == "pg_restore" and "--list" not in command:
+            if (
+                Path(command[0]).name == "pg_restore"
+                and "--list" not in command
+                and "--version" not in command
+            ):
                 raise backup.BackupError("restore simulated failure")
             return self.fake_run(command, **kwargs)
 
