@@ -1109,6 +1109,20 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /readOnly = TRUE/);
   assert.match(replenishmentExportSource, /asOfDateTime = currentDateTime\(\)/);
   assert.match(replenishmentExportSource, /emptyAggregatePolicy =/);
+  assert.match(replenishmentExportSource, /emptyCollectionPolicy = 'collection counts are authoritative/);
+  for (const countField of ["inventoryCount", "outgoingCommitmentsCount", "receiptsCount"]) {
+    assert.match(
+      replenishmentExportSource,
+      new RegExp(countField + " = \\(OVERRIDE\\s+\\(GROUP SUM 1 IF")
+    );
+    assert.ok(
+      replenishmentExportSource.split(countField + " =").length - 1 >= 2,
+      countField + " debe existir tanto en la exportación completa como en su sonda aislada."
+    );
+  }
+  assert.ok(uiSmokeSource.includes("def _native_collection("));
+  assert.ok(uiSmokeSource.includes("expected_count == 0"));
+  assert.ok(uiSmokeSource.includes("len(rows) != expected_count"));
   const outgoingExportQuery = replenishmentExportSource.split("outgoingCommitments = (JSON FROM")[1]?.split("        receipts = (JSON FROM")[0] ?? "";
   assert.equal(
     (outgoingExportQuery.match(/Sales\.OrderLine ol/g) ?? []).length,
