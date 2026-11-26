@@ -297,6 +297,331 @@ rubrovaPartialReturnsReconciliationApi () {
         onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
 } @@api;
 
+
+// Escenario aislado de reintegros mixtos. Usa otra caja/turno para no modificar
+// la conciliación histórica del smoke principal.
+rubrovaCIMixedSession() = GROUP MAX Retail.Session s
+    IF Retail.pos(s) = Retail.pos('rubrova-ci-refund');
+
+rubrovaCIMixedInvoice() = GROUP MAX Invoicing.Invoice i
+    IF Retail.session(i) = rubrovaCIMixedSession()
+       AND Invoicing.countProductLines(i) > 0;
+
+rubrovaCIMixedInvoiceLine() = GROUP MAX Invoicing.InvoiceLine il
+    IF Invoicing.invoice(il) = rubrovaCIMixedInvoice()
+       AND Invoicing.item(il) = rubrovaCITestProduct();
+
+rubrovaCIMixedActiveReturnCount() = OVERRIDE (GROUP SUM 1
+    IF Retail.session(Invoicing.Bill b) = rubrovaCIMixedSession()
+       AND Invoicing.active(b)), 0;
+
+rubrovaCIMixedActiveReturnAmount() = OVERRIDE (GROUP SUM Invoicing.amount(Invoicing.Bill b)
+    IF Retail.session(b) = rubrovaCIMixedSession()
+       AND Invoicing.active(b)), 0.0;
+
+rubrovaCIMixedReturnedQuantity() = OVERRIDE Invoicing.returned(rubrovaCIMixedInvoiceLine()), 0.0;
+
+rubrovaCIMixedActivePaymentCount(PaymentMethod pm) = OVERRIDE (GROUP SUM 1
+    IF Retail.session(Invoicing.Bill b) = rubrovaCIMixedSession()
+       AND Retail.paymentMethod(b, Invoicing.OutgoingPayment p) = pm
+       AND Invoicing.active(p)), 0;
+
+rubrovaCIMixedActivePaymentAmount(PaymentMethod pm) = OVERRIDE (GROUP SUM Invoicing.paid(Invoicing.Bill b, Invoicing.OutgoingPayment p)
+    IF Retail.session(b) = rubrovaCIMixedSession()
+       AND Retail.paymentMethod(b, p) = pm
+       AND Invoicing.active(p)), 0.0;
+
+rubrovaCIMixedFirstRefundBill = DATA Invoicing.Bill ();
+rubrovaCIMixedOverLimitRejected = DATA BOOLEAN ();
+rubrovaCIMixedOverLimitMessage = DATA STRING[1000] ();
+rubrovaCIMixedOverLimitRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
+rubrovaCIMixedOverLimitMessageLocal = DATA LOCAL NESTED STRING[1000] ();
+rubrovaCIMixedRaceAAccepted = DATA LOCAL NESTED BOOLEAN ();
+rubrovaCIMixedRaceAMessage = DATA LOCAL NESTED STRING[1000] ();
+rubrovaCIMixedRaceBAccepted = DATA LOCAL NESTED BOOLEAN ();
+rubrovaCIMixedRaceBMessage = DATA LOCAL NESTED STRING[1000] ();
+rubrovaCIMixedBillCancelOverLimitRejected = DATA BOOLEAN ();
+rubrovaCIMixedBillCancelOverLimitMessage = DATA STRING[1000] ();
+rubrovaCIMixedBillCancelRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
+rubrovaCIMixedBillCancelMessageLocal = DATA LOCAL NESTED STRING[1000] ();
+
+rubrovaEnsureCIMixedSale () {
+    IF NOT rubrovaCIMixedSession() THEN {
+        NEW mixedSession = Retail.Session {
+            Retail.pos(mixedSession) <- Retail.pos('rubrova-ci-refund');
+        }
+        APPLY SERIALIZABLE;
+        IF canceled() THEN RETURN;
+    }
+
+    IF NOT rubrovaCIMixedInvoice() THEN
+        NEWSESSION {
+            NEW mixedInvoice = Invoicing.Invoice {
+                Retail.session(mixedInvoice) <- rubrovaCIMixedSession();
+                Invoicing.clone(mixedInvoice, rubrovaCITestInvoice());
+
+                NEW cashIncoming = Invoicing.IncomingPayment {
+                    Invoicing.done(cashIncoming) <- TRUE;
+                    Retail.paymentMethod(cashIncoming, mixedInvoice) <- Retail.cashPaymentMethod();
+                    Invoicing.type(cashIncoming) <- Retail.incomingPaymentType(Retail.cashPaymentMethod());
+                    Invoicing.company(cashIncoming) <- Invoicing.company(mixedInvoice);
+                    Invoicing.companyAccount(cashIncoming) <- Retail.account(Retail.pos(Retail.session(mixedInvoice)), Retail.cashPaymentMethod());
+                    Invoicing.partner(cashIncoming) <- Invoicing.customer(mixedInvoice);
+                    Invoicing.amount(cashIncoming) <- 500;
+                    Invoicing.paid(cashIncoming, mixedInvoice) <- 500;
+                }
+
+                NEW cardIncoming = Invoicing.IncomingPayment {
+                    Invoicing.done(cardIncoming) <- TRUE;
+                    Retail.paymentMethod(cardIncoming, mixedInvoice) <- Retail.paymentMethod('card');
+                    Invoicing.type(cardIncoming) <- Retail.incomingPaymentType(Retail.paymentMethod('card'));
+                    Invoicing.company(cardIncoming) <- Invoicing.company(mixedInvoice);
+                    Invoicing.companyAccount(cardIncoming) <- Retail.account(Retail.pos(Retail.session(mixedInvoice)), Retail.paymentMethod('card'));
+                    Invoicing.partner(cardIncoming) <- Invoicing.customer(mixedInvoice);
+                    Invoicing.amount(cardIncoming) <- 750;
+                    Invoicing.paid(cardIncoming, mixedInvoice) <- 750;
+                }
+
+                Invoicing.ready(mixedInvoice) <- TRUE;
+                APPLY SERIALIZABLE;
+                IF canceled() THEN RETURN;
+            }
+        }
+}
+
+rubrovaCreateCIMixedReturn (Invoicing.Bill b, Invoicing.Invoice i,
+                            NUMERIC[16,3] explicitQuantity,
+                            NUMERIC[14,2] cashRefund,
+                            NUMERIC[14,2] cardRefund) {
+    Retail.session(b) <- Retail.session(i);
+    Invoicing.create(b, i);
+    executeLocalEvents();
+
+    IF explicitQuantity > 0.0 THEN
+        FOR Invoicing.bill(Invoicing.BillLine bl) = b DO
+            Invoicing.quantity(bl) <- explicitQuantity;
+
+    executeLocalEvents();
+
+    IF cashRefund > 0.0 THEN
+        NEW cashOutgoing = Invoicing.OutgoingPayment {
+            Invoicing.done(cashOutgoing) <- TRUE;
+            Retail.paymentMethod(b, cashOutgoing) <- Retail.cashPaymentMethod();
+            Invoicing.type(cashOutgoing) <- Retail.outgoingPaymentType(Retail.cashPaymentMethod());
+            Invoicing.company(cashOutgoing) <- Invoicing.company(b);
+            Invoicing.companyAccount(cashOutgoing) <- Retail.account(Retail.pos(Retail.session(b)), Retail.cashPaymentMethod());
+            Invoicing.partner(cashOutgoing) <- Invoicing.vendor(b);
+            Invoicing.amount(cashOutgoing) <- cashRefund;
+            Invoicing.paid(b, cashOutgoing) <- cashRefund;
+        }
+
+    IF cardRefund > 0.0 THEN
+        NEW cardOutgoing = Invoicing.OutgoingPayment {
+            Invoicing.done(cardOutgoing) <- TRUE;
+            Retail.paymentMethod(b, cardOutgoing) <- Retail.paymentMethod('card');
+            Invoicing.type(cardOutgoing) <- Retail.outgoingPaymentType(Retail.paymentMethod('card'));
+            Invoicing.company(cardOutgoing) <- Invoicing.company(b);
+            Invoicing.companyAccount(cardOutgoing) <- Retail.account(Retail.pos(Retail.session(b)), Retail.paymentMethod('card'));
+            Invoicing.partner(cardOutgoing) <- Invoicing.vendor(b);
+            Invoicing.amount(cardOutgoing) <- cardRefund;
+            Invoicing.paid(b, cardOutgoing) <- cardRefund;
+        }
+
+    Invoicing.ready(b) <- TRUE;
+}
+
+rubrovaTestCumulativeRefundsApi () {
+    rubrovaEnsureCIMixedSale();
+
+    // Primera nota: ARS 200 efectivo + ARS 300 tarjeta sobre 0,4 unidades.
+    IF NOT rubrovaCIMixedFirstRefundBill() AND rubrovaCIMixedInvoice() THEN
+        NEWSESSION {
+            NEW b = Invoicing.Bill {
+                rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.4, 200, 300);
+                rubrovaCIMixedFirstRefundBill() <- b;
+                APPLY SERIALIZABLE;
+                IF canceled() THEN RETURN;
+            }
+        }
+
+    // Segundo intento: 600 de tarjeta son menores que los 750 originales,
+    // pero sumados a los 300 ya reintegrados deben ser rechazados (900 > 750).
+    IF rubrovaCIMixedFirstRefundBill() AND NOT rubrovaCIMixedOverLimitRejected() THEN {
+        rubrovaCIMixedOverLimitRejectedLocal() <- FALSE;
+        rubrovaCIMixedOverLimitMessageLocal() <- NULL;
+        NEWSESSION {
+            NEW b = Invoicing.Bill {
+                rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.6, 150, 600);
+                APPLY SERIALIZABLE;
+                IF canceled() THEN {
+                    rubrovaCIMixedOverLimitRejectedLocal() <- TRUE;
+                    rubrovaCIMixedOverLimitMessageLocal() <- applyMessage();
+                }
+            }
+        }
+        IF rubrovaCIMixedOverLimitRejectedLocal() THEN {
+            rubrovaCIMixedOverLimitRejected() <- TRUE;
+            rubrovaCIMixedOverLimitMessage() <- rubrovaCIMixedOverLimitMessageLocal();
+            APPLY;
+            IF canceled() THEN RETURN;
+        }
+    }
+
+    EXPORT JSON FROM
+        sourceInvoiceFound = CASE WHEN rubrovaCIMixedInvoice() THEN 1 ELSE 0,
+        sourceInvoiceDone = Invoicing.done(rubrovaCIMixedInvoice()),
+        originalCashPaid = Retail.paid(rubrovaCIMixedInvoice(), Retail.cashPaymentMethod()),
+        originalCardPaid = Retail.paid(rubrovaCIMixedInvoice(), Retail.paymentMethod('card')),
+        overLimitRejected = rubrovaCIMixedOverLimitRejected(),
+        overLimitMessage = rubrovaCIMixedOverLimitMessage(),
+        activeReturnCount = rubrovaCIMixedActiveReturnCount(),
+        activeReturnAmount = rubrovaCIMixedActiveReturnAmount(),
+        returnedQuantity = rubrovaCIMixedReturnedQuantity(),
+        activeCashRefundCount = rubrovaCIMixedActivePaymentCount(Retail.cashPaymentMethod()),
+        activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
+        activeCardRefundCount = rubrovaCIMixedActivePaymentCount(Retail.paymentMethod('card')),
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+rubrovaTestCumulativeRefundRaceAApi () {
+    rubrovaCIMixedRaceAAccepted() <- FALSE;
+    rubrovaCIMixedRaceAMessage() <- NULL;
+    NEWSESSION {
+        NEW b = Invoicing.Bill {
+            rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.24, 0, 300);
+            APPLY SERIALIZABLE;
+            IF canceled() THEN
+                rubrovaCIMixedRaceAMessage() <- applyMessage();
+            ELSE
+                rubrovaCIMixedRaceAAccepted() <- TRUE;
+        }
+    }
+    EXPORT JSON FROM
+        accepted = rubrovaCIMixedRaceAAccepted(),
+        applyMessage = rubrovaCIMixedRaceAMessage();
+} @@api;
+
+rubrovaTestCumulativeRefundRaceBApi () {
+    rubrovaCIMixedRaceBAccepted() <- FALSE;
+    rubrovaCIMixedRaceBMessage() <- NULL;
+    NEWSESSION {
+        NEW b = Invoicing.Bill {
+            rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.24, 0, 300);
+            APPLY SERIALIZABLE;
+            IF canceled() THEN
+                rubrovaCIMixedRaceBMessage() <- applyMessage();
+            ELSE
+                rubrovaCIMixedRaceBAccepted() <- TRUE;
+        }
+    }
+    EXPORT JSON FROM
+        accepted = rubrovaCIMixedRaceBAccepted(),
+        applyMessage = rubrovaCIMixedRaceBMessage();
+} @@api;
+
+rubrovaTestCumulativeRefundFinishApi () {
+    IF rubrovaCIMixedReturnedQuantity() < 1.0 THEN
+        NEWSESSION {
+            NEW b = Invoicing.Bill {
+                rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.36, 300, 150);
+                APPLY SERIALIZABLE;
+                IF canceled() THEN RETURN;
+            }
+        }
+    EXPORT JSON FROM
+        activeReturnCount = rubrovaCIMixedActiveReturnCount(),
+        activeReturnAmount = rubrovaCIMixedActiveReturnAmount(),
+        returnedQuantity = rubrovaCIMixedReturnedQuantity(),
+        activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card'));
+} @@api;
+
+// Cancelar sólo la nota no debe liberar el cupo: los egresos nativos siguen activos.
+// La prueba intenta reutilizar exactamente los importes de esa nota y debe rechazarlos.
+rubrovaTestCumulativeRefundBillCancelApi () {
+    IF Invoicing.active(rubrovaCIMixedFirstRefundBill()) THEN
+        Invoicing.cancel(rubrovaCIMixedFirstRefundBill());
+
+    rubrovaCIMixedBillCancelRejectedLocal() <- FALSE;
+    rubrovaCIMixedBillCancelMessageLocal() <- NULL;
+    NEWSESSION {
+        NEW b = Invoicing.Bill {
+            rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.4, 200, 300);
+            APPLY SERIALIZABLE;
+            IF canceled() THEN {
+                rubrovaCIMixedBillCancelRejectedLocal() <- TRUE;
+                rubrovaCIMixedBillCancelMessageLocal() <- applyMessage();
+            }
+        }
+    }
+    IF rubrovaCIMixedBillCancelRejectedLocal() THEN {
+        rubrovaCIMixedBillCancelOverLimitRejected() <- TRUE;
+        rubrovaCIMixedBillCancelOverLimitMessage() <- rubrovaCIMixedBillCancelMessageLocal();
+        APPLY;
+        IF canceled() THEN RETURN;
+    }
+
+    EXPORT JSON FROM
+        originalBillActive = Invoicing.active(rubrovaCIMixedFirstRefundBill()),
+        originalBillOutgoingActiveCount = (GROUP SUM 1
+            IF Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p)
+               AND Invoicing.active(p)),
+        overLimitRejected = rubrovaCIMixedBillCancelOverLimitRejected(),
+        overLimitMessage = rubrovaCIMixedBillCancelOverLimitMessage(),
+        activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card'));
+} @@api;
+
+// Cancelar los dos egresos de la nota ya cancelada libera el cupo contable.
+// Se reutilizan los documentos y estados nativos de MyCompany; no se borran pagos.
+rubrovaTestCumulativeRefundReleaseApi () {
+    FOR Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p) DO
+        Invoicing.cancel(p);
+
+    NEWSESSION {
+        NEW b = Invoicing.Bill {
+            rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.4, 200, 300);
+            APPLY SERIALIZABLE;
+            IF canceled() THEN RETURN;
+        }
+    }
+
+    EXPORT JSON FROM
+        originalBillActive = Invoicing.active(rubrovaCIMixedFirstRefundBill()),
+        originalBillOutgoingActiveCount = (GROUP SUM 1
+            IF Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p)
+               AND Invoicing.active(p)),
+        activeReturnCount = rubrovaCIMixedActiveReturnCount(),
+        activeReturnAmount = rubrovaCIMixedActiveReturnAmount(),
+        returnedQuantity = rubrovaCIMixedReturnedQuantity(),
+        activeCashRefundCount = rubrovaCIMixedActivePaymentCount(Retail.cashPaymentMethod()),
+        activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
+        activeCardRefundCount = rubrovaCIMixedActivePaymentCount(Retail.paymentMethod('card')),
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
+rubrovaCumulativeRefundsReconciliationApi () {
+    EXPORT JSON FROM
+        sourceInvoiceFound = CASE WHEN rubrovaCIMixedInvoice() THEN 1 ELSE 0,
+        sourceInvoiceDone = Invoicing.done(rubrovaCIMixedInvoice()),
+        originalCashPaid = Retail.paid(rubrovaCIMixedInvoice(), Retail.cashPaymentMethod()),
+        originalCardPaid = Retail.paid(rubrovaCIMixedInvoice(), Retail.paymentMethod('card')),
+        originalBillActive = Invoicing.active(rubrovaCIMixedFirstRefundBill()),
+        originalBillOutgoingActiveCount = (GROUP SUM 1
+            IF Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p)
+               AND Invoicing.active(p)),
+        activeReturnCount = rubrovaCIMixedActiveReturnCount(),
+        activeReturnAmount = rubrovaCIMixedActiveReturnAmount(),
+        returnedQuantity = rubrovaCIMixedReturnedQuantity(),
+        activeCashRefundCount = rubrovaCIMixedActivePaymentCount(Retail.cashPaymentMethod()),
+        activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
+        activeCardRefundCount = rubrovaCIMixedActivePaymentCount(Retail.paymentMethod('card')),
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+} @@api;
+
 // Smoke contract: the retail invoice type must enforce MyCompany's native return quantity guard.
 rubrovaReturnSafetyApi () {
     EXPORT JSON FROM
