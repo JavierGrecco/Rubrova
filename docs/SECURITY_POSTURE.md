@@ -24,6 +24,7 @@
 | Aislamiento de fallos HTTP | **Verificado en escenarios CI acotados.** Se probaron timeouts, clasificación de respuestas 408/429/503, persistencia de incidencias, Retry-After y recuperación de un proveedor simulado. | La cobertura demostrada se concentra en lecturas GET y simulaciones. No prueba todavía todos los flujos de escritura, webhooks, cobros ni integraciones productivas. |
 | Separación entre operación local y servicios externos | **Principio arquitectónico y base inicial.** El POS no debe quedar bloqueado por la indisponibilidad de un conector externo; los resultados inciertos requieren conciliación antes de repetir. | La Outbox, idempotencia y circuit breaker deben validarse por operación y proveedor antes de habilitar conectores reales. |
 | Datos de prueba | **Pruebas funcionales con datos sintéticos.** Las aceptaciones registradas no usan una jornada de negocio real. | No cargar datos de clientes, credenciales ni información comercial real en la vista previa. |
+| Permisos del workflow de plataforma | **Verificado en configuración.** El workflow principal declara permisos de contenido de solo lectura (`contents: read`). | Esto no demuestra que todos los workflows tengan permisos mínimos ni sustituye una revisión de acciones y secretos. |
 
 La fuente de verdad de cada aceptación es [Estado real del proyecto](PROJECT_STATUS.md) y la cobertura está descrita en [Calidad y pruebas](QUALITY_AND_TESTING.md). Una compilación correcta no demuestra por sí sola seguridad, integridad transaccional completa ni continuidad.
 
@@ -38,7 +39,7 @@ La fuente de verdad de cada aceptación es [Estado real del proyecto](PROJECT_ST
 | Datos personales y pagos | Minimización; separar pagador de identidad del cliente; evitar almacenar datos completos de tarjeta. | Revisar flujos y persistencia reales, retención, exportaciones, proveedor de pagos y alcance PCI con especialistas. |
 | Red y acceso remoto | Vista previa limitada a loopback; cualquier acceso remoto debe tener controles explícitos. | Endurecimiento de producción, TLS, firewall, autenticación, permisos de red y prueba desde otro equipo. |
 | Backups y recuperación | Copias independientes, rollback y restauración en otro equipo. | Backup y restore reales, integridad comprobada y tiempos de recuperación medidos. |
-| Cadena de suministro | Versiones y fuentes upstream fijadas y cambios controlados. | SBOM, análisis de vulnerabilidades de dependencias, revisión de licencias y política de actualización continua. |
+| Cadena de suministro | Versiones y fuentes upstream fijadas y cambios controlados. | Fijar cada GitHub Action a un commit SHA inmutable, generar SBOM, analizar vulnerabilidades de dependencias, revisar licencias y mantener una política de actualización continua. |
 
 El detalle de roles, auditoría, pagos y privacidad está en [Seguridad, permisos y auditoría](SECURITY_AND_AUDIT.md). El plan de recuperación está en [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md).
 
