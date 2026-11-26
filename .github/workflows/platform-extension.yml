@@ -130,7 +130,8 @@ jobs:
           unzip -Z1 "$LOGICS_JAR" | grep -Eq '(^|/)MyCompany[.]lsf$'
           # El perfil assemble marca api como provided para la lógica; el WAR web necesita incluirla.
           unzip -Z1 "$CLIENT_WAR" | grep -F -x 'WEB-INF/lib/api-6.2.jar' >/dev/null
-          unzip -Z1 "$CLIENT_WAR" | grep -E '\\.nocache\\.js          unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
+          unzip -Z1 "$CLIENT_WAR" | grep -E '\.nocache\.js
+          unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
           unzip -Z1 "$RUNNER_TEMP/rubrova-client-api.jar" | grep -F -x 'lsfusion/base/DaemonThreadFactory.class' >/dev/null
           mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
           cp "$SERVER_JAR" "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
@@ -488,7 +489,8 @@ jobs:
             ${{ runner.temp }}/rubrova-native-smoke-macos-arm64/ui-smoke.log
           if-no-files-found: warn
  >/dev/null
-          unzip -Z1 "$CLIENT_WAR" | grep -E '\\.cache\\.js          unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
+          unzip -Z1 "$CLIENT_WAR" | grep -E '\.cache\.js
+          unzip -p "$CLIENT_WAR" WEB-INF/lib/api-6.2.jar > "$RUNNER_TEMP/rubrova-client-api.jar"
           unzip -Z1 "$RUNNER_TEMP/rubrova-client-api.jar" | grep -F -x 'lsfusion/base/DaemonThreadFactory.class' >/dev/null
           mkdir -p "$RUNNER_TEMP/rubrova-runtime-artifacts"
           cp "$SERVER_JAR" "$RUNNER_TEMP/rubrova-runtime-artifacts/server.jar"
