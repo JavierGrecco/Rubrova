@@ -1454,7 +1454,7 @@ test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras
   assert.match(nativeSalesFixtureSource, /Inventory[.]useList\(stocktakeCI\) <- TRUE/);
   assert.match(nativeSalesFixtureSource, /adjustmentQuantityIsNull = Inventory[.]realQuantity\(rubrovaCIStocktakeAdjustmentLine\(\)\) IS NULL/);
   assert.match(nativeSalesFixtureSource, /onHand = Inventory[.]onHand\(rubrovaCITestLocation\(\), rubrovaCITestProduct\(\)\)/);
-  assert.match(uiSmokeSource, /el conteo descartable alteró el stock físico/);
+  assert.match(uiSmokeSource, /[Ee]l conteo descartable alteró el stock físico/);
   assert.match(uiSmokeSource, /adjustmentQuantityIsNull/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeListLineCount\(\) = \(OVERRIDE/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIStocktakeAdjustmentLineCount\(\) = \(OVERRIDE/);
