@@ -368,6 +368,13 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POS_ACCEPTANCE=passed/);
   assert.match(nativeSmokeSource, /UI_SALE_PAYMENT_RECONCILED=true/);
   assert.match(nativeSmokeSource, /UI_SALE_STOCK_DEDUCTED=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RESTART_PERSISTENCE=passed/);
+  assert.match(nativeSmokeSource, /RUBROVA_UI_VERIFY_PERSISTED_ONLY=true/);
+  assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_INCIDENTS_RETAINED=true/);
+  assert.match(nativePreviewSource, /signal[.]signal\(signal[.]SIGTERM, handle_shutdown_signal\)/);
+  assert.match(nativePreviewSource, /os[.]killpg\(process[.]pid, signal[.]SIGTERM\)/);
+  assert.match(nativePreviewSource, /os[.]killpg\(process[.]pid, signal[.]SIGKILL\)/);
+  assert.match(nativePreviewSource, /raise KeyboardInterrupt/);
   assert.match(nativePreviewSource, /def ensure_ci_sales_fixture/);
   assert.match(nativePreviewSource, /RUBROVA_CI_SALES_FIXTURE/);
   assert.match(nativeSalesFixtureSource, /REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaCIRetailFixture/);
