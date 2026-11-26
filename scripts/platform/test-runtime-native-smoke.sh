@@ -89,6 +89,8 @@ collect_native_diagnostics() {
       "$DEMO_DATA_ROOT"/logs/*.log \
       "$DEMO_LOG_FILE" \
       "$DEMO_UI_LOG_FILE" \
+      "$RESTART_LOG_FILE" \
+      "$RESTART_UI_LOG_FILE" \
       "$MOCK_PROVIDER_LOG_FILE"; do
       [[ -f "$log_file" ]] || continue
       echo "### $log_file ($(wc -c < "$log_file" | tr -d ' ') bytes)"
@@ -159,8 +161,8 @@ cleanup() {
   if [[ "$exit_code" -ne 0 ]]; then
     echo "=== Últimos registros del runtime nativo ===" >&2
     if [[ -s "$LOG_FILE" ]]; then tail -n 180 "$LOG_FILE" >&2; fi
-      "$RESTART_LOG_FILE" \
-      "$RESTART_UI_LOG_FILE" \
+    if [[ -s "$RESTART_LOG_FILE" ]]; then tail -n 180 "$RESTART_LOG_FILE" >&2; fi
+    if [[ -s "$RESTART_UI_LOG_FILE" ]]; then tail -n 100 "$RESTART_UI_LOG_FILE" >&2; fi
     echo "=== Diagnóstico del cliente web nativo ===" >&2
     if [[ -s "$DIAGNOSTICS_FILE" ]]; then cat "$DIAGNOSTICS_FILE" >&2; fi
     if [[ -s "$DEMO_LOG_FILE" ]]; then tail -n 180 "$DEMO_LOG_FILE" >&2; fi
@@ -415,7 +417,6 @@ fi
 MOCK_PROVIDER_PID=""
 
 echo "7/7 Iniciando una segunda instancia con datos de demostración y PostgreSQL separado"
-echo "6/6 Iniciando una segunda instancia con datos de demostración y PostgreSQL separado"
 mkdir -p "$DEMO_USER_DATA_ROOT"
 export RUBROVA_RUNTIME_CONFIG_PATH="$DEMO_CONFIG_PATH"
 python3 "$SCRIPT_DIR/run-local-native-preview.py" init-demo
