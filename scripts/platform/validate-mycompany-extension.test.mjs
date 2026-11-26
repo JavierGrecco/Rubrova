@@ -40,7 +40,6 @@ const nativeRuntimeTestsSource = read("scripts/platform/test_runtime_native_prev
 const localPreviewSource = read("scripts/platform/run-local-preview-macos.sh");
 const dockerOverrideSource = read("platform/compose.rubrova.override.yaml");
 const deploySmokeSource = read("scripts/platform/test-deploy-mycompany-6.2.sh");
-const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const nativeRuntimeUrlSource = read("scripts/platform/native_runtime_url.py");
 const nativeRuntimeUrlTestsSource = read("scripts/platform/test_native_runtime_url.py");
 const posSearchSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardSearch.lsf");
