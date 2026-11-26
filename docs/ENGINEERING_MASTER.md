@@ -14,6 +14,8 @@
 
 ---
 
+<a id="cómo-usar-y-mantener-este-manual"></a>
+
 ## 1. Cómo usar y mantener este manual
 
 ### 1.1 Fuente única
@@ -22,7 +24,7 @@ Las conclusiones técnicas sobre MyCompany, lsFusion, módulos, contratos, propi
 
 Se mantienen en el repositorio los documentos de producto que definen requisitos funcionales específicos (POS, fiscalidad, mayorista, servicios, datos analíticos, etc.). Pueden detallar necesidades del negocio, pero no mantener contratos técnicos diferentes de los aquí definidos.
 
-Los archivos ROADMAP.md, PROJECT_STATUS.md, MASTER_IMPLEMENTATION_PLAN.md y QUALITY_AND_TESTING.md se conservarán como accesos compatibles o especificaciones de producto enlazadas a este manual. Su función no será duplicar el estado técnico ni el historial de evidencias.
+Los archivos ROADMAP.md, PROJECT_STATUS.md, MASTER_IMPLEMENTATION_PLAN.md y QUALITY_AND_TESTING.md se retiraron como documentos independientes. Su contenido histórico está preservado en los anexos H–K; el estado actual y el roadmap vigente sólo se actualizan en las secciones 2 y 9 de este manual.
 
 ### 1.2 Clasificación del conocimiento
 
@@ -66,6 +68,8 @@ Antes de tocar código:
 Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, memoria de una persona ni ramas históricas para comprender por qué se tomó una decisión.
 
 ---
+
+<a id="estado-actual-de-main"></a>
 
 ## 2. Estado actual de main
 
@@ -415,6 +419,8 @@ Las claves de intercambio del export de reposición no son necesariamente PK: in
 
 ---
 
+<a id="roadmap-técnico-único-y-definición-de-terminado"></a>
+
 ## 9. Roadmap técnico único y definición de terminado
 
 ### Hito A — conocimiento y contratos
@@ -466,6 +472,8 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 Los anexos siguientes contienen el texto completo de las auditorías, contratos, relaciones, decisiones, iteraciones y hojas de trabajo anteriores. Los estados y referencias de sus cabeceras son históricos. Las secciones vigentes 1–10 prevalecen y se actualizan cuando exista evidencia nueva.
 
 
+
+<a id="a-reuse-first"></a>
 
 ## Anexo A — Auditoría reuse-first de MyCompany y lsFusion
 
@@ -809,6 +817,8 @@ Documentación pública de apoyo:
 
 **Límite documental:** el portal MyCompany /v6/ se identifica como documentación 6.0. Para afirmar comportamiento exacto de 6.2 prevalecen CHANGELOG.md y las fuentes vendorizadas fijadas por Rubrova.
 
+
+<a id="b-integration"></a>
 
 ## Anexo B — Guía de integración lsFusion 6.2 y MyCompany 6.2
 
@@ -1390,6 +1400,8 @@ Los manuales MyCompany v7 sobre POS, pagos y devoluciones son referencias comple
 - [Returns](https://mycompany-docs.lsfusion.org/retail/returns/)
 
 
+<a id="c-contracts"></a>
+
 ## Anexo C — Contratos de integración históricos
 
 > **Archivo histórico consolidado.** El contenido original se preserva; su estado está subordinado a las secciones vigentes de este manual.
@@ -1582,6 +1594,8 @@ No usar “terminado” como estado ambiguo.
 Antes de proponer una entidad, API o proceso nuevo, consultar la [auditoría de reutilización de la base incorporada](#a-reuse-first). Allí se catalogan los circuitos de MyCompany 6.2, módulos regionales opcionales, APIs existentes y límites conocidos que deben superar pruebas antes de uso productivo. La regla es reutilizar primero el dueño/ledger nativo y añadir una extensión Rubrova sólo para el comportamiento que realmente falta.
 
 
+<a id="d-domain-relationships"></a>
+
 ## Anexo D — Relaciones y propiedad de datos (histórico)
 
 > **Archivo histórico consolidado.** El contenido original se preserva; su estado está subordinado a las secciones vigentes de este manual.
@@ -1729,6 +1743,8 @@ Cada módulo nuevo debe añadir:
 La falta de conocimiento se registra como desconocida; nunca se completa inventando una relación.
 
 
+<a id="e-decisions"></a>
+
 ## Anexo E — Decisiones de arquitectura (histórico)
 
 > **Archivo histórico consolidado.** El contenido original se preserva; su estado está subordinado a las secciones vigentes de este manual.
@@ -1806,7 +1822,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Decisión:** antes de implementar un caso de uso se localiza el dueño del dato, se reconstruye el flujo y se prefiere un punto abstracto declarado. Las extensiones agregan sólo reglas/datos Rubrova. Los hechos financieros y físicos continúan en los objetos y ledgers nativos; no se crean balances paralelos.
 - **Reglas derivadas:** (1) una propiedad abstracta se extiende con la sintaxis de propiedad `+=`; una acción abstracta se extiende con el operador de acción `+` (ACTION+); no intercambiar ambos operadores; (2) una acción concreta no se transforma en hook por pertenecer a un módulo requerido; (3) UI invoca el caso de uso, pero constraints y reglas transaccionales viven en el modelo/acción; (4) HTTP se reserva para fronteras externas, no módulos de la misma instancia.
 - **Consecuencia:** cada cambio registra firma del hook, punto de llamada, selección/multiplicidad, momento transaccional, entidades tocadas y ledger resultante. Se añaden pruebas estáticas y runtime por caso de uso.
-- **Evidencia:** guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md; fuentes 6.2 CreditNote.lsf, InvoiceShipment.lsf, ShipmentInv.lsf, ReceiptInv.lsf, Payment.lsf; PR #13, commit correctivo 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53.
+- **Evidencia:** guía [Anexo B](#b-integration); fuentes 6.2 CreditNote.lsf, InvoiceShipment.lsf, ShipmentInv.lsf, ReceiptInv.lsf, Payment.lsf; PR #13, commit correctivo 26a60fd1f88fd2b355b8a72baafbd9688ed5ff53.
 - **Límites:** el mapa cubre en profundidad POS, devoluciones, pagos, caja e inventario; no afirma que Compras, mayorista, ARCA, fabricación o seguridad estén completamente inventariados.
 
 
@@ -1818,7 +1834,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Decisión:** Rubrova debe tratar cuatro etapas diferentes: (1) pedido/compromiso comercial; (2) recepción o despacho físico; (3) factura/nota de crédito y deuda; (4) cobro/reintegro/pago y liquidación. El estado de una etapa no implica que las otras hayan ocurrido. Las políticas ordered/delivered se seleccionan explícitamente por tipo de documento.
 - **Consecuencias:** los límites y reportes concilian cantidades ordenadas, recibidas/despachadas, facturadas y dinero pagado en dimensiones independientes. El stock físico procede del ledger de inventario; las reservas proceden del ledger de reservas; las deudas y pagos proceden del modelo financiero. Los reportes de ventas usan SalesLedger y preservan el origen del dato.
 - **Advertencias:** el campo de línea PurchaseOrderBill.paid representa cantidad asociada a Bills done, no un valor monetario. El enlace SalesOrderPurchase une líneas de órdenes, pero por sí mismo no prueba compra automática ni reserva de inventario.
-- **Evidencia:** guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md, secciones 6.7–6.11; fuentes PurchaseOrderReceipt, ReceiptRes, ReceiptInv, PurchaseOrderBill, PurchaseOrderBillReceipt, BillDebt, BillPayment, SalesOrderShipment, ShipmentRes, SalesOrderInvoiceShipment, SalesOrderPurchase y SalesLedger.
+- **Evidencia:** guía [Anexo B](#b-integration), secciones 6.7–6.11; fuentes PurchaseOrderReceipt, ReceiptRes, ReceiptInv, PurchaseOrderBill, PurchaseOrderBillReceipt, BillDebt, BillPayment, SalesOrderShipment, ShipmentRes, SalesOrderInvoiceShipment, SalesOrderPurchase y SalesLedger.
 
 
 ## ADR-0011 — No considerar operativa una integración de terminales por tener el modelo de datos
@@ -1838,7 +1854,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Contexto:** MyCompany 6.2 ya incluye ItemAPI, CategoryAPI, ItemAttributeAPI, SalesPricelistAPI, InvLedgerAPI, SalesOrderAPI y TaskAPI en los árboles de dominios principales. No todas tienen semánticas suficientes para sincronización bidireccional o reintentos.
 - **Decisión:** los consumidores parten de la API o acción nativa. Se añade wrapper/adapter sólo para versionar esquema, completar validaciones, idempotencia, paginación, correlación o proyecciones que falten. No habilitar @@noauth ni evaluación arbitraria para integraciones ordinarias.
 - **Consecuencia:** SalesOrderAPI.newOrders es alta por número, no upsert: ignora órdenes cuyo número ya existe; deleteOrders sólo elimina drafts. InvLedgerAPI.getInventory devuelve onHand, no available. Cada contrato debe probar duplicados, conflicto de contenido, estado y respuesta perdida.
-- **Evidencia:** docs/engineering/BASE_REUSE_AUDIT.md, sección 4; fuentes ItemAPI.lsf, CategoryAPI.lsf, ItemAttributeAPI.lsf, SalesPricelistAPI.lsf, InvLedgerAPI.lsf, SalesOrderAPI.lsf y TaskAPI.lsf.
+- **Evidencia:** [Anexo A](#a-reuse-first), sección 4; fuentes ItemAPI.lsf, CategoryAPI.lsf, ItemAttributeAPI.lsf, SalesPricelistAPI.lsf, InvLedgerAPI.lsf, SalesOrderAPI.lsf y TaskAPI.lsf.
 
 
 ## ADR-0013 — Mantener el costo planificado separado del costo real de inventario
@@ -1848,7 +1864,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Contexto:** MyCompany implementa ItemCost (planificado por fecha) y CostLedger (FIFO/AVCO/standardPrice), enlaza costos de Receipt/Shipment/Adjustment/Manufacturing con movimientos y extiende SalesLedger con costo real de ShipmentLine y ReceiptLine.
 - **Decisión:** no calcular margen sólo desde ItemCost cuando existe costo real de movimiento. Conservar fuente, método, fecha, ubicación y documento de origen; reportar desde SalesLedger y ledgers nativos.
 - **Riesgo:** CostLedger.lsf tiene comentados filtros temporales dateTime(inCost) <= dateTime(outCost) en dos asignaciones FIFO. No se concluye bug sin reproducir; bloquear afirmaciones sobre FIFO retroactivo hasta cubrir salidas anteriores a entradas y recálculo.
-- **Evidencia:** BASE_REUSE_AUDIT.md, sección 3.6; ItemCost, CostLedger, ReceiptCost, ShipmentCost, SalesLedgerInvoiceShipment y SalesLedgerBillReceipt.
+- **Evidencia:** [Anexo A](#a-reuse-first), sección 3.6; ItemCost, CostLedger, ReceiptCost, ShipmentCost, SalesLedgerInvoiceShipment y SalesLedgerBillReceipt.
 
 
 ## ADR-0014 — Reutilizar stocktake nativo y separar arqueo de efectivo
@@ -1857,7 +1873,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Ámbito:** stock, caja y auditoría física.
 - **Contexto:** MyCompany tiene Adjustment/AdjustmentList, estados de conteo, cantidad teórica, cantidad real, hojas y barcode; la validación genera InvAdjustment en el ledger. Session/POS registra pagos, depósitos y retiros, pero no se encontró conteo físico de billetes/monedas en el modelo POS central inspeccionado.
 - **Decisión:** stocktake Rubrova extenderá Adjustment para conteo ciego/reconteo/autorización. El arqueo físico de efectivo será una capacidad separada ligada a Session/Pos que compare saldo esperado y contado con motivo, operador y autorización; nunca sobrescribe Payment.balance.
-- **Evidencia:** BASE_REUSE_AUDIT.md, sección 3.4; Adjustment.lsf, AdjustmentInProgress.lsf, AdjustmentDone.lsf, AdjustmentList.lsf, Session.lsf y PosDashboardCash.lsf.
+- **Evidencia:** [Anexo A](#a-reuse-first), sección 3.4; Adjustment.lsf, AdjustmentInProgress.lsf, AdjustmentDone.lsf, AdjustmentList.lsf, Session.lsf y PosDashboardCash.lsf.
 
 
 ## ADR-0015 — Complementar backup nativo con paquete verificado y recuperación probada
@@ -1867,7 +1883,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Contexto:** lsFusion trae backup completo/parcial, retención, scheduler y restauración selectiva; Rubrova tiene paquete PostgreSQL con manifiesto/SHA-256 y restauración a base nueva.
 - **Decisión:** mantener ambos como complementarios hasta demostrar equivalencia: nativo aporta selección lógica; Rubrova aporta paquete, integridad y recuperación completa. Toda restauración crítica debe validar resultado y limpiar temporales ante error.
 - **Hallazgo:** PostgreDataAdapter.customRestoreDB devuelve el nombre de la DB temporal desde el catch de IOException de pg_restore y no hace dropDB en ese catch. Debe probarse el fallo y evitar tratar el retorno no nulo como éxito.
-- **Evidencia:** BASE_REUSE_AUDIT.md, sección 5.3; Backup.lsf; BackupAction.java; PostgreDataAdapter.java; native-postgres-backup.py.
+- **Evidencia:** [Anexo A](#a-reuse-first), sección 5.3; Backup.lsf; BackupAction.java; PostgreDataAdapter.java; native-postgres-backup.py.
 
 
 ## ADR-0016 — Activar integraciones regionales sólo con adaptación local y seguridad
@@ -1877,7 +1893,7 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Contexto:** el snapshot incluye raíces optativas RU/PL/BG con ATOL, Wazzup, EnterpriseData, KSeF, WMS, CRPT y telefonía; MyCompany.lsf no las requiere y el árbol no incluye raíz Argentina/ARCA.
 - **Decisión:** no añadir raíces regionales al topModule argentino indiscriminadamente. Reutilizar patrones sólo después de definir contrato legal/proveedor local, autenticación, secreto, idempotencia, replay, timeout y reconciliación.
 - **Riesgo concreto:** WazzupWebhook usa @@noauth y registra el body completo; el handler revisado no evidencia verificación de firma. No copiar esa política a endpoints Rubrova.
-- **Evidencia:** BASE_REUSE_AUDIT.md, secciones 2.2 y 6; MyCompanyRu.lsf, MyCompanyPl.lsf, CashRegisterAtol.lsf y WazzupWebhook.lsf.
+- **Evidencia:** [Anexo A](#a-reuse-first), secciones 2.2 y 6; MyCompanyRu.lsf, MyCompanyPl.lsf, CashRegisterAtol.lsf y WazzupWebhook.lsf.
 
 
 ## ADR-0017 — Transportar el resultado de un APPLY rechazado sin perderlo al cerrar la sesión
@@ -1887,8 +1903,10 @@ Estados permitidos: **Propuesta**, **Aceptada**, **Reemplazada**, **Rechazada**.
 - **Contexto:** en run 45872444450, MyCompany rechazó la sobredevolución de 0,7 unidades sobre un remanente de 0,6, pero la fixture escribió el indicador durable dentro de la misma NEWSESSION cuyo APPLY fue cancelado. Al cerrarse esa sesión, la marca no llegó al API; la respuesta contenía overReturnRejected = NULL aunque el servidor había registrado el mensaje de constraint.
 - **Decisión:** usar DATA LOCAL NESTED para transportar la marca de cancelación hacia la sesión padre. Fuera de la sesión fallida, persistir una evidencia durable mediante un APPLY independiente y exitoso cuando el contrato de prueba requiera observarla después del reinicio.
 - **Consecuencia:** una prueba nunca debe sustituir una constraint real por una asignación de bandera optimista ni escribir la evidencia en la transacción que se espera cancelar.
-- **Evidencia:** fuente v6 Session management/APPLY/NEWSESSION; docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md, sección 4.2; PR #13.
+- **Evidencia:** fuente v6 Session management/APPLY/NEWSESSION; [Anexo B](#b-integration), sección 4.2; PR #13.
 
+
+<a id="f-iterations"></a>
 
 ## Anexo F — Investigaciones y pruebas cronológicas (histórico)
 
@@ -2037,7 +2055,7 @@ Copiar el formato de [RECORD_TEMPLATE.md](#g-record-template). Registrar tambié
 ## 2026-11-26 — REP-016 — Investigación de contratos lsFusion/MyCompany y parser de booleanos
 
 - **Repositorio:** https://github.com/JavierGrecco/Rubrova
-- **Documentación consolidada:** commit ef008fe0f3bf6bad5bf27aa1440c8acb760cf0fb; guía docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md, índice de ingeniería y contrato general.
+- **Documentación consolidada:** commit ef008fe0f3bf6bad5bf27aa1440c8acb760cf0fb; guía [Anexo B](#b-integration), índice de ingeniería y contrato general.
 - **Fuentes fijadas:** lsFusion 6.2 commit dd4dbe5bf9b136e73e18fe25d741253929324350; MyCompany 6.2 commit d21ca6978717b98b6300d90267f9767db7414008.
 - **Alcance investigado:** modelo de módulos y dependencias; REQUIRE/NAMESPACE; propiedades declarativas y DATA; acciones; hooks abstractos; constraints; formularios; eventos; APPLY/CANCEL/NEWSESSION/NESTEDSESSION; Action API y EXTERNAL; POS, facturas, notas de crédito, cobros/reintegros, sesiones, caja, despachos, recepciones, ledger físico y reservas.
 - **Hechos observados:** runtime LSF integrado, no conjunto de microservicios; el POS conecta Session/Invoice/IncomingPayment/Shipment/InvLedger y la devolución conecta Bill/BillLine/OutgoingPayment/Receipt/InvLedger. onHand y available son magnitudes distintas. La fórmula active(...) varía según el documento. Los agregados vacíos pueden retornar NULL y no deben compararse como cero sin normalización explícita.
@@ -2051,7 +2069,7 @@ Copiar el formato de [RECORD_TEMPLATE.md](#g-record-template). Registrar tambié
 ## 2026-11-26 — REP-017 — Flujos de compras, ventas mayoristas y analítica comercial
 
 - **Base:** MyCompany 6.2 vendorizado en Rubrova, revisión fijada en platform/mycompany-6.2.lock.json.
-- **Documentación:** se amplió docs/engineering/LSFUSION_MYCOMPANY_INTEGRATION_GUIDE.md (secciones 6.7–6.11) en commit 5484d1beece3bcc5ec6c40b9c569b1890e1dbf9c.
+- **Documentación:** se amplió [Anexo B](#b-integration) (secciones 6.7–6.11) en commit 5484d1beece3bcc5ec6c40b9c569b1890e1dbf9c.
 - **Compras:** Purchase.Order confirmado puede generar Receipt ready con ReceiptLine/initialDemand. ReceiptResLedger representa la entrada esperada como reserva firmada; increaseAvailableStock condiciona su efecto en available. ReceiptInvLedger sólo incorpora la cantidad efectivamente completada al inventario físico. PurchaseOrderReceipt limita recibido a la cantidad pedida.
 - **Facturación proveedor:** PurchaseOrderBill soporta cantidad pedida no facturada; PurchaseOrderBillReceipt añade facturación por cantidad recibida y evita reutilizar ReceiptLine ya vinculadas. BillDebt y OutgoingPaymentDebt conectan obligaciones y pagos; BillPayment.registerPayment crea OutgoingPayment.
 - **Ventas mayoristas:** SalesOrderShipment crea/reutiliza Shipment waiting para el remanente, ejecuta precheckAvailability y registra reservas antes de la salida física. Los despachos parciales se concilian por Sales.OrderLine; una constraint evita sobre-despacho. ShipmentInvLedger registra la salida física final.
@@ -2082,7 +2100,7 @@ Copiar el formato de [RECORD_TEMPLATE.md](#g-record-template). Registrar tambié
 - **Costos:** ItemCost planificado no equivale a CostLedger real. SalesLedger tiene rutas para costos reales ligados a despacho/recepción. Los filtros temporales FIFO comentados son riesgo de backdating por reproducir, no bug declarado.
 - **Backup:** se detectó que el restore selectivo puede devolver el nombre de DB temporal al capturar error pg_restore, sin eliminarla en ese catch. Requiere prueba/mitigación antes de usarlo en recuperación crítica. El backup Rubrova con SHA y restore a DB nueva se mantiene como complemento.
 - **Regionales:** no hay raíz ARCA; ATOL, Wazzup, EnterpriseData, KSeF y otros son patrones opcionales. WazzupWebhook registra el body y usa @@noauth en el handler revisado; no copiar sin firma/deduplicación/protección de PII.
-- **Documento:** docs/engineering/BASE_REUSE_AUDIT.md, enlazado desde índice, contratos y guía.
+- **Documento:** [Anexo A](#a-reuse-first), enlazado desde índice, contratos y guía.
 - **Pendiente:** pruebas de runtime del stocktake, FIFO retroactivo, coste real por documento, API duplicada, restore selectivo fallido, permisos por depósito y arqueo físico de efectivo.
 
 
@@ -2096,6 +2114,8 @@ Copiar el formato de [RECORD_TEMPLATE.md](#g-record-template). Registrar tambié
 - **Corrección del test:** commit d5edc886c2c9fa827d8eedff9e7951eeefb36194 reemplazó esos cuatro escapes por saltos de línea reales.
 - **Estado:** run [45876903441](https://github.com/JavierGrecco/Rubrova/actions/runs/45876903441) sobre d5edc88 quedó en cola al registrar este documento. La validación final sigue pendiente; no afirmar todavía que la segunda devolución, los reintegros y la persistencia E2E hayan pasado.
 
+
+<a id="g-record-template"></a>
 
 ## Anexo G — Plantilla histórica de registro
 
