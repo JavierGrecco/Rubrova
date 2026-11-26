@@ -1,4 +1,30 @@
+<p align="center">
+  <img src="docs/assets/rubrova-hero.svg" alt="Rubrova: plataforma local de POS, ERP e inteligencia operativa" width="100%"/>
+</p>
+
 # Rubrova
+
+<p align="center">
+  <strong>POS + ERP + inteligencia operativa para comercios y negocios con múltiples canales.</strong><br/>
+  Una operación comercial coherente, trazable y preparada para decidir.
+</p>
+
+<p align="center">
+  <a href="docs/EXECUTIVE_PRODUCT_BRIEF.md">Brief ejecutivo</a> ·
+  <a href="docs/PROJECT_STATUS.md">Estado real</a> ·
+  <a href="docs/ARCHITECTURE.md">Arquitectura</a> ·
+  <a href="docs/SECURITY_POSTURE.md">Seguridad y evidencia</a> ·
+  <a href="docs/QUALITY_AND_TESTING.md">Calidad y pruebas</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/JavierGrecco/Rubrova/actions/workflows/platform-extension.yml"><img alt="Platform CI" src="https://github.com/JavierGrecco/Rubrova/actions/workflows/platform-extension.yml/badge.svg?branch=main"/></a>
+  <a href="https://github.com/JavierGrecco/Rubrova/actions/workflows/replenishment-planner.yml"><img alt="Replenishment tests" src="https://github.com/JavierGrecco/Rubrova/actions/workflows/replenishment-planner.yml/badge.svg?branch=main"/></a>
+  <img alt="Etapa piloto en validación" src="https://img.shields.io/badge/etapa-piloto%20en%20validaci%C3%B3n-D69E36?style=flat"/>
+  <img alt="Runtime local first" src="https://img.shields.io/badge/runtime-local--first-238A78?style=flat"/>
+  <img alt="Java 21" src="https://img.shields.io/badge/Java-21-4776A8?style=flat"/>
+  <img alt="PostgreSQL 18" src="https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat"/>
+</p>
 
 **POS + ERP + inteligencia operativa para comercios y negocios con múltiples canales.**
 
@@ -49,6 +75,33 @@ El alcance es progresivo: primero se consolida la operación transaccional; lueg
 | Validación | GitHub Actions, pruebas Python, pruebas de contrato y smokes de runtime |
 
 El runtime local nativo es la ruta prioritaria para desarrollo en macOS Apple Silicon y Linux. Docker se conserva como entorno de diagnóstico y empaquetado, no como requisito de operación local.
+
+### Mapa del piloto técnico
+
+```mermaid
+flowchart LR
+    OP["Operación en caja y administración"] --> WEB["Cliente web GWT"]
+    WEB --> TOM["Tomcat 9"]
+    TOM --> CORE["MyCompany 6.2 + lsFusion 6.2"]
+    EXT["Extensiones Rubrova"] --> CORE
+    CORE --> DB[("PostgreSQL 18")]
+    CI["GitHub Actions"] -. "compila y valida" .-> CORE
+```
+
+El diagrama representa el núcleo integrado que estamos construyendo y probando. No describe una arquitectura de microservicios ni implica que todas las integraciones externas estén habilitadas.
+
+## Fortalezas de ingeniería verificables
+
+| Fortaleza | Evidencia actual | Límite conocido |
+|---|---|---|
+| Control del código base | Fuentes upstream fijadas y compilación propia de lsFusion/MyCompany en CI | No equivale a una auditoría completa de dependencias ni a una SBOM |
+| Ejecución local nativa | Arranque, login y recorridos sintéticos verificados en runners macOS ARM64 y Linux x86_64 | Falta aceptación en equipos físicos, Windows y una instalación limpia offline |
+| Resiliencia de integraciones | Escenarios CI de timeout, respuestas HTTP 408/429/503, Retry-After y recuperación de proveedor simulado | Cobertura limitada; no valida todos los flujos de escritura ni conectores reales |
+| Trazabilidad operativa | Modelo y criterios definidos para relacionar ventas, pagos, caja, inventario y movimientos compensatorios | Devoluciones, arqueo completo y auditoría protegida todavía no están aceptados |
+
+La [postura de seguridad](docs/SECURITY_POSTURE.md) separa expresamente controles verificados, controles diseñados y puertas pendientes antes de producción. No se anuncian certificaciones ni garantías sin evidencia.
+
+
 
 ## Estado de implementación
 
@@ -126,7 +179,8 @@ Ver [Política de ramas e integración](docs/BRANCHING_STRATEGY.md).
 | [Demanda, rentabilidad y marcas](docs/DEMAND_AND_MARGIN_INTELLIGENCE.md) | Diseño analítico, estimaciones y evaluación reproducible |
 | [Stock proyectado y reposición](docs/PROJECTED_STOCK_AND_REPLENISHMENT.md) | Contrato del planificador y semántica de inventario |
 | [Resiliencia de integraciones](docs/INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) | Timeouts, reintentos, idempotencia y recuperación |
-| [Postura de seguridad y evidencia](docs/SECURITY_POSTURE.md) | Qué está verificado, qué está diseñado y qué falta antes de producción |\n| [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Requisitos de identidad, permisos, privacidad, pagos y auditoría |
+| [Postura de seguridad y evidencia](docs/SECURITY_POSTURE.md) | Qué está verificado, qué está diseñado y qué falta antes de producción |
+| [Seguridad y auditoría](docs/SECURITY_AND_AUDIT.md) | Requisitos de identidad, permisos, privacidad, pagos y auditoría |
 | [Continuidad y recuperación](docs/OPERATIONAL_RESILIENCE_AND_RECOVERY.md) | Backups, restore, rollback y fallos |
 | [Compatibilidad con macOS](docs/MACOS_SUPPORT.md) | Ejecución nativa en Apple Silicon |
 | [Calidad y pruebas](docs/QUALITY_AND_TESTING.md) | Estrategia de validación y puertas de aceptación |
