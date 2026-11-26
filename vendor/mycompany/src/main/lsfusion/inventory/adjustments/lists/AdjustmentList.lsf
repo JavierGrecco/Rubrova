@@ -125,8 +125,15 @@ DESIGN adjustment {
 // change quantity
 aggregateRealQuantity(AdjustmentLine l) += useList(adjustment(l));
 
-listRealQuantity (Adjustment, Product, Location) = 
+listRealQuantitySum (Adjustment, Product, Location) =
     GROUP SUM realQuantity(AdjustmentListLine l) BY adjustment(adjustmentList(l)), product(l), location(l);
+
+listRealQuantityZeroFallback (Adjustment, Product, Location) =
+    GROUP MAX 0.000 IF realQuantity(AdjustmentListLine l)
+        BY adjustment(adjustmentList(l)), product(l), location(l);
+
+listRealQuantity (Adjustment a, Product p, Location loc) =
+    (OVERRIDE listRealQuantitySum(a, p, loc), listRealQuantityZeroFallback(a, p, loc));
     
 WHEN SETCHANGED(listRealQuantity(Adjustment a, Product p, Location l)) AND useList(a) AND NOT lastAdjustmentLine(a, p, l) DO
     NEW al = AdjustmentLine {
