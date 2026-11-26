@@ -727,31 +727,46 @@ def fetch_restart_api_payload(context: Any, endpoint: str, label: str) -> dict[s
 
 
 def probe_replenishment_source_sections(context: Any, url: str) -> None:
-    """Locate the failing MyCompany source query before validating the combined export."""
+    """Locate and validate each MyCompany source collection before the combined export."""
     endpoint = application_endpoint_url(url, "exec/Rubrova.")
     probes = (
-        ("inventory", "rubrovaProbeInventory"),
-        ("outgoing_commitments", "rubrovaProbeOutgoingCommitments"),
-        ("receipts", "rubrovaProbeReceipts"),
+        ("inventory", "inventory", "rubrovaProbeInventory"),
+        ("outgoing_commitments", "outgoingCommitments", "rubrovaProbeOutgoingCommitments"),
+        ("receipts", "receipts", "rubrovaProbeReceipts"),
     )
     failures: list[str] = []
-    for label, action in probes:
+    for label, collection_field, action in probes:
         response = context.request.get(endpoint + action, timeout=20_000)
         print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_HTTP={response.status}")
         if response.status != 200:
-            detail = response.text()[:1800].replace("\r", " ").replace("\n", " ")
+            detail = response.text()[:1800].replace("\\r", " ").replace("\\n", " ")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ERROR={detail}")
             failures.append(f"{label}: HTTP {response.status} ({detail[:500]})")
-        else:
-            try:
-                response.json()
-                print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
-            except ValueError:
-                print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
-                failures.append(f"{label}: HTTP 200 sin JSON válido")
+            continue
+
+        try:
+            payload = response.json()
+            if isinstance(payload, list):
+                payload = payload[0] if len(payload) == 1 else {}
+            if not isinstance(payload, dict):
+                raise ValueError(f"la raíz JSON es {type(payload).__name__}, no un objeto")
+            rows = payload.get(collection_field)
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROOT_KEYS=" + json.dumps(sorted(payload)))
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_COLLECTION_TYPE={type(rows).__name__}")
+            if not isinstance(rows, list):
+                raise ValueError(
+                    f"{collection_field} es {type(rows).__name__}; "
+                    f"claves recibidas={sorted(payload)}"
+                )
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROWS={len(rows)}")
+        except ValueError as error:
+            print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=false")
+            failures.append(f"{label}: respuesta JSON incompatible ({error})")
     if failures:
         raise RuntimeError(
-            "Falló una consulta aislada de la exportación MyCompany: " + "; ".join(failures)
+            "Falló la estructura de una consulta aislada de la exportación MyCompany: "
+            + "; ".join(failures)
         )
 
 
