@@ -30,11 +30,18 @@ Rubrova es una plataforma de gestión comercial en desarrollo. Busca reunir la o
 
 **Dirección de producto:** experiencia simple en el mostrador, control operativo completo para la administración y datos confiables para decidir.
 
+### Product Ownership y desarrollo asistido por IA
+
+Rubrova es un producto propio que conduzco como **Product Owner y responsable de su evolución**. Utilizo IA generativa como apoyo para investigar, diseñar e implementar, mientras mantengo la dirección del producto y la aceptación de cada entrega: defino la visión y el alcance funcional, priorizo módulos y roadmap, establezco reglas de negocio y criterios de aceptación, evalúo arquitectura y seguridad, pruebo los resultados y guío nuevas iteraciones cuando una solución no cumple lo esperado.
+
+El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las capacidades planificadas se presentan como visión y evolución progresiva; las tablas de estado y los documentos técnicos indican qué está implementado, probado, en validación o pendiente.
+
+
 > **Estado del proyecto · 26 de noviembre de 2026**
 >
-> Rubrova sigue en etapa de piloto integrado POS + ERP; no es una versión productiva. El PR #10 reúne la exportación nativa de solo lectura, el adaptador y una prevalidación compartida. En el run [45744747100](https://github.com/JavierGrecco/Rubrova/actions/runs/45744747100), preflight, Windows y compilación completa aprobaron, pero el smoke macOS ARM64 detectó un error de sintaxis en el fixture de reposición: `GROUP MAX ... WHERE` no está permitido por lsFusion. Se corrigió a `GROUP MAX ... IF` en la rama existente y se añadió una regresión al preflight; el runtime debe volver a aprobar antes de aceptar el PR.
+> Rubrova continúa como piloto integrado POS + ERP y no es una versión productiva. En la validación más reciente del PR #10, la prevalidación compartida, Windows y la compilación completa de lsFusion/MyCompany aprobaron. El smoke nativo macOS ARM64 logró iniciar el servidor, pero el paso de ejecución integral terminó con error; los logs incluyen timeouts SQL durante la inicialización de búsquedas de iconos y requieren análisis. La causa final todavía no está confirmada. La suite independiente del planificador de reposición sí pasó. **La exportación nativa sigue en validación y el PR permanece en borrador.**
 >
-> Seguimiento: [PR #10 — integración nativa](https://github.com/JavierGrecco/Rubrova/pull/10) · [run fallido y logs](https://github.com/JavierGrecco/Rubrova/actions/runs/45744747100) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
+> Seguimiento: [PR #10 — integración nativa](https://github.com/JavierGrecco/Rubrova/pull/10) · [validación de plataforma #45751756328](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756328) · [suite del planificador #45751756295](https://github.com/JavierGrecco/Rubrova/actions/runs/45751756295) · [estado y criterios de aceptación](docs/PROJECT_STATUS.md).
 
 ## Propuesta de producto
 
