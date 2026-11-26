@@ -170,6 +170,8 @@ rubrovaReturnSafetyApi () {
 // NULL elimina la línea. Se comprueba también la agregación a AdjustmentLine.
 rubrovaTestStocktakeBarcodeZeroApi () {
     Inventory.setRealQuantity(rubrovaCIStocktakeList(), rubrovaCITestProduct(), rubrovaCITestLocation(), 0);
+    APPLY;
+    IF canceled() THEN RETURN;
     EXPORT JSON FROM
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
@@ -179,6 +181,8 @@ rubrovaTestStocktakeBarcodeZeroApi () {
 
 rubrovaTestStocktakeBarcodeNullApi () {
     Inventory.setRealQuantity(rubrovaCIStocktakeList(), rubrovaCITestProduct(), rubrovaCITestLocation(), NULL);
+    APPLY;
+    IF canceled() THEN RETURN;
     EXPORT JSON FROM
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount();
@@ -186,6 +190,8 @@ rubrovaTestStocktakeBarcodeNullApi () {
 
 rubrovaTestStocktakeBarcodePositiveApi () {
     Inventory.setRealQuantity(rubrovaCIStocktakeList(), rubrovaCITestProduct(), rubrovaCITestLocation(), 2);
+    APPLY;
+    IF canceled() THEN RETURN;
     EXPORT JSON FROM
         listLineCount = rubrovaCIStocktakeListLineCount(),
         adjustmentLineCount = rubrovaCIStocktakeAdjustmentLineCount(),
