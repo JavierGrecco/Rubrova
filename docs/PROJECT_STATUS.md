@@ -2,7 +2,7 @@
 
 **Corte:** 25 de noviembre de 2026  
 **Rama canónica:** `main`  
-**Integración pendiente:** [PR #8 — exportación nativa de reposición](https://github.com/JavierGrecco/Rubrova/pull/8), rama `feat/mycompany-readonly-replenishment-api`, HEAD `8777842`.
+**Candidato de integración:** rama `integration/replenishment-mainline-preflight`, basada directamente en `main` (`699eb834`), HEAD `bbbfb18c`. El PR #8 original sigue abierto pero está desfasado y no debe fusionarse; se prepara un PR limpio que lo reemplaza.
 
 ## Estado de la última validación
 
