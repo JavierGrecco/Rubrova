@@ -434,7 +434,9 @@ rubrovaTestCumulativeRefundsApi () {
     rubrovaEnsureCIMixedSale();
 
     // Primera nota: ARS 200 efectivo + ARS 300 tarjeta sobre 0,4 unidades.
-    IF NOT rubrovaCIMixedFirstRefundBill() AND rubrovaCIMixedInvoice() THEN
+    IF NOT rubrovaCIMixedFirstRefundBill() AND rubrovaCIMixedInvoice() THEN {
+        rubrovaCIMixedOverLimitRejected() <- FALSE;
+        rubrovaCIMixedOverLimitMessage() <- NULL;
         NEWSESSION {
             NEW b = Invoicing.Bill {
                 rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.4, 200, 300);
@@ -443,6 +445,7 @@ rubrovaTestCumulativeRefundsApi () {
                 IF canceled() THEN RETURN;
             }
         }
+    }
 
     // Segundo intento: 600 de tarjeta son menores que los 750 originales,
     // pero sumados a los 300 ya reintegrados deben ser rechazados (900 > 750).
