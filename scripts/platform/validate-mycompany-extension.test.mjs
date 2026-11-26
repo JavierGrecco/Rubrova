@@ -361,6 +361,8 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeSmokeSource, /run-local-native-preview[.]py/);
   assert.match(nativeSmokeSource, /inspect-mycompany-ui[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_EGRESS_BLOCKED=true/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_RUNTIME_SURVIVED_LOCAL_PROBE=true/);
   assert.match(nativeSmokeSource, /mock-integration-provider[.]py/);
   assert.match(nativeSmokeSource, /RUBROVA_CI_SALES_FIXTURE=true/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_POS_ACCEPTANCE=passed/);
@@ -451,7 +453,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeWorkflowSource, /mvn -B -ntp -f vendor/);
   assert.match(runtimeWorkflowSource, /-DskipTests -Dgwt[.]skipCompilation=true package/);
   assert.match(runtimeWorkflowSource, /GWT compilation is skipped/);
-  assert.match(runtimeWorkflowSource, /Compiling module lsfusion[.]gwt[.]main/);
+  assert.match(runtimeWorkflowSource, /if grep -Fq "Compiling module lsfusion[.]gwt[.]main"/);
   assert.match(runtimeWorkflowSource, /GWT_BOOTSTRAP/);
   assert.match(runtimeWorkflowSource, /GWT_FRAGMENT/);
   assert.match(runtimeWorkflowSource, /timeout --signal=TERM --kill-after=30s 8m/);
