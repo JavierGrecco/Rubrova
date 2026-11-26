@@ -19,6 +19,9 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 
+NATIVE_EXPORT_SCHEMA_VERSION = 2
+
+
 SERVER_ERROR_MARKERS = (
     "AppServerNotAvailableDispatchException",
     "Application server [",
@@ -933,7 +936,7 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         raise RuntimeError("La exportación nativa de reposición no devolvió un objeto JSON.")
 
     expected_header = {
-        "schemaVersion": 1,
+        "schemaVersion": NATIVE_EXPORT_SCHEMA_VERSION,
         "snapshotType": "mycompany-replenishment-source-export",
         "sourceSystem": "MyCompany",
         "sourceVersion": "6.2",
