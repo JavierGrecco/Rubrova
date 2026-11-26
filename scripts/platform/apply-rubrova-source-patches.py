@@ -158,6 +158,59 @@ TAX_HISTORY_TARGETS = (
     ),
 )
 
+# Fix the stocktake barcode search: zero is a real physical count, not "unset".
+ADJUSTMENT_LIST_SEARCH_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/inventory/adjustments/lists/AdjustmentListSearch.lsf"
+ADJUSTMENT_LIST_SEARCH_SIGNATURE = "setRealQuantity(AdjustmentList a, Product p, Location loc, NUMERIC[16,3] q) {"
+ADJUSTMENT_ZERO_QUANTITY_MARKER = "// Rubrova: zero is a valid physical count; only NULL clears the barcode entry."
+
+
+def apply_adjustment_list_zero_quantity() -> bool:
+    target = ADJUSTMENT_LIST_SEARCH_TARGET
+    if not target.is_file():
+        print(f"No se encontró la búsqueda de barcode del stocktake: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    start = source.find(ADJUSTMENT_LIST_SEARCH_SIGNATURE)
+    if start < 0:
+        print("No se encontró la firma exacta de setRealQuantity en AdjustmentListSearch.lsf.", file=sys.stderr)
+        return False
+
+    end = source.find("\\n}\\n", start)
+    if end < 0:
+        print("No se encontró el cierre exacto de setRealQuantity; se requiere revisión manual.", file=sys.stderr)
+        return False
+
+    block = source[start:end + 3]
+    checks = block.count("IF q IS NOT NULL THEN")
+    if ADJUSTMENT_ZERO_QUANTITY_MARKER in block and checks == 2:
+        print("El conteo cero del stocktake por barcode ya está protegido.")
+        return True
+
+    if block.count("IF q THEN") != 2 or checks != 0:
+        print(
+            "El helper setRealQuantity difiere de la versión MyCompany esperada; "
+            "no se aplica un reemplazo parcial.",
+            file=sys.stderr,
+        )
+        return False
+
+    patched = block.replace("IF q THEN", "IF q IS NOT NULL THEN")
+    patched = patched.replace(
+        ADJUSTMENT_LIST_SEARCH_SIGNATURE,
+        ADJUSTMENT_LIST_SEARCH_SIGNATURE + "\\n    " + ADJUSTMENT_ZERO_QUANTITY_MARKER,
+        1,
+    )
+    if patched.count("IF q IS NOT NULL THEN") != 2 or ADJUSTMENT_ZERO_QUANTITY_MARKER not in patched:
+        print("El parche de conteo cero quedó incompleto.", file=sys.stderr)
+        return False
+
+    source = source[:start] + patched + source[end + 3:]
+    target.write_text(source, encoding="utf-8")
+    print("Stocktake: q=0 ahora se guarda; sólo NULL limpia la línea de barcode.")
+    return True
+
+
 RMI_SERVER_SOCKET_TARGET = ROOT / "vendor/platform/api/src/main/java/lsfusion/base/remote/ZipServerSocket.java"
 RMI_SERVER_SOCKET_BEFORE = """    public ZipServerSocket(int port) throws IOException {
         super(port, 500);
@@ -534,6 +587,9 @@ def main() -> int:
         return 1
 
     if not apply_tax_history_line_tracking():
+        return 1
+
+    if not apply_adjustment_list_zero_quantity():
         return 1
 
     if not apply_cash_movement_date_captions():
