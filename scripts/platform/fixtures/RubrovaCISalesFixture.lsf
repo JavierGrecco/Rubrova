@@ -122,17 +122,19 @@ rubrovaCITestInvoiceLine() = GROUP MAX Invoicing.InvoiceLine il
     IF Invoicing.invoice(il) = rubrovaCITestInvoice()
        AND Invoicing.item(il) = rubrovaCITestProduct();
 
-rubrovaCIReturnCount() = Retail.countBills(rubrovaCITestSession());
-rubrovaCIReturnAmount() = Retail.totalAmountBill(rubrovaCITestSession());
-rubrovaCIReturnedQuantity() = Invoicing.returned(rubrovaCITestInvoiceLine());
+// MyCompany deja NULL cuando un conjunto de devoluciones está vacío.
+// Normalizamos esos agregados a cero: sin esto, la condición inicial = 0 nunca se ejecuta.
+rubrovaCIReturnCount() = OVERRIDE Retail.countBills(rubrovaCITestSession()), 0;
+rubrovaCIReturnAmount() = OVERRIDE Retail.totalAmountBill(rubrovaCITestSession()), 0.0;
+rubrovaCIReturnedQuantity() = OVERRIDE Invoicing.returned(rubrovaCITestInvoiceLine()), 0.0;
 
-rubrovaCIReturnCashPaymentCount() = GROUP SUM 1
+rubrovaCIReturnCashPaymentCount() = OVERRIDE (GROUP SUM 1
     IF Retail.session(Invoicing.Bill b) = rubrovaCITestSession()
-       AND Retail.paymentMethod(b, Invoicing.OutgoingPayment p) = Retail.cashPaymentMethod();
+       AND Retail.paymentMethod(b, Invoicing.OutgoingPayment p) = Retail.cashPaymentMethod()), 0;
 
-rubrovaCIReturnCashPaymentAmount() = GROUP SUM Invoicing.paid(Invoicing.Bill b, Invoicing.OutgoingPayment p)
+rubrovaCIReturnCashPaymentAmount() = OVERRIDE (GROUP SUM Invoicing.paid(Invoicing.Bill b, Invoicing.OutgoingPayment p)
     IF Retail.session(b) = rubrovaCITestSession()
-       AND Retail.paymentMethod(b, p) = Retail.cashPaymentMethod();
+       AND Retail.paymentMethod(b, p) = Retail.cashPaymentMethod()), 0.0;
 
 rubrovaOverReturnRejected = DATA BOOLEAN ();
 
@@ -201,6 +203,8 @@ rubrovaTestPartialReturnsApi () {
         }
 
     EXPORT JSON FROM
+        sourceInvoiceFound = CASE WHEN rubrovaCITestInvoice() THEN TRUE ELSE FALSE,
+        sourceInvoiceLineFound = CASE WHEN rubrovaCITestInvoiceLine() THEN TRUE ELSE FALSE,
         overReturnRejected = rubrovaOverReturnRejected(),
         returnBillCount = rubrovaCIReturnCount(),
         returnAmount = rubrovaCIReturnAmount(),
