@@ -65,6 +65,9 @@ jobs:
           bash -n "Iniciar Rubrova - Demo.command"
           bash scripts/platform/test-deploy-mycompany-6.2.sh
 
+  # La compilación sólo prueba que se generaron artefactos. No demuestra que
+  # lsFusion 6.2 pueda parsear/cargar todos los módulos ni que sus APIs respeten
+  # el contrato HTTP. Los smokes nativos posteriores son la evidencia de runtime.
   build-fork:
     name: Compilar el fork lsFusion + MyCompany de Rubrova
     runs-on: ubuntu-latest
@@ -354,6 +357,9 @@ jobs:
             }
           }
 
+  # Gate obligatorio en Apple Silicon: esperar carga de lógica, autenticarse,
+  # validar cuerpo/esquema/conteos de las APIs de dominio y recorrer el flujo POS.
+  # HTTP 200 por sí solo nunca se interpreta como aceptación de contrato.
   native-runtime-smoke-macos-arm64:
     name: Smoke de servidor nativo sin Docker (macOS ARM64)
     runs-on: macos-26
