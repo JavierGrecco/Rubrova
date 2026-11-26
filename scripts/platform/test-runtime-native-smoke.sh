@@ -282,7 +282,9 @@ for marker in \
   "UI_SESSION_CLOSED=true" \
   "UI_SESSION_SALES_RECONCILED=true" \
   "UI_SESSION_CASH_RECONCILED=true" \
-  "UI_INTEGRATION_INCIDENT_PERSISTED=true"; do
+  "UI_INTEGRATION_INCIDENT_PERSISTED=true" \
+  "UI_REPLENISHMENT_SOURCE_EXPORT_VERIFIED=true" \
+  "UI_REPLENISHMENT_POSITIVE_FIXTURES="; do
   grep -Fq "$marker" "$UI_LOG_FILE" || {
     echo "La aceptación comercial nativa no confirmó el resultado esperado: $marker" >&2
     exit 1

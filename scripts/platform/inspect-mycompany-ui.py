@@ -772,7 +772,7 @@ def probe_replenishment_source_sections(context: Any, url: str) -> None:
                 raise ValueError(f"la raíz JSON es {type(payload).__name__}, no un objeto")
             rows = _native_collection(payload, collection_field, label)
             if require_positive and label in {"outgoing_commitments", "receipts"} and not rows:
-                raise ValueError(f"{field if False else collection_field} debe contener al menos una fila en el fixture positivo de CI.")
+                raise ValueError(f"{collection_field} debe contener al menos una fila en el fixture positivo de CI.")
             count_field = f"{collection_field}Count"
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_JSON=true")
             print(f"UI_REPLENISHMENT_PROBE_{label.upper()}_ROOT_KEYS=" + json.dumps(sorted(payload)))
