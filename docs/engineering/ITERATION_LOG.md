@@ -88,3 +88,14 @@ Copiar el formato de [RECORD_TEMPLATE.md](RECORD_TEMPLATE.md). Registrar tambié
 - **Corrección de iteración:** las ejecuciones iniciales del PR #10 descubrieron (a) una aserción que mezclaba concurrencia global y por job, y (b) que el workflow de reposición conservaba sus pasos anteriores. Ambos casos se corrigieron y se añadieron pruebas estáticas para que no vuelva a producirse la divergencia.
 - **Concurrencia:** al llegar el SHA corregido, la corrida anterior fue cancelada; no se debe tomar como fallo funcional de código.
 - **Estado:** primera capa de validación rápida aprobada en GitHub. La compilación completa del fork continúa; el smoke macOS ARM64 y la API nativa siguen pendientes.
+
+## 2026-11-26 — REP-011 — Conflicto de concurrencia al persistir el idioma del usuario
+
+- **PR:** #10.
+- **Evidencia:** [run 45741635022](https://github.com/JavierGrecco/Rubrova/actions/runs/45741635022), log PostgreSQL y `server-console.log`.
+- **Síntoma:** dos transacciones del usuario admin (`CustomUser.key0=786`) intentaron actualizar `Authentication_clientLanguage_CustomUser` con `en` al mismo tiempo. PostgreSQL devolvió `could not serialize access due to concurrent update`; el log de lsFusion registró `SQLConflictException: UPDATE_CONFLICT` para el mismo `UPDATE Authentication_customUser`.
+- **Alcance:** el servidor terminó su inicio y la UI alcanzó `UI_LOGIN_STATUS=authenticated:admin`; por tanto, el conflicto no fue la causa inmediata del fallo de esa corrida, que se detuvo por una reserva de salida igual a cero. Se registra como fallo concurrente independiente.
+- **Causa localizada:** `RemoteConnection.initConnectionContext()` crea una sesión por conexión RMI y `saveUserContext()` escribe los cinco datos de locale/formato en la fila compartida de `CustomUser`. El cliente web puede inicializar varias conexiones para el mismo usuario en paralelo.
+- **Corrección:** bloqueo por stripe derivado del login, adquirido antes de `getExecSession()`. La creación de conexiones del mismo usuario queda serializada; los demás usuarios conservan concurrencia.
+- **Regresión:** el preflight comprueba estáticamente el orden bloqueo→sesión; el smoke nativo busca el conflicto específico en los logs y debe imprimir `RUBROVA_AUTH_USER_CONTEXT_SERIALIZATION=passed`.
+- **Estado:** fix subido; compilación y smoke nativo de un SHA nuevo pendientes.
