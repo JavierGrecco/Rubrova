@@ -7,6 +7,7 @@ NAMESPACE Rubrova;
 // Datos efímeros sólo para smoke CI: disparan los flujos nativos de órdenes,
 // reservas de despacho y recepciones previstas. No se instala en producción.
 rubrovaCIReplenishmentFixtureSeeded = DATA BOOLEAN ();
+rubrovaCIReplenishmentPartner = DATA MasterData.Individual ();
 
 loadDefaultData () + {
     IF NOT rubrovaCIReplenishmentFixtureSeeded() THEN {
@@ -14,13 +15,14 @@ loadDefaultData () + {
             MasterData.id(partnerCI) <- 'rubrova-ci-partner';
             MasterData.firstName(partnerCI) <- 'Proveedor';
             MasterData.lastName(partnerCI) <- 'de prueba Rubrova';
+            rubrovaCIReplenishmentPartner() <- partnerCI;
             MasterData.isVendor(partnerCI) <- TRUE;
             MasterData.isCustomer(partnerCI) <- TRUE;
         }
 
         NEW salesOrderCI = Sales.Order {
             Sales.type(salesOrderCI) <- Sales.orderType('order');
-            Sales.customer(salesOrderCI) <- partnerCI;
+            Sales.customer(salesOrderCI) <- rubrovaCIReplenishmentPartner();
             Sales.company(salesOrderCI) <- MasterData.defaultCompany();
             Sales.location(salesOrderCI) <- Sales.rubrovaCITestLocation();
             Sales.currency(salesOrderCI) <- MasterData.defaultCurrency();
@@ -41,7 +43,7 @@ loadDefaultData () + {
         Inventory.increaseAvailableStock(Inventory.receiptType('receipt')) <- FALSE;
         NEW purchaseOrderCI = Purchase.Order {
             Purchase.type(purchaseOrderCI) <- Purchase.orderType('order');
-            Purchase.vendor(purchaseOrderCI) <- partnerCI;
+            Purchase.vendor(purchaseOrderCI) <- rubrovaCIReplenishmentPartner();
             Purchase.company(purchaseOrderCI) <- MasterData.defaultCompany();
             Purchase.location(purchaseOrderCI) <- Sales.rubrovaCITestLocation();
             Purchase.currency(purchaseOrderCI) <- MasterData.defaultCurrency();
