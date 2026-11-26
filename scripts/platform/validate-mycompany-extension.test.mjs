@@ -1066,8 +1066,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Sales.index(ol)",
     "Inventory.index(Inventory.line(rr))",
     "Purchase.index(Purchase.orderLine(Inventory.line(rr)))",
-    "sourceLineId = CONCAT",
-    "lineId = CONCAT",
+    "sourceLineId = (CONCAT",
+    "lineId = (CONCAT",
     "Inventory.scheduledDateTime(Inventory.receipt(Inventory.line(rr)))",
     "Inventory.ShipmentResLedger",
     "Inventory.lineReserved(Inventory.line(Inventory.ShipmentResLedger rr))",
@@ -1104,6 +1104,16 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.doesNotMatch(replenishmentExportSource, /<>/);
+  assert.equal(
+    (replenishmentExportSource.match(/(?:sourceLineId|lineId|purchaseOrderLineId) = \(CONCAT /g) ?? []).length,
+    6,
+    "Todos los identificadores compuestos deben agrupar CONCAT dentro de JSON FROM para conservar los límites de columnas."
+  );
+  assert.doesNotMatch(
+    replenishmentExportSource,
+    /(?:sourceLineId|lineId|purchaseOrderLineId) = CONCAT\b/,
+    "No se permite CONCAT sin paréntesis en columnas de JSON FROM."
+  );
   assert.doesNotMatch(replenishmentExportSource, /(?:Sales|Purchase)\.id\(/);
   assert.doesNotMatch(replenishmentExportSource, /Inventory\.id\(Inventory\.line\(/);
   assert.doesNotMatch(replenishmentExportSource, /LONG\((?:ol|Sales\.order|Inventory\.line|Inventory\.receipt|Purchase\.order|Purchase\.orderLine)/);

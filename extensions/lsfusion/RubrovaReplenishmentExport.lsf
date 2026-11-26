@@ -63,7 +63,7 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Inventory.id(l), MasterData.id(p)
         ),
         outgoingCommitments = (JSON FROM
-            sourceLineId = CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol),
+            sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol)),
             sourceDocumentId = Sales.number(Sales.order(ol)),
             sourceDocumentNumber = Sales.number(Sales.order(ol)),
             productId = MasterData.id(Sales.shippedProduct(ol)),
@@ -85,11 +85,11 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             ORDER Sales.scheduledDateTime(Sales.order(ol)), Sales.number(Sales.order(ol)), Sales.index(ol)
         ),
         receipts = (JSON FROM
-            lineId = CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr)),
+            lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
             receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
             receiptNumber = Inventory.number(Inventory.receipt(Inventory.line(rr))),
             purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
-            purchaseOrderLineId = CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr))),
+            purchaseOrderLineId = (CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr)))),
             productId = MasterData.id(Inventory.product(Inventory.line(rr))),
             productName = MasterData.name(Inventory.product(Inventory.line(rr))),
             locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
@@ -132,7 +132,7 @@ rubrovaProbeInventory 'Diagnóstico de inventario para reposición' () {
 
 rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para reposición' () {
     EXPORT JSON FROM outgoingCommitments = (JSON FROM
-        sourceLineId = CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol),
+        sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.OrderLine ol)), '#', Sales.index(ol)),
         sourceDocumentId = Sales.number(Sales.order(ol)),
         productId = MasterData.id(Sales.shippedProduct(ol)),
         locationId = Inventory.id(Sales.location(Sales.order(ol))),
@@ -152,10 +152,10 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
 
 rubrovaProbeReceipts 'Diagnóstico de recepciones para reposición' () {
     EXPORT JSON FROM receipts = (JSON FROM
-        lineId = CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr)),
+        lineId = (CONCAT '', Inventory.number(Inventory.receipt(Inventory.line(Inventory.ReceiptResLedger rr))), '#', Inventory.index(Inventory.line(rr))),
         receiptId = Inventory.number(Inventory.receipt(Inventory.line(rr))),
         purchaseOrderId = Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))),
-        purchaseOrderLineId = CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr))),
+        purchaseOrderLineId = (CONCAT '', Purchase.number(Purchase.order(Purchase.orderLine(Inventory.line(rr)))), '#', Purchase.index(Purchase.orderLine(Inventory.line(rr)))),
         productId = MasterData.id(Inventory.product(Inventory.line(rr))),
         locationId = Inventory.id(Inventory.location(Inventory.receipt(Inventory.line(rr)))),
         expectedReservationSigned = Inventory.reserved(rr),
