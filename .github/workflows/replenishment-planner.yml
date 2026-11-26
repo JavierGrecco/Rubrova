@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validar planificación temporal de reposición
+    name: Prevalidación compartida de reposición
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -37,43 +37,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
       - name: Preparar Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-
-      - name: Validar sintaxis del planificador
-        run: python -m py_compile scripts/replenishment/plan_replenishment.py scripts/replenishment/test_plan_replenishment.py scripts/replenishment/import_mycompany_snapshot.py scripts/replenishment/test_import_mycompany_snapshot.py scripts/replenishment/adapt_mycompany_native_export.py scripts/replenishment/test_adapt_mycompany_native_export.py
-
-      - name: Ejecutar pruebas de reposición proyectada
-        run: python -m unittest discover -s scripts/replenishment -p 'test_*.py'
-
-      - name: Evaluar escenarios sintéticos y reglas de reposición
-        run: python scripts/replenishment/plan_replenishment.py --fixture docs/fixtures/replenishment-planning.json --output /tmp/replenishment-planning.json
-
-      - name: Importar snapshot MyCompany 6.2 sin conexión ni escritura
-        run: python scripts/replenishment/import_mycompany_snapshot.py --snapshot docs/fixtures/mycompany-replenishment-snapshot.json --output /tmp/mycompany-replenishment-report.json
-
-      - name: Convertir exportación nativa MyCompany con política explícita
-        run: |
-          python scripts/replenishment/adapt_mycompany_native_export.py \
-            --source docs/fixtures/mycompany-native-replenishment-export.json \
-            --policy docs/fixtures/replenishment-planning-policy.json \
-            --output /tmp/mycompany-native-normalized.json
-
-      - name: Evaluar snapshot nativo convertido sin modificar MyCompany
-        run: python scripts/replenishment/import_mycompany_snapshot.py --snapshot /tmp/mycompany-native-normalized.json --output /tmp/mycompany-native-replenishment-report.json
-
+      - name: Ejecutar la misma prevalidación local de reposición
+        env:
+          PYTHON_BIN: python
+          RUBROVA_PREFLIGHT_OUTPUT_DIR: ${{ runner.temp }}/rubrova-preflight
+        run: bash scripts/platform/local-preflight.sh --replenishment
       - name: Publicar resumen de evaluación
         if: always()
         run: |
-          if [ -f /tmp/replenishment-planning.json ]; then
-            cat /tmp/replenishment-planning.json >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -f /tmp/mycompany-replenishment-report.json ]; then
-            cat /tmp/mycompany-replenishment-report.json >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -f /tmp/mycompany-native-replenishment-report.json ]; then
-            cat /tmp/mycompany-native-replenishment-report.json >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for report in \
+            replenishment-planning.json \
+            mycompany-replenishment-report.json \
+            mycompany-native-replenishment-report.json; do
+            if [ -f "${{ runner.temp }}/rubrova-preflight/$report" ]; then
+              cat "${{ runner.temp }}/rubrova-preflight/$report" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
