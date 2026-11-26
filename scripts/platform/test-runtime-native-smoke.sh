@@ -290,6 +290,16 @@ for marker in \
     exit 1
   }
 done
+# Several web RMI connections may be initialized at once for the same user.
+# Fail if PostgreSQL/lsFusion reports the previously observed client-locale write conflict.
+AUTH_CONTEXT_CONFLICT="SQLConflictException: UPDATE_CONFLICT UPDATE Authentication_customUser SET Authentication_clientLanguage_CustomUser"
+if [[ -d "$NATIVE_DATA_ROOT/logs" ]] && grep -R -Fq "$AUTH_CONTEXT_CONFLICT" "$NATIVE_DATA_ROOT/logs"; then
+  echo "Se detectó un conflicto concurrente al guardar el locale del usuario admin." >&2
+  grep -R -F -n "$AUTH_CONTEXT_CONFLICT" "$NATIVE_DATA_ROOT/logs" >&2 || true
+  exit 1
+fi
+echo "RUBROVA_AUTH_USER_CONTEXT_SERIALIZATION=passed"
+
 echo "RUBROVA_NATIVE_POS_ACCEPTANCE=passed"
 [[ -s "$SCREENSHOT" ]] || {
   echo "La inspección local no generó la captura de interfaz esperada: $SCREENSHOT" >&2

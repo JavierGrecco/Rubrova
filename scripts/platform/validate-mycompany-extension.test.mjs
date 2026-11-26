@@ -9,6 +9,7 @@ const read = (relative) => readFileSync(path.join(root, relative), "utf8");
 
 const lock = JSON.parse(read("platform/mycompany-6.2.lock.json"));
 const entrypointSource = read("extensions/lsfusion/RubrovaCustom.lsf");
+const remoteConnectionSource = read("vendor/platform/server/src/main/java/lsfusion/server/physics/admin/authentication/controller/remote/RemoteConnection.java");
 const moduleSource = read("extensions/lsfusion/RubrovaPOSLocalization.lsf");
 const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.lsf");
 const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
@@ -100,6 +101,19 @@ test("versión, procedencia, licencias y artefactos están fijados", () => {
   assert.match(preparerSource, /Hash SHA-256 incorrecto para el Compose/);
   assert.match(preparerSource, /RUBROVA_SKIP_OFFICIAL_LOGIC_JAR/);
   assert.match(preparerSource, /Omitiendo el JAR oficial de lógica/);
+});
+
+test("la inicialización de conexiones RMI serializa las escrituras de locale por usuario", () => {
+  const init = remoteConnectionSource.split("public void initConnectionContext")[1]?.split("private void initUser")[0] || "";
+  assert.match(remoteConnectionSource, /private static final Object\[\] userContextLocks = createUserContextLocks\(\)/);
+  assert.match(remoteConnectionSource, /Math[.]floorMod\(login == null \? 0 : login[.]hashCode\(\), userContextLocks[.]length\)/);
+  assert.match(init, /String userLogin = securityManager[.]parseToken\(token\)/);
+  assert.match(init, /synchronized \(userContextLock\(userLogin\)\)/);
+  assert.ok(
+    init.indexOf("synchronized (userContextLock(userLogin))") < init.indexOf("getExecSession()"),
+    "El bloqueo por usuario debe adquirirse antes de abrir una transacción PostgreSQL."
+  );
+  assert.match(remoteConnectionSource, /clientLanguage[.]change\(userInfo[.]language, session, user\)/);
 });
 
 test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con opt-in", () => {

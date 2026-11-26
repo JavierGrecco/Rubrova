@@ -1,10 +1,11 @@
 undefined
-## 2026-11-26 — REP-010 — Separar el cálculo de reserva del bootstrap de datos
+## 2026-11-26 — REP-011 — Conflicto de concurrencia al persistir el idioma del usuario
 
 - **PR:** #10.
-- **Ejecución:** 45741635022, SHA a45a398c.
-- **Hecho observado:** el servidor inició en macOS ARM64, autenticó y respondió HTTP 200 con JSON válido para inventario, compromisos y recepciones. Los conteos fueron inventory=1, outgoingCommitments=1, receipts=1. La exportación detectó openQuantity=2.0 y effectiveReserved=0.0; el smoke positivo falló por esa diferencia.
-- **Diagnóstico:** la línea abierta del pedido existía. El trigger SalesOrderShipment había creado su Shipment en espera, pero precheckAvailability usa prevAvailableRec. El stock se sembró dentro de la misma carga inicial que confirmaba el pedido y aún no era visible para la consulta de disponibilidad previa.
-- **Corrección:** el fixture agrega rubrovaPrepareOutgoingReservation, que llama al método nativo Inventory.precheckAvailability en una llamada autenticada posterior al bootstrap. El inspector sólo la invoca en modo de smoke positivo y valida que la reserva efectiva resultante sea positiva y no supere la cantidad abierta.
-- **No se cambia:** el endpoint productivo de exportación, los ledgers de MyCompany ni el adaptador para fabricar reservas. La corrección ejecuta el flujo nativo en la base efímera de CI.
-- **Estado:** cambio subido; requiere nueva compilación y smoke macOS ARM64.
+- **Evidencia:** [run 45741635022](https://github.com/JavierGrecco/Rubrova/actions/runs/45741635022), log PostgreSQL y `server-console.log`.
+- **Síntoma:** dos transacciones del usuario admin (`CustomUser.key0=786`) intentaron actualizar `Authentication_clientLanguage_CustomUser` con `en` al mismo tiempo. PostgreSQL devolvió `could not serialize access due to concurrent update`; el log de lsFusion registró `SQLConflictException: UPDATE_CONFLICT` para el mismo `UPDATE Authentication_customUser`.
+- **Alcance:** el servidor terminó su inicio y la UI alcanzó `UI_LOGIN_STATUS=authenticated:admin`; por tanto, el conflicto no fue la causa inmediata del fallo de esa corrida, que se detuvo por una reserva de salida igual a cero. Se registra como fallo concurrente independiente.
+- **Causa localizada:** `RemoteConnection.initConnectionContext()` abre una sesión por conexión RMI y `saveUserContext()` escribe los cinco datos de locale/formato en la fila compartida de `CustomUser`. El cliente web puede inicializar varias conexiones para el mismo usuario en paralelo.
+- **Corrección:** bloqueo por stripe derivado del login, adquirido antes de `getExecSession()`. La creación de conexiones del mismo usuario queda serializada; los demás usuarios conservan concurrencia.
+- **Regresión:** el preflight comprueba estáticamente el orden bloqueo→sesión; el smoke nativo busca el conflicto específico en los logs y debe imprimir `RUBROVA_AUTH_USER_CONTEXT_SERIALIZATION=passed`.
+- **Estado:** fix subido; compilación y smoke nativo de un SHA nuevo pendientes.
