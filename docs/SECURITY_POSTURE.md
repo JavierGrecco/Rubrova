@@ -26,7 +26,7 @@
 | Datos de prueba | **Pruebas funcionales con datos sintéticos.** Las aceptaciones registradas no usan una jornada de negocio real. | No cargar datos de clientes, credenciales ni información comercial real en la vista previa. |
 | Permisos del workflow de plataforma | **Verificado en configuración.** El workflow principal declara permisos de contenido de solo lectura (`contents: read`). | Esto no demuestra que todos los workflows tengan permisos mínimos ni sustituye una revisión de acciones y secretos. |
 
-La fuente de verdad de cada aceptación es [Estado real del proyecto](PROJECT_STATUS.md) y la cobertura está descrita en [Calidad y pruebas](QUALITY_AND_TESTING.md). Una compilación correcta no demuestra por sí sola seguridad, integridad transaccional completa ni continuidad.
+La fuente de verdad de cada aceptación, evidencia y limitación es el [Manual técnico canónico](ENGINEERING_MASTER.md#estado-actual-de-main). Allí también se definen los criterios de prueba. Una compilación correcta no demuestra por sí sola seguridad, integridad transaccional completa ni continuidad.
 
 ## Controles especificados, todavía no demostrados como capacidad del producto
 
@@ -72,8 +72,7 @@ A la fecha de esta revisión, Rubrova **no** afirma estar certificado por OWASP,
 
 ## Evidencia y seguimiento
 
-- [Estado real del proyecto](PROJECT_STATUS.md): capacidades aceptadas, parciales y pendientes.
-- [Calidad y pruebas](QUALITY_AND_TESTING.md): estrategia y criterios de aceptación.
+- [Manual técnico canónico](ENGINEERING_MASTER.md): estado, evidencias, clasificación de pruebas y criterios de aceptación.
 - [Resiliencia de integraciones](INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md): timeouts, reintentos, aislamiento y conciliación.
 - [Continuidad operativa y recuperación](OPERATIONAL_RESILIENCE_AND_RECOVERY.md): backups, restore, rollback y escenarios de falla.
 - [Arquitectura](ARCHITECTURE.md): límites del núcleo integrado y de los módulos Rubrova.
