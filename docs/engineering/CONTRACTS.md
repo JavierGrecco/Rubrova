@@ -79,7 +79,7 @@ La semántica de respuesta y la selección de propiedades de resultado deben seg
 
 | Campo | Tipo / regla | Significado |
 |---|---|---|
-| `schemaVersion` | entero, actualmente 1 | versión del esquema de Rubrova |
+| `schemaVersion` | entero, actualmente 2 | versión del esquema de Rubrova; v2 exporta componentes nativos de reserva por `ShipmentLine` |
 | `snapshotType` | string fijo | `mycompany-replenishment-source-export` |
 | `sourceSystem` | string fijo | `MyCompany` |
 | `sourceVersion` | string fijo | `6.2` |
@@ -91,9 +91,11 @@ La semántica de respuesta y la selección de propiedades de resultado deben seg
 | `sourceSemantics` | objeto | diccionario explícito de significado de cada campo |
 | `inventoryCount` | entero no negativo | conteo independiente bajo el mismo filtro de inventario |
 | `outgoingCommitmentsCount` | entero no negativo | conteo independiente bajo el mismo filtro de compromisos |
+| `outgoingReservationsCount` | entero no negativo | conteo independiente de líneas de envío enlazadas a compromisos abiertos |
 | `receiptsCount` | entero no negativo | conteo independiente bajo el mismo filtro de recepciones |
 | `inventory` | lista de objetos | hechos de inventario por producto/ubicación |
 | `outgoingCommitments` | lista de objetos | líneas de venta confirmadas aún abiertas |
+| `outgoingReservations` | lista de objetos | hechos nativos por `ShipmentLine`, separados por despacho parcial |
 | `receipts` | lista de objetos | recepciones de compra elegibles pendientes |
 
 ### 2.3 Semántica de inventario
@@ -114,7 +116,8 @@ La definición de `expectedInbound` cubre las reservas entrantes negativas de lo
 - Origen: `Sales.OrderLine` de una orden confirmada.
 - Sólo se exportan líneas con `Sales.toShip(ol) > 0`.
 - `openQuantity` representa lo que todavía queda por despachar.
-- `effectiveReserved` suma `ShipmentResLedger.lineReserved` agrupado por la línea de venta, no por cada despacho parcial.
+- `outgoingReservations` emite una fila por `ShipmentLine` enlazada a una `Sales.OrderLine` confirmada y todavía abierta. Incluye `reservedQuantityNative = Inventory.reserved(ShipmentLine)`, `ledgerReservedQuantityNative = Inventory.ledgerReserved(ShipmentLine)`, `shipmentId`, `shipmentLineId`, `sourceLineId` y `reserveEligible`.
+- El adaptador normaliza cada componente `NULL` a cero y calcula `lineReserved = reservedQuantityNative - ledgerReservedQuantityNative`; sólo suma diferencias positivas cuando `reserveEligible=true`, agrupadas por `sourceLineId`.
 - Varios despachos parciales no deben duplicar una línea abierta.
 - Identidad compuesta acordada: número de orden + índice de línea. La identidad debe ser estable dentro del documento y no debe inventarse a partir de IDs no expuestos por MyCompany.
 
@@ -152,7 +155,7 @@ Este control evita confundir “no hay filas” con “la API no entregó la col
 ### 2.8 Pruebas de contrato exigidas
 
 - JSON de raíz válido y cabecera exacta.
-- Las tres colecciones presentes o ausentes sólo bajo la regla de conteos.
+- Las cuatro colecciones presentes o ausentes sólo bajo la regla de conteos.
 - Conteo = longitud de filas.
 - Elementos de cada colección son objetos.
 - Campos obligatorios, tipos, unidades y precisión.

@@ -9,7 +9,7 @@ NAMESPACE Rubrova;
 
 rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
     EXPORT JSON FROM
-        schemaVersion = 1,
+        schemaVersion = 2,
         snapshotType = 'mycompany-replenishment-source-export',
         sourceSystem = 'MyCompany',
         sourceVersion = '6.2',
@@ -29,7 +29,8 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             outgoingOpenQuantity = 'Sales.toShip(OrderLine_confirmed)',
             outgoingScheduledDateTime = 'Sales.scheduledDateTime(Order)',
             outgoingReservationSource = 'ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line',
-            outgoingEffectiveReservation = 'SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)',
+            outgoingReservationComponents = 'Inventory.reserved(ShipmentLine) and Inventory.ledgerReserved(ShipmentLine); NULL components normalize to zero in Rubrova',
+            outgoingEffectiveReservation = 'SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)',
             incomingIdentity = 'Receipt.number + ReceiptLine.index',
             incomingExpectedQuantity = '0 - ReceiptResLedger.reserved; signed reservation remains negative',
             incomingScheduledDateTime = 'Receipt.scheduledDateTime',
@@ -111,7 +112,8 @@ rubrovaExportReplenishmentSource 'Exportar datos nativos para reposición' () {
             sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.orderLine(Inventory.ShipmentLine sl))), '#', Sales.index(Sales.orderLine(sl))),
             shipmentId = Inventory.number(Inventory.shipment(sl)),
             shipmentLineId = (CONCAT '', Inventory.number(Inventory.shipment(sl)), '#', Inventory.index(sl)),
-            lineReserved = (OVERRIDE Inventory.lineReserved(sl), 0),
+            reservedQuantityNative = Inventory.reserved(sl),
+            ledgerReservedQuantityNative = Inventory.ledgerReserved(sl),
             reserveEligible = Inventory.toReserve(Inventory.shipment(sl))
             WHERE Sales.orderLine(sl)
                 AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))
@@ -202,7 +204,8 @@ rubrovaProbeOutgoingCommitments 'Diagnóstico de compromisos de venta para repos
             sourceLineId = (CONCAT '', Sales.number(Sales.order(Sales.orderLine(Inventory.ShipmentLine sl))), '#', Sales.index(Sales.orderLine(sl))),
             shipmentId = Inventory.number(Inventory.shipment(sl)),
             shipmentLineId = (CONCAT '', Inventory.number(Inventory.shipment(sl)), '#', Inventory.index(sl)),
-            lineReserved = (OVERRIDE Inventory.lineReserved(sl), 0),
+            reservedQuantityNative = Inventory.reserved(sl),
+            ledgerReservedQuantityNative = Inventory.ledgerReserved(sl),
             reserveEligible = Inventory.toReserve(Inventory.shipment(sl))
             WHERE Sales.orderLine(sl)
                 AND Sales.confirmed(Sales.order(Sales.orderLine(sl)))

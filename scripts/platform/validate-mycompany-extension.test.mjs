@@ -1148,7 +1148,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     "Inventory.reserved(l, p)",
     "Inventory.ShipmentLine sl",
     "Sales.orderLine(sl)",
-    "Inventory.lineReserved(sl)",
+    "Inventory.reserved(sl)",
+    "Inventory.ledgerReserved(sl)",
     "Inventory.toReserve(Inventory.shipment(sl))",
     "Inventory.ReceiptResLedger",
     "Inventory.increaseAvailableStock",
@@ -1181,6 +1182,8 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.ok(uiSmokeSource.includes("expected_count == 0"));
   assert.ok(uiSmokeSource.includes("outgoingReservationsCount"));
   assert.ok(uiSmokeSource.includes("reserveEligible"));
+  assert.ok(uiSmokeSource.includes("reservedQuantityNative"));
+  assert.ok(uiSmokeSource.includes("ledgerReservedQuantityNative"));
   assert.ok(uiSmokeSource.includes("len(rows) != expected_count"));
   assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON="));
   assert.ok(uiSmokeSource.includes("reserved > commitments_by_id[line_id] + 0.001"));
@@ -1191,18 +1194,20 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   const outgoingExportReservationsQuery = replenishmentExportSource.split("outgoingReservations = (JSON FROM")[1]?.split("        receipts = (JSON FROM")[0] ?? "";
   for (const field of [
     "Sales.orderLine(Inventory.ShipmentLine sl)",
-    "Inventory.lineReserved(sl)",
+    "Inventory.reserved(sl)",
+    "Inventory.ledgerReserved(sl)",
     "Inventory.toReserve(Inventory.shipment(sl))",
     "reserveEligible = Inventory.toReserve(Inventory.shipment(sl))",
     "shipmentLineId = (CONCAT"
   ]) {
     assert.ok(outgoingExportReservationsQuery.includes(field), "La API debe exportar el hecho nativo " + field);
   }
-  assert.doesNotMatch(outgoingExportReservationsQuery, /GROUP SUM|Sales\.reserved\(/,
+  assert.doesNotMatch(outgoingExportReservationsQuery, /GROUP SUM|Sales\.reserved\(|Inventory\.lineReserved\(sl\)/,
     "La colección de reservas expone filas nativas sin agregación correlacionada.");
   const outgoingProbeQuery = replenishmentExportSource.split("rubrovaProbeOutgoingCommitments")[1]?.split("rubrovaProbeReceipts")[0] ?? "";
   assert.ok(outgoingProbeQuery.includes("outgoingReservations = (JSON FROM"));
-  assert.ok(outgoingProbeQuery.includes("Inventory.lineReserved(sl)"));
+  assert.ok(outgoingProbeQuery.includes("Inventory.reserved(sl)"));
+  assert.ok(outgoingProbeQuery.includes("Inventory.ledgerReserved(sl)"));
   assert.doesNotMatch(outgoingProbeQuery, /effectiveReserved =|Sales\.reserved\(ol\)/);
   assert.equal(
     (replenishmentExportSource.match(/outgoingReservations = \(JSON FROM/g) ?? []).length,
@@ -1218,7 +1223,9 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
     !replenishmentExportSource.includes("BPSTRING[10]"),
     "Los índices de línea deben conservar su fuente de conjunto y no quedar ocultos tras BPSTRING."
   );
-  assert.match(replenishmentExportSource, /lineReserved = \(OVERRIDE Inventory\.lineReserved\(sl\), 0\)/);
+  assert.match(replenishmentExportSource, /reservedQuantityNative = Inventory\.reserved\(sl\)/);
+  assert.match(replenishmentExportSource, /ledgerReservedQuantityNative = Inventory\.ledgerReserved\(sl\)/);
+  assert.doesNotMatch(replenishmentExportSource, /Inventory\.lineReserved\(sl\)/);
   assert.match(replenishmentExportSource, /Inventory\.ready\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.done\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
   assert.match(replenishmentExportSource, /NOT Inventory\.canceled\(Inventory\.receipt\(Inventory\.line\(rr\)\)\)/);
@@ -1292,18 +1299,19 @@ test("el puente nativo bloquea snapshots cuando las magnitudes MyCompany no conc
   assert.ok(replenishmentBridgeTestsSource.includes("test_unrepresented_negative_reservations_block_planning"));
   assert.ok(replenishmentBridgeTestsSource.includes("test_quantities_with_more_than_three_decimals_are_rejected_not_rounded"));
   assert.ok(
-    uiSmokeSource.includes("\"outgoingEffectiveReservation\": \"SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)\","),
+    uiSmokeSource.includes("\"outgoingEffectiveReservation\": \"SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)\","),
     "El inspector debe validar la agregación de hechos ShipmentLine por sourceLineId."
   );
   assert.ok(uiSmokeSource.includes("def _outgoing_reservation_totals("));
   assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_SOURCE_EXPORT_OUTGOING_EFFECTIVE_TOTALS="));
   assert.equal(nativeReplenishmentFixture.snapshotType, "mycompany-replenishment-source-export");
+  assert.equal(nativeReplenishmentFixture.schemaVersion, 2);
   assert.equal(
     nativeReplenishmentFixture.sourceSemantics.outgoingEffectiveReservation,
-    "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)"
+    "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)"
   );
   assert.ok(
-    replenishmentBridgeSource.includes("SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)"),
+    replenishmentBridgeSource.includes("SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)"),
     "El puente debe agregar hechos ShipmentLine por sourceLineId con el filtro reserveEligible."
   );
   assert.equal(nativeReplenishmentFixture.readOnly, true);

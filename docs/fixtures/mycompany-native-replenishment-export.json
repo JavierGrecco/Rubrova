@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "snapshotType": "mycompany-replenishment-source-export",
   "sourceSystem": "MyCompany",
   "sourceVersion": "6.2",
@@ -21,13 +21,14 @@
     "outgoingIdentity": "Sales.number(Order) + Sales.index(OrderLine)",
     "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
-    "outgoingEffectiveReservation": "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
+    "outgoingEffectiveReservation": "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)",
     "incomingIdentity": "Receipt.number + ReceiptLine.index",
     "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
     "incomingScheduledDateTime": "Receipt.scheduledDateTime",
     "incomingEligibility": "Receipt.ready AND NOT Receipt.done AND NOT Receipt.canceled AND Purchase.Order.confirmed",
     "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse",
-    "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line"
+    "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line",
+    "outgoingReservationComponents": "Inventory.reserved(ShipmentLine) and Inventory.ledgerReserved(ShipmentLine); NULL components normalize to zero in Rubrova"
   },
   "inventory": [
     {
@@ -142,15 +143,17 @@
       "sourceLineId": "SO-COLA-001#1",
       "shipmentId": "SH-COLA-001",
       "shipmentLineId": "SH-COLA-001#1",
-      "lineReserved": 2.5,
-      "reserveEligible": true
+      "reserveEligible": true,
+      "reservedQuantityNative": 2.5,
+      "ledgerReservedQuantityNative": 0
     },
     {
       "sourceLineId": "SO-PASTA-001#1",
       "shipmentId": "SH-PASTA-001",
       "shipmentLineId": "SH-PASTA-001#1",
-      "lineReserved": 4.5,
-      "reserveEligible": true
+      "reserveEligible": true,
+      "reservedQuantityNative": 4.5,
+      "ledgerReservedQuantityNative": 0
     }
   ]
 }

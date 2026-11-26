@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import math
 import os
+from decimal import Decimal, InvalidOperation
 import sys
 import time
 from pathlib import Path
@@ -778,12 +779,31 @@ def _outgoing_reservation_totals(
         eligible = row.get("reserveEligible")
         if not isinstance(eligible, bool):
             raise ValueError(f"{label}.reserveEligible debe ser booleano.")
-        reserved = row.get("lineReserved")
-        if (isinstance(reserved, bool) or not isinstance(reserved, (int, float))
-                or not math.isfinite(float(reserved))):
-            raise ValueError(f"{label}.lineReserved debe ser numérico y finito.")
-        if eligible and float(reserved) > 0:
-            totals[line_id] = totals.get(line_id, 0.0) + float(reserved)
+        def component_milli(field: str) -> int:
+            if field not in row:
+                raise ValueError(f"{label}.{field} debe estar presente (puede ser null).")
+            value = row[field]
+            if value is None:
+                return 0
+            if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+                raise ValueError(f"{label}.{field} debe ser numérico o null.")
+            try:
+                quantity = Decimal(str(value))
+            except InvalidOperation as error:
+                raise ValueError(f"{label}.{field} debe ser numérico o null.") from error
+            if not quantity.is_finite():
+                raise ValueError(f"{label}.{field} debe ser finito.")
+            scaled = quantity * 1000
+            if scaled != scaled.to_integral_value():
+                raise ValueError(f"{label}.{field} supera tres decimales.")
+            return int(scaled)
+
+        reserved_quantity = component_milli("reservedQuantityNative")
+        ledger_reserved_quantity = component_milli("ledgerReservedQuantityNative")
+        line_reserved_milli = reserved_quantity - ledger_reserved_quantity
+        if eligible and line_reserved_milli > 0:
+            line_reserved = line_reserved_milli / 1000.0
+            totals[line_id] = totals.get(line_id, 0.0) + line_reserved
 
     for line_id, reserved in totals.items():
         if reserved > commitments_by_id[line_id] + 0.001:
@@ -944,7 +964,8 @@ def verify_replenishment_source_export(context: Any, url: str) -> None:
         "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
         "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
         "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line",
-        "outgoingEffectiveReservation": "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
+        "outgoingReservationComponents": "Inventory.reserved(ShipmentLine) and Inventory.ledgerReserved(ShipmentLine); NULL components normalize to zero in Rubrova",
+        "outgoingEffectiveReservation": "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)",
         "incomingIdentity": "Receipt.number + ReceiptLine.index",
         "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
         "incomingScheduledDateTime": "Receipt.scheduledDateTime",

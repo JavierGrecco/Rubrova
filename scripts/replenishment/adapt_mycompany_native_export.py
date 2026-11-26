@@ -29,7 +29,8 @@ NATIVE_SOURCE_SEMANTICS = {
     "outgoingOpenQuantity": "Sales.toShip(OrderLine_confirmed)",
     "outgoingScheduledDateTime": "Sales.scheduledDateTime(Order)",
     "outgoingReservationSource": "ShipmentLine linked to a confirmed Sales.OrderLine; one raw row per shipment line",
-    "outgoingEffectiveReservation": "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
+    "outgoingReservationComponents": "Inventory.reserved(ShipmentLine) and Inventory.ledgerReserved(ShipmentLine); NULL components normalize to zero in Rubrova",
+    "outgoingEffectiveReservation": "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)",
     "incomingIdentity": "Receipt.number + ReceiptLine.index",
     "incomingExpectedQuantity": "0 - ReceiptResLedger.reserved; signed reservation remains negative",
     "incomingScheduledDateTime": "Receipt.scheduledDateTime",
@@ -37,7 +38,7 @@ NATIVE_SOURCE_SEMANTICS = {
     "incomingAvailabilityPolicy": "ReceiptType.increaseAvailableStock; skipAvailable is its inverse"
 }
 NATIVE_HEADER = {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "snapshotType": "mycompany-replenishment-source-export",
     "sourceSystem": "MyCompany",
     "sourceVersion": "6.2",
@@ -125,6 +126,14 @@ def _milli(value: Any, field: str) -> int:
             f"{field} tiene más de tres decimales; no se redondeará una cantidad de MyCompany."
         )
     return int(integral)
+
+
+def _native_component_milli(row: dict[str, Any], field: str, label: str) -> int:
+    """Read a nullable native reservation component without inventing precision."""
+    if field not in row:
+        raise ValueError(f"{label}.{field} debe estar presente (puede ser null).")
+    value = row[field]
+    return 0 if value is None else _milli(value, f"{label}.{field}")
 
 
 def _optional_native_milli(row: dict[str, Any], field: str, effective: int, label: str) -> None:
@@ -331,7 +340,9 @@ def build_normalized_snapshot(
         reserve_eligible = row.get("reserveEligible")
         if not isinstance(reserve_eligible, bool):
             raise ValueError(f"{label}.reserveEligible debe ser booleano.")
-        line_reserved = _milli(row.get("lineReserved"), f"{label}.lineReserved")
+        reserved_quantity = _native_component_milli(row, "reservedQuantityNative", label)
+        ledger_reserved_quantity = _native_component_milli(row, "ledgerReservedQuantityNative", label)
+        line_reserved = reserved_quantity - ledger_reserved_quantity
         if reserve_eligible and line_reserved > 0:
             outgoing_reservations_by_line[line_id] = outgoing_reservations_by_line.get(line_id, 0) + line_reserved
 

@@ -30,7 +30,7 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         self.assertEqual(self.native["sourceSemantics"], NATIVE_SOURCE_SEMANTICS)
         self.assertEqual(
             self.native["sourceSemantics"]["outgoingEffectiveReservation"],
-            "SUM(outgoingReservations.lineReserved > 0 where reserveEligible = true, grouped by sourceLineId)",
+            "SUM((reservedQuantityNative - ledgerReservedQuantityNative) > 0 where reserveEligible = true, grouped by sourceLineId)",
         )
 
     def test_native_export_becomes_a_planner_snapshot_without_losing_uom_precision(self) -> None:
@@ -148,7 +148,7 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
 
     def test_effective_reservation_cannot_exceed_open_quantity(self) -> None:
         source = copy.deepcopy(self.native)
-        source["outgoingReservations"][0]["lineReserved"] = 4.1
+        source["outgoingReservations"][0]["reservedQuantityNative"] = 4.1
         with self.assertRaisesRegex(ValueError, "fuera de rango"):
             self._build(source)
 
@@ -157,12 +157,12 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         extra_reserved = copy.deepcopy(source["outgoingReservations"][0])
         extra_reserved["shipmentId"] = "SH-COLA-PARTIAL-2"
         extra_reserved["shipmentLineId"] = "SH-COLA-PARTIAL-2#1"
-        extra_reserved["lineReserved"] = 1.25
+        extra_reserved["reservedQuantityNative"] = 1.25
         source["outgoingReservations"].append(extra_reserved)
         ineligible_reserved = copy.deepcopy(extra_reserved)
         ineligible_reserved["shipmentId"] = "SH-COLA-DONE"
         ineligible_reserved["shipmentLineId"] = "SH-COLA-DONE#1"
-        ineligible_reserved["lineReserved"] = 0.5
+        ineligible_reserved["reservedQuantityNative"] = 0.5
         ineligible_reserved["reserveEligible"] = False
         source["outgoingReservations"].append(ineligible_reserved)
         source["outgoingReservationsCount"] += 2
@@ -175,6 +175,39 @@ class NativeMyCompanyExportBridgeTests(unittest.TestCase):
         snapshot = self._build(source)
         cola = next(row for row in snapshot["outgoingCommitments"] if row["productId"] == "PROD-COLA")
         self.assertEqual(cola["lineReservedMilli"], 3750)
+
+    def test_effective_reservation_subtracts_native_ledger_quantity(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingReservations"][0]["ledgerReservedQuantityNative"] = 0.5
+        source["inventory"][0]["grossReserved"] = 2.0
+        source["inventory"][0]["plannedNetReservation"] = 2.0
+        source["inventory"][0]["plannedNetReservationNative"] = 2.0
+        source["inventory"][0]["available"] = 14.0
+        source["inventory"][0]["availableNative"] = 14.0
+
+        snapshot = self._build(source)
+        cola = next(row for row in snapshot["outgoingCommitments"] if row["productId"] == "PROD-COLA")
+        self.assertEqual(cola["lineReservedMilli"], 2000)
+
+    def test_null_native_reservation_components_use_zero_fallback(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingReservations"][0]["reservedQuantityNative"] = None
+        source["outgoingReservations"][0]["ledgerReservedQuantityNative"] = None
+        source["inventory"][0]["grossReserved"] = 0
+        source["inventory"][0]["plannedNetReservation"] = 0
+        source["inventory"][0]["plannedNetReservationNative"] = 0
+        source["inventory"][0]["available"] = source["inventory"][0]["onHand"]
+        source["inventory"][0]["availableNative"] = source["inventory"][0]["onHand"]
+
+        snapshot = self._build(source)
+        cola = next(row for row in snapshot["outgoingCommitments"] if row["productId"] == "PROD-COLA")
+        self.assertEqual(cola["lineReservedMilli"], 0)
+
+    def test_missing_native_reservation_component_is_rejected(self) -> None:
+        source = copy.deepcopy(self.native)
+        source["outgoingReservations"][0].pop("reservedQuantityNative")
+        with self.assertRaisesRegex(ValueError, "debe estar presente"):
+            self._build(source)
 
     def test_duplicate_outgoing_shipment_line_is_rejected(self) -> None:
         source = copy.deepcopy(self.native)
