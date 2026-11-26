@@ -509,6 +509,40 @@ def prepare_tomcat_base(tomcat_home: Path, base: Path, war: Path, ports: dict[st
     ET.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance")
     tree.write(web_xml, encoding="UTF-8", xml_declaration=True)
 
+    # lsFusion's web sessions contain Spring/lsFusion objects that are not safe
+    # to serialize to Tomcat's default SESSIONS.ser. Browser sessions are
+    # intentionally ephemeral across a full native-runtime restart; business
+    # state remains in PostgreSQL. Avoid stale-session deserialization errors.
+    context_xml = base / "conf" / "context.xml"
+    if not context_xml.is_file():
+        source_context_xml = tomcat_home / "conf" / "context.xml"
+        if not source_context_xml.is_file():
+            raise RuntimeErrorRubrova(
+                f"No se encontró la configuración de contexto Tomcat: {source_context_xml}"
+            )
+        shutil.copy2(source_context_xml, context_xml)
+
+    context_tree = ET.parse(
+        context_xml,
+        parser=ET.XMLParser(target=ET.TreeBuilder(insert_comments=True)),
+    )
+    context_root = context_tree.getroot()
+    if context_root.tag.rsplit("}", 1)[-1] != "Context":
+        raise RuntimeErrorRubrova(
+            f"La raíz de la configuración de contexto Tomcat debe ser Context: {context_xml}"
+        )
+    managers = [
+        child for child in list(context_root)
+        if isinstance(child.tag, str) and child.tag.rsplit("}", 1)[-1] == "Manager"
+    ]
+    if len(managers) > 1:
+        raise RuntimeErrorRubrova(
+            f"La configuración de contexto Tomcat declara más de un Manager: {context_xml}"
+        )
+    manager = managers[0] if managers else ET.SubElement(context_root, "Manager")
+    manager.set("pathname", "")
+    context_tree.write(context_xml, encoding="UTF-8", xml_declaration=True)
+
     server_xml = base / "conf" / "server.xml"
     server_tree = ET.parse(server_xml)
     server_root = server_tree.getroot()
