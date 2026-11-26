@@ -1183,7 +1183,7 @@ test("la API nativa de reposición sólo exporta hechos MyCompany y conserva mag
   assert.ok(uiSmokeSource.includes("reserveEligible"));
   assert.ok(uiSmokeSource.includes("len(rows) != expected_count"));
   assert.ok(uiSmokeSource.includes("UI_REPLENISHMENT_PROBE_OUTGOING_COMMITMENTS_ROWS_JSON="));
-  assert.ok(uiSmokeSource.includes("effective_reserved > open_quantity + 0.001"));
+  assert.ok(uiSmokeSource.includes("reserved > commitments_by_id[line_id] + 0.001"));
   const outgoingExportQuery = replenishmentExportSource.split("outgoingCommitments = (JSON FROM")[1]?.split("outgoingReservations = (JSON FROM")[0] ?? "";
   assert.ok(outgoingExportQuery.includes("openQuantity = Sales.toShip(ol)"));
   assert.doesNotMatch(outgoingExportQuery, /effectiveReserved|Sales\.reserved\(ol\)/,
