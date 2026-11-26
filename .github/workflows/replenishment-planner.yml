@@ -11,6 +11,7 @@ on:
       - "docs/PROJECTED_STOCK_AND_REPLENISHMENT.md"
       - "scripts/replenishment/**"
       - ".github/workflows/replenishment-planner.yml"
+      - "scripts/platform/local-preflight.sh"
   pull_request:
     paths:
       - "docs/fixtures/replenishment-planning.json"
@@ -20,6 +21,7 @@ on:
       - "docs/PROJECTED_STOCK_AND_REPLENISHMENT.md"
       - "scripts/replenishment/**"
       - ".github/workflows/replenishment-planner.yml"
+      - "scripts/platform/local-preflight.sh"
   workflow_dispatch:
 
 permissions:
