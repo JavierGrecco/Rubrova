@@ -239,7 +239,7 @@ echo "RUBROVA_NATIVE_POSTGRES_LOOPBACK=true"
 echo "RUBROVA_NATIVE_SERVER_READY=true"
 echo "RUBROVA_NATIVE_WEB_HTTP=$HTTP_STATUS"
 
-echo "3/5 Comprobando que la interfaz sigue disponible sin salida a Internet"
+echo "3/5 Verificando la política de conectividad externa del runner"
 if [[ "${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
   command -v iptables >/dev/null 2>&1 || {
     echo "Se solicitó bloquear Internet, pero iptables no está instalado." >&2
@@ -258,6 +258,7 @@ if [[ "${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
   echo "RUBROVA_NATIVE_EXTERNAL_CONNECTIVITY=blocked"
 else
   echo "RUBROVA_NATIVE_EGRESS_BLOCKED=false"
+  echo "RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested"
 fi
 
 [[ -n "$PLAYWRIGHT_PYTHON" && -x "$PLAYWRIGHT_PYTHON" ]] || {
@@ -313,10 +314,13 @@ kill -0 "$SUPERVISOR_PID" || {
   exit 1
 }
 curl --silent --output /dev/null --fail --connect-timeout 2 --max-time 8 "$WEB_URL" || {
-  echo "La interfaz dejó de responder después de la prueba offline." >&2
+  echo "La interfaz dejó de responder después de la prueba de estabilidad local." >&2
   exit 1
 }
-echo "RUBROVA_NATIVE_RUNTIME_SURVIVED_OFFLINE_CHECK=true"
+echo "RUBROVA_NATIVE_RUNTIME_SURVIVED_LOCAL_PROBE=true"
+if [[ "${RUBROVA_BLOCK_EGRESS:-false}" == "true" ]]; then
+  echo "RUBROVA_NATIVE_RUNTIME_SURVIVED_OFFLINE_CHECK=true"
+fi
 
 echo "5/6 Cerrando la primera instancia y liberando sus puertos"
 if [[ -n "$SUPERVISOR_PID" ]] && kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
