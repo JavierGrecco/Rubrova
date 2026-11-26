@@ -1076,7 +1076,7 @@ test("el conteo físico por barcode conserva cero como cantidad y usa NULL para 
   const signature = "setRealQuantity(AdjustmentList a, Product p, Location loc, NUMERIC[16,3] q) {";
   const start = adjustmentListSearchSource.indexOf(signature);
   assert.ok(start >= 0, "No se encontró el helper setRealQuantity del stocktake.");
-  const end = adjustmentListSearchSource.indexOf("\\n}\\n", start);
+  const end = adjustmentListSearchSource.indexOf("\n}\n", start);
   assert.ok(end > start, "No se encontró el cierre del helper setRealQuantity.");
   const helper = adjustmentListSearchSource.slice(start, end + 3);
   assert.equal((helper.match(/IF q THEN/g) || []).length, 2);
