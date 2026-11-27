@@ -1308,13 +1308,7 @@ def verify_return_quantity_guard(context: Any, url: str) -> None:
 
 
 
-def _native_api_get_with_browser_cookies(context: Any, base_url: str, endpoint: str) -> dict[str, Any]:
-    cookies = context.cookies(base_url)
-    cookie_header = "; ".join(
-        f"{cookie['name']}={cookie['value']}"
-        for cookie in cookies
-        if cookie.get("name") and cookie.get("value") is not None
-    )
+def _native_api_get_with_cookie_header(base_url: str, endpoint: str, cookie_header: str) -> dict[str, Any]:
     if not cookie_header:
         raise RuntimeError("No se encontraron cookies de sesión autenticada para la prueba concurrente.")
 
@@ -1402,12 +1396,20 @@ def verify_cumulative_refunds(context: Any, url: str) -> None:
 
     # Ambas peticiones compiten sobre el mismo cupo restante de tarjeta (ARS 450).
     # Cada una pide ARS 300; sólo una puede confirmar bajo SERIALIZABLE.
+    cookies = context.cookies(api_base)
+    cookie_header = "; ".join(
+        f"{cookie['name']}={cookie['value']}"
+        for cookie in cookies
+        if cookie.get("name") and cookie.get("value") is not None
+    )
+    if not cookie_header:
+        raise RuntimeError("No se encontraron cookies de sesión autenticada para la prueba concurrente.")
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="rubrova-refund") as executor:
         future_a = executor.submit(
-            _native_api_get_with_browser_cookies, context, url, "rubrovaTestCumulativeRefundRaceAApi"
+            _native_api_get_with_cookie_header, api_base, "rubrovaTestCumulativeRefundRaceAApi", cookie_header
         )
         future_b = executor.submit(
-            _native_api_get_with_browser_cookies, context, url, "rubrovaTestCumulativeRefundRaceBApi"
+            _native_api_get_with_cookie_header, api_base, "rubrovaTestCumulativeRefundRaceBApi", cookie_header
         )
         race_a = future_a.result()
         race_b = future_b.result()
