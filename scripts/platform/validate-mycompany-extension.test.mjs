@@ -1632,6 +1632,14 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(nativeSalesFixtureSource, /Retail[.]paid\(rubrovaCIMixedInvoice\(\), Retail[.]cashPaymentMethod\(\)\)/);
   assert.match(nativeSalesFixtureSource, /Retail[.]paid\(rubrovaCIMixedInvoice\(\), Retail[.]paymentMethod\('card'\)\)/);
   assert.match(nativeSalesFixtureSource, /Invoicing[.]cancel\(rubrovaCIMixedFirstRefundBill\(\)\)/);
+  assert.match(nativeSalesFixtureSource, /originalBillCanceled = Invoicing[.]canceled/);
+  assert.match(nativeSalesFixtureSource, /originalBillReady = Invoicing[.]ready/);
+  assert.match(nativeSalesFixtureSource, /originalBillActivityState = CASE WHEN Invoicing[.]active/);
+  assert.match(uiSmokeSource, /cancelled_payload[.]get\("originalBillCanceled"\) is not True/);
+  assert.match(uiSmokeSource, /cancelled_payload[.]get\("originalBillActivityState"\) != "inactive"/);
+  assert.match(uiSmokeSource, /released_payload[.]get\("originalBillCanceled"\) is not True/);
+  assert.match(uiSmokeSource, /state[.]get\("originalBillCanceled"\) is not True/);
+  assert.doesNotMatch(uiSmokeSource, /cancelled_payload[.]get\("originalBillActive"\) is not False/);
   assert.match(nativeSalesFixtureSource, /Invoicing[.]cancel\(p\)/);
   assert.match(nativeSalesFixtureSource, /APPLY SERIALIZABLE/);
   assert.match(uiSmokeSource, /def verify_cumulative_refunds\(context: Any, url: str, browser: Any\)/);

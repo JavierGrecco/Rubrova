@@ -621,6 +621,9 @@ rubrovaTestCumulativeRefundBillCancelApi () {
 
     EXPORT JSON FROM
         originalBillActive = Invoicing.active(rubrovaCIMixedFirstRefundBill()),
+        originalBillCanceled = Invoicing.canceled(rubrovaCIMixedFirstRefundBill()),
+        originalBillReady = Invoicing.ready(rubrovaCIMixedFirstRefundBill()),
+        originalBillActivityState = CASE WHEN Invoicing.active(rubrovaCIMixedFirstRefundBill()) THEN 'active' ELSE 'inactive',
         originalBillOutgoingActiveCount = (GROUP SUM 1
             IF Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p)
                AND Invoicing.active(p)),
@@ -649,6 +652,9 @@ rubrovaTestCumulativeRefundReleaseApi () {
 
     EXPORT JSON FROM
         originalBillActive = Invoicing.active(rubrovaCIMixedFirstRefundBill()),
+        originalBillCanceled = Invoicing.canceled(rubrovaCIMixedFirstRefundBill()),
+        originalBillReady = Invoicing.ready(rubrovaCIMixedFirstRefundBill()),
+        originalBillActivityState = CASE WHEN Invoicing.active(rubrovaCIMixedFirstRefundBill()) THEN 'active' ELSE 'inactive',
         originalBillOutgoingActiveCount = (GROUP SUM 1
             IF Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p)
                AND Invoicing.active(p)),
@@ -672,6 +678,9 @@ rubrovaCumulativeRefundsReconciliationApi () {
         originalCashPaid = Retail.paid(rubrovaCIMixedInvoice(), Retail.cashPaymentMethod()),
         originalCardPaid = Retail.paid(rubrovaCIMixedInvoice(), Retail.paymentMethod('card')),
         originalBillActive = Invoicing.active(rubrovaCIMixedFirstRefundBill()),
+        originalBillCanceled = Invoicing.canceled(rubrovaCIMixedFirstRefundBill()),
+        originalBillReady = Invoicing.ready(rubrovaCIMixedFirstRefundBill()),
+        originalBillActivityState = CASE WHEN Invoicing.active(rubrovaCIMixedFirstRefundBill()) THEN 'active' ELSE 'inactive',
         originalBillOutgoingActiveCount = (GROUP SUM 1
             IF Retail.paymentMethod(rubrovaCIMixedFirstRefundBill(), Invoicing.OutgoingPayment p)
                AND Invoicing.active(p)),

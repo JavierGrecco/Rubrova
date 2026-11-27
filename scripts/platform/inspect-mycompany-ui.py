@@ -1530,14 +1530,16 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
     if isinstance(cancelled_payload, list):
         cancelled_payload = cancelled_payload[0] if cancelled_payload else {}
     if (
-        cancelled_payload.get("originalBillActive") is not False
+        cancelled_payload.get("originalBillCanceled") is not True
+        or cancelled_payload.get("originalBillReady") is not True
+        or cancelled_payload.get("originalBillActivityState") != "inactive"
         or float(cancelled_payload.get("originalBillOutgoingActiveCount") or 0) != 2
         or cancelled_payload.get("overLimitRejected") is not True
         or abs(float(cancelled_payload.get("cashAccountBalance") or 0) - 1000) > 0.001
         or abs(float(cancelled_payload.get("cardAccountBalance") or 0) - 1000) > 0.001
     ):
         raise RuntimeError(
-            "Cancelar la nota liberó incorrectamente el cupo o no conservó sus egresos activos: "
+            "La cancelación de la nota no conservó su estado nativo, los egresos activos o el cupo: "
             + json.dumps(cancelled_payload, ensure_ascii=False)
         )
     if "El total reintegrado por medio de pago supera el importe cobrado originalmente" not in str(
@@ -1562,7 +1564,6 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
     if isinstance(released_payload, list):
         released_payload = released_payload[0] if released_payload else {}
     expected_release = {
-        "originalBillActive": 0,
         "originalBillOutgoingActiveCount": 0,
         "activeReturnCount": 3,
         "activeReturnAmount": 1250,
@@ -1586,6 +1587,15 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
                 f"esperado {expected}, recibido {actual}. "
                 f"{json.dumps(released_payload, ensure_ascii=False)}"
             )
+    if (
+        released_payload.get("originalBillCanceled") is not True
+        or released_payload.get("originalBillReady") is not True
+        or released_payload.get("originalBillActivityState") != "inactive"
+    ):
+        raise RuntimeError(
+            "La cancelación de egresos alteró incorrectamente el estado histórico de la nota: "
+            + json.dumps(released_payload, ensure_ascii=False)
+        )
     print("UI_CUMULATIVE_REFUNDS_PAYMENT_CANCEL_RELEASES_CAP=true")
     print("UI_CUMULATIVE_REFUNDS_RECONCILED=true")
     print("UI_CUMULATIVE_REFUNDS_FINAL=" + json.dumps(released_payload, ensure_ascii=False))
@@ -1625,8 +1635,15 @@ def verify_cumulative_refunds_persistence(context: Any, url: str) -> None:
                 f"esperado {wanted}, recibido {actual}. "
                 f"{json.dumps(state, ensure_ascii=False)}"
             )
-    if state.get("originalBillActive") is not False:
-        raise RuntimeError("La nota de crédito anulada reapareció activa después del reinicio.")
+    if (
+        state.get("originalBillCanceled") is not True
+        or state.get("originalBillReady") is not True
+        or state.get("originalBillActivityState") != "inactive"
+    ):
+        raise RuntimeError(
+            "El estado nativo de cancelación de la nota no sobrevivió al reinicio: "
+            + json.dumps(state, ensure_ascii=False)
+        )
     print("UI_RESTART_PERSISTENCE_CUMULATIVE_REFUNDS=true")
 
 def verify_partial_returns(context: Any, url: str) -> None:
