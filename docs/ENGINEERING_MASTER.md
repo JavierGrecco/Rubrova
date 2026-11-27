@@ -129,28 +129,29 @@ Inventario remoto consultado después de integrar PR #14 y del commit automátic
 
 La política es una sola rama persistente (`main`) y como máximo una rama temporal para revisión. Una rama temporal deja de estar activa al fusionarse y debe eliminarse inmediatamente.
 
-### 2.5 Reintegros acumulados por medio de pago: riesgo pendiente
+### 2.5 Reintegros acumulados por medio de pago: guard implementado en rama de trabajo, pendiente de aceptación
 
-La inspección de fuentes nativas detectó un límite concreto que no cubren las pruebas actuales:
+La inspección de fuentes nativas identificó que el formulario de MyCompany sólo compara cada reintegro con el importe original del método. La solución en revisión amplía el control sin crear pagos ni ledgers paralelos:
 
-- En `vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/return/PosDashboardReturnPayment.lsf`, `invoicePaid(Bill, PaymentMethod)` calcula lo abonado originalmente en la factura por medio. `invalidAmount` compara el importe del reintegro actual contra ese total, pero no resta los reintegros activos de notas anteriores.
-- En `vendor/mycompany/src/main/lsfusion/retail/sessions/SessionPayment.lsf`, `paymentMethod(Bill, OutgoingPayment)` conserva el método de cada egreso y `paid(Bill, PaymentMethod)` agrega el importe efectivamente asociado al reintegro por método.
-- `CreditNote.lsf` aplica `@defineDocLineRelation(invoice, bill, ...)`. La macro `defineDocLineRelation` de `utils/Doc.lsf` define `in(Invoice, Bill)` a partir de la relación entre las líneas de la factura original y las líneas de cada nota. Así se pueden agrupar reintegros de notas anteriores que pertenecen a la misma factura.
-- `BillCanceled.lsf` define `active(Bill)` como `ready(Bill) AND NOT canceled(Bill)`; las notas canceladas no deben consumir el cupo de reintegro.
+- `PosDashboardReturnPayment.lsf` calcula `invoicePaid(Bill, PaymentMethod)` con el importe original cobrado por método. El parche Rubrova cambia `invalidAmount` para comparar el importe actual con `rubrovaRefundRemaining`, que descuenta los egresos activos anteriores enlazados a la misma factura.
+- `SessionPayment.lsf` conserva `paymentMethod(Bill, OutgoingPayment)` y `paid(Bill, PaymentMethod)`; la macro `defineDocLineRelation` de `utils/Doc.lsf` permite seguir las notas hasta la factura original.
+- `OutgoingPaymentCanceled.lsf` define la actividad del egreso como listo o hecho y no cancelado. **El cupo se calcula por egresos activos, no por notas activas.** Cancelar una nota no cancela por sí mismo su pago, así que el dinero que ya salió sigue consumiendo cupo. El cupo sólo se libera cuando el egreso nativo correspondiente también deja de estar activo.
+- La regla global `rubrovaRefundedByMethod` suma los pagos de salida activos relacionados con cada factura original y método, y rechaza el exceso dentro del `APPLY`. La pantalla muestra el importe original, el remanente y el límite del valor ingresado.
+- El parche de preparación cambia el `APPLY` del diálogo POS nativo a `APPLY SERIALIZABLE`. La documentación de lsFusion 6.x admite ese nivel de aislamiento para una aplicación concreta. La restricción global sigue siendo la regla de integridad; el aislamiento serializable hace que dos confirmaciones que compiten por el mismo cupo no puedan confirmar ambas sobre la misma lectura anterior.
 
-**Diseño a validar antes de implementar:** calcular el acumulado de `paid(previousBill, pm)` para otras notas activas enlazadas a la misma factura mediante `in(originalInvoice, previousBill)`, excluir explícitamente la nota actual y restarlo del importe originalmente pagado por ese mismo método. El formulario debe mostrar el remanente y rechazar un exceso. Además debe existir una validación de servidor/transaccional al confirmar el reintegro: deshabilitar el botón o colorear el campo no protege frente a llamadas directas ni a dos reintegros concurrentes. No duplicar la generación de `OutgoingPayment` ni crear un ledger alternativo; extender el control nativo y mantener sus registros.
+**Estado de aceptación:** la lógica, el parche de fuentes, la fixture mixta y los asserts estáticos están preparados en `work/pos-refund-cumulative-method-guard`. Aún no existe evidencia de compilación de lógica ni de runtime para este cambio. No afirmar que está resuelto hasta que CI confirme el build completo y el smoke macOS ARM64.
 
-**Cobertura requerida antes de aceptar el cambio:**
+**Cobertura de runtime añadida a la rama:**
 
-1. Factura original pagada con dos medios (ejemplo: efectivo ARS 500 y tarjeta ARS 750).
-2. Primera devolución distribuida entre ambos medios (ejemplo: efectivo ARS 300 y tarjeta ARS 250).
-3. Rechazar una segunda devolución de tarjeta por ARS 600: individualmente no supera los ARS 750 originales, pero sumada a los ARS 250 anteriores excede el máximo por ARS 100.
-4. Aceptar el remanente válido de tarjeta por ARS 500 y verificar que el acumulado llega exactamente a ARS 750.
-5. Cancelar una nota anterior y comprobar que sus pagos dejan de contar para el límite cuando la nota ya no está activa, sin borrar el historial contable.
-6. Probar reintentos/duplicados y dos confirmaciones concurrentes; nunca permitir que el acumulado confirmado exceda el pago original por método.
-7. Verificar por separado factura original, notas de crédito, egresos, estados, método, caja/banco y persistencia después del reinicio.
+1. Factura original de ARS 1.250: efectivo ARS 500 y tarjeta ARS 750.
+2. Primera nota: 0,4 unidades, efectivo ARS 200 y tarjeta ARS 300.
+3. Rechazar una segunda devolución de 0,6 unidades que solicita ARS 600 de tarjeta: cada devolución está por debajo de ARS 750, pero el acumulado sería ARS 900.
+4. Dos confirmaciones concurrentes de tarjeta por ARS 300: una debe confirmar y la otra rechazarse, porque el cupo antes de la carrera es ARS 450.
+5. Completar el remanente con efectivo y tarjeta; los totales confirmados deben cerrar en ARS 500 y ARS 750 respectivamente.
+6. Cancelar sólo la nota original no debe liberar cupo mientras sus dos egresos permanezcan activos. Cancelar después los egresos nativos debe liberar exactamente esos importes, permitiendo una nueva devolución dentro del remanente.
+7. Conciliar cantidad devuelta, notas activas, estado de egresos, caja/medios y persistencia después del reinicio.
 
-**Estado actual:** riesgo confirmado por inspección de código nativo; el fixture automatizado sólo ejercita reintegros sintéticos en efectivo por ARS 1.250 que, acumulados, igualan lo abonado. No prueba mezcla de medios ni un exceso acumulado de un medio específico. No afirmar que el tope acumulado por medio esté resuelto ni que los reintegros tarjeta/QR estén aceptados.
+No extender esta aceptación a terminales reales, adquirentes, pagos mixtos productivos ni QR externo: esta fixture es local y sintética.
 
 ## 3. Qué incorporamos: versiones, alcance y composición
 
@@ -594,6 +595,17 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Diseño por validar:** agregar la suma de egresos de notas anteriores activas ligadas a la misma factura y método, excluyendo la nota actual, restarla al monto originalmente pagado y aplicar el límite tanto en la UI nativa como en una validación de servidor que resista concurrencia y replay.
 - **Estado:** diagnóstico de fuente confirmado; implementación y pruebas de runtime pendientes. No hay aceptación de reintegros mixtos, tarjetas o QR por esta inspección.
 - **Criterio de aceptación:** factura sintética de efectivo ARS 500 + tarjeta ARS 750; primera nota reembolsa ARS 300 + ARS 250; segunda nota por tarjeta ARS 600 se rechaza (acumulado 850); importe válido de ARS 500 se acepta (acumulado 750); cancelar una nota libera su importe sólo si la nota deja de estar activa; dos confirmaciones concurrentes no pueden superar el límite; conciliación de los ledgers nativos y persistencia post-reinicio.
+
+### 2026-11-26 — REP-030 — Implementación del límite acumulado de reintegros en revisión
+
+- **Rama:** `work/pos-refund-cumulative-method-guard`, creada desde `main` `a994c271e5bdf2fce73a525d1083ac22c99a4e56`.
+- **Cambio en extensión:** `RubrovaRetailReturns.lsf` agrega el agregado de egresos activos por factura/método, el cálculo del cupo remanente, y una restricción global que impide superar lo cobrado originalmente.
+- **Cambio de runtime:** `apply-rubrova-source-patches.py` modifica el diálogo nativo `PosDashboardReturnPayment` para mostrar el remanente y realizar la confirmación con `APPLY SERIALIZABLE`. El parche usa anclas exactas e idempotencia; cualquier drift o aplicación parcial debe detener la compilación.
+- **Semántica de cancelación corregida:** la suma del cupo filtra `Invoicing.active(OutgoingPayment)`, no `active(Bill)`. Cancelar la nota no cancela automáticamente los egresos relacionados; el saldo de salida continúa consumiendo cupo hasta cancelar cada pago nativo.
+- **Fixture añadida:** segundo POS sintético con factura pagada ARS 500 en efectivo + ARS 750 en tarjeta; exceso acumulado, dos reintegros concurrentes, cancelación aislada de nota y cancelación de los dos egresos.
+- **Aserciones añadidas:** prevalidación estática de la regla global, parche nativo, semántica de cancelación, llamadas concurrentes y marcadores obligatorios del smoke/reinicio.
+- **Estado:** preparado en una rama temporal, aún no compilado ni ejecutado en runtime. No integrado a `main`. No declarar protección acumulada aceptada hasta que termine el smoke funcional nativo sobre el SHA exacto del PR.
+- **Riesgos a revisar en compilación:** las relaciones `Invoicing.in(Invoice, Bill)`, `Retail.paymentMethod(Bill, OutgoingPayment)`, las acciones nativas de cancelación y los eventos automáticos de recibo deben compilar y producir los valores esperados en la fixture. Si falla, corregir en esta misma rama y no abrir otra.
 
 ## 11. Anexos históricos preservados
 
