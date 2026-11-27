@@ -74,10 +74,9 @@
       {
         "name": "RubrovaPaymentTerminals",
         "path": "extensions/lsfusion/RubrovaPaymentTerminals.lsf",
-        "role": "provider accounts, terminal configuration, caja/payment-method assignments, payment intents/attempts, refunds, provider events and settlement lines",
+        "role": "data model for provider accounts, terminals, caja/payment-method assignments, intents/attempts, refunds, events and settlements; no device or provider I/O is implemented",
         "requires": [
-          "MyCompany",
-          "RubrovaIntegrationResilience"
+          "MyCompany"
         ]
       },
       {
@@ -93,8 +92,7 @@
         "path": "extensions/lsfusion/RubrovaRetailReturns.lsf",
         "role": "defaults retail credit-note line quantities to the remaining unreturned quantity on the original invoice",
         "requires": [
-          "CreditNote",
-          "OutgoingPaymentDebt"
+          "CreditNote"
         ]
       },
       {
@@ -105,7 +103,7 @@
           "CreditNote",
           "SessionPayment",
           "IncomingPaymentDebt",
-          "RubrovaRetailReturns"
+          "OutgoingPaymentDebt"
         ]
       }
     ]

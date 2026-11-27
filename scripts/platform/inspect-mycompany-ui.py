@@ -328,6 +328,10 @@ def wait_until_form_loaded(
                         'input, select, [role="combobox"], [role="listbox"], [role="option"]'
                     )].map(element => ({
                         tag: element.tagName.toLowerCase(),
+                        id: element.id || "",
+                        checked: element instanceof HTMLInputElement && element.type === "radio"
+                            ? element.checked
+                            : null,
                         value: "value" in element ? element.value || "" : "",
                         text: (element.innerText || element.textContent || "").trim(),
                         title: element.getAttribute("title") || "",
@@ -390,7 +394,7 @@ def wait_until_form_loaded(
 
 
 def select_pos_register(page: Any, register_name: str) -> None:
-    """Select the requested POS tab; presence in the selector is not proof of selection."""
+    """Verify the native POS radio selection and change it only when necessary."""
     register = page.get_by_text(register_name, exact=True)
     register.wait_for(state="visible", timeout=10_000)
     matches = [register.nth(index) for index in range(register.count())]
@@ -406,9 +410,37 @@ def select_pos_register(page: Any, register_name: str) -> None:
             f"Se esperaba un único selector visible para {register_name!r}; "
             f"coincidencias={len(visible_matches)}"
         )
-    visible_matches[0].click(timeout=10_000)
-    page.wait_for_timeout(250)
-    print("UI_POS_REGISTER_SELECTION_CLICKED=true")
+
+    radio_id = visible_matches[0].get_attribute("for")
+    if not radio_id:
+        raise RuntimeError(
+            f"El selector POS {register_name!r} no referencia un control de radio"
+        )
+    radio = page.locator(f'input[type="radio"][id="{radio_id}"]')
+    if radio.count() != 1:
+        raise RuntimeError(
+            f"Se esperaba un radio nativo para {register_name!r}; "
+            f"coincidencias={radio.count()}"
+        )
+    radio.wait_for(state="visible", timeout=10_000)
+    print(f"UI_POS_REGISTER_RADIO_ID={radio_id}")
+
+    if radio.is_checked():
+        print("UI_POS_REGISTER_ALREADY_SELECTED=true")
+    else:
+        # El tooltip de documentación de lsFusion puede quedar sobre el label.
+        # Cerrar el tooltip y operar sobre el radio nativo, no sobre texto libre.
+        page.mouse.move(0, 0)
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(350)
+        radio.check(timeout=10_000)
+        if not radio.is_checked():
+            raise RuntimeError(
+                f"El radio nativo no quedó seleccionado para {register_name!r}"
+            )
+        print("UI_POS_REGISTER_SELECTION_CLICKED=true")
+
+    print("UI_POS_REGISTER_SELECTION_VERIFIED=true")
     print(f"UI_POS_REGISTER_SELECTION_NAME={register_name}")
 
 

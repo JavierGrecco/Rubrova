@@ -1,12 +1,8 @@
 MODULE RubrovaRetailReturns;
-REQUIRE CreditNote, OutgoingPaymentDebt; // Dependencias hoja: evita acoplar una extensión al agregado MyCompany.
+REQUIRE CreditNote;
 
 
 NAMESPACE Invoicing;
-
-// Importe del egreso expresado en la moneda funcional del ledger de deuda,
-// comparable con paid(IncomingPayment, Invoice).
-rubrovaOutgoingLedgerAmount (OutgoingPayment p) = amount[Debt](p);
 
 // Cantidad devuelta antes del documento que se está creando.
 // Se excluye el Bill actual para no contar dos veces sus líneas recién copiadas.

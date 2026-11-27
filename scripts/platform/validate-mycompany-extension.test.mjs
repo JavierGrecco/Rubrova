@@ -295,6 +295,12 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /register_available = register_name in searchable/);
   assert.match(uiSmokeSource, /register_name=pos_register_name/);
   assert.match(uiSmokeSource, /def select_pos_register\(page: Any, register_name: str\)/);
+  assert.ok(uiSmokeSource.includes('radio_id = visible_matches[0].get_attribute("for")'));
+  assert.ok(uiSmokeSource.includes("radio.is_checked()"));
+  assert.ok(uiSmokeSource.includes("UI_POS_REGISTER_ALREADY_SELECTED=true"));
+  assert.ok(uiSmokeSource.includes("page.mouse.move(0, 0)"));
+  assert.ok(uiSmokeSource.includes("radio.check(timeout=10_000)"));
+  assert.ok(uiSmokeSource.includes("UI_POS_REGISTER_SELECTION_VERIFIED=true"));
   assert.match(uiSmokeSource, /select_pos_register\(page, pos_register_name\)/);
   assert.match(uiSmokeSource, /rubrovaTestPosSessionSelectionApi/);
   assert.match(uiSmokeSource, /UI_POS_SESSION_BOUND_TO_REQUESTED_REGISTER=true/);
@@ -1493,15 +1499,16 @@ test("el modelo de terminales se carga desde el punto de entrada y el lock", () 
    const retailReturnsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailReturns");
   const retailRefundLimitsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailRefundLimits");
   assert.ok(retailReturnsModule, "El cálculo del remanente de devoluciones debe estar en el lock reproducible.");
-  assert.deepEqual(retailReturnsModule.requires, ["CreditNote", "OutgoingPaymentDebt"]);
+  assert.deepEqual(retailReturnsModule.requires, ["CreditNote"]);
   assert.ok(customModule.requires.includes("RubrovaRetailReturns"));
   assert.ok(retailRefundLimitsModule, "El límite acumulado debe estar incluido en el lock reproducible.");
-  assert.deepEqual(retailRefundLimitsModule.requires, ["CreditNote", "SessionPayment", "IncomingPaymentDebt", "RubrovaRetailReturns"]);
+  assert.deepEqual(retailRefundLimitsModule.requires, ["CreditNote", "SessionPayment", "IncomingPaymentDebt", "OutgoingPaymentDebt"]);
   assert.ok(customModule.requires.includes("RubrovaRetailRefundLimits"));
   const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
   assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
   assert.ok(customModule.requires.includes("RubrovaReplenishmentExport"));
-  assert.ok(terminalModule.requires.includes("RubrovaIntegrationResilience"));
+  assert.deepEqual(terminalModule.requires, ["MyCompany"]);
+  assert.doesNotMatch(paymentTerminalSource, /rubrovaHttpGet|rubrovaRecordIntegrationIncident/);
   for (const entity of [
     "PaymentProviderAccount",
     "PaymentTerminal",
@@ -1642,7 +1649,8 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.equal((retailRefundLimitsSource.match(/Invoicing[.]in\(originalInvoice, Invoicing[.]Bill previousBill\)/g) || []).length, 2);
   assert.match(retailRefundLimitsSource, /paymentMethod\(previousBill, p\) = pm/);
   assert.match(retailRefundLimitsSource, /Invoicing[.]active\(p\)/);
-  assert.match(retailReturnsSource, /rubrovaOutgoingLedgerAmount \(OutgoingPayment p\) = amount\[Debt\]\(p\)/);
+  assert.ok(retailRefundLimitsSource.includes("rubrovaOutgoingLedgerAmount (OutgoingPayment p) = amount[Debt](p);"));
+  assert.doesNotMatch(retailReturnsSource, /rubrovaOutgoingLedgerAmount/);
   assert.match(retailRefundLimitsSource, /GROUP SUM Invoicing[.]rubrovaOutgoingLedgerAmount\(Invoicing[.]OutgoingPayment p\)/);
   assert.match(retailRefundLimitsSource, /Saldo reintegrable/);
   assert.match(retailRefundLimitsSource, /CONSTRAINT SET\(rubrovaRefundedByMethod/);
@@ -1799,8 +1807,8 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.doesNotMatch(retailReturnsSource, /^NAMESPACE Retail;/m);
   assert.match(retailRefundLimitsSource, /^MODULE RubrovaRetailRefundLimits;/m);
   assert.match(retailRefundLimitsSource, /^NAMESPACE Retail;/m);
-  assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, RubrovaRetailReturns;/m);
-  assert.match(retailReturnsSource, /^REQUIRE CreditNote, OutgoingPaymentDebt;/m);
+  assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, OutgoingPaymentDebt;/m);
+  assert.match(retailReturnsSource, /^REQUIRE CreditNote;/m);
   assert.match(retailReturnsSource, /fill \(BillLine currentLine, InvoiceLine originalLine\) \+/);
   assert.match(creditNoteSource, /fill ABSTRACT LIST \(BillLine, InvoiceLine\)/);
   assert.match(retailReturnsSource, /type\(invoice\(originalLine\)\) = invoiceType\('retail'\)/);
