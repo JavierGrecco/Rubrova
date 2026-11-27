@@ -1391,10 +1391,10 @@ test("el modelo de terminales se carga desde el punto de entrada y el lock", () 
   const retailReturnsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailReturns");
   const retailRefundLimitsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailRefundLimits");
   assert.ok(retailReturnsModule, "El cálculo del remanente de devoluciones debe estar en el lock reproducible.");
-  assert.deepEqual(retailReturnsModule.requires, ["MyCompany", "CreditNote"]);
+  assert.deepEqual(retailReturnsModule.requires, ["CreditNote", "OutgoingPaymentDebt"]);
   assert.ok(customModule.requires.includes("RubrovaRetailReturns"));
   assert.ok(retailRefundLimitsModule, "El límite acumulado debe estar incluido en el lock reproducible.");
-  assert.deepEqual(retailRefundLimitsModule.requires, ["MyCompany", "CreditNote", "RubrovaRetailReturns"]);
+  assert.deepEqual(retailRefundLimitsModule.requires, ["CreditNote", "SessionPayment", "IncomingPaymentDebt", "RubrovaRetailReturns"]);
   assert.ok(customModule.requires.includes("RubrovaRetailRefundLimits"));
   const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
   assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
@@ -1550,6 +1550,8 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_FORM_AFTER"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_AFTER"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_AFTER = chr(10).join(("));
+  assert.ok(sourcePatch.includes("if RETURN_PAYMENT_DESIGN_BEFORE in source:"));
   assert.ok(returnPaymentSource.includes("PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }"));
   assert.ok(sourcePatch.includes("rubrovaOriginalPaidForReturn(b, pm)"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_BEFORE"));

@@ -177,7 +177,10 @@ RETURN_PAYMENT_INVALID_AFTER = "invalidAmount(Bill b, PaymentMethod pm) = amount
 RETURN_PAYMENT_FORM_BEFORE = "PROPERTIES name(pm) READONLY, invoicePaid(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
 RETURN_PAYMENT_FORM_AFTER = "PROPERTIES name(pm) READONLY, rubrovaOriginalPaidForReturn(b, pm), rubrovaRefundRemaining(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
 RETURN_PAYMENT_DESIGN_BEFORE = "PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }"
-RETURN_PAYMENT_DESIGN_AFTER = "PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { fontSize = 24; }\\n                        PROPERTY(rubrovaRefundRemaining(b, pm)) { fontSize = 24; }"
+RETURN_PAYMENT_DESIGN_AFTER = chr(10).join((
+    "PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { fontSize = 24; }",
+    "                        PROPERTY(rubrovaRefundRemaining(b, pm)) { fontSize = 24; }",
+))
 RETURN_PAYMENT_APPLY_BEFORE = """ready(b) <- TRUE;
         APPLY;
         IF canceled() THEN {"""
@@ -517,6 +520,9 @@ def apply_cumulative_refund_guard() -> bool:
     )
     required = tuple(after for _, after in replacements)
     if all(marker in source for marker in required):
+        if RETURN_PAYMENT_DESIGN_BEFORE in source:
+            print("El diseño del diálogo conserva la propiedad retirada del formulario.", file=sys.stderr)
+            return False
         if require_changed:
             target.write_text(source, encoding="utf-8")
         print("Tope acumulado por medio, dependencia nativa y confirmación SERIALIZABLE ya aplicados al reintegro.")
