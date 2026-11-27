@@ -1756,6 +1756,218 @@ def verify_cumulative_refunds_persistence(context: Any, url: str) -> None:
         )
     print("UI_RESTART_PERSISTENCE_CUMULATIVE_REFUNDS=true")
 
+def verify_native_return_draft(
+    context: Any, url: str, page: Any, screenshot_path: Path
+) -> None:
+    """Click the native return action, inspect the credit-note panel, then discard the draft safely."""
+    api_base = application_endpoint_url(url, "exec/Sales.")
+
+    def read_session_state(stage: str) -> dict[str, Any]:
+        response = context.request.get(
+            api_base + "rubrovaTestSessionCloseApi",
+            timeout=12_000,
+        )
+        if response.status != 200:
+            raise RuntimeError(
+                f"La conciliación del turno ({stage}) respondió HTTP "
+                f"{response.status}: {response.text()[:1200]}"
+            )
+        payload = response.json()
+        if isinstance(payload, list):
+            payload = payload[0] if payload else {}
+        if not isinstance(payload, dict):
+            raise RuntimeError(
+                f"La conciliación del turno ({stage}) no devolvió un objeto JSON."
+            )
+        print(f"UI_RETURN_DRAFT_SESSION_{stage.upper()}=" + json.dumps(payload, ensure_ascii=False))
+        return payload
+
+    before = read_session_state("before")
+    for field, expected in {
+        "sessionStatus": "OPEN",
+        "salesCount": 1,
+        "salesAmount": 1250,
+        "returnsCount": 0,
+        "returnsAmount": 0,
+        "cashBalance": 1250,
+    }.items():
+        actual = before.get(field)
+        if isinstance(expected, str):
+            valid = actual == expected
+        else:
+            try:
+                valid = abs(float(actual or 0) - expected) <= 0.001
+            except (TypeError, ValueError):
+                valid = False
+        if not valid:
+            raise RuntimeError(
+                "El escenario previo a la devolución UI no está limpio en "
+                f"{field}: esperado {expected!r}, recibido {actual!r}. "
+                + json.dumps(before, ensure_ascii=False)
+            )
+
+    visible_session_tabs = []
+    all_session_tabs = page.get_by_text("Turno", exact=True)
+    for index in range(all_session_tabs.count()):
+        candidate = all_session_tabs.nth(index)
+        if candidate.is_visible():
+            visible_session_tabs.append(candidate)
+    if len(visible_session_tabs) != 1:
+        visible_snapshot(page, "UI_RETURN_DRAFT_SESSION_TAB_NOT_UNIQUE")
+        raise RuntimeError(
+            "Se esperaba un único encabezado visible 'Turno' para iniciar la prueba de devolución; "
+            f"encontrados={len(visible_session_tabs)}."
+        )
+    visible_session_tabs[0].click(no_wait_after=True)
+
+    sales_tab = page.get_by_text("Ventas del turno", exact=True)
+    if sales_tab.count() != 1 or not sales_tab.is_visible():
+        visible_snapshot(page, "UI_RETURN_DRAFT_SALES_TAB_NOT_UNIQUE")
+        raise RuntimeError("No se encontró una única pestaña visible 'Ventas del turno'.")
+    sales_tab.click(no_wait_after=True)
+
+    sales_grid = page.locator('[lsfusion-container="GRID(si)"]')
+    sales_grid.wait_for(state="visible", timeout=15_000)
+    sales_rows = sales_grid.locator("tr.data-grid-row:not(.data-grid-column-row)")
+    if sales_rows.count() != 1:
+        visible_snapshot(page, "UI_RETURN_DRAFT_SALES_ROW_COUNT")
+        raise RuntimeError(
+            "La prueba del botón Devolver requiere exactamente una venta, "
+            f"encontró {sales_rows.count()}."
+        )
+    selected_rows = sales_grid.locator("tr.data-grid-row.table-active")
+    if selected_rows.count() != 1:
+        visible_snapshot(page, "UI_RETURN_DRAFT_SALE_NOT_SELECTED")
+        raise RuntimeError("La venta no está seleccionada en la grilla nativa del turno.")
+
+    return_action = page.locator(
+        'button[lsfusion-container="PROPERTY(return(s,si))"]'
+    )
+    if return_action.count() != 1 or not return_action.is_visible() or not return_action.is_enabled():
+        visible_snapshot(page, "UI_RETURN_DRAFT_ACTION_NOT_AVAILABLE")
+        raise RuntimeError(
+            "La acción nativa PROPERTY(return(s,si)) no está disponible para la venta."
+        )
+    print("UI_RETURN_ACTION_CLICKED=true")
+    return_action.click(no_wait_after=True)
+
+    bill_grid = page.locator('[lsfusion-container="GRID(bl)"]')
+    try:
+        bill_grid.wait_for(state="visible", timeout=15_000)
+    except PlaywrightTimeoutError as error:
+        visible_snapshot(page, "UI_RETURN_DRAFT_BILL_GRID_NOT_VISIBLE")
+        raise RuntimeError(
+            "Tras pulsar 'Devolver' no apareció la grilla nativa GRID(bl) de la nota de crédito."
+        ) from error
+    bill_rows = bill_grid.locator("tr.data-grid-row:not(.data-grid-column-row)")
+    bill_row_count = bill_rows.count()
+    bill_row_texts = bill_rows.all_inner_texts()
+    print(f"UI_RETURN_DRAFT_BILL_ROW_COUNT={bill_row_count}")
+    print("UI_RETURN_DRAFT_BILL_ROWS=" + json.dumps(bill_row_texts, ensure_ascii=False))
+    if bill_row_count != 1 or not any("Producto de prueba Rubrova" in row for row in bill_row_texts):
+        visible_snapshot(page, "UI_RETURN_DRAFT_BILL_LINES_UNEXPECTED")
+        raise RuntimeError(
+            "La nota creada desde el POS no contiene exactamente la línea del producto devuelto: "
+            + json.dumps(bill_row_texts, ensure_ascii=False)
+        )
+
+    payment_action = page.locator(
+        'button[lsfusion-container="PROPERTY(posPayment(s,b))"]'
+    )
+    payment_action_count = payment_action.count()
+    print(f"UI_RETURN_DRAFT_PAYMENT_ACTION_MATCH_COUNT={payment_action_count}")
+    if (
+        payment_action_count != 1
+        or not payment_action.is_visible()
+        or not payment_action.is_enabled()
+    ):
+        visible_snapshot(page, "UI_RETURN_DRAFT_PAYMENT_ACTION_NOT_AVAILABLE")
+        raise RuntimeError(
+            "La nota aparece, pero la acción nativa posPayment(s,b) no está visible y habilitada; "
+            f"coincidencias={payment_action_count}."
+        )
+    print(
+        "UI_RETURN_DRAFT_PAYMENT_ACTION_MARKUP="
+        + payment_action.evaluate("element => element.outerHTML.slice(0, 1200)")
+    )
+    print("UI_RETURN_DRAFT_GRID_RENDERED=true")
+    print("UI_RETURN_DRAFT_PAYMENT_ACTION_PRESENT=true")
+    visible_snapshot(page, "UI_RETURN_DRAFT_BEFORE_DISCARD")
+    draft_screenshot = screenshot_path.with_name(
+        screenshot_path.stem + "-return-draft" + screenshot_path.suffix
+    )
+    page.screenshot(path=str(draft_screenshot), full_page=True)
+    print(f"UI_RETURN_DRAFT_SCREENSHOT={draft_screenshot}")
+
+    # The bill footer exposes the upstream newReceipt action as "Nueva venta".
+    # It starts with CANCEL, so it must abandon this unconfirmed credit-note draft.
+    if not click_exact_action(page, "Nueva venta"):
+        visible_snapshot(page, "UI_RETURN_DRAFT_NEW_RECEIPT_ACTION_NOT_FOUND")
+        raise RuntimeError(
+            "No se pudo descartar la nota en borrador mediante la acción nativa 'Nueva venta'."
+        )
+    receipt_grid = page.locator('[lsfusion-container="GRID(l)"]')
+    try:
+        receipt_grid.wait_for(state="visible", timeout=15_000)
+    except PlaywrightTimeoutError as error:
+        visible_snapshot(page, "UI_RETURN_DRAFT_RECEIPT_NOT_RESTORED")
+        raise RuntimeError(
+            "La acción 'Nueva venta' no restauró el panel de recibo después de cancelar la nota."
+        ) from error
+
+    after = read_session_state("after")
+    for field, expected in {
+        "sessionStatus": "OPEN",
+        "salesCount": 1,
+        "salesAmount": 1250,
+        "returnsCount": 0,
+        "returnsAmount": 0,
+        "cashBalance": 1250,
+    }.items():
+        actual = after.get(field)
+        if isinstance(expected, str):
+            valid = actual == expected
+        else:
+            try:
+                valid = abs(float(actual or 0) - expected) <= 0.001
+            except (TypeError, ValueError):
+                valid = False
+        if not valid:
+            raise RuntimeError(
+                "Descartar el borrador modificó el turno o creó un documento de devolución "
+                f"en {field}: esperado {expected!r}, recibido {actual!r}. "
+                + json.dumps(after, ensure_ascii=False)
+            )
+
+    inventory_response = context.request.get(
+        api_base + "rubrovaTestInventoryApi",
+        timeout=12_000,
+    )
+    if inventory_response.status != 200:
+        raise RuntimeError(
+            "La consulta de inventario tras descartar el borrador respondió "
+            f"HTTP {inventory_response.status}: {inventory_response.text()[:1200]}"
+        )
+    inventory = inventory_response.json()
+    if isinstance(inventory, list):
+        inventory = inventory[0] if inventory else {}
+    for field, expected in {"incomingQuantity": 10, "outgoingQuantity": 1, "onHand": 9}.items():
+        try:
+            actual = float(inventory.get(field) or 0)
+        except (TypeError, ValueError):
+            actual = float("nan")
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                "Descartar la nota en borrador cambió el ledger de inventario en "
+                f"{field}: esperado {expected}, recibido {inventory.get(field)!r}. "
+                + json.dumps(inventory, ensure_ascii=False)
+            )
+    print("UI_RETURN_DRAFT_DISCARDED=true")
+    print("UI_RETURN_DRAFT_NO_LEDGER_EFFECT=true")
+    print("UI_RETURN_DRAFT_RECONCILED=" + json.dumps(after, ensure_ascii=False))
+    print("UI_RETURN_DRAFT_INVENTORY=" + json.dumps(inventory, ensure_ascii=False))
+
+
 def verify_partial_returns(context: Any, url: str) -> None:
     """Exercise partial returns, a rejected over-return, refunds and stock receipt in disposable CI data."""
     api_base = application_endpoint_url(url, "exec/Sales.")
@@ -2488,6 +2700,10 @@ def inspect_page(url: str) -> int:
                             f"Respuesta: {json.dumps(inventory_payload, ensure_ascii=False)}"
                         )
                 print("UI_SALE_STOCK_DEDUCTED=true")
+
+                # Antes de que las fixtures API consuman la factura completa, recorrer la acción
+                # nativa Devolver y comprobar que el borrador se puede descartar sin ledger effects.
+                verify_native_return_draft(context, url, page, screenshot_path)
 
                 # Ejecuta el circuito de crédito nativo y comprueba reintegro y reingreso de stock.
                 verify_partial_returns(context, url)

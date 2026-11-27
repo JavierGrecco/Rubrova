@@ -1011,6 +1011,16 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes("UI_SESSION_RETURN_ACTION_VISIBLE=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_RETURN_ACTION_ENABLED=true"));
   assert.ok(uiSmokeSource.includes("UI_RETURN_ACTION_DOM_INSPECTED=true"));
+  assert.ok(uiSmokeSource.includes("def verify_native_return_draft("));
+  assert.ok(uiSmokeSource.includes('button[lsfusion-container="PROPERTY(return(s,si))"]'));
+  assert.ok(uiSmokeSource.includes('button[lsfusion-container="PROPERTY(posPayment(s,b))"]'));
+  assert.ok(uiSmokeSource.includes('click_exact_action(page, "Nueva venta")'));
+  assert.ok(uiSmokeSource.includes("UI_RETURN_ACTION_CLICKED=true"));
+  assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_GRID_RENDERED=true"));
+  assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_PAYMENT_ACTION_PRESENT=true"));
+  assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_DISCARDED=true"));
+  assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_NO_LEDGER_EFFECT=true"));
+  assert.ok(uiSmokeSource.includes('"returnsCount": 0'));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_BUTTON_VISIBLE=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_CLOSE_ACTION_CLICKED=true"));
   assert.ok(uiSmokeSource.includes('closed_session_payload.get("sessionStatus") == "CLOSED"'));
