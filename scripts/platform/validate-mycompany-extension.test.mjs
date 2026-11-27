@@ -292,7 +292,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /UI_RETAIL_NAVIGATION/);
   assert.match(uiSmokeSource, /def wait_until_form_loaded\(/);
   assert.match(uiSmokeSource, /register_name: str = "Caja de prueba Rubrova"/);
-  assert.match(uiSmokeSource, /register_selected = register_name in searchable/);
+  assert.match(uiSmokeSource, /register_available = register_name in searchable/);
   assert.match(uiSmokeSource, /register_name=pos_register_name/);
   assert.match(uiSmokeSource, /def select_pos_register\(page: Any, register_name: str\)/);
   assert.match(uiSmokeSource, /select_pos_register\(page, pos_register_name\)/);
