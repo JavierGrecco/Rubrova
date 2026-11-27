@@ -173,7 +173,7 @@ RETURN_PAYMENT_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/retail/pos/da
 RETURN_PAYMENT_INVALID_BEFORE = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > OVERRIDE invoicePaid(b, pm), 0.0;"
 RETURN_PAYMENT_INVALID_AFTER = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > rubrovaRefundRemaining(b, pm);"
 RETURN_PAYMENT_FORM_BEFORE = "PROPERTIES name(pm) READONLY, invoicePaid(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
-RETURN_PAYMENT_FORM_AFTER = "PROPERTIES name(pm) READONLY, invoicePaid(b, pm), rubrovaRefundRemaining(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
+RETURN_PAYMENT_FORM_AFTER = "PROPERTIES name(pm) READONLY, rubrovaOriginalPaidForReturn(b, pm), rubrovaRefundRemaining(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
 RETURN_PAYMENT_APPLY_BEFORE = """ready(b) <- TRUE;
         APPLY;
         IF canceled() THEN {"""
