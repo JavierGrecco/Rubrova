@@ -1772,6 +1772,8 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(uiSmokeSource, /def verify_cumulative_refunds\(context: Any, url: str, browser: Any\)/);
   assert.match(uiSmokeSource, /ThreadPoolExecutor\(max_workers=2/);
   assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true/);
+  assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_REJECTED_APPLY_CLEANED_UP=true/);
+  assert.ok(nativeSmokeSource.includes("UI_CUMULATIVE_REFUNDS_REJECTED_APPLY_CLEANED_UP=true"));
   assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true/);
   assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_BILL_CANCEL_DOES_NOT_RELEASE_CAP=true/);
   assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_PAYMENT_CANCEL_RELEASES_CAP=true/);
@@ -1779,6 +1781,7 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(uiSmokeSource, /UI_RESTART_PERSISTENCE_CUMULATIVE_REFUNDS=true/);
   for (const marker of [
     "UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true",
+    "UI_CUMULATIVE_REFUNDS_REJECTED_APPLY_CLEANED_UP=true",
     "UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true",
     "UI_CUMULATIVE_REFUNDS_BILL_CANCEL_DOES_NOT_RELEASE_CAP=true",
     "UI_CUMULATIVE_REFUNDS_PAYMENT_CANCEL_RELEASES_CAP=true",
