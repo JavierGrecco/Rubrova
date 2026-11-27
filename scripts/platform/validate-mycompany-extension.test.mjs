@@ -1506,6 +1506,11 @@ test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras
 });
 
 test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones concurrentes", () => {
+  assert.match(retailReturnsSource, /rubrovaOriginalPaidByMethod/);
+  assert.match(retailReturnsSource, /Invoicing[.]active\(p\)/);
+  assert.match(retailReturnsSource, /rubrovaOriginalInvoiceForReturn/);
+  assert.match(retailReturnsSource, /rubrovaOriginalPaidForReturn/);
+  assert.match(retailReturnsSource, /Invoicing[.]paid\(Invoicing[.]IncomingPayment p, originalInvoice\)/);
   assert.match(retailReturnsSource, /rubrovaRefundedByMethod/);
   assert.match(retailReturnsSource, /rubrovaRefundedBefore/);
   assert.match(retailReturnsSource, /rubrovaRefundRemaining/);
@@ -1519,6 +1524,7 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_AFTER"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_FORM_AFTER"));
+  assert.ok(sourcePatch.includes("rubrovaOriginalPaidForReturn(b, pm)"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_AFTER"));
   assert.match(sourcePatch, /APPLY SERIALIZABLE/);
