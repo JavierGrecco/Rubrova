@@ -82,7 +82,7 @@ posPayment 'Payment' (Session s, Bill b) {
         ready(b) <- TRUE;
         APPLY SERIALIZABLE;
         IF canceled() THEN {
-            DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment);
+            DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment) AND paymentMethod(b, p);
             ready(b) <- NULL;
         } ELSE {
             afterPosPayment(b);

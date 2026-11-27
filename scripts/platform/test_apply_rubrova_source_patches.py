@@ -55,6 +55,18 @@ def legacy_guard_dialog_source() -> str:
     return source
 
 
+def broad_cleanup_guard_dialog_source() -> str:
+    """Return the broad-cleanup revision so the patcher must narrow its scope."""
+    source = legacy_guard_dialog_source()
+    if source.count(PATCHER.RETURN_PAYMENT_CLEANUP_BEFORE) != 1:
+        raise AssertionError("Fixture legacy inválida: falta la limpieza IncomingPayment")
+    return source.replace(
+        PATCHER.RETURN_PAYMENT_CLEANUP_BEFORE,
+        PATCHER.RETURN_PAYMENT_CLEANUP_LEGACY_BROAD,
+        1,
+    )
+
+
 class CumulativeRefundPatchTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory(prefix="rubrova-refund-patch-")
@@ -119,6 +131,26 @@ class CumulativeRefundPatchTests(unittest.TestCase):
             legacy,
             "La migración debe cambiar únicamente la limpieza del pago rechazado.",
         )
+
+    def test_legacy_broad_cleanup_is_narrowed_to_the_current_refund_bill(self) -> None:
+        legacy = broad_cleanup_guard_dialog_source()
+        self.write_source(legacy)
+
+        result, output, error = self.apply_patch()
+
+        self.assertTrue(result, error)
+        patched = self.target.read_text(encoding="utf-8")
+        self.assert_patched_once(patched)
+        self.assertIn("Guard acumulado actualizado", output)
+        self.assertEqual(
+            patched.replace(
+                PATCHER.RETURN_PAYMENT_CLEANUP_AFTER,
+                PATCHER.RETURN_PAYMENT_CLEANUP_LEGACY_BROAD,
+            ),
+            legacy,
+            "La migración debe acotar únicamente el DELETE de egresos rechazados.",
+        )
+        self.assertIn("AND paymentMethod(b, p)", PATCHER.RETURN_PAYMENT_CLEANUP_AFTER)
 
     def test_running_the_patch_twice_is_idempotent(self) -> None:
         self.write_source(upstream_dialog_source())

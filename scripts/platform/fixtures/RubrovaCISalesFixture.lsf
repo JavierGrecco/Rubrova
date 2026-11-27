@@ -528,7 +528,7 @@ rubrovaTestCumulativeRefundsApi () {
                     // antes de volver a aplicar el Bill como borrador.
                     rubrovaCIMixedOverLimitRejectedLocal() <- TRUE;
                     rubrovaCIMixedOverLimitMessageLocal() <- applyMessage();
-                    DELETE Invoicing.OutgoingPayment p WHERE SET(p IS Invoicing.OutgoingPayment);
+                    DELETE Invoicing.OutgoingPayment p WHERE SET(p IS Invoicing.OutgoingPayment) AND Retail.paymentMethod(b, p);
                     Invoicing.ready(b) <- NULL;
                     APPLY;
                     IF canceled() THEN RETURN;

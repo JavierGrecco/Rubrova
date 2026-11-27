@@ -1684,20 +1684,21 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_CLEANUP_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_CLEANUP_AFTER"));
   assert.ok(sourcePatch.includes("legacy_replacements = replacements[:-1]"));
-  assert.ok(returnPaymentSource.includes("DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment);"));
+  assert.ok(returnPaymentSource.includes("DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment) AND paymentMethod(b, p);"));
   assert.doesNotMatch(returnPaymentSource, /DELETE IncomingPayment p WHERE SET\(p IS IncomingPayment\)/);
   assert.match(
     returnPaymentSource,
-    /IF canceled\(\) THEN \{\s*DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\);\s*ready\(b\) <- NULL;/,
+    /IF canceled\(\) THEN \{\s*DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\) AND paymentMethod\(b, p\);\s*ready\(b\) <- NULL;/,
     "El flujo nativo debe limpiar egresos pendientes antes de devolver la nota a borrador.",
   );
-  assert.match(sourcePatch, /DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\)/);
+  assert.match(sourcePatch, /RETURN_PAYMENT_CLEANUP_AFTER = "DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\) AND paymentMethod\(b, p\);"/);
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_CLEANUP_LEGACY_BROAD"));
   assert.match(sourcePatch, /APPLY SERIALIZABLE/);
   assert.match(sourcePatch, /def apply_cumulative_refund_guard\(/);
   assert.ok(sourcePatch.includes("if not apply_cumulative_refund_guard():"));
   assert.match(
     nativeSalesFixtureSource,
-    /rubrovaCIMixedOverLimitMessageLocal\(\) <- applyMessage\(\);\s*DELETE Invoicing[.]OutgoingPayment p WHERE SET\(p IS Invoicing[.]OutgoingPayment\);\s*Invoicing[.]ready\(b\) <- NULL;\s*APPLY;\s*IF canceled\(\) THEN RETURN;/,
+    /rubrovaCIMixedOverLimitMessageLocal\(\) <- applyMessage\(\);\s*DELETE Invoicing[.]OutgoingPayment p WHERE SET\(p IS Invoicing[.]OutgoingPayment\) AND Retail[.]paymentMethod\(b, p\);\s*Invoicing[.]ready\(b\) <- NULL;\s*APPLY;\s*IF canceled\(\) THEN RETURN;/,
     "Un APPLY rechazado debe limpiar OutgoingPayment y devolver la nota a borrador antes de reaplicar.",
   );
   // customerbank exige BankAccount; customercash admite CashAccount.

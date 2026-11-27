@@ -190,7 +190,11 @@ RETURN_PAYMENT_APPLY_AFTER = """ready(b) <- TRUE;
 # The rejected APPLY preserves the session buffer. Remove the pending native
 # OutgoingPayment objects, not IncomingPayment objects from the sale flow.
 RETURN_PAYMENT_CLEANUP_BEFORE = "DELETE IncomingPayment p WHERE SET(p IS IncomingPayment);"
-RETURN_PAYMENT_CLEANUP_AFTER = "DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment);"
+# Previous Rubrova revision fixed the payment class but deleted every pending outgoing.
+# Keep that exact state as a safe migration anchor.
+RETURN_PAYMENT_CLEANUP_LEGACY_BROAD = "DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment);"
+# Only discard pending outgoings created for the Bill whose refund APPLY was rejected.
+RETURN_PAYMENT_CLEANUP_AFTER = "DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment) AND paymentMethod(b, p);"
 
 
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
@@ -545,15 +549,29 @@ def apply_cumulative_refund_guard() -> bool:
     )
     cleanup_before, cleanup_after = replacements[-1]
     if legacy_guard_applied:
-        if source.count(cleanup_before) != 1 or source.count(cleanup_after) != 0:
+        legacy_cleanup_markers = (
+            cleanup_before,
+            RETURN_PAYMENT_CLEANUP_LEGACY_BROAD,
+        )
+        matching_legacy_cleanup = [
+            marker
+            for marker in legacy_cleanup_markers
+            if source.count(marker) == 1
+            and source.count(cleanup_after) == 0
+            and all(source.count(other) == 0 for other in legacy_cleanup_markers if other != marker)
+        ]
+        if len(matching_legacy_cleanup) != 1:
             print(
-                "La limpieza de pagos del diálogo POS no coincide con el estado previo esperado.",
+                "La limpieza de pagos del diálogo POS no coincide con un estado previo seguro.",
                 file=sys.stderr,
             )
             return False
-        source = source.replace(cleanup_before, cleanup_after, 1)
+        source = source.replace(matching_legacy_cleanup[0], cleanup_after, 1)
         target.write_text(source, encoding="utf-8")
-        print("Guard acumulado actualizado: el rechazo limpia OutgoingPayment nativos pendientes.")
+        print(
+            "Guard acumulado actualizado: el rechazo sólo limpia OutgoingPayment "
+            "pendientes del comprobante de devolución."
+        )
         return True
 
     for before, after in replacements:
