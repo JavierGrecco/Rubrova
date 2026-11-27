@@ -3,6 +3,10 @@ REQUIRE MyCompany, CreditNote;
 
 NAMESPACE Invoicing;
 
+// Importe del egreso expresado en la moneda funcional del ledger de deuda,
+// comparable con paid(IncomingPayment, Invoice).
+rubrovaOutgoingLedgerAmount (OutgoingPayment p) = amount[Debt](p);
+
 // Cantidad devuelta antes del documento que se está creando.
 // Se excluye el Bill actual para no contar dos veces sus líneas recién copiadas.
 rubrovaPreviouslyReturnedQuantity (Bill currentBill, InvoiceLine originalLine) =
@@ -49,7 +53,7 @@ rubrovaOriginalPaidForReturn 'Cobrado originalmente' (Invoicing.Bill currentBill
 // a la factura original. Cancelar la nota no cancela automáticamente su pago;
 // sólo deja de consumir cupo cuando el egreso nativo también está cancelado.
 rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
-    GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
+    GROUP SUM Invoicing.rubrovaOutgoingLedgerAmount(Invoicing.OutgoingPayment p)
         IF Invoicing.in(originalInvoice, Invoicing.Bill previousBill)
         AND paymentMethod(previousBill, p) = pm
         AND Invoicing.active(p);
@@ -57,7 +61,7 @@ rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
 // Egresos activos de notas anteriores de la misma factura. Se excluye la nota
 // actual para que el formulario pueda mostrar su cupo disponible mientras se edita.
 rubrovaRefundedBefore (Invoicing.Bill currentBill, PaymentMethod pm) =
-    GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
+    GROUP SUM Invoicing.rubrovaOutgoingLedgerAmount(Invoicing.OutgoingPayment p)
         IF Invoicing.in(Invoicing.Invoice originalInvoice, currentBill)
         AND Invoicing.in(originalInvoice, Invoicing.Bill previousBill)
         AND previousBill != currentBill
