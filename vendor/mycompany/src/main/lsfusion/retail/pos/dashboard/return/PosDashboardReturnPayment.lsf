@@ -1,18 +1,18 @@
 MODULE PosDashboardReturnPayment;
 
-REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;
+REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;
 
 NAMESPACE Retail;
 
 invoicePaid 'Paid' (Bill b, PaymentMethod pm) = GROUP SUM paid(Invoice i, pm) IF in(i, b);
-invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > OVERRIDE invoicePaid(b, pm), 0.0; 
+invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > rubrovaRefundRemaining(b, pm); 
 
 FORM posPaymentReturn 'Payment'
     OBJECTS b = Bill PANEL
     PROPERTIES nameVendor(b), amount(b)
     
     OBJECTS pm = PaymentMethod
-    PROPERTIES name(pm) READONLY, invoicePaid(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)
+    PROPERTIES name(pm) READONLY, rubrovaOriginalPaidForReturn(b, pm), rubrovaRefundRemaining(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)
     FILTERS NOT disabled(pos(session(b)), pm)
     
     PROPERTIES overFormOk = formOk() 
@@ -35,7 +35,8 @@ DESIGN posPaymentReturn {
                     GRID(pm) {
                         defaultComponent = TRUE;
                         PROPERTY(name(pm)) { fontSize = 24; focusable = FALSE; }
-                        PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }
+                        PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { fontSize = 24; }
+                        PROPERTY(rubrovaRefundRemaining(b, pm)) { fontSize = 24; }
                         PROPERTY(amount(pm)) { fontSize = 24; }
                     }
                     REMOVE TOOLBARBOX(pm);
@@ -79,7 +80,7 @@ posPayment 'Payment' (Session s, Bill b) {
             paid(b, p) <- am;
         }
         ready(b) <- TRUE;
-        APPLY;
+        APPLY SERIALIZABLE;
         IF canceled() THEN {
             DELETE IncomingPayment p WHERE SET(p IS IncomingPayment);
             ready(b) <- NULL;
