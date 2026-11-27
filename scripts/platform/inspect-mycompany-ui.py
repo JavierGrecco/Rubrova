@@ -2550,6 +2550,65 @@ def inspect_page(url: str) -> int:
                 session_tab.click(no_wait_after=True)
                 print("UI_SESSION_TAB_ACTIVATED=true")
 
+                # The native return action belongs to the selected Invoice row in
+                # the "Ventas del turno" grid. Capture the actual lsFusion DOM
+                # before attempting to automate that action in a separate change.
+                sales_list_tab = page.get_by_text("Ventas del turno", exact=True)
+                sales_tab_count = sales_list_tab.count()
+                print(f"UI_SESSION_SALES_TAB_MATCH_COUNT={sales_tab_count}")
+                if sales_tab_count != 1 or not sales_list_tab.is_visible():
+                    visible_snapshot(page, "UI_SESSION_SALES_TAB_NOT_UNIQUE")
+                    raise RuntimeError(
+                        "No se pudo identificar la pestaña nativa única 'Ventas del turno'. "
+                        f"coincidencias={sales_tab_count}"
+                    )
+                sales_list_tab.click(no_wait_after=True)
+                print("UI_SESSION_SALES_TAB_ACTIVATED=true")
+                visible_snapshot(page, "UI_SESSION_SALES_LIST")
+                sales_grid = page.locator('[lsfusion-container="GRID(si)"]')
+                print(f"UI_SESSION_SALES_GRID_MATCH_COUNT={sales_grid.count()}")
+                if sales_grid.count() == 1:
+                    print(f"UI_SESSION_SALES_GRID_VISIBLE={sales_grid.is_visible()}")
+                    sales_rows = sales_grid.locator(
+                        "tr.data-grid-row:not(.data-grid-column-row)"
+                    )
+                    print(f"UI_SESSION_SALES_GRID_ROW_COUNT={sales_rows.count()}")
+                    print(
+                        "UI_SESSION_SALES_GRID_ROWS="
+                        + json.dumps(sales_rows.all_inner_texts(), ensure_ascii=False)
+                    )
+                    print(
+                        "UI_SESSION_SALES_GRID_MARKUP="
+                        + sales_grid.evaluate("element => element.outerHTML.slice(0, 12000)")
+                    )
+                return_action = page.locator(
+                    'button[lsfusion-container="PROPERTY(return(s, si))"]'
+                )
+                print(f"UI_SESSION_RETURN_ACTION_MATCH_COUNT={return_action.count()}")
+                if return_action.count() == 1:
+                    print(f"UI_SESSION_RETURN_ACTION_VISIBLE={return_action.is_visible()}")
+                    print(
+                        "UI_SESSION_RETURN_ACTION_MARKUP="
+                        + return_action.evaluate("element => element.outerHTML.slice(0, 1500)")
+                    )
+                print(
+                    "UI_SESSION_ACTION_CANDIDATES="
+                    + json.dumps(
+                        page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
+                            """elements => elements.map(element => ({
+                                text: (element.innerText || element.value || element.textContent || "").trim(),
+                                container: element.getAttribute("lsfusion-container") || "",
+                                visible: getComputedStyle(element).display !== "none" &&
+                                    getComputedStyle(element).visibility !== "hidden" &&
+                                    !!(element.offsetWidth || element.offsetHeight),
+                                outerHTML: element.outerHTML.slice(0, 600)
+                            }))"""
+                        ),
+                        ensure_ascii=False,
+                    )
+                )
+                print("UI_RETURN_ACTION_DOM_INSPECTED=true")
+
                 close_button = page.locator('button[lsfusion-container="PROPERTY(close(s))"]')
                 try:
                     close_button.wait_for(state="visible", timeout=15_000)
