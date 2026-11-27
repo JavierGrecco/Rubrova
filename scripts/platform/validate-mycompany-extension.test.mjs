@@ -1534,7 +1534,7 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(nativeSalesFixtureSource, /Invoicing[.]cancel\(rubrovaCIMixedFirstRefundBill\(\)\)/);
   assert.match(nativeSalesFixtureSource, /Invoicing[.]cancel\(p\)/);
   assert.match(nativeSalesFixtureSource, /APPLY SERIALIZABLE/);
-  assert.match(uiSmokeSource, /def verify_cumulative_refunds\(context, url\)/);
+  assert.match(uiSmokeSource, /def verify_cumulative_refunds\(context: Any, url: str\)/);
   assert.match(uiSmokeSource, /ThreadPoolExecutor\(max_workers=2/);
   assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true/);
   assert.match(uiSmokeSource, /UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true/);
