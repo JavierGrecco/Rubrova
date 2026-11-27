@@ -185,7 +185,7 @@ rubrovaCIReturnCashPaymentCount() = OVERRIDE (GROUP SUM 1
     IF Retail.session(Invoicing.Bill b) = rubrovaCITestSession()
        AND Retail.paymentMethod(b, Invoicing.OutgoingPayment p) = Retail.cashPaymentMethod()), 0;
 
-rubrovaCIReturnCashPaymentAmount() = OVERRIDE (GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
+rubrovaCIReturnCashPaymentAmount() = OVERRIDE (GROUP SUM Invoicing.rubrovaOutgoingLedgerAmount(Invoicing.OutgoingPayment p)
     IF Retail.session(b) = rubrovaCITestSession()
        AND Retail.paymentMethod(b, p) = Retail.cashPaymentMethod()), 0.0;
 
@@ -327,7 +327,7 @@ rubrovaCIMixedActivePaymentCount(PaymentMethod pm) = OVERRIDE (GROUP SUM 1
        AND Retail.paymentMethod(b, Invoicing.OutgoingPayment p) = pm
        AND Invoicing.active(p)), 0;
 
-rubrovaCIMixedActivePaymentAmount(PaymentMethod pm) = OVERRIDE (GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
+rubrovaCIMixedActivePaymentAmount(PaymentMethod pm) = OVERRIDE (GROUP SUM Invoicing.rubrovaOutgoingLedgerAmount(Invoicing.OutgoingPayment p)
     IF Retail.session(b) = rubrovaCIMixedSession()
        AND Retail.paymentMethod(b, p) = pm
        AND Invoicing.active(p)), 0.0;
