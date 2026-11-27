@@ -78,7 +78,9 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 - La auditoría de fuentes y contratos conserva como referencia `d9791ff1c7894346d31ea5e0d240077940ba788c`; describe el código de MyCompany/lsFusion examinado y no implica que cada capacidad esté aceptada en runtime.
 - El PR #15 integró las devoluciones parciales por squash en `main`, commit `04249dc983c3af066a386f1e1b022da2d9587ec0`.
 - El PR #14 integró el conteo nativo por barcode por squash en `main`, commit `c38fad581f669bd7e1a2795123cc8ecca242e010`, desde el HEAD validado `12f29a47e7b89f6f162c85a7e3684e24f9fe793b`.
-- El workflow de incorporación de fuentes fijadas creó después el commit `7d9e5bb80e866df87b51baad852c1e6256270dd1`; incorporó en el árbol vendorizado la corrección de `AdjustmentList.lsf` ya probada por #462 y está compilando ese snapshot.
+- El PR #16 integró el tope acumulado de reintegros por método por squash en `main`, commit `4f166410d9ca9c02e570b8b9159167064380bc89`; el run #509 validó su HEAD `c214e1d1f8ca17a62286aa9e0056d871b69f53bd` antes del merge.
+- El workflow de incorporación de fuentes fijadas creó el commit `7d9e5bb80e866df87b51baad852c1e6256270dd1`; incorporó al árbol vendorizado la corrección de `AdjustmentList.lsf` probada por #462.
+- Tras PR #16, el commit `a13dcc212c57fee2117750f69edd36d610e617da` dejó vendorizado el parche que modifica `PosDashboardReturnPayment.lsf` para usar el guard Rubrova, mostrar el remanente y confirmar con `APPLY SERIALIZABLE`. En el run #509 el patcher generó esa misma transformación desde el snapshot limpio y el build completo pasó.
 - Los resultados históricos permanecen en los reportes numerados. Las secciones 2–10 describen el estado operativo actual y distinguen validación pre-merge de validación del SHA integrado.
 
 ### 2.2 Evidencia de aceptación vigente
@@ -90,17 +92,18 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 | Conteo por barcode | Run #462 | Cero preservado en hoja y AdjustmentLine; NULL elimina la fila de lista y deja la línea principal sin cantidad; positivo 2 reconciliado en ambas líneas; el conteo pendiente no modifica `onHand=10` |
 | Persistencia del conteo | Run #462 | Tras reiniciar el servidor permanecen la hoja, ambas líneas y cantidad 2; `onHand=10` sigue intacto |
 | Devoluciones parciales y caja | Runs [#458](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407) y #462 | 0,4 + 0,6 unidades; rechazo de 0,7; dos reintegros en efectivo por ARS 1.250; stock reingresado; caja neta cero; persistencia tras reinicio |
+| Límite acumulado de reintegros por método | [Run #509](https://github.com/JavierGrecco/Rubrova/actions/runs/46022322287), SHA `c214e1d` | Éxito: build completo, smoke nativo ARM64, exceso acumulado rechazado, carrera serializable, cancelación separada de nota/egresos, conciliación mixta y persistencia tras reinicio |
 | Backup PostgreSQL | Run #458 | Backup, verificación y restauración en una DB aislada pasaron dentro del smoke nativo |
 | Exportación de reposición | Run #458 y fixtures | API autenticada de sólo lectura sobre datos sintéticos; falta conciliar con una base comercial real |
-| Post-merge del commit funcional | [Run #463](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383909), SHA `c38fad5` | Prevalidación y Windows pasaron; build seguía en curso al corte. Este run no incluye el commit de fuentes posterior `7d9e5bb` |
-| Incorporación de fuentes completas | [Run #24](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383784), commit generado `7d9e5bb` | Árboles, licencias y rutas Maven pasaron; corrección aplicada a `AdjustmentList.lsf`; compilación de fuentes incorporadas en curso |
+| Verificación histórica post-merge del conteo | [Run #463](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383909), SHA `c38fad5` | Prevalidación y Windows pasaron; el build seguía en curso al corte. No es evidencia de aceptación del snapshot de fuentes posterior |
+| Incorporación histórica de fuentes | [Run #24](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383784), commit `7d9e5bb` | Registró la corrección de `AdjustmentList.lsf` en el árbol vendorizado; consultar la evidencia posterior específica de cada snapshot antes de inferir su aceptación |
 | Offline macOS | `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested` | Pendiente; runtime local no equivale a aceptación offline |
 | Egreso de red | `RUBROVA_NATIVE_EGRESS_BLOCKED=false` | La prueba no bloqueó egress; no afirmar aislamiento de red |
-| Linux/Docker | Jobs omitidos en #458 y #462 | No aprobado por omisión |
+| Linux/Docker | Jobs omitidos en #458, #462 y #509 | No aprobado por omisión |
 | Windows | Validación de sintaxis PowerShell | No equivale a instalación ni smoke funcional nativo |
 | Producción | Sin homologación integral con datos reales | No autorizado |
 
-El run #462 terminó correctamente sobre el HEAD del PR #14 y aportó evidencia funcional completa del conteo por barcode. El cambio se integró después en `main` mediante `c38fad5`. El workflow #24 incorporó la misma corrección a la fuente vendorizada y está compilándola; el run #463 valida el commit `c38fad5`, anterior al commit de fuente `7d9e5bb`. No declarar el snapshot más reciente como plenamente validado hasta que termine la compilación #24 y se complete la verificación nativa correspondiente.
+El run #462 validó el HEAD del PR #14 y el conteo por barcode; PR #14 quedó integrado mediante `c38fad5`. El run #463 sólo dejó una verificación parcial de ese merge, y el run #24 creó el commit de incorporación de fuentes `7d9e5bb`; esos resultados son históricos y no describen la aceptación actual del PR #16. La aceptación más reciente de la regla acumulada es el run #509 sobre `c214e1d`; se validaron preflight, compilación completa y smoke nativo macOS ARM64. Luego PR #16 se integró como `4f16641`, y `a13dcc2` dejó vendorizada la transformación nativa que el mismo run #509 había aplicado desde el snapshot limpio mediante el patcher. La comprobación del log de build y el control de idempotencia del patcher enlazan ambas representaciones. El alcance y las omisiones siguen detallados en las filas de esta tabla y en REP-030.
 
 ### 2.3 Devoluciones parciales: integradas y probadas en `main`
 
