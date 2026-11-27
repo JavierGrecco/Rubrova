@@ -394,7 +394,48 @@ def wait_until_form_loaded(
 
 
 def select_pos_register(page: Any, register_name: str) -> None:
-    """Verify the native POS radio selection and change it only when necessary."""
+    """Verify the native POS selector across single-value and multi-register renderings."""
+    # MyCompany renders name SELECTOR as a text input when only one POS is available.
+    # In that case the selected register is the input's value, not a text node or label.
+    # Treat an exact, unique visible value as already selected; do not try to click it.
+    value_matches = page.locator('input[type="text"]').evaluate_all(
+        """(elements, expected) => elements.filter(element => {
+            const style = getComputedStyle(element);
+            return style.display !== "none" &&
+                style.visibility !== "hidden" &&
+                !!(element.offsetWidth || element.offsetHeight) &&
+                element.value === expected;
+        }).map(element => ({
+            value: element.value,
+            readOnly: element.readOnly,
+            disabled: element.disabled,
+            id: element.id || "",
+            name: element.name || "",
+            title: element.getAttribute("title") || "",
+            outerHTML: element.outerHTML.slice(0, 700)
+        }))""",
+        register_name,
+    )
+    print(f"UI_POS_REGISTER_VALUE_FIELD_MATCH_COUNT={len(value_matches)}")
+    if len(value_matches) > 1:
+        raise RuntimeError(
+            f"Se encontraron varios campos visibles con el valor del puesto {register_name!r}: "
+            + json.dumps(value_matches, ensure_ascii=False)
+        )
+    if len(value_matches) == 1:
+        print("UI_POS_REGISTER_VALUE_FIELD_FOUND=true")
+        print(
+            "UI_POS_REGISTER_VALUE_FIELD="
+            + json.dumps(value_matches[0], ensure_ascii=False)
+        )
+        print("UI_POS_REGISTER_ALREADY_SELECTED_BY_VALUE=true")
+        print("UI_POS_REGISTER_ALREADY_SELECTED=true")
+        print("UI_POS_REGISTER_SELECTION_VERIFIED=true")
+        print(f"UI_POS_REGISTER_SELECTION_NAME={register_name}")
+        return
+
+    # With multiple POS, MyCompany renders explicit labels and native radio inputs.
+    # Preserve this path so the CI smoke verifies (and changes) the actual radio state.
     register = page.get_by_text(register_name, exact=True)
     register.wait_for(state="visible", timeout=10_000)
     matches = [register.nth(index) for index in range(register.count())]

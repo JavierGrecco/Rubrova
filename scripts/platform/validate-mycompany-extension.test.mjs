@@ -295,6 +295,10 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /register_available = register_name in searchable/);
   assert.match(uiSmokeSource, /register_name=pos_register_name/);
   assert.match(uiSmokeSource, /def select_pos_register\(page: Any, register_name: str\)/);
+  assert.ok(uiSmokeSource.includes("page.locator('input[type=\"text\"]').evaluate_all("));
+  assert.ok(uiSmokeSource.includes("element.value === expected"));
+  assert.ok(uiSmokeSource.includes("UI_POS_REGISTER_VALUE_FIELD_MATCH_COUNT"));
+  assert.ok(uiSmokeSource.includes("UI_POS_REGISTER_ALREADY_SELECTED_BY_VALUE=true"));
   assert.ok(uiSmokeSource.includes('radio_id = visible_matches[0].get_attribute("for")'));
   assert.ok(uiSmokeSource.includes("radio.is_checked()"));
   assert.ok(uiSmokeSource.includes("UI_POS_REGISTER_ALREADY_SELECTED=true"));
