@@ -1512,6 +1512,8 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(retailReturnsSource, /Invoicing[.]in\(originalInvoice, previousBill\)/);
   assert.match(retailReturnsSource, /paymentMethod\(previousBill, p\) = pm/);
   assert.match(retailReturnsSource, /Invoicing[.]active\(p\)/);
+  assert.match(retailReturnsSource, /GROUP SUM Invoicing[.]amount\(Invoicing[.]OutgoingPayment p\)/);
+  assert.match(retailReturnsSource, /Saldo reintegrable/);
   assert.match(retailReturnsSource, /CONSTRAINT SET\(rubrovaRefundedByMethod/);
   assert.match(retailReturnsSource, /El total reintegrado por medio de pago supera el importe cobrado originalmente/);
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_BEFORE"));
