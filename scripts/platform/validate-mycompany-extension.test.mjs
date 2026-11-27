@@ -690,7 +690,7 @@ test("el guard acumulado es visible para el POS sin crear un ciclo con MyCompany
   assert.match(sourcePatch, /RETURN_PAYMENT_REQUIRE_BEFORE = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"/);
   assert.match(sourcePatch, /RETURN_PAYMENT_REQUIRE_AFTER = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;"/);
   assert.ok(sourcePatch.includes("source = source.replace(RETURN_PAYMENT_REQUIRE_BEFORE, RETURN_PAYMENT_REQUIRE_AFTER, 1)"));
-  assert.ok(returnPaymentSource.includes("REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"));
+  assert.ok(returnPaymentSource.includes("REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;"));
 });
 
 
@@ -1675,7 +1675,9 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_AFTER"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_AFTER = chr(10).join(("));
   assert.ok(sourcePatch.includes("if RETURN_PAYMENT_DESIGN_BEFORE in source:"));
-  assert.ok(returnPaymentSource.includes("PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }"));
+  assert.ok(returnPaymentSource.includes("PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { fontSize = 24; }"));
+  assert.ok(returnPaymentSource.includes("PROPERTY(rubrovaRefundRemaining(b, pm)) { fontSize = 24; }"));
+  assert.doesNotMatch(returnPaymentSource, /PROPERTY\(invoicePaid\(b, pm\)\)/);
   assert.ok(sourcePatch.includes("rubrovaOriginalPaidForReturn(b, pm)"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_AFTER"));
@@ -1861,7 +1863,7 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(creditNoteSource, /returned 'Returned' \(InvoiceLine il\) =/);
   assert.match(creditNoteSource, /CONSTRAINT SET\(returned\(InvoiceLine il\) > OVERRIDE quantity\(il\), 0[.]0\) AND checkReturnedQuantity\(type\(il\)\)/);
   assert.match(creditNoteReceiptInitialSource, /autoCreateReceipt\(BillType t\) <- TRUE WHERE id\(t\) = 'retailreturn'/);
-  assert.match(returnPaymentSource, /invalidAmount\(Bill b, PaymentMethod pm\) = amount\(pm\) > OVERRIDE invoicePaid\(b, pm\), 0[.]0/);
+  assert.match(returnPaymentSource, /invalidAmount\(Bill b, PaymentMethod pm\) = amount\(pm\) > rubrovaRefundRemaining\(b, pm\);/);
   assert.match(returnPaymentSource, /done\(p\) <- TRUE/);
   assert.match(cashMovementSource, /session\(ip\) <- openedSession\(p\)/);
   assert.match(cashMovementSource, /session\(op\) <- openedSession\(p\)/);
