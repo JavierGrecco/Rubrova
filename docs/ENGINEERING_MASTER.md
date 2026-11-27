@@ -653,6 +653,8 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Corrección aplicada en esta revisión:** alinear la fixture local con el patrón nativo ya probado en CI: los tres objetos quedan anidados en una misma cadena `NEW`, y `bank(cardAccountDemo) <- bankDemo` asigna la relación sin una búsqueda intermedia. Se conserva una reparación no destructiva para cuentas demo previamente creadas que puedan localizarse. No se borra la base de demostración.
 - **Regresión añadida:** `test_runtime_native_preview.py` verifica el orden de creación banco → cuenta bancaria → POS, la asignación directa de `bankDemo` y que la ruta nueva no utilice el getter agrupado para inicializar esa relación.
 - **Pendiente:** repetir prevalidación, compilación y smoke macOS ARM64. La aceptación comercial principal de #505 queda documentada como aprobada para ese SHA; la demostración local todavía no está aceptada hasta que el mismo flujo vuelva a mostrar la caja, permita abrir su turno y confirme el producto y las 10 unidades iniciales. `main` permanece intacto y PR #16 no se integra.
+- **Prevalidación #506:** se detuvo antes de build/runtime por una aserción del test Node que aún esperaba la referencia indirecta anterior `bank(cardAccountDemo) <- rubrovaDemoCardBank()`. El nuevo fixture usa correctamente la variable directa `bankDemo`; se actualizó la regresión para exigir la asignación y el orden anidado, no para relajar el comportamiento. No fue un error de compilación LSF ni invalida la evidencia de #505.
+
 
 ### 2026-11-27 — REP-037 — Auditoría de integración contra las fuentes nativas MyCompany 6.2
 

@@ -1690,7 +1690,15 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.doesNotMatch(nativeRetailFixtureSource, /NEW cardAccountCI = CashAccount/);
   assert.match(nativeLocalDemoRetailSource, /NEW cardAccountDemo = BankAccount/);
   assert.match(nativeLocalDemoRetailSource, /number\(cardAccountDemo\) <- '000000000099'/);
-  assert.match(nativeLocalDemoRetailSource, /bank\(cardAccountDemo\) <- rubrovaDemoCardBank\(\)/);
+  assert.match(nativeLocalDemoRetailSource, /bank\(cardAccountDemo\) <- bankDemo/);
+  assert.ok(
+    nativeLocalDemoRetailSource.indexOf("NEW bankDemo = Bank {") <
+      nativeLocalDemoRetailSource.indexOf("NEW cardAccountDemo = BankAccount {"),
+  );
+  assert.ok(
+    nativeLocalDemoRetailSource.indexOf("NEW cardAccountDemo = BankAccount {") <
+      nativeLocalDemoRetailSource.indexOf("NEW cashRegisterDemo = Pos {"),
+  );
   assert.match(nativeLocalDemoRetailSource, /account\(pos\('rubrova-demo'\), PaymentMethod pm\) <- rubrovaDemoCardAccount\(\)/);
   assert.doesNotMatch(nativeLocalDemoRetailSource, /NEW cardAccountDemo = CashAccount/);
   assert.match(nativeRetailFixtureSource, /rubrova-ci-refund/);
