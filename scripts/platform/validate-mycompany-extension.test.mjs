@@ -1509,7 +1509,7 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(retailReturnsSource, /rubrovaRefundedByMethod/);
   assert.match(retailReturnsSource, /rubrovaRefundedBefore/);
   assert.match(retailReturnsSource, /rubrovaRefundRemaining/);
-  assert.match(retailReturnsSource, /Invoicing[.]in\(originalInvoice, previousBill\)/);
+  assert.match(retailReturnsSource, /Invoicing[.]in\(originalInvoice, Invoicing[.]Bill previousBill\)/);
   assert.match(retailReturnsSource, /paymentMethod\(previousBill, p\) = pm/);
   assert.match(retailReturnsSource, /Invoicing[.]active\(p\)/);
   assert.match(retailReturnsSource, /GROUP SUM Invoicing[.]amount\(Invoicing[.]OutgoingPayment p\)/);
