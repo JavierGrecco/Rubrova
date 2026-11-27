@@ -50,7 +50,8 @@
           "RubrovaIntegrationResilience",
           "RubrovaPaymentTerminals",
           "RubrovaReplenishmentExport",
-          "RubrovaRetailReturns"
+          "RubrovaRetailReturns",
+          "RubrovaRetailRefundLimits"
         ]
       },
       {
@@ -93,6 +94,16 @@
         "requires": [
           "MyCompany",
           "CreditNote"
+        ]
+      },
+      {
+        "name": "RubrovaRetailRefundLimits",
+        "path": "extensions/lsfusion/RubrovaRetailRefundLimits.lsf",
+        "role": "enforces cumulative active refunds per original retail invoice and payment method using native MyCompany payment records",
+        "requires": [
+          "MyCompany",
+          "CreditNote",
+          "RubrovaRetailReturns"
         ]
       }
     ]

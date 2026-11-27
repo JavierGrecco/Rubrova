@@ -33,6 +33,7 @@ $moduleNames = @(
     "RubrovaPaymentTerminals.lsf",
     "RubrovaReplenishmentExport.lsf",
     "RubrovaRetailReturns.lsf",
+    "RubrovaRetailRefundLimits.lsf",
     "MyCompanyResourceBundle_es_AR.properties"
 )
 $sourceDirectory = Join-Path $repositoryRoot "extensions\lsfusion"

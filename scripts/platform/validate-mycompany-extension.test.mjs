@@ -15,6 +15,7 @@ const resilienceSource = read("extensions/lsfusion/RubrovaIntegrationResilience.
 const paymentTerminalSource = read("extensions/lsfusion/RubrovaPaymentTerminals.lsf");
 const replenishmentExportSource = read("extensions/lsfusion/RubrovaReplenishmentExport.lsf");
 const retailReturnsSource = read("extensions/lsfusion/RubrovaRetailReturns.lsf");
+const retailRefundLimitsSource = read("extensions/lsfusion/RubrovaRetailRefundLimits.lsf");
 const creditNoteSource = read("vendor/mycompany/src/main/lsfusion/invoicing/invoices/creditnotes/CreditNote.lsf");
 const creditNoteReceiptInitialSource = read("vendor/mycompany/src/main/lsfusion/invoicing/inventory/receipts/CreditNoteReceiptInitial.lsf");
 const returnPaymentSource = read("vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/return/PosDashboardReturnPayment.lsf");
@@ -528,7 +529,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /UI_RECEIPT_LINE_COUNT/);
   assert.match(runtimeSmokeSource, /RUBROVA_RESILIENCE_LOG_EVIDENCE/);
   assert.match(runtimeSmokeSource, /RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE/);
-  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaReplenishmentExport\|RubrovaRetailReturns\|RubrovaCISalesFixture\|topModule/);
+  assert.match(runtimeSmokeSource, /RubrovaIntegrationResilience\|RubrovaPaymentTerminals\|RubrovaReplenishmentExport\|RubrovaRetailReturns\|RubrovaRetailRefundLimits\|RubrovaCISalesFixture\|topModule/);
   assert.match(runtimeSmokeSource, /MODULE_PROGRESS_CHANGED_AT/);
   assert.match(runtimeSmokeSource, /Exception while starting logics instance/);
   assert.match(runtimeSmokeSource, /missing \.\+ at/);
@@ -602,7 +603,7 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 
 test("la extensión superior requiere MyCompany sin copiar sus módulos", () => {
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
-  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;/m);
+  assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
   assert.match(moduleSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
@@ -1374,9 +1375,13 @@ test("el modelo de terminales se carga desde el punto de entrada y el lock", () 
   assert.ok(customModule.requires.includes("RubrovaIntegrationResilience"));
   assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
   const retailReturnsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailReturns");
+  const retailRefundLimitsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailRefundLimits");
   assert.ok(retailReturnsModule, "El cálculo del remanente de devoluciones debe estar en el lock reproducible.");
   assert.deepEqual(retailReturnsModule.requires, ["MyCompany", "CreditNote"]);
   assert.ok(customModule.requires.includes("RubrovaRetailReturns"));
+  assert.ok(retailRefundLimitsModule, "El límite acumulado debe estar incluido en el lock reproducible.");
+  assert.deepEqual(retailRefundLimitsModule.requires, ["MyCompany", "CreditNote", "RubrovaRetailReturns"]);
+  assert.ok(customModule.requires.includes("RubrovaRetailRefundLimits"));
   const replenishmentModule = lock.extension.modules.find((item) => item.name === "RubrovaReplenishmentExport");
   assert.ok(replenishmentModule, "La exportación nativa debe estar incluida en el lock reproducible.");
   assert.ok(customModule.requires.includes("RubrovaReplenishmentExport"));
@@ -1422,17 +1427,21 @@ test("la configuración de terminales se despliega en todas las rutas de ejecuci
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaRetailReturns.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.sh").includes("RubrovaRetailRefundLimits.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaRetailReturns.lsf"));
+  assert.ok(read("scripts/platform/deploy-mycompany-6.2.ps1").includes("RubrovaRetailRefundLimits.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(nativePreviewSource.includes("RubrovaRetailReturns.lsf"));
+  assert.ok(nativePreviewSource.includes("RubrovaRetailRefundLimits.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(runtimeSmokeSource.includes("RubrovaRetailReturns.lsf"));
-  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 7))"));
-  assert.ok(runtimeSmokeSource.includes("6 módulos propios de Rubrova + 1 fixture temporal de CI"));
+  assert.ok(runtimeSmokeSource.includes("RubrovaRetailRefundLimits.lsf"));
+  assert.ok(runtimeSmokeSource.includes("EXPECTED_TOTAL_MODULES=$((EXPECTED_UPSTREAM_MODULES + 8))"));
+  assert.ok(runtimeSmokeSource.includes("7 módulos propios de Rubrova + 1 fixture temporal de CI"));
   assert.ok(deploySmokeSource.includes("RubrovaPaymentTerminals.lsf"));
   assert.ok(deploySmokeSource.includes("RubrovaReplenishmentExport.lsf"));
   assert.ok(deploySmokeSource.includes("replenishment_export_backup_count"));
@@ -1506,22 +1515,22 @@ test("el conteo nativo distingue cero de NULL, propaga las hojas y persiste tras
 });
 
 test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones concurrentes", () => {
-  assert.match(retailReturnsSource, /rubrovaOriginalPaidByMethod/);
-  assert.match(retailReturnsSource, /Invoicing[.]active\(p\)/);
-  assert.match(retailReturnsSource, /rubrovaOriginalInvoiceForReturn/);
-  assert.match(retailReturnsSource, /rubrovaOriginalPaidForReturn/);
-  assert.match(retailReturnsSource, /Invoicing[.]paid\(Invoicing[.]IncomingPayment p, originalInvoice\)/);
-  assert.match(retailReturnsSource, /rubrovaRefundedByMethod/);
-  assert.match(retailReturnsSource, /rubrovaRefundedBefore/);
-  assert.match(retailReturnsSource, /rubrovaRefundRemaining/);
-  assert.equal((retailReturnsSource.match(/Invoicing[.]in\(originalInvoice, Invoicing[.]Bill previousBill\)/g) || []).length, 2);
-  assert.match(retailReturnsSource, /paymentMethod\(previousBill, p\) = pm/);
-  assert.match(retailReturnsSource, /Invoicing[.]active\(p\)/);
+  assert.match(retailRefundLimitsSource, /rubrovaOriginalPaidByMethod/);
+  assert.match(retailRefundLimitsSource, /Invoicing[.]active\(p\)/);
+  assert.match(retailRefundLimitsSource, /rubrovaOriginalInvoiceForReturn/);
+  assert.match(retailRefundLimitsSource, /rubrovaOriginalPaidForReturn/);
+  assert.match(retailRefundLimitsSource, /Invoicing[.]paid\(Invoicing[.]IncomingPayment p, originalInvoice\)/);
+  assert.match(retailRefundLimitsSource, /rubrovaRefundedByMethod/);
+  assert.match(retailRefundLimitsSource, /rubrovaRefundedBefore/);
+  assert.match(retailRefundLimitsSource, /rubrovaRefundRemaining/);
+  assert.equal((retailRefundLimitsSource.match(/Invoicing[.]in\(originalInvoice, Invoicing[.]Bill previousBill\)/g) || []).length, 2);
+  assert.match(retailRefundLimitsSource, /paymentMethod\(previousBill, p\) = pm/);
+  assert.match(retailRefundLimitsSource, /Invoicing[.]active\(p\)/);
   assert.match(retailReturnsSource, /rubrovaOutgoingLedgerAmount \(OutgoingPayment p\) = amount\[Debt\]\(p\)/);
-  assert.match(retailReturnsSource, /GROUP SUM Invoicing[.]rubrovaOutgoingLedgerAmount\(Invoicing[.]OutgoingPayment p\)/);
-  assert.match(retailReturnsSource, /Saldo reintegrable/);
-  assert.match(retailReturnsSource, /CONSTRAINT SET\(rubrovaRefundedByMethod/);
-  assert.match(retailReturnsSource, /El total reintegrado por medio de pago supera el importe cobrado originalmente/);
+  assert.match(retailRefundLimitsSource, /GROUP SUM Invoicing[.]rubrovaOutgoingLedgerAmount\(Invoicing[.]OutgoingPayment p\)/);
+  assert.match(retailRefundLimitsSource, /Saldo reintegrable/);
+  assert.match(retailRefundLimitsSource, /CONSTRAINT SET\(rubrovaRefundedByMethod/);
+  assert.match(retailRefundLimitsSource, /El total reintegrado por medio de pago supera el importe cobrado originalmente/);
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_AFTER"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_FORM_AFTER"));
@@ -1611,6 +1620,11 @@ test("el preflight rápido se comparte entre el equipo y los workflows CI", () =
 test("las devoluciones parciales usan el documento original y sólo permiten el remanente", () => {
   assert.match(entrypointSource, /RubrovaRetailReturns/);
   assert.match(retailReturnsSource, /^MODULE RubrovaRetailReturns;/m);
+  assert.match(retailReturnsSource, /^NAMESPACE Invoicing;/m);
+  assert.doesNotMatch(retailReturnsSource, /^NAMESPACE Retail;/m);
+  assert.match(retailRefundLimitsSource, /^MODULE RubrovaRetailRefundLimits;/m);
+  assert.match(retailRefundLimitsSource, /^NAMESPACE Retail;/m);
+  assert.match(retailRefundLimitsSource, /^REQUIRE MyCompany, CreditNote, RubrovaRetailReturns;/m);
   assert.match(retailReturnsSource, /^REQUIRE MyCompany, CreditNote;/m);
   assert.match(retailReturnsSource, /fill \(BillLine currentLine, InvoiceLine originalLine\) \+/);
   assert.match(creditNoteSource, /fill ABSTRACT LIST \(BillLine, InvoiceLine\)/);
