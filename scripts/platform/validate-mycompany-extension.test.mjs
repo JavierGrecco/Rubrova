@@ -1087,35 +1087,36 @@ test("el POS separa la cuenta central del cajón y aísla las cuentas del fixtur
   assert.ok(uiSmokeSource.includes("UI_POS_CASH_ACCOUNTS_DISTINCT=true"));
   assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
   const bankScopeStart = nativeRetailFixtureSource.indexOf("NEW bankCI = Bank {");
+  const refundCentralScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCentralAccountCI = CashAccount {");
+  const refundCashScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCashAccountCI = CashAccount {");
+  const refundCardScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCardAccountCI = BankAccount {");
+  const refundRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCashRegisterCI = Pos {");
   const cardAccountScopeStart = nativeRetailFixtureSource.indexOf("NEW cardAccountCI = BankAccount {");
   const cashRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW cashRegisterCI = Pos {");
-  const refundRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCashRegisterCI = Pos {");
   assert.ok(
-    bankScopeStart >= 0 && cardAccountScopeStart > bankScopeStart &&
-    cashRegisterScopeStart > cardAccountScopeStart && refundRegisterScopeStart > cashRegisterScopeStart,
-    "El banco CI debe contener la cuenta de tarjeta y ambos puestos POS."
+    bankScopeStart >= 0 && refundCentralScopeStart > bankScopeStart &&
+    refundCashScopeStart > refundCentralScopeStart && refundCardScopeStart > refundCashScopeStart &&
+    refundRegisterScopeStart > refundCardScopeStart && cardAccountScopeStart > refundRegisterScopeStart &&
+    cashRegisterScopeStart > cardAccountScopeStart,
+    "Las cuentas de reintegro deben encadenarse antes de inicializar la caja principal independiente."
   );
   const bankBodyDepth = braceDepthAt(nativeRetailFixtureSource, bankScopeStart) + 1;
-  for (const declaration of [
-    "NEW refundCentralAccountCI = CashAccount {",
-    "NEW refundCashAccountCI = CashAccount {",
-    "NEW refundCardAccountCI = BankAccount {",
-    "NEW cardAccountCI = BankAccount {",
-    "NEW refundCashRegisterCI = Pos {"
+  for (const [declaration, expectedDepth] of [
+    ["NEW refundCentralAccountCI = CashAccount {", bankBodyDepth],
+    ["NEW refundCashAccountCI = CashAccount {", bankBodyDepth + 1],
+    ["NEW refundCardAccountCI = BankAccount {", bankBodyDepth + 2],
+    ["NEW refundCashRegisterCI = Pos {", bankBodyDepth + 3],
+    ["NEW cardAccountCI = BankAccount {", bankBodyDepth],
+    ["NEW cashRegisterCI = Pos {", bankBodyDepth + 1]
   ]) {
     const declarationStart = nativeRetailFixtureSource.indexOf(declaration);
     assert.ok(declarationStart >= 0, "Falta " + declaration);
     assert.equal(
       braceDepthAt(nativeRetailFixtureSource, declarationStart),
-      bankBodyDepth,
-      declaration + " debe ser hermana de cardAccountCI y refundCashRegisterCI dentro del ámbito de bankCI."
+      expectedDepth,
+      declaration + " debe quedar anidada en el NEW que declara los parámetros que consume."
     );
   }
-  assert.equal(
-    braceDepthAt(nativeRetailFixtureSource, cashRegisterScopeStart),
-    bankBodyDepth + 1,
-    "La caja principal debe permanecer dentro del ámbito que contiene cardAccountCI."
-  );
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI) <- refundCentralAccountCI;"));
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCashAccountCI WHERE pm = cashPaymentMethod();"));
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCardAccountCI WHERE id(pm) = 'card';"));
