@@ -180,6 +180,14 @@ class NativePreviewTests(unittest.TestCase):
             self.assertIn("Caja de demostración Rubrova", retail_fixture)
             self.assertIn("Producto de demostración Rubrova", retail_fixture)
             self.assertIn("rubrova-demo", retail_fixture)
+            bank_creation = retail_fixture.index("NEW bankDemo = Bank {")
+            bank_account_creation = retail_fixture.index("NEW cardAccountDemo = BankAccount {")
+            pos_creation = retail_fixture.index("NEW cashRegisterDemo = Pos {")
+            self.assertLess(bank_creation, bank_account_creation)
+            self.assertLess(bank_account_creation, pos_creation)
+            self.assertIn("bank(cardAccountDemo) <- bankDemo;", retail_fixture)
+            self.assertNotIn("bank(cardAccountDemo) <- rubrovaDemoCardBank()", retail_fixture)
+            self.assertIn("bank(rubrovaDemoCardAccount()) <- rubrovaDemoCardBank();", retail_fixture)
             self.assertIn("Inventory.realQuantity(adjustmentLineDemo) <- 10", inventory_fixture)
             self.assertIn("rubrova-demo-location", inventory_fixture)
             self.assertNotIn("@@api", retail_fixture + inventory_fixture)
@@ -220,6 +228,15 @@ class NativePreviewTests(unittest.TestCase):
         self.assertIn("register_name=pos_register_name", inspector)
         self.assertIn('RUBROVA_UI_POS_REGISTER_NAME="Caja de demostración Rubrova"', smoke)
         self.assertIn("name(cashRegisterDemo) <- 'Caja de demostración Rubrova'", fixture_text)
+        self.assertIn("bank(cardAccountDemo) <- bankDemo;", fixture_text)
+        self.assertLess(
+            fixture_text.index("NEW bankDemo = Bank {"),
+            fixture_text.index("NEW cardAccountDemo = BankAccount {"),
+        )
+        self.assertLess(
+            fixture_text.index("NEW cardAccountDemo = BankAccount {"),
+            fixture_text.index("NEW cashRegisterDemo = Pos {"),
+        )
 
     def test_preexisting_postgres_is_never_stopped_by_preview_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
