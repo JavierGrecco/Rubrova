@@ -456,7 +456,7 @@ rubrovaTestCumulativeRefundsApi () {
     // Segundo intento: 600 de tarjeta son menores que los 750 originales,
     // pero sumados a los 300 ya reintegrados deben ser rechazados (900 > 750).
     IF rubrovaCIMixedFirstRefundBill() AND NOT rubrovaCIMixedOverLimitRejected() THEN {
-        rubrovaCIMixedOverLimitRejectedLocal() <- FALSE;
+        rubrovaCIMixedOverLimitRejectedLocal() <- NULL;
         rubrovaCIMixedOverLimitMessageLocal() <- NULL;
         NEWSESSION {
             NEW b = Invoicing.Bill {
@@ -494,7 +494,7 @@ rubrovaTestCumulativeRefundsApi () {
 } @@api;
 
 rubrovaTestCumulativeRefundRaceAApi () {
-    rubrovaCIMixedRaceAAccepted() <- FALSE;
+    rubrovaCIMixedRaceAAccepted() <- NULL;
     rubrovaCIMixedRaceAMessage() <- NULL;
     NEWSESSION {
         NEW b = Invoicing.Bill {
@@ -512,7 +512,7 @@ rubrovaTestCumulativeRefundRaceAApi () {
 } @@api;
 
 rubrovaTestCumulativeRefundRaceBApi () {
-    rubrovaCIMixedRaceBAccepted() <- FALSE;
+    rubrovaCIMixedRaceBAccepted() <- NULL;
     rubrovaCIMixedRaceBMessage() <- NULL;
     NEWSESSION {
         NEW b = Invoicing.Bill {
@@ -552,7 +552,7 @@ rubrovaTestCumulativeRefundBillCancelApi () {
     IF Invoicing.active(rubrovaCIMixedFirstRefundBill()) THEN
         Invoicing.cancel(rubrovaCIMixedFirstRefundBill());
 
-    rubrovaCIMixedBillCancelRejectedLocal() <- FALSE;
+    rubrovaCIMixedBillCancelRejectedLocal() <- NULL;
     rubrovaCIMixedBillCancelMessageLocal() <- NULL;
     NEWSESSION {
         NEW b = Invoicing.Bill {

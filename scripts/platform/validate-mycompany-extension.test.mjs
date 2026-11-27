@@ -1698,14 +1698,25 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_PARTIAL_RETURNS=true/);
 });
 
-test("la fixture limpia los booleanos persistentes y el smoke expone la causa exacta de un fallo de arranque", () => {
+test("la fixture inicializa todos los booleanos con NULL y el smoke extrae ubicaciones sin confundir timestamps", () => {
   assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejected = DATA BOOLEAN/);
   assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejected\(\) <- NULL/);
-  assert.doesNotMatch(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejected\(\) <- FALSE/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejectedLocal = DATA LOCAL NESTED BOOLEAN/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejectedLocal\(\) <- NULL/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedRaceAAccepted = DATA LOCAL NESTED BOOLEAN/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedRaceAAccepted\(\) <- NULL/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedRaceBAccepted = DATA LOCAL NESTED BOOLEAN/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedRaceBAccepted\(\) <- NULL/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedBillCancelRejectedLocal = DATA LOCAL NESTED BOOLEAN/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedBillCancelRejectedLocal\(\) <- NULL/);
+  assert.doesNotMatch(nativeSalesFixtureSource, /<-\s*FALSE\s*;/,
+    "Las fixtures lsFusion deben limpiar los booleanos con NULL y no asignar FALSE.");
   assert.match(nativeSmokeSource, /report_native_startup_failure\(\)/);
   assert.match(nativeSmokeSource, /record_failed_native_supervisor_exit\(\)/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_FAILURE_KIND=lsfusion_logic_initialization/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_SOURCE_LOCATION=/);
   assert.match(nativeSmokeSource, /RUBROVA_NATIVE_SUPERVISOR_EXIT_CODE=/);
+  assert.ok(nativeSmokeSource.includes("grep -Eo '[[:alpha:]_][[:alnum:]_]*:[0-9]+:[0-9]+'"),
+    "La extracción de módulo:línea:columna no debe aceptar horas HH:MM:SS.");
   assert.match(nativeSmokeSource, /Exception while starting logics instance/);
 });

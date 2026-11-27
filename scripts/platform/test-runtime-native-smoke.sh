@@ -123,7 +123,7 @@ report_native_startup_failure() {
     if grep -Fq "Exception while starting logics instance" "$log_file"; then
       logic_failure_found=true
       echo "RUBROVA_NATIVE_FAILURE_KIND=lsfusion_logic_initialization"
-      source_location="$(grep -Eo '[[:alnum:]_]+:[0-9]+:[0-9]+' "$log_file" | tail -n 1 || true)"
+      source_location="$(grep -Eo '[[:alpha:]_][[:alnum:]_]*:[0-9]+:[0-9]+' "$log_file" | tail -n 1 || true)"
       if [[ -n "$source_location" ]]; then
         echo "RUBROVA_NATIVE_SOURCE_LOCATION=$source_location"
       fi
