@@ -347,13 +347,17 @@ rubrovaCIMixedBillCancelRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
 rubrovaCIMixedBillCancelMessageLocal = DATA LOCAL NESTED STRING[1000] ();
 
 rubrovaEnsureCIMixedSale () {
-    IF NOT rubrovaCIMixedSession() THEN {
-        NEW mixedSession = Retail.Session {
-            Retail.pos(mixedSession) <- Retail.pos('rubrova-ci-refund');
+    IF NOT rubrovaCIMixedSession() THEN
+        NEWSESSION {
+            NEW mixedSession = Retail.Session {
+                Retail.pos(mixedSession) <- Retail.pos('rubrova-ci-refund');
+                Retail.beforeOpen(mixedSession);
+                APPLY SERIALIZABLE;
+                IF NOT canceled() THEN
+                    Retail.afterOpen(mixedSession);
+            }
         }
-        APPLY SERIALIZABLE;
-        IF canceled() THEN RETURN;
-    }
+    IF NOT rubrovaCIMixedSession() THEN RETURN;
 
     IF NOT rubrovaCIMixedInvoice() THEN
         NEWSESSION {
