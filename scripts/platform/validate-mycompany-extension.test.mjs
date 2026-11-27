@@ -80,6 +80,50 @@ const spanishWebMessagesVendor = read("vendor/platform/web-client/src/main/resou
 const serverMessagesClass = read("vendor/platform/web-client/src/main/java/lsfusion/base/ServerMessages.java");
 
 
+function braceDepthAt(source, stopAt) {
+  let depth = 0;
+  let quote = null;
+  let lineComment = false;
+  let blockComment = false;
+  for (let index = 0; index < stopAt; index += 1) {
+    const current = source[index];
+    const next = source[index + 1];
+    if (lineComment) {
+      if (current === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (current === "*" && next === "/") {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (current === "\\") {
+        index += 1;
+      } else if (current === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (current === "/" && next === "/") {
+      lineComment = true;
+      index += 1;
+    } else if (current === "/" && next === "*") {
+      blockComment = true;
+      index += 1;
+    } else if (current === "'" || current === '"') {
+      quote = current;
+    } else if (current === "{") {
+      depth += 1;
+    } else if (current === "}") {
+      depth -= 1;
+    }
+  }
+  return depth;
+}
+
 function parseProperties(source) {
   const entries = new Map();
   source.split(/\r?\n/).forEach((raw, index) => {
@@ -1044,18 +1088,34 @@ test("el POS separa la cuenta central del cajón y aísla las cuentas del fixtur
   assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
   const bankScopeStart = nativeRetailFixtureSource.indexOf("NEW bankCI = Bank {");
   const cardAccountScopeStart = nativeRetailFixtureSource.indexOf("NEW cardAccountCI = BankAccount {");
-  assert.ok(bankScopeStart >= 0 && cardAccountScopeStart > bankScopeStart, "El banco CI debe contener la cuenta de tarjeta y las cuentas de reintegros.");
+  const cashRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW cashRegisterCI = Pos {");
+  const refundRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCashRegisterCI = Pos {");
+  assert.ok(
+    bankScopeStart >= 0 && cardAccountScopeStart > bankScopeStart &&
+    cashRegisterScopeStart > cardAccountScopeStart && refundRegisterScopeStart > cashRegisterScopeStart,
+    "El banco CI debe contener la cuenta de tarjeta y ambos puestos POS."
+  );
+  const bankBodyDepth = braceDepthAt(nativeRetailFixtureSource, bankScopeStart) + 1;
   for (const declaration of [
     "NEW refundCentralAccountCI = CashAccount {",
     "NEW refundCashAccountCI = CashAccount {",
-    "NEW refundCardAccountCI = BankAccount {"
+    "NEW refundCardAccountCI = BankAccount {",
+    "NEW cardAccountCI = BankAccount {",
+    "NEW refundCashRegisterCI = Pos {"
   ]) {
     const declarationStart = nativeRetailFixtureSource.indexOf(declaration);
-    assert.ok(
-      declarationStart > bankScopeStart && declarationStart < cardAccountScopeStart,
-      declaration + " debe declararse en el ámbito padre del banco, antes de abrir cardAccountCI."
+    assert.ok(declarationStart >= 0, "Falta " + declaration);
+    assert.equal(
+      braceDepthAt(nativeRetailFixtureSource, declarationStart),
+      bankBodyDepth,
+      declaration + " debe ser hermana de cardAccountCI y refundCashRegisterCI dentro del ámbito de bankCI."
     );
   }
+  assert.equal(
+    braceDepthAt(nativeRetailFixtureSource, cashRegisterScopeStart),
+    bankBodyDepth + 1,
+    "La caja principal debe permanecer dentro del ámbito que contiene cardAccountCI."
+  );
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI) <- refundCentralAccountCI;"));
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCashAccountCI WHERE pm = cashPaymentMethod();"));
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCardAccountCI WHERE id(pm) = 'card';"));
