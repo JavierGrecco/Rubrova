@@ -170,6 +170,8 @@ STOCKTAKE_LIST_AGGREGATE_MARKERS = (
 # invoice payment. Rubrova adds a global cumulative cap over active native outgoings
 # and requests serializable isolation for the native payment confirmation.
 RETURN_PAYMENT_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/return/PosDashboardReturnPayment.lsf"
+RETURN_PAYMENT_REQUIRE_BEFORE = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"
+RETURN_PAYMENT_REQUIRE_AFTER = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;"
 RETURN_PAYMENT_INVALID_BEFORE = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > OVERRIDE invoicePaid(b, pm), 0.0;"
 RETURN_PAYMENT_INVALID_AFTER = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > rubrovaRefundRemaining(b, pm);"
 RETURN_PAYMENT_FORM_BEFORE = "PROPERTIES name(pm) READONLY, invoicePaid(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
@@ -485,6 +487,26 @@ def apply_cumulative_refund_guard() -> bool:
         return False
 
     source = target.read_text(encoding="utf-8")
+    require_occurrences = source.count(RETURN_PAYMENT_REQUIRE_AFTER)
+    require_changed = False
+    if require_occurrences == 0:
+        require_before_count = source.count(RETURN_PAYMENT_REQUIRE_BEFORE)
+        if require_before_count != 1:
+            print(
+                "No se declaró la dependencia del guard de reintegros en PosDashboardReturnPayment. "
+                f"Se esperaba exactamente una REQUIRE original y se encontraron {require_before_count}.",
+                file=sys.stderr,
+            )
+            return False
+        source = source.replace(RETURN_PAYMENT_REQUIRE_BEFORE, RETURN_PAYMENT_REQUIRE_AFTER, 1)
+        require_changed = True
+    elif require_occurrences != 1 or RETURN_PAYMENT_REQUIRE_BEFORE in source:
+        print(
+            "La dependencia del guard de reintegros existe duplicada o conserva la REQUIRE original.",
+            file=sys.stderr,
+        )
+        return False
+
     replacements = (
         (RETURN_PAYMENT_INVALID_BEFORE, RETURN_PAYMENT_INVALID_AFTER),
         (RETURN_PAYMENT_FORM_BEFORE, RETURN_PAYMENT_FORM_AFTER),
@@ -492,7 +514,9 @@ def apply_cumulative_refund_guard() -> bool:
     )
     required = tuple(after for _, after in replacements)
     if all(marker in source for marker in required):
-        print("Tope acumulado por medio y confirmación SERIALIZABLE ya aplicados al reintegro nativo.")
+        if require_changed:
+            target.write_text(source, encoding="utf-8")
+        print("Tope acumulado por medio, dependencia nativa y confirmación SERIALIZABLE ya aplicados al reintegro.")
         return True
 
     for before, after in replacements:

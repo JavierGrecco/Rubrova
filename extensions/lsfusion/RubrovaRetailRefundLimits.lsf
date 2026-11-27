@@ -1,5 +1,7 @@
 MODULE RubrovaRetailRefundLimits;
-REQUIRE MyCompany, CreditNote, RubrovaRetailReturns;
+REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, RubrovaRetailReturns;
+
+// No requerir MyCompany: el diálogo POS nativo depende de este módulo y eso crearía un ciclo.
 
 NAMESPACE Retail;
 
