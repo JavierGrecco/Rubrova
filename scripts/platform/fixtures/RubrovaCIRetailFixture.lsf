@@ -36,6 +36,25 @@ loadDefaultData () + {
                         number(cardAccountCI) <- '000000000001';
                         bank(cardAccountCI) <- bankCI;
 
+                        // El escenario de reintegros necesita saldos iniciales propios.
+                        // No debe compartir cuentas con el cajón del turno POS principal.
+                        NEW refundCentralAccountCI = CashAccount {
+                            name(refundCentralAccountCI) <- 'Cuenta central reintegros CI';
+                            holder(refundCentralAccountCI) <- defaultCompany();
+                            currency(refundCentralAccountCI) <- defaultCurrency();
+                        }
+                        NEW refundCashAccountCI = CashAccount {
+                            name(refundCashAccountCI) <- 'Efectivo reintegros CI';
+                            holder(refundCashAccountCI) <- defaultCompany();
+                            currency(refundCashAccountCI) <- defaultCurrency();
+                        }
+                        NEW refundCardAccountCI = BankAccount {
+                            holder(refundCardAccountCI) <- defaultCompany();
+                            currency(refundCardAccountCI) <- defaultCurrency();
+                            number(refundCardAccountCI) <- '000000000002';
+                            bank(refundCardAccountCI) <- bankCI;
+                        }
+
                         NEW cashRegisterCI = Pos {
                             id(cashRegisterCI) <- 'rubrova-ci';
                             name(cashRegisterCI) <- 'Caja de prueba Rubrova';
@@ -51,9 +70,9 @@ loadDefaultData () + {
                             name(refundCashRegisterCI) <- 'Caja de prueba de reintegros mixtos';
                             company(refundCashRegisterCI) <- defaultCompany();
                             invoiceType(refundCashRegisterCI) <- invoiceType('retail');
-                            account(refundCashRegisterCI) <- centralAccountCI;
-                            account(refundCashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
-                            account(refundCashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
+                            account(refundCashRegisterCI) <- refundCentralAccountCI;
+                            account(refundCashRegisterCI, PaymentMethod pm) <- refundCashAccountCI WHERE pm = cashPaymentMethod();
+                            account(refundCashRegisterCI, PaymentMethod pm) <- refundCardAccountCI WHERE id(pm) = 'card';
                         }
                     }
                 }
