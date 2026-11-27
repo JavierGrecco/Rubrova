@@ -1042,9 +1042,20 @@ test("el POS separa la cuenta central del cajón y aísla las cuentas del fixtur
   assert.ok(runtimeSmokeSource.includes("centralCashAccountName = Retail.nameAccount"));
   assert.ok(uiSmokeSource.includes("UI_POS_CASH_ACCOUNTS_DISTINCT=true"));
   assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
-  assert.ok(nativeRetailFixtureSource.includes("NEW refundCentralAccountCI = CashAccount"));
-  assert.ok(nativeRetailFixtureSource.includes("NEW refundCashAccountCI = CashAccount"));
-  assert.ok(nativeRetailFixtureSource.includes("NEW refundCardAccountCI = BankAccount"));
+  const bankScopeStart = nativeRetailFixtureSource.indexOf("NEW bankCI = Bank {");
+  const cardAccountScopeStart = nativeRetailFixtureSource.indexOf("NEW cardAccountCI = BankAccount {");
+  assert.ok(bankScopeStart >= 0 && cardAccountScopeStart > bankScopeStart, "El banco CI debe contener la cuenta de tarjeta y las cuentas de reintegros.");
+  for (const declaration of [
+    "NEW refundCentralAccountCI = CashAccount {",
+    "NEW refundCashAccountCI = CashAccount {",
+    "NEW refundCardAccountCI = BankAccount {"
+  ]) {
+    const declarationStart = nativeRetailFixtureSource.indexOf(declaration);
+    assert.ok(
+      declarationStart > bankScopeStart && declarationStart < cardAccountScopeStart,
+      declaration + " debe declararse en el ámbito padre del banco, antes de abrir cardAccountCI."
+    );
+  }
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI) <- refundCentralAccountCI;"));
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCashAccountCI WHERE pm = cashPaymentMethod();"));
   assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCardAccountCI WHERE id(pm) = 'card';"));

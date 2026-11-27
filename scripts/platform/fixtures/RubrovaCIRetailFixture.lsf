@@ -30,30 +30,30 @@ loadDefaultData () + {
                     id(bankCI) <- 'rubrova-ci-bank';
                     name(bankCI) <- 'Banco de prueba CI';
 
+                    // El escenario de reintegros necesita saldos iniciales propios.
+                    // No debe compartir cuentas con el cajón del turno POS principal.
+                    NEW refundCentralAccountCI = CashAccount {
+                        name(refundCentralAccountCI) <- 'Cuenta central reintegros CI';
+                        holder(refundCentralAccountCI) <- defaultCompany();
+                        currency(refundCentralAccountCI) <- defaultCurrency();
+                    }
+                    NEW refundCashAccountCI = CashAccount {
+                        name(refundCashAccountCI) <- 'Efectivo reintegros CI';
+                        holder(refundCashAccountCI) <- defaultCompany();
+                        currency(refundCashAccountCI) <- defaultCurrency();
+                    }
+                    NEW refundCardAccountCI = BankAccount {
+                        holder(refundCardAccountCI) <- defaultCompany();
+                        currency(refundCardAccountCI) <- defaultCurrency();
+                        number(refundCardAccountCI) <- '000000000002';
+                        bank(refundCardAccountCI) <- bankCI;
+                    }
+
                     NEW cardAccountCI = BankAccount {
                         holder(cardAccountCI) <- defaultCompany();
                         currency(cardAccountCI) <- defaultCurrency();
                         number(cardAccountCI) <- '000000000001';
                         bank(cardAccountCI) <- bankCI;
-
-                        // El escenario de reintegros necesita saldos iniciales propios.
-                        // No debe compartir cuentas con el cajón del turno POS principal.
-                        NEW refundCentralAccountCI = CashAccount {
-                            name(refundCentralAccountCI) <- 'Cuenta central reintegros CI';
-                            holder(refundCentralAccountCI) <- defaultCompany();
-                            currency(refundCentralAccountCI) <- defaultCurrency();
-                        }
-                        NEW refundCashAccountCI = CashAccount {
-                            name(refundCashAccountCI) <- 'Efectivo reintegros CI';
-                            holder(refundCashAccountCI) <- defaultCompany();
-                            currency(refundCashAccountCI) <- defaultCurrency();
-                        }
-                        NEW refundCardAccountCI = BankAccount {
-                            holder(refundCardAccountCI) <- defaultCompany();
-                            currency(refundCardAccountCI) <- defaultCurrency();
-                            number(refundCardAccountCI) <- '000000000002';
-                            bank(refundCardAccountCI) <- bankCI;
-                        }
 
                         NEW cashRegisterCI = Pos {
                             id(cashRegisterCI) <- 'rubrova-ci';
