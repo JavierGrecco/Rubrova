@@ -106,6 +106,55 @@ MOCK_PROVIDER_PORT="${RUBROVA_CI_MOCK_PROVIDER_PORT:-18765}"
 MOCK_PROVIDER_LOG_FILE="$WORK_DIR/mock-provider.log"
 EGRESS_RULES_INSTALLED=false
 
+report_native_startup_failure() {
+  local stage="$1"
+  local supervisor_log="$2"
+  local data_root="$3"
+  local log_file source_location logic_failure_found=false
+
+  echo "RUBROVA_NATIVE_FAILURE_STAGE=$stage"
+  for log_file in \
+    "$supervisor_log" \
+    "$data_root/logs/server-console.log" \
+    "$data_root"/runtime/lsfusion/logs/*.log; do
+    [[ -s "$log_file" ]] || continue
+    echo "### Evidencia de inicio: $log_file"
+
+    if grep -Fq "Exception while starting logics instance" "$log_file"; then
+      logic_failure_found=true
+      echo "RUBROVA_NATIVE_FAILURE_KIND=lsfusion_logic_initialization"
+      source_location="$(grep -Eo '[[:alnum:]_]+:[0-9]+:[0-9]+' "$log_file" | tail -n 1 || true)"
+      if [[ -n "$source_location" ]]; then
+        echo "RUBROVA_NATIVE_SOURCE_LOCATION=$source_location"
+      fi
+    fi
+
+    grep -n -A 8 -B 2 -E \
+      "Exception while starting logics instance|Error starting server|Caused by:|ERROR StartLogger|^ERROR:|FATAL" \
+      "$log_file" | tail -n 100 || true
+  done
+
+  if [[ "$logic_failure_found" != "true" ]]; then
+    echo "RUBROVA_NATIVE_LSFUSION_INIT_ERROR=not_detected"
+  fi
+}
+
+record_failed_native_supervisor_exit() {
+  local stage="$1"
+  local supervisor_log="$2"
+  local data_root="$3"
+  local exit_status=0
+
+  if wait "$SUPERVISOR_PID"; then
+    exit_status=0
+  else
+    exit_status=$?
+  fi
+  SUPERVISOR_PID=""
+  echo "RUBROVA_NATIVE_SUPERVISOR_EXIT_CODE=$exit_status"
+  report_native_startup_failure "$stage" "$supervisor_log" "$data_root"
+}
+
 stop_native_supervisor() {
   local supervisor_log="${1:-$SUPERVISOR_LOG_FILE}"
   if [[ -n "$SUPERVISOR_PID" ]]; then
@@ -247,6 +296,7 @@ HTTP_STATUS=""
 while (( SECONDS < STARTUP_TIMEOUT )); do
   if ! kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
     echo "El supervisor nativo terminó antes de que la interfaz estuviera disponible." >&2
+    record_failed_native_supervisor_exit "initial-startup" "$LOG_FILE" "$NATIVE_DATA_ROOT"
     exit 1
   fi
   HTTP_STATUS="$(curl --silent --output "$WORK_DIR/web-response.html" --write-out '%{http_code}' \
@@ -413,7 +463,7 @@ RESTART_HTTP_STATUS=""
 while (( SECONDS < RESTART_STARTUP_TIMEOUT )); do
   if ! kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
     echo "El supervisor nativo terminó durante el reinicio de persistencia." >&2
-    tail -n 180 "$RESTART_LOG_FILE" >&2 || true
+    record_failed_native_supervisor_exit "restart-startup" "$RESTART_LOG_FILE" "$NATIVE_DATA_ROOT"
     exit 1
   fi
   RESTART_HTTP_STATUS="$(curl --silent --output "$WORK_DIR/restart-web-response.html" --write-out '%{http_code}' --connect-timeout 2 --max-time 8 "$WEB_URL" 2>/dev/null || true)"
@@ -479,7 +529,7 @@ DEMO_HTTP_STATUS=""
 while (( SECONDS < DEMO_STARTUP_TIMEOUT )); do
   if ! kill -0 "$SUPERVISOR_PID" 2>/dev/null; then
     echo "El supervisor de demostración terminó antes de que la interfaz estuviera disponible." >&2
-    tail -n 180 "$DEMO_LOG_FILE" >&2 || true
+    record_failed_native_supervisor_exit "demo-startup" "$DEMO_LOG_FILE" "$DEMO_DATA_ROOT"
     exit 1
   fi
   DEMO_HTTP_STATUS="$(curl --silent --output "$WORK_DIR/demo-web-response.html" --write-out '%{http_code}' \

@@ -1697,3 +1697,15 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.match(uiSmokeSource, /UI_RESTART_PERSISTENCE_PARTIAL_RETURNS=true/);
   assert.match(nativeSmokeSource, /UI_RESTART_PERSISTENCE_PARTIAL_RETURNS=true/);
 });
+
+test("la fixture limpia los booleanos persistentes y el smoke expone la causa exacta de un fallo de arranque", () => {
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejected = DATA BOOLEAN/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejected\(\) <- NULL/);
+  assert.doesNotMatch(nativeSalesFixtureSource, /rubrovaCIMixedOverLimitRejected\(\) <- FALSE/);
+  assert.match(nativeSmokeSource, /report_native_startup_failure\(\)/);
+  assert.match(nativeSmokeSource, /record_failed_native_supervisor_exit\(\)/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_FAILURE_KIND=lsfusion_logic_initialization/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_SOURCE_LOCATION=/);
+  assert.match(nativeSmokeSource, /RUBROVA_NATIVE_SUPERVISOR_EXIT_CODE=/);
+  assert.match(nativeSmokeSource, /Exception while starting logics instance/);
+});

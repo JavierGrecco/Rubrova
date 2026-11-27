@@ -440,7 +440,8 @@ rubrovaTestCumulativeRefundsApi () {
 
     // Primera nota: ARS 200 efectivo + ARS 300 tarjeta sobre 0,4 unidades.
     IF NOT rubrovaCIMixedFirstRefundBill() AND rubrovaCIMixedInvoice() THEN {
-        rubrovaCIMixedOverLimitRejected() <- FALSE;
+        // DATA BOOLEAN persistente se limpia con NULL; FALSE no es un valor válido aquí.
+        rubrovaCIMixedOverLimitRejected() <- NULL;
         rubrovaCIMixedOverLimitMessage() <- NULL;
         NEWSESSION {
             NEW b = Invoicing.Bill {
