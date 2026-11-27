@@ -35,7 +35,7 @@ NAMESPACE Retail;
 // sólo deja de consumir cupo cuando el egreso nativo también está cancelado.
 rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
     GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
-        IF Invoicing.in(originalInvoice, previousBill)
+        IF Invoicing.in(originalInvoice, Invoicing.Bill previousBill)
         AND paymentMethod(previousBill, p) = pm
         AND Invoicing.active(p);
 
