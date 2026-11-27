@@ -3,12 +3,31 @@ REQUIRE MyCompany, RubrovaPOSLocalization;
 
 NAMESPACE Retail;
 
+rubrovaDemoCardBank() = GROUP MAX Bank b IF id(b) = 'rubrova-demo-bank';
+rubrovaDemoCardAccount() = GROUP MAX BankAccount a IF number(a) = '000000000099' AND bank(a) = rubrovaDemoCardBank();
+
 loadDefaultData () + {
     IF NOT defaultCurrency() THEN
         NEW currencyDemo = Currency {
             id(currencyDemo) <- 'ARS';
             name(currencyDemo) <- 'Peso argentino';
             defaultCurrency() <- currencyDemo;
+        }
+
+    // El tipo customerbank sólo permite cuentas bancarias. Se crea por separado
+    // para que esta corrección también repare una demostración ya inicializada.
+    IF NOT rubrovaDemoCardBank() THEN
+        NEW bankDemo = Bank {
+            id(bankDemo) <- 'rubrova-demo-bank';
+            name(bankDemo) <- 'Banco demostración Rubrova';
+        }
+
+    IF NOT rubrovaDemoCardAccount() THEN
+        NEW cardAccountDemo = BankAccount {
+            holder(cardAccountDemo) <- defaultCompany();
+            currency(cardAccountDemo) <- defaultCurrency();
+            number(cardAccountDemo) <- '000000000099';
+            bank(cardAccountDemo) <- rubrovaDemoCardBank();
         }
 
     IF NOT pos('rubrova-demo') THEN {
@@ -22,24 +41,22 @@ loadDefaultData () + {
                 holder(cashAccountDemo) <- defaultCompany();
                 currency(cashAccountDemo) <- defaultCurrency();
 
-                NEW cardAccountDemo = CashAccount {
-                    name(cardAccountDemo) <- 'Tarjeta demostración Rubrova';
-                    holder(cardAccountDemo) <- defaultCompany();
-                    currency(cardAccountDemo) <- defaultCurrency();
-
-                    NEW cashRegisterDemo = Pos {
-                        id(cashRegisterDemo) <- 'rubrova-demo';
-                        name(cashRegisterDemo) <- 'Caja de demostración Rubrova';
-                        company(cashRegisterDemo) <- defaultCompany();
-                        invoiceType(cashRegisterDemo) <- invoiceType('retail');
-                        account(cashRegisterDemo) <- centralAccountDemo;
-                        account(cashRegisterDemo, PaymentMethod pm) <- cashAccountDemo WHERE pm = cashPaymentMethod();
-                        account(cashRegisterDemo, PaymentMethod pm) <- cardAccountDemo WHERE id(pm) = 'card';
-                    }
+                NEW cashRegisterDemo = Pos {
+                    id(cashRegisterDemo) <- 'rubrova-demo';
+                    name(cashRegisterDemo) <- 'Caja de demostración Rubrova';
+                    company(cashRegisterDemo) <- defaultCompany();
+                    invoiceType(cashRegisterDemo) <- invoiceType('retail');
+                    account(cashRegisterDemo) <- centralAccountDemo;
+                    account(cashRegisterDemo, PaymentMethod pm) <- cashAccountDemo WHERE pm = cashPaymentMethod();
+                    account(cashRegisterDemo, PaymentMethod pm) <- rubrovaDemoCardAccount() WHERE id(pm) = 'card';
                 }
             }
         }
     }
+
+    // Corrige también el POS existente creado por una versión previa de la demo.
+    IF pos('rubrova-demo') AND rubrovaDemoCardAccount() THEN
+        account(pos('rubrova-demo'), PaymentMethod pm) <- rubrovaDemoCardAccount() WHERE id(pm) = 'card';
 
     IF NOT uom('1') THEN
         NEW unitDemo = Uom {

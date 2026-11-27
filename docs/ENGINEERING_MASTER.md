@@ -3,7 +3,7 @@
 
 **Fuente única de verdad técnica.** Este manual centraliza el conocimiento para mantener y evolucionar Rubrova POS+ERP: qué incorporamos, qué reutilizamos, cómo se conectan los módulos, quién es dueño de cada dato, qué contratos protegen los procesos, qué se ha probado y qué falta demostrar.
 
-**Corte de estado:** 26 de noviembre de 2026  
+**Corte de estado:** 27 de noviembre de 2026  
 **Base de main antes de consolidar este manual:** [84121794b9570a4418970272349331bed4cc1711](https://github.com/JavierGrecco/Rubrova/commit/84121794b9570a4418970272349331bed4cc1711)  
 **Commit que consolidó los anexos:** [1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b](https://github.com/JavierGrecco/Rubrova/commit/1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b)  
 **Corrección posterior de enlaces internos:** [57118291eaedffe3aa85a90bcc167cd5fee4d69f](https://github.com/JavierGrecco/Rubrova/commit/57118291eaedffe3aa85a90bcc167cd5fee4d69f)  
@@ -118,16 +118,15 @@ No trasladar esta aceptación a medios de pago o entornos no cubiertos por el es
 
 ### 2.4 Estado de ramas
 
-Inventario remoto consultado después de integrar PR #14 y del commit automático de fuentes:
+Inventario remoto consultado después del run #491, el 27 de noviembre de 2026:
 
-- El snapshot de código de `main` incluye el merge funcional `c38fad581f669bd7e1a2795123cc8ecca242e010` y la incorporación de fuentes `7d9e5bb80e866df87b51baad852c1e6256270dd1`; esta actualización documental se realiza sobre ese estado.
-- Ramas remotas visibles: **2** — `main` y `work/stocktake-barcode-runtime-acceptance`.
-- La rama `work/stocktake-barcode-runtime-acceptance`, HEAD `12f29a47e7b89f6f162c85a7e3684e24f9fe793b`, es la fuente del PR #14 ya fusionado. No tiene trabajo pendiente y debe eliminarse.
-- Pull requests abiertos: **0**. PR #13 fue cerrado como reemplazado; PR #15 y PR #14 están integrados.
-- Las ramas `work/pos-partial-return-remaining-quantity`, `work/pos-partial-returns-runtime-fix` y `work/retail-return-quantity-guard` ya no aparecen en la lista remota. No recrearlas.
-- GitHub informa `protected=false` para `main` y `delete_branch_on_merge=false`. La conexión actual no permite cambiar esos ajustes ni borrar referencias Git. Hasta activar el borrado automático, la rama fuente fusionada requiere eliminación manual.
+- `main` permanece en `a994c271e5bdf2fce73a525d1083ac22c99a4e56`; no recibió ninguno de los cambios de reintegros acumulados.
+- Ramas remotas visibles: **2** — `main` y `work/pos-refund-cumulative-method-guard`.
+- La rama temporal corresponde al PR [#16](https://github.com/JavierGrecco/Rubrova/pull/16), abierto y en borrador. Su HEAD al iniciar el run #491 fue `e57f2e6891546e199502afde41076b00d9222bb2`; el PR no está integrado y no debe mezclarse con `main` hasta superar la aceptación funcional completa.
+- Pull requests abiertos: **1** — PR #16. Los trabajos de ramas anteriores se consolidaron/cerraron y no deben recrearse.
+- La rama de trabajo actual es la única rama temporal permitida. No abrir ramas adicionales para correcciones sucesivas; corregir aquí, validar por etapas y consolidar una sola vez al cumplir los criterios de salida.
 
-La política es una sola rama persistente (`main`) y como máximo una rama temporal para revisión. Una rama temporal deja de estar activa al fusionarse y debe eliminarse inmediatamente.
+La política continúa siendo una sola rama persistente (`main`) y como máximo una rama temporal para revisión. Después de integrar PR #16, eliminar su rama temporal y comprobar que sólo quede `main`.
 
 ### 2.5 Reintegros acumulados por medio de pago: guard implementado en rama de trabajo, pendiente de aceptación
 
@@ -622,11 +621,22 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Evidencia del run #489 (PR head `a7f63b2`; checkout de integración `bf4dbde`):** prevalidación 36/36, Windows y compilación completa pasaron. El smoke macOS ARM64 alcanzó la carga de `RubrovaRetailRefundLimits`, `PosDashboardReturnPayment`, `RubrovaPOSLocalization` y la fixture de ventas, pero lsFusion rechazó `RubrovaCISalesFixture:443:51` con `use NULL instead of FALSE`. El fallo ocurrió antes de login y antes de cualquier llamada E2E; no demuestra ni refuta el comportamiento del límite de reintegros.
 - **Causa inmediata del #489:** `rubrovaCIMixedOverLimitRejected` es un `DATA BOOLEAN` persistente. Su reinicio estaba escrito con `FALSE`; lsFusion exigió limpiar el valor con `NULL`. En ese momento se asumió erróneamente que la regla no aplicaba a `DATA LOCAL NESTED BOOLEAN`.
 - **Evidencia del run #490 (SHA `5a62862`):** preflight 37/37 pruebas Node y 34/34 pruebas adicionales, Windows y compilación completa pasaron. El smoke macOS ARM64 falló al inicializar la fixture con `RubrovaCISalesFixture:459:56 use NULL instead of FALSE`. El diagnóstico nuevo identificó el stage, la clase de fallo y el código de salida del supervisor. La ubicación correspondió a `rubrovaCIMixedOverLimitRejectedLocal() <- FALSE`, que es `DATA LOCAL NESTED BOOLEAN`: la misma regla aplica tanto a los valores booleanos persistentes como a los booleanos locales de esta fixture. No se ejecutaron login ni APIs E2E.
+- **Evidencia del run #491 (HEAD `e57f2e6`, [workflow](https://github.com/JavierGrecco/Rubrova/actions/runs/45933719063)):** preflight 37/37 Node y 34/34 pruebas adicionales, validación Windows y compilación completa lsFusion 6.2 + cliente GWT + MyCompany 6.2 pasaron. El smoke nativo macOS ARM64 alcanzó PostgreSQL/RMI/Tomcat, abrió la interfaz y autenticó al usuario administrador. Se abrieron el POS y el turno, se completó una venta en efectivo de ARS 1.250 y pasó la reconciliación de inventario; también pasaron la devolución parcial con rechazo de exceso y el conteo por barcode (cero frente a NULL y agregación). El smoke se detuvo antes de probar el guard acumulado: la API de preparación devolvió `sourceInvoiceFound=0`.
+- **Causa del #491 identificada en las fuentes fijadas de MyCompany 6.2:** el método de pago `card` se enlaza a `customerbank`, cuyo tipo permite `BankAccount` y rechaza `CashAccount`; el tipo `customercash` permite `CashAccount`. Las constraints de `IncomingPayment.lsf` y `OutgoingPayment.lsf` lo expresan por tipo. Las dos fixtures propias habían configurado la cuenta de tarjeta como `CashAccount`. La transacción de factura mixta se cancelaba con `For this type of payment, company cash registers are not allowed`, por lo que no existía factura al consultar la API.
+- **Corrección aplicada en esta revisión:** cambiar la cuenta asociada a tarjeta a una `BankAccount` real, vinculada a un banco sintético y con número de cuenta, tanto en la fixture CI como en la demostración local. La demostración también migra la cuenta del POS ya existente, en lugar de aplicar el cambio sólo en instalaciones nuevas. Se mantiene la asociación de efectivo a `CashAccount` y se conserva el uso nativo de `companyAccount` del POS; no se elimina el vínculo financiero ni se modifica el flujo estándar de cobro. Las regresiones estáticas exigen esta correspondencia de tipos.
+- **Límites de la evidencia #491:** no se ejecutaron ni aceptaron aún el exceso acumulado por método, la carrera SERIALIZABLE, la cancelación separada de nota y egresos, la liberación de cupo ni la persistencia post-reinicio del escenario mixto. La corrección de cuenta bancaria necesita un nuevo build y smoke ARM64; no se debe inferir su éxito antes del runtime.
 - **Corrección posterior al #490:** las cuatro inicializaciones restantes de booleanos locales (`rubrovaCIMixedOverLimitRejectedLocal`, `rubrovaCIMixedRaceAAccepted`, `rubrovaCIMixedRaceBAccepted` y `rubrovaCIMixedBillCancelRejectedLocal`) pasan de `FALSE` a `NULL`. El preflight exige explícitamente esos reinicios y prohíbe cualquier asignación `<- FALSE;` en la fixture para evitar que el motor encuentre el siguiente caso de a uno.
 - **Ajuste adicional del diagnóstico:** el #490 mostró que el extractor podía confundir la hora `01:44:15` del log con una ubicación `Módulo:línea:columna`, porque aceptaba que el identificador comenzara con un dígito. El patrón ahora exige que el nombre de módulo comience con una letra o guion bajo, y la regresión estática protege esta condición.
 - **Estado al commit `5a62862`:** las correcciones de inicialización de los dos errores detectados y la mejora de diagnóstico están en la rama/PR; el #490 no pasó el smoke por el segundo booleano inicializado con FALSE. Esta nueva revisión amplía la corrección a todos los reinicios booleanos de la fixture y corrige la extracción de ubicación. Pendientes nueva prevalidación, compilación y smoke ARM64.
 - **Estado de aceptación:** no integrar a `main` ni declarar aceptado el límite acumulado hasta ejecutar el flujo autenticado y obtener conciliación y persistencia.
 - **Riesgos pendientes de runtime:** resolver cualquier siguiente error de inicialización; después ejecutar las relaciones `Invoicing.in(Invoice, Bill)`, `Retail.paymentMethod(Bill, OutgoingPayment)`, acciones nativas de cancelación, eventos automáticos de recibo, exceso acumulado por método, concurrencia real, cancelación independiente de nota/egresos, conciliación y persistencia post-reinicio. Si falla, corregir en esta misma rama y conservar la evidencia del primer error.
+
+### 2026-11-27 — REP-031 — Cuenta de tarjeta modelada con tipo incorrecto en fixtures POS
+
+- **Evidencia:** workflow #491, SHA `e57f2e6`, smoke nativo macOS ARM64. Servidor, login, venta cash, devolución parcial y stocktake pasaron; la preparación mixta no encontró factura después de cancelarse el APPLY.
+- **Causa confirmada en MyCompany 6.2:** `PaymentMethodInitial` mapea `card` a `customerbank`. Los tipos de pago bancario aceptan `BankAccount` y prohíben `CashAccount`; los tipos de efectivo aceptan `CashAccount`. La cuenta POS asociada a tarjeta se había creado erróneamente como `CashAccount` en las fixtures CI y de demostración.
+- **Decisión:** modelar la cuenta de tarjeta como `BankAccount`, con banco y número de cuenta, conservando `CashAccount` para efectivo y la asignación financiera nativa del POS. La demostración repara además una cuenta POS ya creada.
+- **Protección:** el test de extensión verifica la asignación a tipos de pago, las constraints nativas, ambos fixtures y los atributos de BankAccount. Falta ejecutar nuevamente el runtime real para confirmar que la factura mixta y los pagos bancarios se crean antes de evaluar el guard acumulado.
 
 ## 11. Anexos históricos preservados
 
