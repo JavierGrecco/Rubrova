@@ -645,6 +645,13 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Decisión:** modelar la cuenta de tarjeta como `BankAccount`, con banco y número de cuenta, conservando `CashAccount` para efectivo y la asignación financiera nativa del POS. La demostración repara además una cuenta POS ya creada.
 - **Protección:** el test de extensión verifica la asignación a tipos de pago, las constraints nativas, ambos fixtures y los atributos de BankAccount. Falta ejecutar nuevamente el runtime real para confirmar que la factura mixta y los pagos bancarios se crean antes de evaluar el guard acumulado.
 
+### 2026-11-27 — REP-036 — Evitar regex doblemente escapadas en regresión de cuentas
+
+- **Evidencia:** workflow #496, HEAD `710cc6d`, [run](https://github.com/JavierGrecco/Rubrova/actions/runs/45941019832). Windows pasó. La prevalidación falló una prueba Node de las 37; las restantes 36 pasaron. Build y smoke quedaron omitidos por la dependencia correcta del preflight.
+- **Causa:** la nueva regresión escribía expresiones regulares con doble escape y esperaba barras invertidas literales alrededor de paréntesis del código LSF. El texto fuente era correcto; la expectativa de test no coincidía.
+- **Corrección:** reemplazar esos patrones por `String.includes` exactos para la expresión `cashBalance` y las asignaciones de cuenta de ambas cajas, además de comprobar que el puesto de reintegros no referencia las cuentas del POS principal.
+- **Alcance:** no es evidencia de un error de compilación o runtime ni invalida el diagnóstico de contaminación entre fixtures de REP-035. Se requiere repetir el preflight y después build/runtime con el nuevo commit.
+
 ### 2026-11-27 — REP-035 — Aislar las cuentas sintéticas del POS de reintegros
 
 - **Evidencia:** workflow #495, HEAD `ca5ff7e`, [run](https://github.com/JavierGrecco/Rubrova/actions/runs/45939652935). Preflight 37/37 Node y 34/34 validaciones adicionales, Windows y compilación completa pasaron.

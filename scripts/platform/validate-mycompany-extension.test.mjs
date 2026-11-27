@@ -1036,20 +1036,20 @@ test("la pantalla de acceso y los errores web usan el bundle español ServerMess
 test("el POS separa la cuenta central del cajón y aísla las cuentas del fixture de reintegros", () => {
   assert.ok(paymentMethodSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
   assert.ok(paymentMethodSource.includes("La cuenta central de caja no puede ser la misma que la cuenta de efectivo"));
-  assert.match(paymentMethodSource, /cashBalance 'Cash at the checkout' \\(Pos p\\) = balance\\(cashAccount\\(p\\)\\)/);
+  assert.ok(paymentMethodSource.includes("cashBalance 'Cash at the checkout' (Pos p) = balance(cashAccount(p));"));
   assert.ok(sourcePatch.includes("CASH_ACCOUNT_REQUIRED_MARKER"));
   assert.ok(sourcePatch.includes("CASH_ACCOUNT_ANCHOR"));
   assert.ok(runtimeSmokeSource.includes("centralCashAccountName = Retail.nameAccount"));
   assert.ok(uiSmokeSource.includes("UI_POS_CASH_ACCOUNTS_DISTINCT=true"));
   assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
-  assert.match(nativeRetailFixtureSource, /NEW refundCentralAccountCI = CashAccount/);
-  assert.match(nativeRetailFixtureSource, /NEW refundCashAccountCI = CashAccount/);
-  assert.match(nativeRetailFixtureSource, /NEW refundCardAccountCI = BankAccount/);
-  assert.match(nativeRetailFixtureSource, /account\\(refundCashRegisterCI\\) <- refundCentralAccountCI/);
-  assert.match(nativeRetailFixtureSource, /account\\(refundCashRegisterCI, PaymentMethod pm\\) <- refundCashAccountCI WHERE pm = cashPaymentMethod\\(\\)/);
-  assert.match(nativeRetailFixtureSource, /account\\(refundCashRegisterCI, PaymentMethod pm\\) <- refundCardAccountCI WHERE id\\(pm\\) = 'card'/);
-  assert.doesNotMatch(nativeRetailFixtureSource, /account\\(refundCashRegisterCI, PaymentMethod pm\\) <- cashAccountCI/);
-  assert.doesNotMatch(nativeRetailFixtureSource, /account\\(refundCashRegisterCI, PaymentMethod pm\\) <- cardAccountCI/);
+  assert.ok(nativeRetailFixtureSource.includes("NEW refundCentralAccountCI = CashAccount"));
+  assert.ok(nativeRetailFixtureSource.includes("NEW refundCashAccountCI = CashAccount"));
+  assert.ok(nativeRetailFixtureSource.includes("NEW refundCardAccountCI = BankAccount"));
+  assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI) <- refundCentralAccountCI;"));
+  assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCashAccountCI WHERE pm = cashPaymentMethod();"));
+  assert.ok(nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- refundCardAccountCI WHERE id(pm) = 'card';"));
+  assert.ok(!nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- cashAccountCI"));
+  assert.ok(!nativeRetailFixtureSource.includes("account(refundCashRegisterCI, PaymentMethod pm) <- cardAccountCI"));
 });
 
 test("MyCompany guarda cambios pendientes antes de abrir NEWSESSION en acciones documentales", () => {
