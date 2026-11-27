@@ -1548,6 +1548,9 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_INVALID_AFTER"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_FORM_AFTER"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_BEFORE"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_DESIGN_AFTER"));
+  assert.ok(returnPaymentSource.includes("PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }"));
   assert.ok(sourcePatch.includes("rubrovaOriginalPaidForReturn(b, pm)"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_AFTER"));

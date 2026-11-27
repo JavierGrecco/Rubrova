@@ -176,6 +176,8 @@ RETURN_PAYMENT_INVALID_BEFORE = "invalidAmount(Bill b, PaymentMethod pm) = amoun
 RETURN_PAYMENT_INVALID_AFTER = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > rubrovaRefundRemaining(b, pm);"
 RETURN_PAYMENT_FORM_BEFORE = "PROPERTIES name(pm) READONLY, invoicePaid(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
 RETURN_PAYMENT_FORM_AFTER = "PROPERTIES name(pm) READONLY, rubrovaOriginalPaidForReturn(b, pm), rubrovaRefundRemaining(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
+RETURN_PAYMENT_DESIGN_BEFORE = "PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }"
+RETURN_PAYMENT_DESIGN_AFTER = "PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { fontSize = 24; }\\n                        PROPERTY(rubrovaRefundRemaining(b, pm)) { fontSize = 24; }"
 RETURN_PAYMENT_APPLY_BEFORE = """ready(b) <- TRUE;
         APPLY;
         IF canceled() THEN {"""
@@ -510,6 +512,7 @@ def apply_cumulative_refund_guard() -> bool:
     replacements = (
         (RETURN_PAYMENT_INVALID_BEFORE, RETURN_PAYMENT_INVALID_AFTER),
         (RETURN_PAYMENT_FORM_BEFORE, RETURN_PAYMENT_FORM_AFTER),
+        (RETURN_PAYMENT_DESIGN_BEFORE, RETURN_PAYMENT_DESIGN_AFTER),
         (RETURN_PAYMENT_APPLY_BEFORE, RETURN_PAYMENT_APPLY_AFTER),
     )
     required = tuple(after for _, after in replacements)

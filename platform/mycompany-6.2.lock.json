@@ -92,8 +92,8 @@
         "path": "extensions/lsfusion/RubrovaRetailReturns.lsf",
         "role": "defaults retail credit-note line quantities to the remaining unreturned quantity on the original invoice",
         "requires": [
-          "MyCompany",
-          "CreditNote"
+          "CreditNote",
+          "OutgoingPaymentDebt"
         ]
       },
       {
@@ -101,8 +101,9 @@
         "path": "extensions/lsfusion/RubrovaRetailRefundLimits.lsf",
         "role": "enforces cumulative active refunds per original retail invoice and payment method using native MyCompany payment records",
         "requires": [
-          "MyCompany",
           "CreditNote",
+          "SessionPayment",
+          "IncomingPaymentDebt",
           "RubrovaRetailReturns"
         ]
       }
