@@ -1499,7 +1499,21 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
             "El rechazo acumulado no provino de la restricción global por método: "
             + json.dumps(initial_payload, ensure_ascii=False)
         )
+    # The failed APPLY must not leave the just-created native outgoings active.
+    # The fixture mirrors DIALOG NOMANAGESESSION: after cancellation, the session
+    # still contains its pending changes until they are explicitly cleaned and applied.
+    if (
+        float(initial_payload.get("activeCashRefundCount") or 0) != 1
+        or abs(float(initial_payload.get("activeCashRefundAmount") or 0) - 200) > 0.001
+        or float(initial_payload.get("activeCardRefundCount") or 0) != 1
+        or abs(float(initial_payload.get("activeCardRefundAmount") or 0) - 300) > 0.001
+    ):
+        raise RuntimeError(
+            "El APPLY rechazado dejó egresos pendientes o alteró los reintegros ya confirmados: "
+            + json.dumps(initial_payload, ensure_ascii=False)
+        )
     print("UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true")
+    print("UI_CUMULATIVE_REFUNDS_REJECTED_APPLY_CLEANED_UP=true")
     print("UI_CUMULATIVE_REFUNDS_INITIAL=" + json.dumps(initial_payload, ensure_ascii=False))
 
     # Crear una segunda sesión web autenticada. Las dos peticiones usan cookies
