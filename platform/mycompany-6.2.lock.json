@@ -92,7 +92,8 @@
         "path": "extensions/lsfusion/RubrovaRetailReturns.lsf",
         "role": "defaults retail credit-note line quantities to the remaining unreturned quantity on the original invoice",
         "requires": [
-          "CreditNote"
+          "CreditNote",
+          "OutgoingPaymentDebt"
         ]
       },
       {
@@ -103,7 +104,7 @@
           "CreditNote",
           "SessionPayment",
           "IncomingPaymentDebt",
-          "OutgoingPaymentDebt"
+          "RubrovaRetailReturns"
         ]
       }
     ]
