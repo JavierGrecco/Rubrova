@@ -99,6 +99,9 @@ class NativePreviewTests(unittest.TestCase):
             staged_module = logics_dir / "RubrovaRetailReturns.lsf"
             self.assertTrue(staged_module.is_file())
             self.assertIn("rubrovaRemainingReturnQuantity", staged_module.read_text(encoding="utf-8"))
+            staged_refund_limits = logics_dir / "RubrovaRetailRefundLimits.lsf"
+            self.assertTrue(staged_refund_limits.is_file())
+            self.assertIn("CONSTRAINT SET(rubrovaRefundedByMethod", staged_refund_limits.read_text(encoding="utf-8"))
 
     def test_ci_sales_fixture_is_added_to_a_temporary_runtime_only(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -106,7 +109,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -124,6 +127,7 @@ class NativePreviewTests(unittest.TestCase):
             self.assertEqual(updated_entrypoint.count("RubrovaCISalesFixture"), 1)
             self.assertIn("RubrovaCIRetailFixture", updated_entrypoint)
             self.assertEqual(updated_entrypoint.count("RubrovaRetailReturns"), 1)
+            self.assertEqual(updated_entrypoint.count("RubrovaRetailRefundLimits"), 1)
             self.assertIn("RubrovaCIIntegrationFixture", updated_entrypoint)
             sales_fixture = (logics_dir / "RubrovaCISalesFixture.lsf").read_text(encoding="utf-8")
             retail_fixture = (logics_dir / "RubrovaCIRetailFixture.lsf").read_text(encoding="utf-8")
@@ -139,7 +143,7 @@ class NativePreviewTests(unittest.TestCase):
             logics_dir = Path(temporary)
             (logics_dir / "RubrovaCustom.lsf").write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;\\n",
                 encoding="utf-8",
             )
             previous_port = native.os.environ.get("RUBROVA_CI_MOCK_PROVIDER_PORT")
@@ -159,7 +163,7 @@ class NativePreviewTests(unittest.TestCase):
             entrypoint = logics_dir / "RubrovaCustom.lsf"
             entrypoint.write_text(
                 "MODULE RubrovaCustom;\\n"
-                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;\\n",
+                "REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;\\n",
                 encoding="utf-8",
             )
 
@@ -170,11 +174,20 @@ class NativePreviewTests(unittest.TestCase):
             self.assertEqual(updated_entrypoint.count("RubrovaLocalDemoRetail"), 1)
             self.assertEqual(updated_entrypoint.count("RubrovaLocalDemoInventory"), 1)
             self.assertEqual(updated_entrypoint.count("RubrovaRetailReturns"), 1)
+            self.assertEqual(updated_entrypoint.count("RubrovaRetailRefundLimits"), 1)
             retail_fixture = (logics_dir / "RubrovaLocalDemoRetail.lsf").read_text(encoding="utf-8")
             inventory_fixture = (logics_dir / "RubrovaLocalDemoInventory.lsf").read_text(encoding="utf-8")
             self.assertIn("Caja de demostración Rubrova", retail_fixture)
             self.assertIn("Producto de demostración Rubrova", retail_fixture)
             self.assertIn("rubrova-demo", retail_fixture)
+            bank_creation = retail_fixture.index("NEW bankDemo = Bank {")
+            bank_account_creation = retail_fixture.index("NEW cardAccountDemo = BankAccount {")
+            pos_creation = retail_fixture.index("NEW cashRegisterDemo = Pos {")
+            self.assertLess(bank_creation, bank_account_creation)
+            self.assertLess(bank_account_creation, pos_creation)
+            self.assertIn("bank(cardAccountDemo) <- bankDemo;", retail_fixture)
+            self.assertNotIn("bank(cardAccountDemo) <- rubrovaDemoCardBank()", retail_fixture)
+            self.assertIn("bank(rubrovaDemoCardAccount()) <- rubrovaDemoCardBank();", retail_fixture)
             self.assertIn("Inventory.realQuantity(adjustmentLineDemo) <- 10", inventory_fixture)
             self.assertIn("rubrova-demo-location", inventory_fixture)
             self.assertNotIn("@@api", retail_fixture + inventory_fixture)
@@ -215,6 +228,15 @@ class NativePreviewTests(unittest.TestCase):
         self.assertIn("register_name=pos_register_name", inspector)
         self.assertIn('RUBROVA_UI_POS_REGISTER_NAME="Caja de demostración Rubrova"', smoke)
         self.assertIn("name(cashRegisterDemo) <- 'Caja de demostración Rubrova'", fixture_text)
+        self.assertIn("bank(cardAccountDemo) <- bankDemo;", fixture_text)
+        self.assertLess(
+            fixture_text.index("NEW bankDemo = Bank {"),
+            fixture_text.index("NEW cardAccountDemo = BankAccount {"),
+        )
+        self.assertLess(
+            fixture_text.index("NEW cardAccountDemo = BankAccount {"),
+            fixture_text.index("NEW cashRegisterDemo = Pos {"),
+        )
 
     def test_preexisting_postgres_is_never_stopped_by_preview_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

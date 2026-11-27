@@ -166,6 +166,29 @@ STOCKTAKE_LIST_AGGREGATE_MARKERS = (
 )
 
 
+# MyCompany's refund dialog compares each payment method only with the original
+# invoice payment. Rubrova adds a global cumulative cap over active native outgoings
+# and requests serializable isolation for the native payment confirmation.
+RETURN_PAYMENT_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/return/PosDashboardReturnPayment.lsf"
+RETURN_PAYMENT_REQUIRE_BEFORE = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"
+RETURN_PAYMENT_REQUIRE_AFTER = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;"
+RETURN_PAYMENT_INVALID_BEFORE = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > OVERRIDE invoicePaid(b, pm), 0.0;"
+RETURN_PAYMENT_INVALID_AFTER = "invalidAmount(Bill b, PaymentMethod pm) = amount(pm) > rubrovaRefundRemaining(b, pm);"
+RETURN_PAYMENT_FORM_BEFORE = "PROPERTIES name(pm) READONLY, invoicePaid(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
+RETURN_PAYMENT_FORM_AFTER = "PROPERTIES name(pm) READONLY, rubrovaOriginalPaidForReturn(b, pm), rubrovaRefundRemaining(b, pm), amount(pm) BACKGROUND invalidAmount(b, pm)"
+RETURN_PAYMENT_DESIGN_BEFORE = "PROPERTY(invoicePaid(b, pm)) { fontSize = 24; }"
+RETURN_PAYMENT_DESIGN_AFTER = chr(10).join((
+    "PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { fontSize = 24; }",
+    "                        PROPERTY(rubrovaRefundRemaining(b, pm)) { fontSize = 24; }",
+))
+RETURN_PAYMENT_APPLY_BEFORE = """ready(b) <- TRUE;
+        APPLY;
+        IF canceled() THEN {"""
+RETURN_PAYMENT_APPLY_AFTER = """ready(b) <- TRUE;
+        APPLY SERIALIZABLE;
+        IF canceled() THEN {"""
+
+
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
 # Tax changes are part of the document-line audit trail, alongside quantity and amount.
 TAX_HISTORY_TARGETS = (
@@ -460,6 +483,80 @@ def apply_stocktake_list_zero_aware_aggregate() -> bool:
     return True
 
 
+
+
+def apply_cumulative_refund_guard() -> bool:
+    target = RETURN_PAYMENT_TARGET
+    if not target.is_file():
+        print(f"No se encontró el flujo nativo de reintegros POS: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    require_occurrences = source.count(RETURN_PAYMENT_REQUIRE_AFTER)
+    require_changed = False
+    if require_occurrences == 0:
+        require_before_count = source.count(RETURN_PAYMENT_REQUIRE_BEFORE)
+        if require_before_count != 1:
+            print(
+                "No se declaró la dependencia del guard de reintegros en PosDashboardReturnPayment. "
+                f"Se esperaba exactamente una REQUIRE original y se encontraron {require_before_count}.",
+                file=sys.stderr,
+            )
+            return False
+        source = source.replace(RETURN_PAYMENT_REQUIRE_BEFORE, RETURN_PAYMENT_REQUIRE_AFTER, 1)
+        require_changed = True
+    elif require_occurrences != 1 or RETURN_PAYMENT_REQUIRE_BEFORE in source:
+        print(
+            "La dependencia del guard de reintegros existe duplicada o conserva la REQUIRE original.",
+            file=sys.stderr,
+        )
+        return False
+
+    replacements = (
+        (RETURN_PAYMENT_INVALID_BEFORE, RETURN_PAYMENT_INVALID_AFTER),
+        (RETURN_PAYMENT_FORM_BEFORE, RETURN_PAYMENT_FORM_AFTER),
+        (RETURN_PAYMENT_DESIGN_BEFORE, RETURN_PAYMENT_DESIGN_AFTER),
+        (RETURN_PAYMENT_APPLY_BEFORE, RETURN_PAYMENT_APPLY_AFTER),
+    )
+    required = tuple(after for _, after in replacements)
+    if all(marker in source for marker in required):
+        if RETURN_PAYMENT_DESIGN_BEFORE in source:
+            print("El diseño del diálogo conserva la propiedad retirada del formulario.", file=sys.stderr)
+            return False
+        if require_changed:
+            target.write_text(source, encoding="utf-8")
+        print("Tope acumulado por medio, dependencia nativa y confirmación SERIALIZABLE ya aplicados al reintegro.")
+        return True
+
+    for before, after in replacements:
+        if after in source:
+            print(
+                "El parche del tope acumulado quedó parcialmente aplicado; "
+                "se detiene para evitar una reparación por sustitución ambigua.",
+                file=sys.stderr,
+            )
+            return False
+        count = source.count(before)
+        if count != 1:
+            print(
+                "No se aplicó el tope acumulado de reintegros. Se esperaba exactamente "
+                f"una coincidencia en {target.name} y se encontraron {count}: {before[:120]!r}",
+                file=sys.stderr,
+            )
+            return False
+
+    for before, after in replacements:
+        source = source.replace(before, after, 1)
+
+    missing = [marker for marker in required if marker not in source]
+    if missing:
+        print("El parche de reintegros quedó incompleto: " + ", ".join(missing), file=sys.stderr)
+        return False
+
+    target.write_text(source, encoding="utf-8")
+    print("Reintegros POS protegidos: cupo por medio acumulado y APPLY SERIALIZABLE.")
+    return True
+
 def apply_tax_history_line_tracking() -> bool:
     for target, anchor, replacement in TAX_HISTORY_TARGETS:
         if not target.is_file():
@@ -595,6 +692,9 @@ def main() -> int:
         return 1
 
     if not apply_stocktake_list_zero_aware_aggregate():
+        return 1
+
+    if not apply_cumulative_refund_guard():
         return 1
 
     if not apply_cash_account_query_filters():

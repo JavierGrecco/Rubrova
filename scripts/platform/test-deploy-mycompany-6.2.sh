@@ -20,6 +20,7 @@ printf 'previous resilience module content\n' > "$MODULE_DIR/RubrovaIntegrationR
 printf 'previous payment terminal module content\n' > "$MODULE_DIR/RubrovaPaymentTerminals.lsf"
 printf 'previous replenishment export module content\n' > "$MODULE_DIR/RubrovaReplenishmentExport.lsf"
 printf 'previous retail returns module content\n' > "$MODULE_DIR/RubrovaRetailReturns.lsf"
+printf 'previous retail refund limits module content\n' > "$MODULE_DIR/RubrovaRetailRefundLimits.lsf"
 printf 'previous override content\n' > "$INSTALL_DIR/compose.rubrova.override.yaml"
 
 FAKE_BIN="$TEMP_DIR/bin"
@@ -40,6 +41,7 @@ for file in \
   "RubrovaPaymentTerminals.lsf" \
   "RubrovaReplenishmentExport.lsf" \
   "RubrovaRetailReturns.lsf" \
+  "RubrovaRetailRefundLimits.lsf" \
   "MyCompanyResourceBundle_es_AR.properties"
 do
   cmp -s "$REPO_ROOT/extensions/lsfusion/$file" "$MODULE_DIR/$file" || {
@@ -89,6 +91,8 @@ replenishment_export_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -nam
 [[ "$replenishment_export_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de exportación de reposición existente." >&2; exit 1; }
 retail_returns_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaRetailReturns.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$retail_returns_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de devoluciones parciales existente." >&2; exit 1; }
+retail_refund_limits_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'RubrovaRetailRefundLimits.lsf.rubrova-backup.*' | wc -l | tr -d ' ')"
+[[ "$retail_refund_limits_backup_count" -eq 1 ]] || { echo "No se generó el backup del módulo de límite acumulado de reintegros." >&2; exit 1; }
 
 settings_backup_count="$(find "$MODULE_DIR" -maxdepth 1 -type f -name 'settings.properties.rubrova-backup.*' | wc -l | tr -d ' ')"
 [[ "$settings_backup_count" -eq 1 ]] || {

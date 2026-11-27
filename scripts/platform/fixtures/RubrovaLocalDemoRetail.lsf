@@ -3,6 +3,9 @@ REQUIRE MyCompany, RubrovaPOSLocalization;
 
 NAMESPACE Retail;
 
+rubrovaDemoCardBank() = GROUP MAX Bank b IF id(b) = 'rubrova-demo-bank';
+rubrovaDemoCardAccount() = GROUP MAX BankAccount a IF number(a) = '000000000099' AND bank(a) = rubrovaDemoCardBank();
+
 loadDefaultData () + {
     IF NOT defaultCurrency() THEN
         NEW currencyDemo = Currency {
@@ -11,6 +14,10 @@ loadDefaultData () + {
             defaultCurrency() <- currencyDemo;
         }
 
+    // Construir banco, cuenta bancaria y puesto en una misma cadena NEW.
+    // La cuenta exige Invoicing.bank(BankAccount) NONULL; la variable bankDemo
+    // evita depender de una consulta GROUP MAX durante la misma inicialización.
+    // Este mismo patrón anidado está probado en la fixture CI del POS.
     IF NOT pos('rubrova-demo') THEN {
         NEW centralAccountDemo = CashAccount {
             name(centralAccountDemo) <- 'Cuenta central demostración Rubrova';
@@ -22,23 +29,37 @@ loadDefaultData () + {
                 holder(cashAccountDemo) <- defaultCompany();
                 currency(cashAccountDemo) <- defaultCurrency();
 
-                NEW cardAccountDemo = CashAccount {
-                    name(cardAccountDemo) <- 'Tarjeta demostración Rubrova';
-                    holder(cardAccountDemo) <- defaultCompany();
-                    currency(cardAccountDemo) <- defaultCurrency();
+                NEW bankDemo = Bank {
+                    id(bankDemo) <- 'rubrova-demo-bank';
+                    name(bankDemo) <- 'Banco demostración Rubrova';
 
-                    NEW cashRegisterDemo = Pos {
-                        id(cashRegisterDemo) <- 'rubrova-demo';
-                        name(cashRegisterDemo) <- 'Caja de demostración Rubrova';
-                        company(cashRegisterDemo) <- defaultCompany();
-                        invoiceType(cashRegisterDemo) <- invoiceType('retail');
-                        account(cashRegisterDemo) <- centralAccountDemo;
-                        account(cashRegisterDemo, PaymentMethod pm) <- cashAccountDemo WHERE pm = cashPaymentMethod();
-                        account(cashRegisterDemo, PaymentMethod pm) <- cardAccountDemo WHERE id(pm) = 'card';
+                    NEW cardAccountDemo = BankAccount {
+                        holder(cardAccountDemo) <- defaultCompany();
+                        currency(cardAccountDemo) <- defaultCurrency();
+                        number(cardAccountDemo) <- '000000000099';
+                        bank(cardAccountDemo) <- bankDemo;
+
+                        NEW cashRegisterDemo = Pos {
+                            id(cashRegisterDemo) <- 'rubrova-demo';
+                            name(cashRegisterDemo) <- 'Caja de demostración Rubrova';
+                            company(cashRegisterDemo) <- defaultCompany();
+                            invoiceType(cashRegisterDemo) <- invoiceType('retail');
+                            account(cashRegisterDemo) <- centralAccountDemo;
+                            account(cashRegisterDemo, PaymentMethod pm) <- cashAccountDemo WHERE pm = cashPaymentMethod();
+                            account(cashRegisterDemo, PaymentMethod pm) <- cardAccountDemo WHERE id(pm) = 'card';
+                        }
                     }
                 }
             }
         }
+    }
+
+    // Repara de forma no destructiva una demostración creada por una revisión
+    // anterior, siempre que los objetos de banco/cuenta ya puedan localizarse.
+    IF rubrovaDemoCardAccount() AND rubrovaDemoCardBank() THEN {
+        bank(rubrovaDemoCardAccount()) <- rubrovaDemoCardBank();
+        IF pos('rubrova-demo') THEN
+            account(pos('rubrova-demo'), PaymentMethod pm) <- rubrovaDemoCardAccount() WHERE id(pm) = 'card';
     }
 
     IF NOT uom('1') THEN

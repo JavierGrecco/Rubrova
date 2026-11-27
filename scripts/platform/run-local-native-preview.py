@@ -327,6 +327,7 @@ def ensure_extension_files(logics_dir: Path) -> None:
         "RubrovaPaymentTerminals.lsf",
         "RubrovaReplenishmentExport.lsf",
         "RubrovaRetailReturns.lsf",
+        "RubrovaRetailRefundLimits.lsf",
         "MyCompanyResourceBundle_es_AR.properties",
     ]
     for name in module_names:
@@ -377,11 +378,11 @@ def ensure_ci_sales_fixture(logics_dir: Path) -> None:
     source = entrypoint.read_text(encoding="utf-8")
     original_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;"
     )
     fixture_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits, "
         "RubrovaCIRetailFixture, RubrovaCISalesFixture, RubrovaCIIntegrationFixture, "
         "RubrovaCIReplenishmentFixture;"
     )
@@ -415,11 +416,11 @@ def ensure_local_demo_fixture(logics_dir: Path) -> None:
     source = entrypoint.read_text(encoding="utf-8")
     original_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns;"
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;"
     )
     demo_require = (
         "REQUIRE MyCompany, RubrovaPOSLocalization, "
-        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, "
+        "RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits, "
         "RubrovaLocalDemoRetail, RubrovaLocalDemoInventory;"
     )
     if source.count(original_require) == 1:

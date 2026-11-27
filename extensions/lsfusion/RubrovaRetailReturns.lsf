@@ -1,7 +1,12 @@
 MODULE RubrovaRetailReturns;
-REQUIRE MyCompany, CreditNote;
+REQUIRE CreditNote, OutgoingPaymentDebt;
+
 
 NAMESPACE Invoicing;
+
+// Importe total del egreso nativo, normalizado por el ledger de deuda a la moneda funcional.
+// En el POS nativo, PosDashboardReturnPayment asigna y aplica el mismo importe a la nota.
+rubrovaOutgoingLedgerAmount (OutgoingPayment p) = amount[Debt](p);
 
 // Cantidad devuelta antes del documento que se está creando.
 // Se excluye el Bill actual para no contar dos veces sus líneas recién copiadas.
@@ -27,3 +32,4 @@ fill (BillLine currentLine, InvoiceLine originalLine) + {
             DELETE currentLine;
     }
 }
+

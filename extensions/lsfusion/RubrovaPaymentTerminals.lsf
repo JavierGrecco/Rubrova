@@ -1,5 +1,5 @@
 MODULE RubrovaPaymentTerminals;
-REQUIRE MyCompany, RubrovaIntegrationResilience;
+REQUIRE MyCompany;
 
 NAMESPACE Rubrova;
 
@@ -7,6 +7,8 @@ NAMESPACE Rubrova;
 // No captura tarjeta/PIN/CVV y todavía no ejecuta cobros en un dispositivo.
 // Los adaptadores futuros deben mantener la titularidad de pagos contables
 // en MyCompany: sólo una confirmación verificada puede alimentar IncomingPayment.
+// Este módulo es sólo modelo/configuración: aún no ejecuta HTTP ni llamadas al dispositivo.
+// El adaptador que implemente esas llamadas deberá depender de RubrovaIntegrationResilience.
 
 CLASS PaymentProviderAccount 'Cuenta de proveedor de pagos';
 
