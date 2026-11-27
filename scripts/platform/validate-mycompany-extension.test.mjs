@@ -1571,6 +1571,8 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(nativeRetailFixtureSource, /rubrova-ci-refund/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundsApi/);
   assert.match(nativeSalesFixtureSource, /Retail[.]beforeOpen\(mixedSession\)/);
+  assert.ok(nativeSalesFixtureSource.includes("IF Retail.session(Invoicing.Bill b) = rubrovaCITestSession()"));
+  assert.ok(nativeSalesFixtureSource.includes("IF Retail.session(Invoicing.Bill b) = rubrovaCIMixedSession()"));
   assert.match(nativeSalesFixtureSource, /Retail[.]afterOpen\(mixedSession\)/);
   assert.match(nativeSalesFixtureSource, /NEWSESSION \{[\s\S]*Retail[.]beforeOpen\(mixedSession\)/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundRaceAApi/);
