@@ -1679,9 +1679,19 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("rubrovaOriginalPaidForReturn(b, pm)"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_BEFORE"));
   assert.ok(sourcePatch.includes("RETURN_PAYMENT_APPLY_AFTER"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_CLEANUP_BEFORE"));
+  assert.ok(sourcePatch.includes("RETURN_PAYMENT_CLEANUP_AFTER"));
+  assert.ok(sourcePatch.includes("legacy_replacements = replacements[:-1]"));
+  assert.ok(returnPaymentSource.includes("DELETE IncomingPayment p WHERE SET(p IS IncomingPayment);"));
+  assert.match(sourcePatch, /DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\)/);
   assert.match(sourcePatch, /APPLY SERIALIZABLE/);
   assert.match(sourcePatch, /def apply_cumulative_refund_guard\(/);
   assert.ok(sourcePatch.includes("if not apply_cumulative_refund_guard():"));
+  assert.match(
+    nativeSalesFixtureSource,
+    /rubrovaCIMixedOverLimitMessageLocal\(\) <- applyMessage\(\);\s*DELETE Invoicing[.]OutgoingPayment p WHERE SET\(p IS Invoicing[.]OutgoingPayment\);\s*Invoicing[.]ready\(b\) <- NULL;\s*APPLY;\s*IF canceled\(\) THEN RETURN;/,
+    "Un APPLY rechazado debe limpiar OutgoingPayment y devolver la nota a borrador antes de reaplicar.",
+  );
   // customerbank exige BankAccount; customercash admite CashAccount.
   assert.match(retailPaymentMethodInitialSource, /incomingPaymentType\(p\) <- incomingPaymentType\('customerbank'\)/);
   assert.match(retailPaymentMethodInitialSource, /outgoingPaymentType\(p\) <- outgoingPaymentType\('customerbank'\)/);
