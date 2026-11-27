@@ -605,12 +605,12 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 
 test("el guard acumulado es visible para el POS sin crear un ciclo con MyCompany", () => {
   assert.match(retailReturnsSource, /^REQUIRE CreditNote, OutgoingPaymentDebt;/m);
-  assert.doesNotMatch(retailReturnsSource, /^REQUIRE .*\\bMyCompany\\b/m);
+  assert.ok(!retailReturnsSource.split("\n")[1].includes("MyCompany"));
   assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, RubrovaRetailReturns;/m);
-  assert.doesNotMatch(retailRefundLimitsSource, /^REQUIRE .*\\bMyCompany\\b/m);
+  assert.ok(!retailRefundLimitsSource.split("\n")[1].includes("MyCompany"));
   assert.match(sourcePatch, /RETURN_PAYMENT_REQUIRE_BEFORE = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"/);
   assert.match(sourcePatch, /RETURN_PAYMENT_REQUIRE_AFTER = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;"/);
-  assert.match(sourcePatch, /source = source\\.replace\\(RETURN_PAYMENT_REQUIRE_BEFORE, RETURN_PAYMENT_REQUIRE_AFTER, 1\\)/);
+  assert.ok(sourcePatch.includes("source = source.replace(RETURN_PAYMENT_REQUIRE_BEFORE, RETURN_PAYMENT_REQUIRE_AFTER, 1)"));
   assert.ok(returnPaymentSource.includes("REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"));
 });
 
@@ -1638,8 +1638,8 @@ test("las devoluciones parciales usan el documento original y sólo permiten el 
   assert.doesNotMatch(retailReturnsSource, /^NAMESPACE Retail;/m);
   assert.match(retailRefundLimitsSource, /^MODULE RubrovaRetailRefundLimits;/m);
   assert.match(retailRefundLimitsSource, /^NAMESPACE Retail;/m);
-  assert.match(retailRefundLimitsSource, /^REQUIRE MyCompany, CreditNote, RubrovaRetailReturns;/m);
-  assert.match(retailReturnsSource, /^REQUIRE MyCompany, CreditNote;/m);
+  assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, RubrovaRetailReturns;/m);
+  assert.match(retailReturnsSource, /^REQUIRE CreditNote, OutgoingPaymentDebt;/m);
   assert.match(retailReturnsSource, /fill \(BillLine currentLine, InvoiceLine originalLine\) \+/);
   assert.match(creditNoteSource, /fill ABSTRACT LIST \(BillLine, InvoiceLine\)/);
   assert.match(retailReturnsSource, /type\(invoice\(originalLine\)\) = invoiceType\('retail'\)/);
