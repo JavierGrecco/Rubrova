@@ -44,7 +44,7 @@ rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
 rubrovaRefundedBefore (Invoicing.Bill currentBill, PaymentMethod pm) =
     GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
         IF Invoicing.in(Invoicing.Invoice originalInvoice, currentBill)
-        AND Invoicing.in(originalInvoice, previousBill)
+        AND Invoicing.in(originalInvoice, Invoicing.Bill previousBill)
         AND previousBill != currentBill
         AND paymentMethod(previousBill, p) = pm
         AND Invoicing.active(p);
