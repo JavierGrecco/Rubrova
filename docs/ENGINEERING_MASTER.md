@@ -93,6 +93,7 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 | Persistencia del conteo | Run #462 | Tras reiniciar el servidor permanecen la hoja, ambas líneas y cantidad 2; `onHand=10` sigue intacto |
 | Devoluciones parciales y caja | Runs [#458](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407) y #462 | 0,4 + 0,6 unidades; rechazo de 0,7; dos reintegros en efectivo por ARS 1.250; stock reingresado; caja neta cero; persistencia tras reinicio |
 | Límite acumulado de reintegros por método | [Run #509](https://github.com/JavierGrecco/Rubrova/actions/runs/46022322287), SHA `c214e1d` | Éxito: build completo, smoke nativo ARM64, exceso acumulado rechazado, carrera serializable, cancelación separada de nota/egresos, conciliación mixta y persistencia tras reinicio |
+| Demostración local persistente | Run #509, job nativo macOS ARM64 | Éxito parcial explícito: abrió el turno de la única caja demo y encontró exactamente un resultado para el producto demo; evitó correctamente llamar APIs exclusivas de CI. No comprueba todavía las 10 unidades, agregar al recibo ni cobrar en el entorno demo |
 | Backup PostgreSQL | Run #458 | Backup, verificación y restauración en una DB aislada pasaron dentro del smoke nativo |
 | Exportación de reposición | Run #458 y fixtures | API autenticada de sólo lectura sobre datos sintéticos; falta conciliar con una base comercial real |
 | Verificación histórica post-merge del conteo | [Run #463](https://github.com/JavierGrecco/Rubrova/actions/runs/45911383909), SHA `c38fad5` | Prevalidación y Windows pasaron; el build seguía en curso al corte. No es evidencia de aceptación del snapshot de fuentes posterior |
@@ -115,7 +116,7 @@ PR [#15](https://github.com/JavierGrecco/Rubrova/pull/15) fue integrado por squa
 - [Run #458](https://github.com/JavierGrecco/Rubrova/actions/runs/45906455407), SHA `04249dc`, pasó en `main`: prevalidación, Windows, compilación, smoke nativo macOS ARM64, cierre, backup/restore PostgreSQL, reinicio y demo.
 - El escenario verificó venta de ARS 1.250, devolución 0,4, rechazo de 0,7 cuando quedaban 0,6, segunda devolución de 0,6, dos notas y dos reintegros en efectivo por ARS 1.250, stock físico final 10, caja neta cero y persistencia tras reinicio.
 - El run #462 volvió a ejecutar la conciliación de devoluciones mientras probaba stocktake y confirmó cierre de turno, caja conciliada y persistencia.
-- Linux x86_64 y Docker/Linux se omitieron. La fixture es de efectivo sintético; pagos mixtos, reintegros tarjeta/QR, conciliación de adquirentes y terminales reales siguen pendientes.
+- Linux x86_64 y Docker/Linux se omitieron en la aceptación original. Esa fixture de PR #15 era de efectivo sintético; posteriormente el run #509 probó una factura sintética mixta efectivo/tarjeta y el límite acumulado de ambos medios (ver 2.5). Siguen pendientes terminales/Postnet y reembolsos externos reales, QR real, conciliación de adquirentes y operación con proveedores de pago.
 
 No trasladar esta aceptación a medios de pago o entornos no cubiertos por el escenario.
 
