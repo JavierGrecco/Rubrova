@@ -666,9 +666,9 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
 });
 
 test("el guard acumulado es visible para el POS sin crear un ciclo con MyCompany", () => {
-  assert.match(retailReturnsSource, /^REQUIRE CreditNote, OutgoingPaymentDebt;/m);
+  assert.match(retailReturnsSource, /^REQUIRE CreditNote;/m);
   assert.ok(!retailReturnsSource.split("\n")[1].split("//")[0].includes("MyCompany"));
-  assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, RubrovaRetailReturns;/m);
+  assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, OutgoingPaymentDebt;/m);
   assert.ok(!retailRefundLimitsSource.split("\n")[1].split("//")[0].includes("MyCompany"));
   assert.match(moduleSource, /^REQUIRE MyCompany, RubrovaRetailRefundLimits;$/m);
   assert.match(moduleSource, /PROPERTY\(rubrovaOriginalPaidForReturn\(b, pm\)\)/);
