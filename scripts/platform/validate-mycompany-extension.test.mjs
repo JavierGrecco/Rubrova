@@ -521,7 +521,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(runtimeSmokeSource, /logics\\\\\.\(topModule\|includePaths\|excludePaths\)/);
   assert.match(runtimeSmokeSource, /EXPECTED_UPSTREAM_MODULES=712/);
   assert.match(runtimeSmokeSource, /EXPECTED_TOTAL_MODULES/);
-  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 7'));
+  assert.ok(runtimeSmokeSource.includes('EXPECTED_UPSTREAM_MODULES + 8'));
   assert.match(runtimeSmokeSource, /RubrovaCISalesFixture[.]lsf/);
   assert.match(runtimeSmokeSource, /currency\(priceType\('retail'\)\) <- MasterData[.]defaultCurrency\(\)/);
   assert.match(runtimeSmokeSource, /RUBROVA_CI_SALES_LOG_EVIDENCE/);
@@ -597,6 +597,8 @@ test("la vista previa macOS prepara Chromium y conserva una base sintética para
   assert.match(localPreviewSource, /RUBROVA_KEEP_RUNTIME_STACK=true/);
   assert.match(localPreviewSource, /RUBROVA_KEEP_RUNTIME_WORK_DIR=true/);
   assert.match(localPreviewSource, /RUBROVA_UI_TEST_LOGIN=true/);
+  assert.ok(nativePreviewSource.includes("RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;"));
+  assert.doesNotMatch(nativePreviewSource, /RubrovaRetailRefundLimits, RubrovaRetailRefundLimits;/);
   assert.match(localPreviewSource, /bash .*test-runtime-smoke[.]sh/);
   assert.match(localPreviewSource, /http:\/\/127[.]0[.]0[.]1:8080\/login/);
 });

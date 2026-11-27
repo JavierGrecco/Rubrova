@@ -1018,7 +1018,7 @@ fi
 }
 if [[ "$MODULES_READY" != "true" ]]; then
   echo "El cliente web respondió HTTP $HTTP_STATUS, pero la lógica no completó la inicialización esperada." >&2
-  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 6 módulos Rubrova + 1 fixture temporal de CI)." >&2
+  echo "Se esperaban al menos $EXPECTED_TOTAL_MODULES módulos (712 de MyCompany 6.2 + 7 módulos propios de Rubrova + 1 fixture temporal de CI)." >&2
   echo "Último progreso: ${LAST_MODULE_PROGRESS:-sin datos}" >&2
   exit 1
 fi
@@ -1391,7 +1391,7 @@ else
 fi
 
 if [[ "$RUBROVA_CUSTOM_LOG_EVIDENCE" != "true" || "$RUBROVA_LOCALIZATION_LOG_EVIDENCE" != "true" || "$RUBROVA_RESILIENCE_LOG_EVIDENCE" != "true" || "$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE" != "true" || "$RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE" != "true" || "$RUBROVA_RETAIL_REFUND_LIMITS_LOG_EVIDENCE" != "true" || "$RUBROVA_CI_SALES_LOG_EVIDENCE" != "true" ]]; then
-  echo "No se encontró evidencia de carga de los seis módulos Rubrova y el fixture de precios CI: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE, RubrovaReplenishmentExport=$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE, RubrovaRetailReturns=$RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE, RubrovaRetailRefundLimits=$RUBROVA_RETAIL_REFUND_LIMITS_LOG_EVIDENCE, RubrovaCISalesFixture=$RUBROVA_CI_SALES_LOG_EVIDENCE." >&2
+  echo "No se encontró evidencia de carga de los siete módulos propios de Rubrova y el fixture de precios CI: RubrovaCustom=$RUBROVA_CUSTOM_LOG_EVIDENCE, RubrovaPOSLocalization=$RUBROVA_LOCALIZATION_LOG_EVIDENCE, RubrovaIntegrationResilience=$RUBROVA_RESILIENCE_LOG_EVIDENCE, RubrovaReplenishmentExport=$RUBROVA_REPLENISHMENT_EXPORT_LOG_EVIDENCE, RubrovaRetailReturns=$RUBROVA_RETAIL_RETURNS_LOG_EVIDENCE, RubrovaRetailRefundLimits=$RUBROVA_RETAIL_REFUND_LIMITS_LOG_EVIDENCE, RubrovaCISalesFixture=$RUBROVA_CI_SALES_LOG_EVIDENCE." >&2
   exit 1
 fi
 echo "Los registros confirman los módulos Rubrova y el fixture de precios CI."
