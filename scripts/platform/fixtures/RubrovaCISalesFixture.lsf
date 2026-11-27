@@ -80,8 +80,9 @@ loadDefaultData () + {
         rubrovaCITestStockSeeded() <- TRUE;
     }
 
-    // MyCompany ya incorpora SessionShipment: sólo enlazamos la caja al depósito CI.
+    // MyCompany ya incorpora SessionShipment: ambas cajas de prueba usan el depósito CI.
     Retail.location(Retail.pos('rubrova-ci')) <- rubrovaCITestLocation();
+    Retail.location(Retail.pos('rubrova-ci-refund')) <- rubrovaCITestLocation();
 
     IF NOT rubrovaCIStocktakeSeeded() THEN {
         NEW stocktakeCI = Inventory.Adjustment {
