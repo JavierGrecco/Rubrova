@@ -2566,47 +2566,95 @@ def inspect_page(url: str) -> int:
                 print("UI_SESSION_SALES_TAB_ACTIVATED=true")
                 visible_snapshot(page, "UI_SESSION_SALES_LIST")
                 sales_grid = page.locator('[lsfusion-container="GRID(si)"]')
-                print(f"UI_SESSION_SALES_GRID_MATCH_COUNT={sales_grid.count()}")
-                if sales_grid.count() == 1:
-                    print(f"UI_SESSION_SALES_GRID_VISIBLE={sales_grid.is_visible()}")
-                    sales_rows = sales_grid.locator(
-                        "tr.data-grid-row:not(.data-grid-column-row)"
+                sales_grid_count = sales_grid.count()
+                print(f"UI_SESSION_SALES_GRID_MATCH_COUNT={sales_grid_count}")
+                if sales_grid_count != 1 or not sales_grid.is_visible():
+                    visible_snapshot(page, "UI_SESSION_SALES_GRID_NOT_UNIQUE_OR_VISIBLE")
+                    raise RuntimeError(
+                        "La pestaña 'Ventas del turno' no mostró una única grilla visible GRID(si). "
+                        f"coincidencias={sales_grid_count}"
                     )
-                    print(f"UI_SESSION_SALES_GRID_ROW_COUNT={sales_rows.count()}")
-                    print(
-                        "UI_SESSION_SALES_GRID_ROWS="
-                        + json.dumps(sales_rows.all_inner_texts(), ensure_ascii=False)
-                    )
-                    print(
-                        "UI_SESSION_SALES_GRID_MARKUP="
-                        + sales_grid.evaluate("element => element.outerHTML.slice(0, 12000)")
-                    )
-                return_action = page.locator(
-                    'button[lsfusion-container="PROPERTY(return(s, si))"]'
+
+                sales_rows = sales_grid.locator(
+                    "tr.data-grid-row:not(.data-grid-column-row)"
                 )
-                print(f"UI_SESSION_RETURN_ACTION_MATCH_COUNT={return_action.count()}")
-                if return_action.count() == 1:
-                    print(f"UI_SESSION_RETURN_ACTION_VISIBLE={return_action.is_visible()}")
-                    print(
-                        "UI_SESSION_RETURN_ACTION_MARKUP="
-                        + return_action.evaluate("element => element.outerHTML.slice(0, 1500)")
-                    )
+                sales_row_count = sales_rows.count()
+                print(f"UI_SESSION_SALES_GRID_ROW_COUNT={sales_row_count}")
                 print(
-                    "UI_SESSION_ACTION_CANDIDATES="
-                    + json.dumps(
-                        page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
-                            """elements => elements.map(element => ({
-                                text: (element.innerText || element.value || element.textContent || "").trim(),
-                                container: element.getAttribute("lsfusion-container") || "",
-                                visible: getComputedStyle(element).display !== "none" &&
-                                    getComputedStyle(element).visibility !== "hidden" &&
-                                    !!(element.offsetWidth || element.offsetHeight),
-                                outerHTML: element.outerHTML.slice(0, 600)
-                            }))"""
-                        ),
-                        ensure_ascii=False,
-                    )
+                    "UI_SESSION_SALES_GRID_ROWS="
+                    + json.dumps(sales_rows.all_inner_texts(), ensure_ascii=False)
                 )
+                if sales_row_count != 1:
+                    visible_snapshot(page, "UI_SESSION_SALES_GRID_ROW_COUNT_UNEXPECTED")
+                    raise RuntimeError(
+                        "El smoke esperaba una única venta visible en el turno; "
+                        f"encontró {sales_row_count}."
+                    )
+
+                selected_sales_rows = sales_grid.locator("tr.data-grid-row.table-active")
+                selected_sales_row_count = selected_sales_rows.count()
+                print(f"UI_SESSION_SALES_SELECTED_ROW_COUNT={selected_sales_row_count}")
+                if selected_sales_row_count != 1:
+                    visible_snapshot(page, "UI_SESSION_SALES_ROW_NOT_SELECTED")
+                    raise RuntimeError(
+                        "La grilla de ventas no dejó una única fila seleccionada para devolver; "
+                        f"filas seleccionadas={selected_sales_row_count}."
+                    )
+
+                # lsFusion serializes this action container without whitespace after
+                # the comma: PROPERTY(return(s,si)). Keep this selector tied to the
+                # exact native property, not its translated caption.
+                return_action = page.locator(
+                    'button[lsfusion-container="PROPERTY(return(s,si))"]'
+                )
+                return_action_count = return_action.count()
+                print(f"UI_SESSION_RETURN_ACTION_MATCH_COUNT={return_action_count}")
+                if return_action_count != 1:
+                    action_candidates = page.locator("button[lsfusion-container]").evaluate_all(
+                        """elements => elements.map(element => ({
+                            text: (element.innerText || element.value || element.textContent || "").trim(),
+                            container: element.getAttribute("lsfusion-container") || "",
+                            visible: getComputedStyle(element).display !== "none" &&
+                                getComputedStyle(element).visibility !== "hidden" &&
+                                !!(element.offsetWidth || element.offsetHeight),
+                            disabled: !!element.disabled,
+                            className: typeof element.className === "string" ? element.className : ""
+                        })).filter(item => item.visible || item.container.includes("return"))"""
+                    )
+                    print(
+                        "UI_SESSION_ACTION_CANDIDATES="
+                        + json.dumps(action_candidates, ensure_ascii=False)
+                    )
+                    visible_snapshot(page, "UI_SESSION_RETURN_ACTION_NOT_UNIQUE")
+                    raise RuntimeError(
+                        "No se encontró exactamente una acción nativa PROPERTY(return(s,si)) "
+                        f"para la venta seleccionada; coincidencias={return_action_count}."
+                    )
+
+                return_action_visible = return_action.is_visible()
+                return_action_enabled = return_action.is_enabled()
+                return_action_class = return_action.get_attribute("class") or ""
+                print(f"UI_SESSION_RETURN_ACTION_VISIBLE={return_action_visible}")
+                print(f"UI_SESSION_RETURN_ACTION_ENABLED={return_action_enabled}")
+                print(f"UI_SESSION_RETURN_ACTION_CLASS={return_action_class}")
+                print(
+                    "UI_SESSION_RETURN_ACTION_MARKUP="
+                    + return_action.evaluate("element => element.outerHTML.slice(0, 1500)")
+                )
+                if (
+                    not return_action_visible
+                    or not return_action_enabled
+                    or "is-readonly" in return_action_class
+                ):
+                    visible_snapshot(page, "UI_SESSION_RETURN_ACTION_NOT_USABLE")
+                    raise RuntimeError(
+                        "La acción nativa 'Devolver' existe, pero no está visible y habilitada "
+                        "para la fila seleccionada."
+                    )
+
+                print("UI_SESSION_RETURN_ACTION_FOUND=true")
+                print("UI_SESSION_RETURN_ACTION_VISIBLE=true")
+                print("UI_SESSION_RETURN_ACTION_ENABLED=true")
                 print("UI_RETURN_ACTION_DOM_INSPECTED=true")
 
                 close_button = page.locator('button[lsfusion-container="PROPERTY(close(s))"]')
