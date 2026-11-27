@@ -1684,6 +1684,11 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.ok(sourcePatch.includes("legacy_replacements = replacements[:-1]"));
   assert.ok(returnPaymentSource.includes("DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment);"));
   assert.doesNotMatch(returnPaymentSource, /DELETE IncomingPayment p WHERE SET\(p IS IncomingPayment\)/);
+  assert.match(
+    returnPaymentSource,
+    /IF canceled\(\) THEN \{\s*DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\);\s*ready\(b\) <- NULL;/,
+    "El flujo nativo debe limpiar egresos pendientes antes de devolver la nota a borrador.",
+  );
   assert.match(sourcePatch, /DELETE OutgoingPayment p WHERE SET\(p IS OutgoingPayment\)/);
   assert.match(sourcePatch, /APPLY SERIALIZABLE/);
   assert.match(sourcePatch, /def apply_cumulative_refund_guard\(/);
