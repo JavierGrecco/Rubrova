@@ -333,6 +333,8 @@ rubrovaCIMixedActivePaymentAmount(PaymentMethod pm) = OVERRIDE (GROUP SUM Invoic
        AND Invoicing.active(p)), 0.0;
 
 rubrovaCIMixedFirstRefundBill = DATA Invoicing.Bill ();
+rubrovaCIMixedOpeningCashPayment = DATA Invoicing.IncomingPayment ();
+rubrovaCIMixedOpeningCardPayment = DATA Invoicing.IncomingPayment ();
 rubrovaCIMixedOverLimitRejected = DATA BOOLEAN ();
 rubrovaCIMixedOverLimitMessage = DATA STRING[1000] ();
 rubrovaCIMixedOverLimitRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
@@ -346,6 +348,43 @@ rubrovaCIMixedBillCancelOverLimitMessage = DATA STRING[1000] ();
 rubrovaCIMixedBillCancelRejectedLocal = DATA LOCAL NESTED BOOLEAN ();
 rubrovaCIMixedBillCancelMessageLocal = DATA LOCAL NESTED STRING[1000] ();
 
+// Fondos previos en las cuentas sintéticas. Separan el control de disponibilidad
+// contable del límite por factura: la prueba no debe fallar por saldo negativo
+// antes de que pueda ejecutarse el guard acumulativo por medio de pago.
+rubrovaEnsureCIMixedOpeningBalances () {
+    IF NOT rubrovaCIMixedOpeningCashPayment() THEN
+        NEWSESSION {
+            NEW openingCash = Invoicing.IncomingPayment {
+                Invoicing.type(openingCash) <- Invoicing.incomingPaymentType('initial');
+                Invoicing.company(openingCash) <- Retail.company(Retail.pos('rubrova-ci-refund'));
+                Invoicing.companyAccount(openingCash) <- Retail.account(Retail.pos('rubrova-ci-refund'), Retail.cashPaymentMethod());
+                Invoicing.amount(openingCash) <- 1000;
+                Invoicing.note(openingCash) <- 'Saldo inicial sintético para prueba de reintegros';
+                Invoicing.reference(openingCash) <- 'rubrova-ci-opening-cash';
+                Invoicing.done(openingCash) <- TRUE;
+                rubrovaCIMixedOpeningCashPayment() <- openingCash;
+                APPLY SERIALIZABLE;
+                IF canceled() THEN RETURN;
+            }
+        }
+
+    IF NOT rubrovaCIMixedOpeningCardPayment() THEN
+        NEWSESSION {
+            NEW openingCard = Invoicing.IncomingPayment {
+                Invoicing.type(openingCard) <- Invoicing.incomingPaymentType('initial');
+                Invoicing.company(openingCard) <- Retail.company(Retail.pos('rubrova-ci-refund'));
+                Invoicing.companyAccount(openingCard) <- Retail.account(Retail.pos('rubrova-ci-refund'), Retail.paymentMethod('card'));
+                Invoicing.amount(openingCard) <- 1000;
+                Invoicing.note(openingCard) <- 'Saldo inicial sintético para prueba de reintegros';
+                Invoicing.reference(openingCard) <- 'rubrova-ci-opening-card';
+                Invoicing.done(openingCard) <- TRUE;
+                rubrovaCIMixedOpeningCardPayment() <- openingCard;
+                APPLY SERIALIZABLE;
+                IF canceled() THEN RETURN;
+            }
+        }
+}
+
 rubrovaEnsureCIMixedSale () {
     IF NOT rubrovaCIMixedSession() THEN
         NEWSESSION {
@@ -358,6 +397,9 @@ rubrovaEnsureCIMixedSale () {
             }
         }
     IF NOT rubrovaCIMixedSession() THEN RETURN;
+
+    rubrovaEnsureCIMixedOpeningBalances();
+    IF NOT rubrovaCIMixedOpeningCashPayment() OR NOT rubrovaCIMixedOpeningCardPayment() THEN RETURN;
 
     IF NOT rubrovaCIMixedInvoice() THEN
         NEWSESSION {
@@ -490,7 +532,10 @@ rubrovaTestCumulativeRefundsApi () {
         activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
         activeCardRefundCount = rubrovaCIMixedActivePaymentCount(Retail.paymentMethod('card')),
         activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
-        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        cashAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.cashPaymentMethod())),
+        cardAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.paymentMethod('card')));
+
 } @@api;
 
 rubrovaTestCumulativeRefundRaceAApi () {
@@ -543,7 +588,10 @@ rubrovaTestCumulativeRefundFinishApi () {
         activeReturnAmount = rubrovaCIMixedActiveReturnAmount(),
         returnedQuantity = rubrovaCIMixedReturnedQuantity(),
         activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
-        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card'));
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
+        cashAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.cashPaymentMethod())),
+        cardAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.paymentMethod('card')));
+
 } @@api;
 
 // Cancelar sólo la nota no debe liberar el cupo: los egresos nativos siguen activos.
@@ -579,7 +627,10 @@ rubrovaTestCumulativeRefundBillCancelApi () {
         overLimitRejected = rubrovaCIMixedBillCancelOverLimitRejected(),
         overLimitMessage = rubrovaCIMixedBillCancelOverLimitMessage(),
         activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
-        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card'));
+        activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
+        cashAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.cashPaymentMethod())),
+        cardAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.paymentMethod('card')));
+
 } @@api;
 
 // Cancelar los dos egresos de la nota ya cancelada libera el cupo contable.
@@ -608,7 +659,10 @@ rubrovaTestCumulativeRefundReleaseApi () {
         activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
         activeCardRefundCount = rubrovaCIMixedActivePaymentCount(Retail.paymentMethod('card')),
         activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
-        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        cashAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.cashPaymentMethod())),
+        cardAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.paymentMethod('card')));
+
 } @@api;
 
 rubrovaCumulativeRefundsReconciliationApi () {
@@ -628,7 +682,10 @@ rubrovaCumulativeRefundsReconciliationApi () {
         activeCashRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.cashPaymentMethod()),
         activeCardRefundCount = rubrovaCIMixedActivePaymentCount(Retail.paymentMethod('card')),
         activeCardRefundAmount = rubrovaCIMixedActivePaymentAmount(Retail.paymentMethod('card')),
-        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct());
+        onHand = Inventory.onHand(rubrovaCITestLocation(), rubrovaCITestProduct()),
+        cashAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.cashPaymentMethod())),
+        cardAccountBalance = Invoicing.balance(Retail.account(Retail.pos('rubrova-ci-refund'), Retail.paymentMethod('card')));
+
 } @@api;
 
 // Smoke contract: the retail invoice type must enforce MyCompany's native return quantity guard.

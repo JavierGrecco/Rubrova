@@ -30,6 +30,7 @@ const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
 const nativeSalesFixtureSource = read("scripts/platform/fixtures/RubrovaCISalesFixture.lsf");
+const paymentLedgerSource = read("vendor/mycompany/src/main/lsfusion/invoicing/ledgers/Payment.lsf");
 const nativeRetailFixtureSource = read("scripts/platform/fixtures/RubrovaCIRetailFixture.lsf");
 const nativeLocalDemoRetailSource = read("scripts/platform/fixtures/RubrovaLocalDemoRetail.lsf");
 const retailPaymentMethodInitialSource = read("vendor/mycompany/src/main/lsfusion/retail/payments/PaymentMethodInitial.lsf");
@@ -1593,6 +1594,30 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
   assert.match(nativeLocalDemoRetailSource, /account\(pos\('rubrova-demo'\), PaymentMethod pm\) <- rubrovaDemoCardAccount\(\)/);
   assert.doesNotMatch(nativeLocalDemoRetailSource, /NEW cardAccountDemo = CashAccount/);
   assert.match(nativeRetailFixtureSource, /rubrova-ci-refund/);
+  // Los fondos independientes evitan que el constraint de saldo de cuenta
+  // enmascare el límite acumulado de reintegros por factura y medio de pago.
+  assert.match(incomingPaymentInitialSource, /id\(i\) <- 'initial';[\s\S]*?bank\(i\) <- TRUE;[\s\S]*?cash\(i\) <- TRUE;/);
+  assert.match(paymentLedgerSource, /balance 'Balance' \(Account a\) = GROUP SUM signedAmount\(Payment p\)/);
+  assert.match(paymentLedgerSource, /CONSTRAINT balance\(Account a\) < 0 AND NOT allowNegative\(a\)/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOpeningCashPayment = DATA Invoicing[.]IncomingPayment/);
+  assert.match(nativeSalesFixtureSource, /rubrovaCIMixedOpeningCardPayment = DATA Invoicing[.]IncomingPayment/);
+  assert.match(nativeSalesFixtureSource, /incomingPaymentType\('initial'\)/);
+  assert.match(nativeSalesFixtureSource, /rubrova-ci-opening-cash/);
+  assert.match(nativeSalesFixtureSource, /rubrova-ci-opening-card/);
+  assert.match(nativeSalesFixtureSource, /Invoicing[.]amount\(openingCash\) <- 1000/);
+  assert.match(nativeSalesFixtureSource, /Invoicing[.]amount\(openingCard\) <- 1000/);
+  assert.match(nativeSalesFixtureSource, /cashAccountBalance = Invoicing[.]balance/);
+  assert.match(nativeSalesFixtureSource, /cardAccountBalance = Invoicing[.]balance/);
+  const openingBalanceSource = nativeSalesFixtureSource.slice(
+    nativeSalesFixtureSource.indexOf("rubrovaEnsureCIMixedOpeningBalances"),
+    nativeSalesFixtureSource.indexOf("rubrovaEnsureCIMixedSale"),
+  );
+  assert.doesNotMatch(openingBalanceSource, /Invoicing[.]paid|Retail[.]paymentMethod/);
+  assert.match(uiSmokeSource, /"cashAccountBalance": 1300/);
+  assert.match(uiSmokeSource, /"cardAccountBalance": 1450/);
+  assert.match(uiSmokeSource, /"cashAccountBalance": 1000/);
+  assert.match(uiSmokeSource, /"cardAccountBalance": 1000/);
+  assert.match(uiSmokeSource, /not in rejection_message/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestCumulativeRefundsApi/);
   assert.match(nativeSalesFixtureSource, /Retail[.]beforeOpen\(mixedSession\)/);
   assert.ok(nativeSalesFixtureSource.includes("IF Retail.session(Invoicing.Bill b) = rubrovaCITestSession()"));

@@ -1377,6 +1377,8 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
         "activeCashRefundAmount": 200,
         "activeCardRefundCount": 1,
         "activeCardRefundAmount": 300,
+        "cashAccountBalance": 1300,
+        "cardAccountBalance": 1450,
     }
     for field, expected in expected_initial.items():
         try:
@@ -1472,8 +1474,14 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
             + json.dumps({"A": race_a, "B": race_b}, ensure_ascii=False)
         )
     rejected = race_b if accepted[0] else race_a
-    if rejected.get("accepted") is not False:
-        raise RuntimeError("La confirmación perdedora no informó rechazo.")
+    if rejected.get("accepted") is True:
+        raise RuntimeError("La confirmación perdedora informó aceptación.")
+    rejection_message = str(rejected.get("applyMessage") or "")
+    if "El total reintegrado por medio de pago supera el importe cobrado originalmente" not in rejection_message:
+        raise RuntimeError(
+            "La confirmación perdedora no fue rechazada por el límite acumulado: "
+            + json.dumps({"A": race_a, "B": race_b}, ensure_ascii=False)
+        )
     print("UI_CUMULATIVE_REFUNDS_RACE_A=" + json.dumps(race_a, ensure_ascii=False))
     print("UI_CUMULATIVE_REFUNDS_RACE_B=" + json.dumps(race_b, ensure_ascii=False))
     print("UI_CUMULATIVE_REFUNDS_CONCURRENT_SERIALIZED=true")
@@ -1495,6 +1503,8 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
         "returnedQuantity": 1,
         "activeCashRefundAmount": 500,
         "activeCardRefundAmount": 750,
+        "cashAccountBalance": 1000,
+        "cardAccountBalance": 1000,
     }.items():
         try:
             actual = float(finished_payload.get(field) or 0)
@@ -1523,6 +1533,8 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
         cancelled_payload.get("originalBillActive") is not False
         or float(cancelled_payload.get("originalBillOutgoingActiveCount") or 0) != 2
         or cancelled_payload.get("overLimitRejected") is not True
+        or abs(float(cancelled_payload.get("cashAccountBalance") or 0) - 1000) > 0.001
+        or abs(float(cancelled_payload.get("cardAccountBalance") or 0) - 1000) > 0.001
     ):
         raise RuntimeError(
             "Cancelar la nota liberó incorrectamente el cupo o no conservó sus egresos activos: "
@@ -1559,6 +1571,8 @@ def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
         "activeCashRefundAmount": 500,
         "activeCardRefundCount": 3,
         "activeCardRefundAmount": 750,
+        "cashAccountBalance": 1000,
+        "cardAccountBalance": 1000,
         "onHand": 10,
     }
     for field, expected in expected_release.items():
@@ -1596,6 +1610,8 @@ def verify_cumulative_refunds_persistence(context: Any, url: str) -> None:
         "activeCashRefundAmount": 500,
         "activeCardRefundCount": 3,
         "activeCardRefundAmount": 750,
+        "cashAccountBalance": 1000,
+        "cardAccountBalance": 1000,
         "onHand": 10,
     }
     for field, wanted in expected.items():
