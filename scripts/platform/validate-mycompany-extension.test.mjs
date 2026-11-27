@@ -1612,7 +1612,7 @@ test("los reintegros mixtos respetan el cupo acumulado y las confirmaciones conc
     nativeSalesFixtureSource.indexOf("rubrovaEnsureCIMixedOpeningBalances"),
     nativeSalesFixtureSource.indexOf("rubrovaEnsureCIMixedSale"),
   );
-  assert.doesNotMatch(openingBalanceSource, /Invoicing[.]paid|Retail[.]paymentMethod/);
+  assert.doesNotMatch(openingBalanceSource, /Invoicing[.]paid|Retail[.]paymentMethod\((?:openingCash|openingCard),/);
   assert.match(uiSmokeSource, /"cashAccountBalance": 1300/);
   assert.match(uiSmokeSource, /"cardAccountBalance": 1450/);
   assert.match(uiSmokeSource, /"cashAccountBalance": 1000/);

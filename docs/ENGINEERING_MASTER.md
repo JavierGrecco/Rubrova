@@ -645,6 +645,15 @@ No llamar “solucionado” a un error sin reproducir la solución en la prueba 
 - **Decisión:** modelar la cuenta de tarjeta como `BankAccount`, con banco y número de cuenta, conservando `CashAccount` para efectivo y la asignación financiera nativa del POS. La demostración repara además una cuenta POS ya creada.
 - **Protección:** el test de extensión verifica la asignación a tipos de pago, las constraints nativas, ambos fixtures y los atributos de BankAccount. Falta ejecutar nuevamente el runtime real para confirmar que la factura mixta y los pagos bancarios se crean antes de evaluar el guard acumulado.
 
+### 2026-11-27 — REP-033 — Acotar regresión estática del saldo inicial
+
+- **Evidencia:** workflow #493, SHA `48c61d2`. Windows pasó. El preflight informó 36/37 pruebas Node aprobadas y una regresión fallida por una aserción demasiado amplia; por dependencia quedaron omitidos build y smoke nativo.
+- **Causa:** el test prohibía toda aparición de `Retail.paymentMethod` en el bloque de saldos iniciales. La selección de la cuenta bancaria de tarjeta necesita consultar `Retail.paymentMethod('card')`, aunque el movimiento de apertura no se asocia a factura ni pago minorista aplicado.
+- **Corrección:** prohibir únicamente `Invoicing.paid` y la relación `Retail.paymentMethod(openingCash|openingCard, ...)`. La selección de la cuenta por método permanece permitida.
+- **Pendiente:** repetir preflight, build y smoke ARM64 para validar el uso real del tipo nativo `initial`, los saldos de ARS 1.000 y el mensaje del guard.
+
+- **Prevalidación del run #493 (SHA `48c61d2`, [workflow](https://github.com/JavierGrecco/Rubrova/actions/runs/45937691881)):** Windows pasó. La prevalidación ejecutó 37 pruebas Node y encontró un único fallo en el test nuevo: la aserción que debía impedir asociar el saldo inicial a una factura también prohibía la referencia al método de pago necesaria para seleccionar la cuenta bancaria. El código de la fixture no había asociado el saldo inicial a ninguna factura; fue una expectativa estática demasiado amplia. Build y runtime quedaron omitidos por la dependencia del preflight. Se acota la aserción para prohibir sólo `Retail.paymentMethod(openingCash|openingCard, ...)` e `Invoicing.paid`, manteniendo permitido seleccionar la cuenta con `Retail.paymentMethod('card')`. No es evidencia de un fallo del motor ni del guard acumulado.
+
 ### 2026-11-27 — REP-032 — Separar saldo de tesorería del límite de reintegro
 
 - **Evidencia:** workflow #492, SHA `7d08b88`. La factura mixta y el primer reintegro se guardaron correctamente: ARS 500 efectivo + ARS 750 tarjeta; reintegro de ARS 200 efectivo + ARS 300 tarjeta.
