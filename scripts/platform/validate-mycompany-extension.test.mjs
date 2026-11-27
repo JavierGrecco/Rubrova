@@ -608,6 +608,10 @@ test("el guard acumulado es visible para el POS sin crear un ciclo con MyCompany
   assert.ok(!retailReturnsSource.split("\n")[1].split("//")[0].includes("MyCompany"));
   assert.match(retailRefundLimitsSource, /^REQUIRE CreditNote, SessionPayment, IncomingPaymentDebt, RubrovaRetailReturns;/m);
   assert.ok(!retailRefundLimitsSource.split("\n")[1].split("//")[0].includes("MyCompany"));
+  assert.match(moduleSource, /^REQUIRE MyCompany, RubrovaRetailRefundLimits;$/m);
+  assert.match(moduleSource, /PROPERTY\(rubrovaOriginalPaidForReturn\(b, pm\)\)/);
+  assert.match(moduleSource, /PROPERTY\(rubrovaRefundRemaining\(b, pm\)\)/);
+  assert.doesNotMatch(moduleSource, /invoicePaid\s*\(b,\s*pm\)/);
   assert.match(sourcePatch, /RETURN_PAYMENT_REQUIRE_BEFORE = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone;"/);
   assert.match(sourcePatch, /RETURN_PAYMENT_REQUIRE_AFTER = "REQUIRE PosDashboardReturn, PosDashboardPayment, CreditNote, OutgoingPaymentDone, RubrovaRetailRefundLimits;"/);
   assert.ok(sourcePatch.includes("source = source.replace(RETURN_PAYMENT_REQUIRE_BEFORE, RETURN_PAYMENT_REQUIRE_AFTER, 1)"));
@@ -619,7 +623,7 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(entrypointSource, /^MODULE RubrovaCustom;/m);
   assert.match(entrypointSource, /^REQUIRE MyCompany, RubrovaPOSLocalization, RubrovaIntegrationResilience, RubrovaPaymentTerminals, RubrovaReplenishmentExport, RubrovaRetailReturns, RubrovaRetailRefundLimits;/m);
   assert.match(moduleSource, /^MODULE RubrovaPOSLocalization;/m);
-  assert.match(moduleSource, /^REQUIRE MyCompany;/m);
+  assert.match(moduleSource, /^REQUIRE MyCompany, RubrovaRetailRefundLimits;/m);
   assert.match(resilienceSource, /^MODULE RubrovaIntegrationResilience;/m);
   assert.match(resilienceSource, /^REQUIRE MyCompany;/m);
   assert.match(resilienceSource, /timeoutHttp\(\) <- timeoutMilliseconds/);
@@ -693,7 +697,7 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
     "rubrova.pos.title", "rubrova.pos.cash_register", "rubrova.pos.to_pay",
     "rubrova.pos.payment_title", "rubrova.pos.amount_due", "rubrova.pos.refunds",
     "rubrova.pos.return_payment_title", "rubrova.pos.previous_payment",
-    "rubrova.pos.refund_by_method", "rubrova.pos.confirm_return",
+    "rubrova.pos.refund_by_method", "rubrova.pos.refund_remaining", "rubrova.pos.confirm_return",
     "rubrova.payment.method_title",
     "Attributes", "Companies", "Partners", "Countries", "Configuration",
     "Images", "Operations", "Manufacturing", "Retail", "sales", "Settings",
@@ -1388,7 +1392,10 @@ test("el modelo de terminales se carga desde el punto de entrada y el lock", () 
   const customModule = lock.extension.modules.find((item) => item.name === "RubrovaCustom");
   assert.ok(customModule.requires.includes("RubrovaIntegrationResilience"));
   assert.ok(customModule.requires.includes("RubrovaPaymentTerminals"));
-  const retailReturnsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailReturns");
+  const localizationModule = lock.extension.modules.find((item) => item.name === "RubrovaPOSLocalization");
+   assert.ok(localizationModule, "La localización debe estar incluida en el lock reproducible.");
+   assert.deepEqual(localizationModule.requires, ["MyCompany", "RubrovaRetailRefundLimits"]);
+   const retailReturnsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailReturns");
   const retailRefundLimitsModule = lock.extension.modules.find((item) => item.name === "RubrovaRetailRefundLimits");
   assert.ok(retailReturnsModule, "El cálculo del remanente de devoluciones debe estar en el lock reproducible.");
   assert.deepEqual(retailReturnsModule.requires, ["CreditNote", "OutgoingPaymentDebt"]);

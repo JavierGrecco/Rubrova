@@ -59,7 +59,8 @@
         "path": "extensions/lsfusion/RubrovaPOSLocalization.lsf",
         "role": "localized captions for POS flows",
         "requires": [
-          "MyCompany"
+          "MyCompany",
+          "RubrovaRetailRefundLimits"
         ]
       },
       {

@@ -1,5 +1,5 @@
 MODULE RubrovaPOSLocalization;
-REQUIRE MyCompany;
+REQUIRE MyCompany, RubrovaRetailRefundLimits;
 
 NAMESPACE Retail;
 
@@ -89,7 +89,8 @@ DESIGN posPayment '{rubrova.pos.payment_title}' {
 DESIGN posPaymentReturn '{rubrova.pos.return_payment_title}' {
     PROPERTY(nameVendor(b)) { caption = '{rubrova.pos.customer}'; }
     PROPERTY(amount(b)) { caption = '{rubrova.pos.return_amount}'; }
-    PROPERTY(invoicePaid(b, pm)) { caption = '{rubrova.pos.previous_payment}'; }
+    PROPERTY(rubrovaOriginalPaidForReturn(b, pm)) { caption = '{rubrova.pos.previous_payment}'; }
+    PROPERTY(rubrovaRefundRemaining(b, pm)) { caption = '{rubrova.pos.refund_remaining}'; }
     PROPERTY(amount(pm)) { caption = '{rubrova.pos.refund_by_method}'; }
     PROPERTY(overFormOk) { caption = '{rubrova.pos.confirm_return}'; }
 }
