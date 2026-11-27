@@ -1343,7 +1343,17 @@ def _native_api_get_with_cookie_header(base_url: str, endpoint: str, cookie_head
     return payload
 
 
-def verify_cumulative_refunds(context: Any, url: str) -> None:
+def _cookie_header_for_api_context(context: Any, api_base: str) -> tuple[str, dict[str, str]]:
+    cookies = context.cookies(api_base)
+    values = {
+        str(cookie["name"]): str(cookie["value"])
+        for cookie in cookies
+        if cookie.get("name") and cookie.get("value") is not None
+    }
+    return "; ".join(f"{name}={value}" for name, value in values.items()), values
+
+
+def verify_cumulative_refunds(context: Any, url: str, browser: Any) -> None:
     """Exercise per-method cumulative caps, serializable competing applies and native cancellations."""
     api_base = application_endpoint_url(url, "exec/Sales.")
     initial = context.request.get(api_base + "rubrovaTestCumulativeRefundsApi", timeout=60_000)
@@ -1394,25 +1404,66 @@ def verify_cumulative_refunds(context: Any, url: str) -> None:
     print("UI_CUMULATIVE_REFUNDS_OVER_LIMIT_REJECTED=true")
     print("UI_CUMULATIVE_REFUNDS_INITIAL=" + json.dumps(initial_payload, ensure_ascii=False))
 
-    # Ambas peticiones compiten sobre el mismo cupo restante de tarjeta (ARS 450).
-    # Cada una pide ARS 300; sólo una puede confirmar bajo SERIALIZABLE.
-    cookies = context.cookies(api_base)
-    cookie_header = "; ".join(
-        f"{cookie['name']}={cookie['value']}"
-        for cookie in cookies
-        if cookie.get("name") and cookie.get("value") is not None
+    # Crear una segunda sesión web autenticada. Las dos peticiones usan cookies
+    # JSESSIONID distintas para competir desde sesiones del servidor independientes.
+    secondary_context = browser.new_context(
+        locale="es-AR",
+        viewport={"width": 1280, "height": 900},
+        color_scheme="light",
     )
-    if not cookie_header:
-        raise RuntimeError("No se encontraron cookies de sesión autenticada para la prueba concurrente.")
-    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="rubrova-refund") as executor:
-        future_a = executor.submit(
-            _native_api_get_with_cookie_header, api_base, "rubrovaTestCumulativeRefundRaceAApi", cookie_header
+    try:
+        secondary_page = secondary_context.new_page()
+        secondary_response = secondary_page.goto(
+            url, wait_until="domcontentloaded", timeout=60_000
         )
-        future_b = executor.submit(
-            _native_api_get_with_cookie_header, api_base, "rubrovaTestCumulativeRefundRaceBApi", cookie_header
+        if secondary_response is None or secondary_response.status >= 400:
+            raise RuntimeError(
+                "La segunda sesión de navegador no pudo abrir la aplicación para la prueba concurrente."
+            )
+        wait_for_application_server(secondary_page)
+        login_to_ephemeral_instance(secondary_page)
+
+        primary_cookie_header, primary_cookie_values = _cookie_header_for_api_context(context, api_base)
+        secondary_cookie_header, secondary_cookie_values = _cookie_header_for_api_context(
+            secondary_context, api_base
         )
-        race_a = future_a.result()
-        race_b = future_b.result()
+        session_cookie_names = {
+            name for name in primary_cookie_values
+            if "session" in name.lower() or "jsession" in name.lower()
+        } & {
+            name for name in secondary_cookie_values
+            if "session" in name.lower() or "jsession" in name.lower()
+        }
+        distinct_session_cookie = any(
+            primary_cookie_values[name] != secondary_cookie_values[name]
+            for name in session_cookie_names
+        )
+        if not primary_cookie_header or not secondary_cookie_header or not distinct_session_cookie:
+            raise RuntimeError(
+                "La prueba concurrente no obtuvo dos cookies de sesión independientes; "
+                f"nombres primarios={sorted(primary_cookie_values)}, "
+                f"nombres secundarios={sorted(secondary_cookie_values)}."
+            )
+
+        # Ambas peticiones compiten por el mismo cupo restante de tarjeta (ARS 450).
+        # Cada una pide ARS 300; sólo una puede confirmar bajo SERIALIZABLE.
+        with ThreadPoolExecutor(max_workers=2, thread_name_prefix="rubrova-refund") as executor:
+            future_a = executor.submit(
+                _native_api_get_with_cookie_header,
+                api_base,
+                "rubrovaTestCumulativeRefundRaceAApi",
+                primary_cookie_header,
+            )
+            future_b = executor.submit(
+                _native_api_get_with_cookie_header,
+                api_base,
+                "rubrovaTestCumulativeRefundRaceBApi",
+                secondary_cookie_header,
+            )
+            race_a = future_a.result()
+            race_b = future_b.result()
+    finally:
+        secondary_context.close()
 
     accepted = [race_a.get("accepted") is True, race_b.get("accepted") is True]
     if sum(accepted) != 1:
@@ -2262,7 +2313,7 @@ def inspect_page(url: str) -> int:
 
                 # Ejecuta el circuito de crédito nativo y comprueba reintegro y reingreso de stock.
                 verify_partial_returns(context, url)
-                verify_cumulative_refunds(context, url)
+                verify_cumulative_refunds(context, url, browser)
 
                 sale_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-sale" + screenshot_path.suffix
