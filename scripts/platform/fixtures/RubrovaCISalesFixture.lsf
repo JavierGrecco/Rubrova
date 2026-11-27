@@ -523,8 +523,15 @@ rubrovaTestCumulativeRefundsApi () {
                 rubrovaCreateCIMixedReturn(b, rubrovaCIMixedInvoice(), 0.6, 150, 600);
                 APPLY SERIALIZABLE;
                 IF canceled() THEN {
+                    // APPLY cancelado conserva los cambios pendientes de esta sesión.
+                    // El flujo de devolución crea OutgoingPayment; hay que retirarlos
+                    // antes de volver a aplicar el Bill como borrador.
                     rubrovaCIMixedOverLimitRejectedLocal() <- TRUE;
                     rubrovaCIMixedOverLimitMessageLocal() <- applyMessage();
+                    DELETE Invoicing.OutgoingPayment p WHERE SET(p IS Invoicing.OutgoingPayment);
+                    Invoicing.ready(b) <- NULL;
+                    APPLY;
+                    IF canceled() THEN RETURN;
                 }
             }
         }
