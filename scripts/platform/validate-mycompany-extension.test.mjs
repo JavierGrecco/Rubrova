@@ -676,7 +676,9 @@ test("la extensión superior requiere MyCompany sin copiar sus módulos", () => 
   assert.match(moduleSource, /name\(cashPaymentMethod\(\)\) <- 'Efectivo'/);
   assert.match(moduleSource, /name\(paymentMethod\('card'\)\) <- 'Tarjeta'/);
   assert.match(moduleSource, /DESIGN posPaymentReturn/);
-  assert.match(moduleSource, /PROPERTY\(invoicePaid\(b, pm\)\)/);
+  assert.match(moduleSource, /PROPERTY\(rubrovaOriginalPaidForReturn\(b, pm\)\)/);
+  assert.match(moduleSource, /PROPERTY\(rubrovaRefundRemaining\(b, pm\)\)/);
+  assert.doesNotMatch(moduleSource, /invoicePaid\s*\(b,\s*pm\)/);
   assert.match(moduleSource, /PROPERTY\(overFormOk\)/);
   assert.match(moduleSource, /PROPERTY\(nameVendor\(b\)\)/);
   assert.match(moduleSource, /PROPERTY\(amount\(b\)\).*rubrova\.pos\.return_amount/);
