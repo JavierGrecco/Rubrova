@@ -187,6 +187,10 @@ RETURN_PAYMENT_APPLY_BEFORE = """ready(b) <- TRUE;
 RETURN_PAYMENT_APPLY_AFTER = """ready(b) <- TRUE;
         APPLY SERIALIZABLE;
         IF canceled() THEN {"""
+# The rejected APPLY preserves the session buffer. Remove the pending native
+# OutgoingPayment objects, not IncomingPayment objects from the sale flow.
+RETURN_PAYMENT_CLEANUP_BEFORE = "DELETE IncomingPayment p WHERE SET(p IS IncomingPayment);"
+RETURN_PAYMENT_CLEANUP_AFTER = "DELETE OutgoingPayment p WHERE SET(p IS OutgoingPayment);"
 
 
 # Backport from upstream MyCompany v6 commit ade105058457bf9ab38aa4ab90b958bf73b5a7fb.
@@ -517,15 +521,39 @@ def apply_cumulative_refund_guard() -> bool:
         (RETURN_PAYMENT_FORM_BEFORE, RETURN_PAYMENT_FORM_AFTER),
         (RETURN_PAYMENT_DESIGN_BEFORE, RETURN_PAYMENT_DESIGN_AFTER),
         (RETURN_PAYMENT_APPLY_BEFORE, RETURN_PAYMENT_APPLY_AFTER),
+        (RETURN_PAYMENT_CLEANUP_BEFORE, RETURN_PAYMENT_CLEANUP_AFTER),
     )
     required = tuple(after for _, after in replacements)
-    if all(marker in source for marker in required):
+    if all(source.count(marker) == 1 for marker in required) and all(
+        source.count(before) == 0 for before, _ in replacements
+    ):
         if RETURN_PAYMENT_DESIGN_BEFORE in source:
             print("El diseño del diálogo conserva la propiedad retirada del formulario.", file=sys.stderr)
             return False
         if require_changed:
             target.write_text(source, encoding="utf-8")
-        print("Tope acumulado por medio, dependencia nativa y confirmación SERIALIZABLE ya aplicados al reintegro.")
+        print("Tope acumulado por medio, APPLY SERIALIZABLE y limpieza de egresos rechazados ya aplicados.")
+        return True
+
+    # Upgrade path: a previous Rubrova build already applied the four original
+    # changes. Upgrade only the cleanup statement, whose old version deleted
+    # IncomingPayment even though this dialog creates OutgoingPayment.
+    legacy_replacements = replacements[:-1]
+    legacy_guard_applied = all(
+        source.count(after) == 1 and source.count(before) == 0
+        for before, after in legacy_replacements
+    )
+    cleanup_before, cleanup_after = replacements[-1]
+    if legacy_guard_applied:
+        if source.count(cleanup_before) != 1 or source.count(cleanup_after) != 0:
+            print(
+                "La limpieza de pagos del diálogo POS no coincide con el estado previo esperado.",
+                file=sys.stderr,
+            )
+            return False
+        source = source.replace(cleanup_before, cleanup_after, 1)
+        target.write_text(source, encoding="utf-8")
+        print("Guard acumulado actualizado: el rechazo limpia OutgoingPayment nativos pendientes.")
         return True
 
     for before, after in replacements:
@@ -548,13 +576,13 @@ def apply_cumulative_refund_guard() -> bool:
     for before, after in replacements:
         source = source.replace(before, after, 1)
 
-    missing = [marker for marker in required if marker not in source]
+    missing = [marker for marker in required if source.count(marker) != 1]
     if missing:
         print("El parche de reintegros quedó incompleto: " + ", ".join(missing), file=sys.stderr)
         return False
 
     target.write_text(source, encoding="utf-8")
-    print("Reintegros POS protegidos: cupo por medio acumulado y APPLY SERIALIZABLE.")
+    print("Reintegros POS protegidos: cupo acumulado, APPLY SERIALIZABLE y limpieza de egresos fallidos.")
     return True
 
 def apply_tax_history_line_tracking() -> bool:
