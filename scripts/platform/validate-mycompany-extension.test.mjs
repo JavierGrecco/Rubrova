@@ -307,6 +307,11 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.ok(uiSmokeSource.includes("UI_POS_REGISTER_SELECTION_VERIFIED=true"));
   assert.match(uiSmokeSource, /select_pos_register\(page, pos_register_name\)/);
   assert.match(uiSmokeSource, /rubrovaTestPosSessionSelectionApi/);
+  const demoSessionGuard = uiSmokeSource.indexOf("if demo_mode:");
+  const serverSessionApi = uiSmokeSource.indexOf('session_api_base + "rubrovaTestPosSessionSelectionApi"');
+  assert.ok(demoSessionGuard >= 0 && serverSessionApi > demoSessionGuard, "La API exclusiva del fixture CI debe quedar detrás del guard de demo_mode.");
+  assert.match(uiSmokeSource, /UI_POS_SESSION_SELECTION_API=skipped_single_register_demo/);
+  assert.match(uiSmokeSource, /UI_POS_SESSION_SELECTION_CONFIRMED_BY_UI=true/);
   assert.match(uiSmokeSource, /UI_POS_SESSION_BOUND_TO_REQUESTED_REGISTER=true/);
   assert.match(nativeSalesFixtureSource, /rubrovaTestPosSessionSelectionApi/);
   assert.match(nativeSalesFixtureSource, /mainOpenSessions = rubrovaCIMainOpenSessionCount\(\)/);

@@ -2139,29 +2139,39 @@ def inspect_page(url: str) -> int:
                     raise RuntimeError("El botón 'Abrir turno' no estaba disponible para la prueba aislada.")
                 wait_for_session_open(page, timeout_seconds=45)
 
-                session_api_base = application_endpoint_url(url, "exec/Sales.")
-                session_selection_response = context.request.get(
-                    session_api_base + "rubrovaTestPosSessionSelectionApi", timeout=12_000
-                )
-                if session_selection_response.status != 200:
-                    raise RuntimeError(
-                        "La comprobación de selección de caja respondió HTTP "
-                        f"{session_selection_response.status}: {session_selection_response.text()[:1200]}"
+                demo_mode = os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() == "true"
+                if demo_mode:
+                    # The persistent local demo intentionally loads no CI-only API modules.
+                    # Its fixture has one POS; select_pos_register verified its exact unique
+                    # value and wait_for_session_open verified the native open-session action.
+                    print("UI_POS_SESSION_SELECTION_API=skipped_single_register_demo")
+                    print("UI_POS_SESSION_SELECTION_CONFIRMED_BY_UI=true")
+                else:
+                    # The CI sales fixture has two POS registers, so verify the selected
+                    # register against MyCompany's persisted session state before selling.
+                    session_api_base = application_endpoint_url(url, "exec/Sales.")
+                    session_selection_response = context.request.get(
+                        session_api_base + "rubrovaTestPosSessionSelectionApi", timeout=12_000
                     )
-                session_selection = session_selection_response.json()
-                if isinstance(session_selection, list):
-                    session_selection = session_selection[0] if session_selection else {}
-                print("UI_POS_SESSION_SELECTION=" + json.dumps(session_selection, ensure_ascii=False))
-                main_open_sessions = int(session_selection.get("mainOpenSessions") or 0)
-                refund_open_sessions = int(session_selection.get("refundOpenSessions") or 0)
-                if main_open_sessions != 1 or refund_open_sessions != 0:
-                    raise RuntimeError(
-                        "El turno se abrió en un puesto POS distinto del solicitado: "
-                        f"mainOpenSessions={main_open_sessions}, "
-                        f"refundOpenSessions={refund_open_sessions}, "
-                        f"detalle={json.dumps(session_selection, ensure_ascii=False)}"
-                    )
-                print("UI_POS_SESSION_BOUND_TO_REQUESTED_REGISTER=true")
+                    if session_selection_response.status != 200:
+                        raise RuntimeError(
+                            "La comprobación de selección de caja respondió HTTP "
+                            f"{session_selection_response.status}: {session_selection_response.text()[:1200]}"
+                        )
+                    session_selection = session_selection_response.json()
+                    if isinstance(session_selection, list):
+                        session_selection = session_selection[0] if session_selection else {}
+                    print("UI_POS_SESSION_SELECTION=" + json.dumps(session_selection, ensure_ascii=False))
+                    main_open_sessions = int(session_selection.get("mainOpenSessions") or 0)
+                    refund_open_sessions = int(session_selection.get("refundOpenSessions") or 0)
+                    if main_open_sessions != 1 or refund_open_sessions != 0:
+                        raise RuntimeError(
+                            "El turno se abrió en un puesto POS distinto del solicitado: "
+                            f"mainOpenSessions={main_open_sessions}, "
+                            f"refundOpenSessions={refund_open_sessions}, "
+                            f"detalle={json.dumps(session_selection, ensure_ascii=False)}"
+                        )
+                    print("UI_POS_SESSION_BOUND_TO_REQUESTED_REGISTER=true")
                 session_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-session" + screenshot_path.suffix
                 )
@@ -2202,7 +2212,6 @@ def inspect_page(url: str) -> int:
                             f"Falta el caption español en la búsqueda del POS: {required_caption!r}"
                         )
 
-                demo_mode = os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() == "true"
                 product_name = (
                     "Producto de demostración Rubrova"
                     if demo_mode
