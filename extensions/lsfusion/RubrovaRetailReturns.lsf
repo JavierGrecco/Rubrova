@@ -34,7 +34,7 @@ NAMESPACE Retail;
 // a la factura original. Cancelar la nota no cancela automáticamente su pago;
 // sólo deja de consumir cupo cuando el egreso nativo también está cancelado.
 rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
-    GROUP SUM Invoicing.paid(Invoicing.Bill previousBill, Invoicing.OutgoingPayment p)
+    GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
         IF Invoicing.in(originalInvoice, previousBill)
         AND paymentMethod(previousBill, p) = pm
         AND Invoicing.active(p);
@@ -42,14 +42,14 @@ rubrovaRefundedByMethod (Invoicing.Invoice originalInvoice, PaymentMethod pm) =
 // Egresos activos de notas anteriores de la misma factura. Se excluye la nota
 // actual para que el formulario pueda mostrar su cupo disponible mientras se edita.
 rubrovaRefundedBefore (Invoicing.Bill currentBill, PaymentMethod pm) =
-    GROUP SUM Invoicing.paid(Invoicing.Bill previousBill, Invoicing.OutgoingPayment p)
+    GROUP SUM Invoicing.amount(Invoicing.OutgoingPayment p)
         IF Invoicing.in(Invoicing.Invoice originalInvoice, currentBill)
         AND Invoicing.in(originalInvoice, previousBill)
         AND previousBill != currentBill
         AND paymentMethod(previousBill, p) = pm
         AND Invoicing.active(p);
 
-rubrovaRefundRemaining 'Remaining refund' (Invoicing.Bill currentBill, PaymentMethod pm) =
+rubrovaRefundRemaining 'Saldo reintegrable' (Invoicing.Bill currentBill, PaymentMethod pm) =
     max((OVERRIDE invoicePaid(currentBill, pm), 0.0) (-)
         (OVERRIDE rubrovaRefundedBefore(currentBill, pm), 0.0), 0.0);
 
