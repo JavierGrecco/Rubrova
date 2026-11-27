@@ -134,6 +134,24 @@ rubrovaCIIncomingPaymentCount() = GROUP SUM Invoicing.countIncomingPayment(Invoi
     IF Retail.session(i) AND Retail.pos(Retail.session(i)) = Retail.pos('rubrova-ci')
        AND Invoicing.countProductLines(i) > 0;
 
+rubrovaCIMainOpenSessionCount() = OVERRIDE (GROUP SUM 1
+    IF Retail.Session s
+       AND Retail.pos(s) = Retail.pos('rubrova-ci')
+       AND Retail.opened(s)), 0;
+
+rubrovaCIRefundOpenSessionCount() = OVERRIDE (GROUP SUM 1
+    IF Retail.Session s
+       AND Retail.pos(s) = Retail.pos('rubrova-ci-refund')
+       AND Retail.opened(s)), 0;
+
+rubrovaTestPosSessionSelectionApi () {
+    EXPORT JSON FROM
+        mainOpenSessions = rubrovaCIMainOpenSessionCount(),
+        refundOpenSessions = rubrovaCIRefundOpenSessionCount(),
+        mainSessionNumber = Retail.number(Retail.openedSession(Retail.pos('rubrova-ci'))),
+        refundSessionNumber = Retail.number(Retail.openedSession(Retail.pos('rubrova-ci-refund')));
+} @@api;
+
 rubrovaTestSalesReconciliationApi () {
     EXPORT JSON FROM
         salesCount = rubrovaCISaleCount(),

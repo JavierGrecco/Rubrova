@@ -364,10 +364,10 @@ def wait_until_form_loaded(
         searchable = str(last_state.get("searchable", ""))
         normalized = searchable.casefold()
         is_loading = "loading" in normalized or "cargando" in normalized
-        register_selected = register_name in searchable
+        register_available = register_name in searchable
         open_session_available = "Abrir turno" in searchable
 
-        if not is_loading and register_selected and open_session_available:
+        if not is_loading and register_available and open_session_available:
             stable_reads += 1
             if stable_reads >= 2:
                 print(f"{label}_POS_REGISTER_FOUND=true")
@@ -384,9 +384,32 @@ def wait_until_form_loaded(
     print(f"{label}_LAST_SELECTORS=" + json.dumps(last_state.get("selectors", []), ensure_ascii=False))
     print(f"{label}_LAST_ACTIONS=" + json.dumps(last_state.get("actions", []), ensure_ascii=False))
     raise RuntimeError(
-        f"{label} no mostró el puesto {register_name!r} y la acción 'Abrir turno' "
+        f"{label} no mostró el puesto disponible {register_name!r} y la acción 'Abrir turno' "
         f"en {timeout_seconds}s. Último texto visible: {last_text.strip()[:1600]}"
     )
+
+
+def select_pos_register(page: Any, register_name: str) -> None:
+    """Select the requested POS tab; presence in the selector is not proof of selection."""
+    register = page.get_by_text(register_name, exact=True)
+    register.wait_for(state="visible", timeout=10_000)
+    matches = [register.nth(index) for index in range(register.count())]
+    visible_matches = []
+    for match in matches:
+        try:
+            if match.is_visible():
+                visible_matches.append(match)
+        except PlaywrightError:
+            continue
+    if len(visible_matches) != 1:
+        raise RuntimeError(
+            f"Se esperaba un único selector visible para {register_name!r}; "
+            f"coincidencias={len(visible_matches)}"
+        )
+    visible_matches[0].click(timeout=10_000)
+    page.wait_for_timeout(250)
+    print("UI_POS_REGISTER_SELECTION_CLICKED=true")
+    print(f"UI_POS_REGISTER_SELECTION_NAME={register_name}")
 
 
 def click_exact_action(page: Any, label: str) -> bool:
@@ -2027,6 +2050,8 @@ def inspect_page(url: str) -> int:
                 if not pos_text.strip():
                     raise RuntimeError("La pantalla POS se abrió, pero no mostró contenido.")
 
+                select_pos_register(page, pos_register_name)
+
                 markdown_requests = browser_diagnostics["markdown_requests"]
                 print(f"UI_MARKDOWN_EXTERNAL_REQUESTS_DURING_POS={len(markdown_requests)}")
                 if markdown_requests:
@@ -2040,6 +2065,30 @@ def inspect_page(url: str) -> int:
                 if not click_exact_action(page, "Abrir turno"):
                     raise RuntimeError("El botón 'Abrir turno' no estaba disponible para la prueba aislada.")
                 wait_for_session_open(page, timeout_seconds=45)
+
+                session_api_base = application_endpoint_url(url, "exec/Sales.")
+                session_selection_response = context.request.get(
+                    session_api_base + "rubrovaTestPosSessionSelectionApi", timeout=12_000
+                )
+                if session_selection_response.status != 200:
+                    raise RuntimeError(
+                        "La comprobación de selección de caja respondió HTTP "
+                        f"{session_selection_response.status}: {session_selection_response.text()[:1200]}"
+                    )
+                session_selection = session_selection_response.json()
+                if isinstance(session_selection, list):
+                    session_selection = session_selection[0] if session_selection else {}
+                print("UI_POS_SESSION_SELECTION=" + json.dumps(session_selection, ensure_ascii=False))
+                main_open_sessions = int(session_selection.get("mainOpenSessions") or 0)
+                refund_open_sessions = int(session_selection.get("refundOpenSessions") or 0)
+                if main_open_sessions != 1 or refund_open_sessions != 0:
+                    raise RuntimeError(
+                        "El turno se abrió en un puesto POS distinto del solicitado: "
+                        f"mainOpenSessions={main_open_sessions}, "
+                        f"refundOpenSessions={refund_open_sessions}, "
+                        f"detalle={json.dumps(session_selection, ensure_ascii=False)}"
+                    )
+                print("UI_POS_SESSION_BOUND_TO_REQUESTED_REGISTER=true")
                 session_screenshot = screenshot_path.with_name(
                     screenshot_path.stem + "-session" + screenshot_path.suffix
                 )

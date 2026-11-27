@@ -294,6 +294,13 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /register_name: str = "Caja de prueba Rubrova"/);
   assert.match(uiSmokeSource, /register_selected = register_name in searchable/);
   assert.match(uiSmokeSource, /register_name=pos_register_name/);
+  assert.match(uiSmokeSource, /def select_pos_register\(page: Any, register_name: str\)/);
+  assert.match(uiSmokeSource, /select_pos_register\(page, pos_register_name\)/);
+  assert.match(uiSmokeSource, /rubrovaTestPosSessionSelectionApi/);
+  assert.match(uiSmokeSource, /UI_POS_SESSION_BOUND_TO_REQUESTED_REGISTER=true/);
+  assert.match(nativeSalesFixtureSource, /rubrovaTestPosSessionSelectionApi/);
+  assert.match(nativeSalesFixtureSource, /mainOpenSessions = rubrovaCIMainOpenSessionCount\(\)/);
+  assert.match(nativeSalesFixtureSource, /refundOpenSessions = rubrovaCIRefundOpenSessionCount\(\)/);
   assert.match(uiSmokeSource, /RUBROVA_UI_POS_REGISTER_NAME/);
   assert.match(uiSmokeSource, /wait_until_form_loaded\([\s\S]*?"UI_POS_SCREEN",[\s\S]*?register_name=pos_register_name,[\s\S]*?\)/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=true/);
@@ -1087,27 +1094,27 @@ test("el POS separa la cuenta central del cajón y aísla las cuentas del fixtur
   assert.ok(uiSmokeSource.includes("UI_POS_CASH_ACCOUNTS_DISTINCT=true"));
   assert.ok(runtimeWorkflowSource.includes("CONSTRAINT account(Pos p) = cashAccount(p)"));
   const bankScopeStart = nativeRetailFixtureSource.indexOf("NEW bankCI = Bank {");
+  const cardAccountScopeStart = nativeRetailFixtureSource.indexOf("NEW cardAccountCI = BankAccount {");
+  const cashRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW cashRegisterCI = Pos {");
   const refundCentralScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCentralAccountCI = CashAccount {");
   const refundCashScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCashAccountCI = CashAccount {");
   const refundCardScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCardAccountCI = BankAccount {");
   const refundRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW refundCashRegisterCI = Pos {");
-  const cardAccountScopeStart = nativeRetailFixtureSource.indexOf("NEW cardAccountCI = BankAccount {");
-  const cashRegisterScopeStart = nativeRetailFixtureSource.indexOf("NEW cashRegisterCI = Pos {");
   assert.ok(
-    bankScopeStart >= 0 && refundCentralScopeStart > bankScopeStart &&
+    bankScopeStart >= 0 && cardAccountScopeStart > bankScopeStart &&
+    cashRegisterScopeStart > cardAccountScopeStart && refundCentralScopeStart > cashRegisterScopeStart &&
     refundCashScopeStart > refundCentralScopeStart && refundCardScopeStart > refundCashScopeStart &&
-    refundRegisterScopeStart > refundCardScopeStart && cardAccountScopeStart > refundRegisterScopeStart &&
-    cashRegisterScopeStart > cardAccountScopeStart,
-    "Las cuentas de reintegro deben encadenarse antes de inicializar la caja principal independiente."
+    refundRegisterScopeStart > refundCardScopeStart,
+    "La caja principal debe crearse primero y la cadena de reintegros después, manteniendo los ámbitos anidados."
   );
   const bankBodyDepth = braceDepthAt(nativeRetailFixtureSource, bankScopeStart) + 1;
   for (const [declaration, expectedDepth] of [
+    ["NEW cardAccountCI = BankAccount {", bankBodyDepth],
+    ["NEW cashRegisterCI = Pos {", bankBodyDepth + 1],
     ["NEW refundCentralAccountCI = CashAccount {", bankBodyDepth],
     ["NEW refundCashAccountCI = CashAccount {", bankBodyDepth + 1],
     ["NEW refundCardAccountCI = BankAccount {", bankBodyDepth + 2],
-    ["NEW refundCashRegisterCI = Pos {", bankBodyDepth + 3],
-    ["NEW cardAccountCI = BankAccount {", bankBodyDepth],
-    ["NEW cashRegisterCI = Pos {", bankBodyDepth + 1]
+    ["NEW refundCashRegisterCI = Pos {", bankBodyDepth + 3]
   ]) {
     const declarationStart = nativeRetailFixtureSource.indexOf(declaration);
     assert.ok(declarationStart >= 0, "Falta " + declaration);

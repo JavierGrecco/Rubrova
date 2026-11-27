@@ -30,6 +30,26 @@ loadDefaultData () + {
                     id(bankCI) <- 'rubrova-ci-bank';
                     name(bankCI) <- 'Banco de prueba CI';
 
+                    // Crear primero el puesto principal: MyCompany presenta los POS en orden de creación.
+                    // La prueba también selecciona el nombre exacto antes de abrir el turno.
+                    NEW cardAccountCI = BankAccount {
+                        holder(cardAccountCI) <- defaultCompany();
+                        currency(cardAccountCI) <- defaultCurrency();
+                        number(cardAccountCI) <- '000000000001';
+                        bank(cardAccountCI) <- bankCI;
+
+                        NEW cashRegisterCI = Pos {
+                            id(cashRegisterCI) <- 'rubrova-ci';
+                            name(cashRegisterCI) <- 'Caja de prueba Rubrova';
+                            company(cashRegisterCI) <- defaultCompany();
+                            // MyCompany exige un tipo de comprobante para habilitar el puesto POS.
+                            invoiceType(cashRegisterCI) <- invoiceType('retail');
+                            account(cashRegisterCI) <- centralAccountCI;
+                            account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
+                            account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
+                        }
+                    }
+
                     // El escenario de reintegros necesita saldos iniciales propios.
                     // No debe compartir cuentas con el cajón del turno POS principal.
                     NEW refundCentralAccountCI = CashAccount {
@@ -58,24 +78,6 @@ loadDefaultData () + {
                                     account(refundCashRegisterCI, PaymentMethod pm) <- refundCardAccountCI WHERE id(pm) = 'card';
                                 }
                             }
-                        }
-                    }
-
-                    NEW cardAccountCI = BankAccount {
-                        holder(cardAccountCI) <- defaultCompany();
-                        currency(cardAccountCI) <- defaultCurrency();
-                        number(cardAccountCI) <- '000000000001';
-                        bank(cardAccountCI) <- bankCI;
-
-                        NEW cashRegisterCI = Pos {
-                            id(cashRegisterCI) <- 'rubrova-ci';
-                            name(cashRegisterCI) <- 'Caja de prueba Rubrova';
-                            company(cashRegisterCI) <- defaultCompany();
-                            // MyCompany exige un tipo de comprobante para habilitar el puesto POS.
-                            invoiceType(cashRegisterCI) <- invoiceType('retail');
-                            account(cashRegisterCI) <- centralAccountCI;
-                            account(cashRegisterCI, PaymentMethod pm) <- cashAccountCI WHERE pm = cashPaymentMethod();
-                            account(cashRegisterCI, PaymentMethod pm) <- cardAccountCI WHERE id(pm) = 'card';
                         }
                     }
                 }
