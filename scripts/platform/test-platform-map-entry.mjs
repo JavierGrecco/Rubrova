@@ -169,6 +169,7 @@ test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos his
     "stockout-censored-demand.json",
     "rubrova-hero.svg",
     "directorio de integración por módulo",
+    "doce fichas individuales disponibles",
     "856 módulos",
     "856 módulos del snapshot",
     "Ficha InvLedger",
