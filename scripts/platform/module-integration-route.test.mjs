@@ -169,7 +169,7 @@ test("la plantilla de ficha conserva los controles mínimos de integración y ac
     "Ledgers y efectos",
     "Pruebas y evidencia",
     "Decisión reuse-first",
-    "No convertir",
+    "No inferir",
   ]) {
     assert.ok(template.toLowerCase().includes(marker.toLowerCase()), `La ficha no cubre: ${marker}`);
   }
