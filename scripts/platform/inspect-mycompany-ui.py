@@ -1829,16 +1829,50 @@ def verify_native_return_draft(
     sales_grid = page.locator('[lsfusion-container="GRID(si)"]')
     sales_grid.wait_for(state="visible", timeout=15_000)
     sales_rows = sales_grid.locator("tr.data-grid-row:not(.data-grid-column-row)")
-    if sales_rows.count() != 1:
+    selected_rows = sales_grid.locator("tr.data-grid-row.table-active")
+
+    # GRID(si) can become visible before its asynchronous row refresh finishes.
+    # Wait for the unique sale and its selected state together; never read a
+    # changing locator twice while composing an error message.
+    try:
+        page.wait_for_function(
+            """() => {
+                const grid = document.querySelector('[lsfusion-container="GRID(si)"]');
+                if (!grid || !grid.getClientRects().length) return false;
+                const rows = grid.querySelectorAll(
+                    "tr.data-grid-row:not(.data-grid-column-row)"
+                );
+                const selectedRows = grid.querySelectorAll(
+                    "tr.data-grid-row.table-active"
+                );
+                return rows.length === 1 && selectedRows.length === 1;
+            }""",
+            timeout=15_000,
+        )
+    except PlaywrightTimeoutError as error:
+        visible_snapshot(page, "UI_RETURN_DRAFT_SALES_ROW_COUNT")
+        observed_rows = sales_rows.count()
+        observed_selected_rows = selected_rows.count()
+        raise RuntimeError(
+            "La grilla nativa del turno no se estabilizó con exactamente una venta "
+            "seleccionada: "
+            f"filas={observed_rows}, seleccionadas={observed_selected_rows}."
+        ) from error
+
+    sales_row_count = sales_rows.count()
+    if sales_row_count != 1:
         visible_snapshot(page, "UI_RETURN_DRAFT_SALES_ROW_COUNT")
         raise RuntimeError(
             "La prueba del botón Devolver requiere exactamente una venta, "
-            f"encontró {sales_rows.count()}."
+            f"encontró {sales_row_count}."
         )
-    selected_rows = sales_grid.locator("tr.data-grid-row.table-active")
-    if selected_rows.count() != 1:
+    selected_row_count = selected_rows.count()
+    if selected_row_count != 1:
         visible_snapshot(page, "UI_RETURN_DRAFT_SALE_NOT_SELECTED")
-        raise RuntimeError("La venta no está seleccionada en la grilla nativa del turno.")
+        raise RuntimeError(
+            "La prueba del botón Devolver requiere una venta seleccionada, "
+            f"encontró {selected_row_count}."
+        )
 
     return_action = page.locator(
         'button[lsfusion-container="PROPERTY(return(s,si))"]'
