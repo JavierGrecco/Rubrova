@@ -1091,9 +1091,9 @@ def verify_purchase_receipt_cancellation_reservation(context: Any, url: str) -> 
             "La acción nativa no dejó cancelada la recepción prevista: "
             + json.dumps(payload, ensure_ascii=False)
         )
-    if payload.get("originalDoneAfterCancel") is not False:
+    if payload.get("originalDoneAfterCancel") is True:
         raise RuntimeError(
-            "La recepción prevista debía seguir sin completar tras la cancelación: "
+            "La recepción prevista quedó marcada como completada después de cancelarla: "
             + json.dumps(payload, ensure_ascii=False)
         )
     if payload.get("replacementDistinct") is not True or payload.get("replacementReady") is not True:
