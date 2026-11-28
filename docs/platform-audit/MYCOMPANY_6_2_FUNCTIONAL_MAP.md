@@ -153,6 +153,51 @@ Regla de deuda documentada: el saldo depende del importe del documento y de los 
 
 La documentación distingue entre devolución y corrección de un documento existente. También describe facturas de corrección vinculadas a la original y cadenas de correcciones. Es necesario verificar la semántica en el código y en escenarios de prueba antes de mapearla a comprobantes o conceptos fiscales argentinos.
 
+#### Reglas confirmadas en la lectura de fuentes LSF
+
+**Separación de factura, deuda y pago**
+
+- \`Invoice\` se incorpora a la clase abstracta \`OutgoingDebt\`; \`Bill\` se incorpora a \`IncomingDebt\`. Así, las facturas de venta representan importes que el cliente debe pagar y las facturas de proveedor importes que la empresa debe pagar.
+- \`Debt\` materializa socio, empresa, contrato, fecha, vencimiento, moneda, importe de origen, importe convertido y saldo. La conversión usa el tipo de cambio correspondiente a la fecha del documento o de referencia configurada.
+- La imputación se registra como relación entre una deuda entrante y una saliente. Sólo permite vincular documentos activos del mismo socio y de la misma empresa, salvo excepciones explícitas mediante \`skipMatched\`.
+- La plataforma limita la imputación al menor saldo disponible y tiene restricciones que impiden dejar un importe pagado mayor que la deuda, salvo que un módulo concreto habilite una excepción.
+- Una cobranza entrante puede imputarse a una factura de venta; un pago saliente puede imputarse a una factura de proveedor. La pantalla ofrece documentos ya imputados y documentos disponibles.
+- Hay una regla de búsqueda automática: cuando cambia la referencia, el socio o la condición activa de un pago, busca un documento cuyo número aparezca en la referencia y lo imputa si cumple las reglas de correspondencia.
+- \`Payment\` calcula los saldos de las cuentas a partir de los pagos activos asociados a la cuenta de la empresa. Si la cuenta no permite saldo negativo, una restricción impide que el saldo baje de cero.
+- Los módulos de cobranza y pago tienen cuentas separadas de socio y empresa. El titular de cada cuenta debe coincidir con el socio/empresa del documento; las restricciones por tipo de pago determinan si admite banco, caja o transferencia interna entre empresas.
+
+**La marca “Pagada” no es un asiento de pago**
+
+Los módulos \`InvoiceDone\` y \`BillDone\` definen una marca booleana de estado llamada “Pagada”. La acción manual \`markAsDone\` aplica cambios y luego marca el documento como pagado en una sesión nueva. Por separado, los módulos \`InvoiceDebt\` y \`BillDebt\` marcan automáticamente ese estado cuando el importe de la deuda queda igualado con el importe imputado, y lo revierten si esa condición deja de cumplirse.
+
+Por eso no se debe tratar el campo de estado como reemplazo de una cobranza/pago ni como evidencia contable de que el dinero se movió. Hay que verificar qué permisos tiene la acción manual, en qué pantallas se expone y cómo se concilia con deuda, pagos y ledgers.
+
+**Impuestos por línea**
+
+- \`Tax\` define el nombre, el valor porcentual y un grupo obligatorio. El modelo permite agrupar impuestos y no permite más de uno del mismo grupo sobre una misma línea.
+- \`TaxItem\` mantiene valores predeterminados de impuestos de venta y compra en las categorías; al cambiar la categoría de un artículo se copian los impuestos predeterminados aplicables al artículo.
+- \`MetaTax\` calcula el importe sin impuestos a partir de cantidad por precio; calcula los importes de impuestos por línea; permite indicar si el precio incluye el impuesto; consolida neto, impuestos y total a nivel documento y ofrece una vista de desglose por impuesto.
+- Hay importación/exportación Excel de asignaciones de impuestos a artículos. Las macros de factura y factura de proveedor insertan o ajustan impuestos según el tipo de documento y los datos del artículo/proveedor.
+- Los tipos de factura y de factura de proveedor configuran numerador, cliente/proveedor por defecto y si el precio incluye impuestos. El tipo también puede aportar la moneda por defecto.
+
+**Fuentes LSF leídas (no equivale a runtime probado)**
+
+| Fuente | Qué se verificó en la lectura |
+|---|---|
+| \`invoicing/invoices/Invoice.lsf\` | Clases \`Invoice\` y \`InvoiceLine\`, socio-cliente, empresa, cuentas, vencimiento, artículos vendibles, formularios y restricciones |
+| \`invoicing/bills/Bill.lsf\` | Clases \`Bill\` y \`BillLine\`, proveedor, empresa, cuentas, vencimiento, artículos comprables y restricciones |
+| \`invoicing/ledgers/Debt.lsf\` | Modelo de deuda entrante/saliente, conversión monetaria, imputación, saldo, reglas anti-sobreimputación y formulario |
+| \`invoicing/ledgers/Payment.lsf\` | Modelo común de pagos, cuentas de empresa, balance y restricción de saldo negativo |
+| \`invoicing/invoices/InvoiceDebt.lsf\` y \`invoicing/bills/BillDebt.lsf\` | Asociación de factura/factura de proveedor con deuda, pantallas de imputación y marca automática de pagado |
+| \`invoicing/payments/incoming/IncomingPaymentDebt.lsf\` y \`invoicing/payments/outgoing/OutgoingPaymentDebt.lsf\` | Imputación automática por coincidencia de referencia/número y últimas fechas de pago |
+| \`invoicing/payments/incoming/IncomingPayment.lsf\` y \`invoicing/payments/outgoing/OutgoingPayment.lsf\` | Cuentas de socio/empresa, tipo de cuenta permitido y validación de titular |
+| \`invoicing/taxes/Tax.lsf\`, \`TaxGroup.lsf\`, \`TaxItem.lsf\`, \`MetaTax.lsf\` | Grupos, porcentajes, valores por defecto por categoría, cálculo por línea y consolidación documental |
+| \`invoicing/invoices/InvoiceCurrency.lsf\` y \`invoicing/bills/BillCurrency.lsf\` | Moneda por tipo/documento, fecha de cotización y conversión de importes |
+| \`invoicing/invoices/InvoiceDone.lsf\` y \`invoicing/bills/BillDone.lsf\` | Estado “Pagada” y acción manual separada |
+| \`invoicing/invoices/InvoiceType.lsf\` y \`invoicing/bills/BillType.lsf\` | Numeradores, defaults de socio, precio con impuestos incluidos y configuración por tipo |
+
+**Siguiente verificación requerida:** reconstruir los escenarios con facturas en moneda extranjera, distintas fechas/tipos de cambio, pagos parciales, pagos a cuenta, varias imputaciones, cancelaciones, anticipos, devoluciones, notas de crédito/débito, saldos negativos, monedas no coincidentes, múltiples empresas y cambios posteriores a una imputación. Se deben conciliar saldo por documento, saldo por socio, saldo por cuenta y reportes.
+
 **Advertencia Argentina:** los grupos y tasas de impuesto de ejemplo en la documentación son genéricos. No prueban integración con ARCA, cumplimiento de factura electrónica argentina, CAE, puntos de venta, tipos de comprobante, notas de crédito/débito argentinas, regímenes de percepción/retención ni reglas provinciales. Todo eso debe revisarse de manera independiente.
 
 **Fuentes de documentación:** \`invoicing/invoicing.md\`, \`invoices.md\`, \`bills.md\`, \`refunds-and-corrections.md\`, \`debt-and-calendar.md\`, \`taxes.md\`, \`settings.md\`, \`incoming-payments.md\`, \`outgoing-payments.md\`.
