@@ -62,6 +62,8 @@ const mandatoryToolPaths = [
   "scripts/platform/audit-lsf-source.mjs",
   "scripts/platform/module-integration-route.mjs",
   "scripts/platform/module-integration-route.test.mjs",
+  "scripts/platform/module-integration-route.mjs",
+  "scripts/platform/module-integration-route.test.mjs",
   "scripts/platform/audit-lsf-source.test.mjs",
   "scripts/platform/audit-source-docs.mjs",
   "scripts/platform/audit-source-docs.test.mjs",
@@ -178,6 +180,8 @@ test("README, AGENTS, workflow y plantilla mantienen visible la obligación de c
   assert.ok(docWorkflow.includes("scripts/platform/module-integration-route.mjs"));
   assert.ok(docWorkflow.includes("scripts/platform/audit-source-docs.mjs"));
   assert.ok(readme.includes("docs/platform-audit/README.md"));
+  assert.ok(readme.includes("docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md"));
+  assert.doesNotMatch(readme, /desarrollo asistido por IA|IA generativa|uso de IA/i);
   assert.ok(agents.includes("docs/platform-audit/README.md"));
   assert.ok(agents.includes("MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md"));
   assert.ok(agents.includes("module-integration-route.mjs"));
@@ -185,5 +189,8 @@ test("README, AGENTS, workflow y plantilla mantienen visible la obligación de c
   assert.ok(workflow.includes("Puerta obligatoria de mapeo"));
   assert.ok(workflow.includes("module-integration-route.mjs"));
   assert.ok(workflow.includes("directorio de integración por módulo"));
+  const preflight = read("scripts/platform/local-preflight.sh");
+  assert.ok(preflight.includes("module-integration-route.test.mjs"));
+  assert.ok(preflight.includes("--module InvLedger"));
   assert.ok(template.includes("Revisión obligatoria del mapeo"));
 });
