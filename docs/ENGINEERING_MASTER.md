@@ -1860,6 +1860,42 @@ La distribución inicial de los 96 módulos regionales es Bulgaria (7), Polonia 
 
 En lsFusion también hay módulos de soporte del servidor fuera de la composición actual: herramientas de documentos, Excel, impresión, imágenes, OpenCV, SQL, mensajería, RabbitMQ, WebSocket, gráficos y componentes de interfaz. Se deben identificar como capacidades opcionales y describir su configuración, dependencias y condiciones de uso; no se deben presentar como activadas en Rubrova mientras no se incorporen al grafo y se prueben.
 
+#### Los 16 módulos MyCompany no regionales fuera del cierre
+
+La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.
+
+| Módulo | Capacidad que se observa en la fuente | Qué falta verificar |
+|---|---|---|
+| \`ReceiptPutAwayLot\` | Asigna cantidades de recepción a lotes durante la ubicación/put-away y suma el movimiento al ledger de inventario por lote | Secuencia de ubicación, edición, reversión, permisos y consistencia con la recepción |
+| \`ShipmentPickingLot\` | Registra el picking por artículo, depósito y lote; alimenta los datos de picking y el ledger de despacho por lote | Reserva, asignación simultánea, faltantes, sustituciones y cierre del despacho |
+| \`BillCorrection\` | Vincula una factura de proveedor de corrección con la original, mantiene una secuencia, calcula diferencias e incorpora reversión | Ciclo de vida, impuestos, documentos originales, notas de crédito y conciliación con deuda |
+| \`BillCorrectionDebt\` | Integra la corrección de compra al modelo de deuda saliente y actualiza el importe pagado asociado | Efectos en deuda, pagos parciales, monedas, cancelación y reportes |
+| \`InvoiceAdvance\` | Marca tipos y facturas como anticipos, permite imputarlos total o parcialmente a facturas del mismo cliente y empresa y calcula saldos | Anticipos aplicados, remanentes, cancelación, impuestos, monedas y reportes |
+| \`InvoicePack\` | Agrega a las facturas macros de búsqueda y selección de productos embalados y códigos de barras | Configuración de paquetes, unidades, cantidades y efecto en stock |
+| \`InvoiceCorrection\` | Vincula facturas de corrección con la original, valida cliente y empresa, ordena correcciones y calcula diferencias | Notas de crédito/débito, impuestos, cancelación, emisión y conciliación fiscal |
+| \`InvoiceCorrectionDebt\` | Integra las correcciones de venta al modelo de deuda entrante | Efecto real sobre saldos, pagos, cobranzas y reportes |
+| \`InvoicePrintDebt\` | Incorpora importes cobrados y pendientes a la impresión de factura | Plantillas, monedas, anticipos, pagos imputados y formatos impresos |
+| \`ProductGtin\` | Agrega GTIN de hasta 14 caracteres al producto y permite consultarlo desde formularios y listados | Unicidad, múltiples códigos por producto, validación del dígito de control e interoperabilidad |
+| \`CashRegister\` | Define un controlador de caja por POS con host, puerto, usuario y contraseña | Driver concreto, almacenamiento del secreto, permisos, cifrado, protocolo, reconexión y hardware compatible |
+| \`CashRegisterFiscal\` | Define hooks abstractos para apertura/cierre fiscal, ingreso/egreso de efectivo, comprobantes de venta/devolución, reimpresión y reporte X | No es por sí solo un controlador fiscal: faltan driver concreto, homologación, contingencia, idempotencia y pruebas por proveedor |
+| \`PosDashboardReturnShipment\` | Extiende la pantalla POS de devolución para mostrar la ubicación vinculada al ingreso de mercadería | Confirmar si sólo informa el depósito o si genera recepción/movimiento; revisar conciliación y permisos |
+| \`SalesOrderPrintDebt\` | Agrega a la impresión de pedido datos bancarios de la empresa y montos pagados/pendientes | Datos bancarios por empresa/moneda, autorización de impresión y formatos |
+| \`Audio\` | Ofrece reproducción de audio remoto/local mediante un componente web propio | Compatibilidad de navegador, permisos, formatos, seguridad y uso real en pantallas |
+| \`Crypto\` | Usa \`pgcrypto\` y acciones Java internas para RSA-OAEP, generación CSR, firma XAdES, claves AES/IV, AES-CBC-PKCS7 y hash SHA-256 en Base64 | Algoritmos, modos y parámetros, gestión de claves, certificados, rotación, permisos, dependencias y casos de uso; no asumir que implementa facturación ARCA |
+
+**Prioridad de revisión:** \`CashRegister\`/\`CashRegisterFiscal\`, \`Crypto\`, \`InvoiceAdvance\` y las correcciones de facturas tienen impacto directo en integraciones, fiscalidad, caja y contabilidad. No se deben implementar sustitutos sin terminar primero el análisis de estos módulos y sus dependencias.
+
+#### Módulos LSF de plataforma fuera del cierre actual
+
+El catálogo identifica 25 módulos del servidor lsFusion que no entran en el cierre de \`RubrovaCustom\`. Son candidatos de análisis, no capacidades activas de Rubrova:
+
+- **Datos y utilidades:** \`Com\`, \`Document\`, \`Excel\`, \`Historizable\`, \`I18n\`, \`Image\`, \`OpenCV\`, \`Printer\`, \`ProcessUtils\`, \`SQLUtils\`, \`Schedule\`, \`UserEvents\`, \`WebSocket\`, \`Word\`.
+- **Rendimiento e infraestructura:** \`Profiler\`, \`RabbitMQ\`.
+- **Componentes visuales:** \`Carousel\`, \`Chart\`, \`JKanban\`.
+- **Mensajería:** \`Messenger\`, \`Skype\`, \`Slack\`, \`Telegram\`, \`Viber\`, \`Whatsapp\`.
+
+La clasificación anterior surge del nombre de módulo y su ubicación. Cada módulo todavía necesita lectura de fuente, dependencias, clases Java asociadas, configuración, permisos, contratos de integración y una prueba cuando su uso sea pertinente. Que no esté en \`REQUIRE\` no significa que la funcionalidad no exista en otras APIs o librerías de la plataforma.
+
 #### Catálogo estructural automático
 
 El script [audit-lsf-source.mjs](../scripts/platform/audit-lsf-source.mjs) genera un índice de los archivos LSF de MyCompany, la plataforma y las extensiones Rubrova; calcula el cierre de `RubrovaCustom`, diferencia módulos cargados de los que quedan fuera de esa composición y registra declaraciones estructurales. También compara los conteos con los locks de origen y cuenta por separado archivos Markdown e imágenes de la documentación. La prevalidación ejecuta sus pruebas y GitHub Actions conserva el JSON como artefacto.
@@ -3772,4 +3808,4 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - Se establece `RubrovaCustom` como raíz de la aplicación para calcular el cierre de dependencias. El cálculo separado desde `MyCompany` sigue siendo útil para reconocer las dependencias propias de la solución y los módulos opcionales.
 - Se incorporan al catálogo los siete módulos LSF propios de Rubrova. El grafo debe resolver el requisito `RubrovaRetailRefundLimits` declarado desde la composición real y no presentarlo como una dependencia externa faltante.
 - Los 112 módulos MyCompany fuera del cierre base requieren clasificación: 96 regionales y 16 no regionales. Esta condición es una lista de revisión, no una decisión de descartarlos.
-- **Estado:** relevamiento ABIerto; el nuevo informe debe validar el cierre desde `RubrovaCustom` y los conteos de las dos fuentes fijadas.
+- **Estado:** relevamiento ABIERTA; el nuevo informe debe validar el cierre desde `RubrovaCustom` y los conteos de las dos fuentes fijadas.
