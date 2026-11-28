@@ -206,11 +206,14 @@ export function resolveModuleIntegrationRoute(catalog, query) {
 
   const allModules = flattenModules(catalog);
   const normalized = value.toLowerCase();
-  const exact = allModules.filter(module =>
-    String(module.moduleName || "").toLowerCase() === normalized ||
-    path.basename(module.path || "", ".lsf").toLowerCase() === normalized ||
-    String(module.path || "").toLowerCase() === normalized
-  );
+  const exact = allModules.filter(module => {
+    const basename = path.basename(module.path || "");
+    const basenameWithoutExtension = path.basename(module.path || "", ".lsf");
+    return String(module.moduleName || "").toLowerCase() === normalized ||
+      basename.toLowerCase() === normalized ||
+      basenameWithoutExtension.toLowerCase() === normalized ||
+      String(module.path || "").toLowerCase() === normalized;
+  });
 
   if (exact.length === 0) {
     const suggestions = allModules
