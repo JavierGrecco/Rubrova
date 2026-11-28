@@ -72,6 +72,48 @@ El mapeo no es una investigación opcional ni conocimiento que dependa de quien 
 
 El relevamiento sigue **EN CURSO**. Que una capacidad esté inventariada, documentada o incluida por `REQUIRE` no demuestra que esté cargada, habilitada, conciliada ni aceptada en runtime. Cada avance debe consultar los mapas, justificar si reutiliza/extiende/adapta/construye y actualizar el dossier y el manual en el mismo cambio.
 
+
+### Herramienta de consulta de integración por módulo
+
+El repositorio incluye un CLI para localizar el punto de entrada técnico de **cualquier módulo del catálogo de MyCompany 6.2, lsFusion 6.2 o las extensiones de Rubrova**. Evita depender de búsquedas manuales y permite empezar cada cambio desde el nombre real declarado en `MODULE`, su fuente y sus relaciones estructurales.
+
+**Uso desde la raíz del repositorio** (requiere Node.js; no inicia la aplicación ni necesita PostgreSQL, Tomcat o Docker):
+
+```bash
+# Consultar por el nombre exacto declarado en MODULE
+node scripts/platform/module-integration-route.mjs --module InvLedger
+
+# También acepta el nombre exacto del archivo .lsf o su ruta dentro del repositorio
+node scripts/platform/module-integration-route.mjs --module PurchaseOrder.lsf
+node scripts/platform/module-integration-route.mjs --module vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf
+
+# Consultar la sintaxis
+node scripts/platform/module-integration-route.mjs --help
+```
+
+También admite `-m` como alias de `--module`. La coincidencia se hace por nombre de módulo, nombre de archivo o ruta exacta (sin distinguir mayúsculas/minúsculas). Si no encuentra una coincidencia exacta, devuelve sugerencias; si hay más de una coincidencia, informa la ambigüedad. Las sugerencias no se deben tratar como una resolución automática.
+
+**Qué devuelve la consulta:**
+
+- **Identidad y procedencia:** nombre `MODULE`, producto de origen, ruta LSF, namespace, dominio y commit/tag del snapshot.
+- **Composición:** indica si el módulo aparece dentro o fuera del cierre estático alcanzable desde `RubrovaCustom`. Un módulo fuera del cierre no debe considerarse activo; estar dentro tampoco demuestra por sí solo que esté cargado o habilitado en un runtime concreto.
+- **Relaciones de código:** lista sus `REQUIRE` directos y los módulos que lo declaran como dependencia directa. Son relaciones estructurales; no equivalen a todas las relaciones funcionales o de negocio.
+- **Ruta de lectura:** prioriza una ficha individual cuando existe, enlaza el dossier del dominio y propone lecturas transversales (datos maestros, utilidades compartidas, capacidades lsFusion, arquitectura, composición u otras según corresponda). Cuando falta una ficha individual, señala la plantilla para crearla sin completar vacíos por suposición.
+- **Resumen de fuente:** muestra conteos y nombres detectados de clases, propiedades, acciones, formularios, restricciones, eventos y anotaciones API, junto con las limitaciones del análisis.
+
+**Cómo usar el resultado:** leer primero la ficha/dossier recomendado, abrir la fuente LSF exacta, revisar por separado dependencias `REQUIRE` y consumidores, y seguir las relaciones de negocio que correspondan (documentos, estados, reservas, pagos, costos y ledgers). Confirmar además la composición real desde `RubrovaCustom`. Si el análisis individual no existe o es insuficiente, completar `docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md` y enlazar la nueva ficha en el directorio antes de aprobar la integración.
+
+**Límites importantes:** el CLI genera una ruta de investigación a partir de un catálogo estático de los snapshots fijados en `platform/source-lock.json`. No ejecuta lsFusion/MyCompany, no inspecciona pantallas en funcionamiento, no resuelve por sí solo todas las relaciones de negocio, no expande metacódigo `META`/macros y no prueba permisos, transacciones, efectos, conciliación ni comportamiento de runtime. La detección de algunas declaraciones —en particular acciones— es heurística. Por eso, sus conteos no son una medida de funcionalidad disponible ni reemplazan la lectura de fuente, las fichas funcionales o las pruebas.
+
+**Validación de la herramienta:**
+
+```bash
+node --test scripts/platform/module-integration-route.test.mjs
+bash scripts/platform/local-preflight.sh --platform
+```
+
+El preflight de plataforma ejecuta las pruebas del CLI y varias consultas representativas. Esta herramienta y sus pruebas están versionadas en [`scripts/platform/module-integration-route.mjs`](scripts/platform/module-integration-route.mjs), [`scripts/platform/module-integration-route.test.mjs`](scripts/platform/module-integration-route.test.mjs) y [`scripts/platform/audit-lsf-source.mjs`](scripts/platform/audit-lsf-source.mjs). El procedimiento general de mapeo está en [el índice obligatorio de MyCompany/lsFusion](docs/platform-audit/README.md).
+
 ## Propuesta de producto
 
 Rubrova está pensado para negocios que necesitan algo más que una caja registradora:
