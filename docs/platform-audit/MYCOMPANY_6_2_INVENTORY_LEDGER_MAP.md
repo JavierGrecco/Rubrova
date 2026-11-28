@@ -53,6 +53,8 @@ La regresión mínima debe incluir: ingreso del 10 de abril, egreso del 12 de ab
 
 ## 2. Recepción: esperado → recepción efectiva → ubicación interna
 
+**Pasaporte de integración relacionado:** [ReceiptLifecycle](modules/ReceiptLifecycle.md), que sigue ReceiptRes, ReceiptInv, ReceiptPutAway, ReceiptCost, PurchaseOrderReceipt y las reglas de cancelación/conciliación aceptadas en los runs #609 y #613.
+
 ### 2.1 Documento de recepción
 
 Receipt tiene tipo, fecha programada, número, ubicación, proveedor, referencia del proveedor, nota y líneas con artículo y cantidad inicial. El artículo debe permitir compra; se controlan cantidades no negativas y máximos configurados para el tipo. Existe también una recepción inmediata no planificada.
