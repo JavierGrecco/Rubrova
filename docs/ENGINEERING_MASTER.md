@@ -1854,6 +1854,8 @@ Una compilación verde no equivale a un módulo cargado; un formulario visible n
 
 El mapa funcional ampliado se mantiene en [MYCOMPANY_6_2_FUNCTIONAL_MAP.md](platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md). Este archivo documenta procesos y relaciones por dominio, fuentes de documentación upstream y evidencia pendiente. No reemplaza las fichas por módulo que todavía faltan.
 
+El mapa específico de la plataforma está en [LSFUSION_6_2_CAPABILITY_MAP.md](platform-audit/LSFUSION_6_2_CAPABILITY_MAP.md). Separa modelo lógico, ejecución física, lenguaje, UI, persistencia, integración, seguridad y operación. Su estado de evidencia es preliminar y no reemplaza el estudio por mecanismo ni las pruebas.
+
 #### Composición real y módulos fuera del cierre
 
 ##### Resultados estructurales iniciales (no equivalen a aceptación funcional)
