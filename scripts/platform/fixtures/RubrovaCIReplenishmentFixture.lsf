@@ -343,7 +343,7 @@ loadDefaultData () + {
             Purchase.location(billLifecycleOrderCI) <- rubrovaCIDoneLocation();
             Purchase.currency(billLifecycleOrderCI) <- MasterData.defaultCurrency();
             Purchase.scheduledDateTime(billLifecycleOrderCI) <- currentDateTime();
-            Purchase.vendorReference(billLifecycleOrderCI) <- 'rubrova-ci-bill-delivered-cancel';
+            Purchase.vendorReference(billLifecycleOrderCI) <- 'rubrova-ci-bill-delivered';
             NEW billLifecycleOrderLineCI = Purchase.OrderLine {
                 Purchase.order(billLifecycleOrderLineCI) <- billLifecycleOrderCI;
                 Purchase.item(billLifecycleOrderLineCI) <- Sales.rubrovaCITestProduct();
@@ -526,7 +526,7 @@ rubrovaTestPurchaseReceiptDoneCancellationApi () {
 // bloquea la reemisión y cómo se resuelve el costo; no corrige la fuente.
 rubrovaCIBillLifecycleRun = DATA BOOLEAN ();
 rubrovaCIBillLifecycleOrder() = GROUP MAX Purchase.Order o
-    IF Purchase.vendorReference(o) = 'rubrova-ci-bill-delivered-cancel';
+    IF Purchase.vendorReference(o) = 'rubrova-ci-bill-delivered';
 rubrovaCIBillLifecycleOrderLine() = GROUP MAX Purchase.OrderLine ol
     IF Purchase.order(ol) = rubrovaCIBillLifecycleOrder();
 rubrovaCIBillLifecycleReceipt() = Purchase.reserveReceipt(rubrovaCIBillLifecycleOrder());
