@@ -1006,6 +1006,11 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes('PROPERTY(return(s,si))'));
   assert.ok(!uiSmokeSource.includes('PROPERTY(return(s, si))'));
   assert.ok(uiSmokeSource.includes('sales_grid.locator("tr.data-grid-row.table-active")'));
+  assert.ok(uiSmokeSource.includes("page.wait_for_function("));
+  assert.ok(uiSmokeSource.includes("return rows.length === 1 && selectedRows.length === 1;"));
+  assert.ok(uiSmokeSource.includes("sales_row_count = sales_rows.count()"));
+  assert.ok(uiSmokeSource.includes("selected_row_count = selected_rows.count()"));
+  assert.ok(uiSmokeSource.includes("La grilla nativa del turno no se estabilizó"));
   assert.ok(uiSmokeSource.includes("return_action.is_enabled()"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_RETURN_ACTION_FOUND=true"));
   assert.ok(uiSmokeSource.includes("UI_SESSION_RETURN_ACTION_VISIBLE=true"));
