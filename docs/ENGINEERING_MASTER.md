@@ -1852,6 +1852,29 @@ Una compilación verde no equivale a un módulo cargado; un formulario visible n
 
 #### Composición real y módulos fuera del cierre
 
+##### Resultados estructurales iniciales (no equivalen a aceptación funcional)
+
+La primera ejecución satisfactoria del catálogo sobre los locks fijados de 6.2 obtuvo:
+
+| Control | Resultado |
+|---|---:|
+| Módulos MyCompany inventariados | 800 de 800 |
+| Módulos lsFusion LSF inventariados | 49 |
+| Fuentes Java de lsFusion | 3.330 de 3.330 del lock |
+| Módulos LSF de extensiones Rubrova | 7 |
+| Módulos en el cierre \`REQUIRE\` de \`RubrovaCustom\` | 719: 688 MyCompany, 24 lsFusion y 7 Rubrova |
+| Dependencias sin resolver desde \`RubrovaCustom\` | 0 |
+| Módulos MyCompany fuera del cierre | 112: 96 regionales y 16 no regionales |
+| Módulos LSF de plataforma fuera del cierre | 25 |
+| Archivos LSF sin encabezado \`MODULE\` | 0 |
+| Nombres de módulo duplicados en las fuentes relevadas | 0 |
+
+En los 800 módulos MyCompany, el escaneo estructural reconoce 296 declaraciones de clase, 1.271 de formulario, 104 de navegación, 24 tablas, 158 restricciones, 23 índices, 257 eventos \`WHEN\`, un evento \`ON\` y 20 marcas \`@@api\`. Estos valores describen los patrones que detectó el parser; no son el inventario de todas las propiedades, acciones, expresiones, APIs ni flujos funcionales. Una definición puede tener varias declaraciones y un mismo formulario puede mostrar muchas operaciones.
+
+Cada idioma de la documentación de la plataforma contiene 342 archivos Markdown y 89 imágenes. Los conteos anteriores coinciden con los archivos de origen; todavía falta leer y clasificar funcionalmente cada módulo y página pertinente.
+
+**Resultado válido:** se pudo construir un grafo de dependencias estático completo desde la raíz actual y se conciliaron los conteos de los locks. **Resultado que todavía no se puede afirmar:** que los 719 módulos estén todos cargados en un runtime probado, que sus operaciones funcionen de punta a punta o que se hayan entendido todas sus reglas y excepciones.
+
 La raíz de la aplicación de Rubrova es `RubrovaCustom`, no `MyCompany` a secas. La auditoría debe recorrer `REQUIRE` desde esa raíz e incluir, además de los snapshots de MyCompany y lsFusion, los siete módulos LSF propios de `extensions/lsfusion`. El catálogo separa el cierre de MyCompany base de la composición real de Rubrova para no confundir módulos opcionales con dependencias ya cargadas.
 
 En una primera lectura de la fuente 6.2 aparecen 112 módulos MyCompany fuera del cierre del módulo base: 96 corresponden a regionalizaciones y 16 son módulos no regionales que necesitan revisión individual. Entre estos últimos hay extensiones de lotes para put-away y picking, correcciones de facturas y facturas de compra, anticipos, embalajes, GTIN, impresión de deuda, módulos fiscales de caja y movimientos de devolución. **Estar fuera de `REQUIRE` no demuestra que un módulo sea inútil o inaccesible**; significa que todavía no forma parte del cierre de dependencias calculado y que debe analizarse antes de decidir activarlo.
