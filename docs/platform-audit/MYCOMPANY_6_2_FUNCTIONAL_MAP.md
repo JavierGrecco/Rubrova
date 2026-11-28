@@ -266,6 +266,8 @@ Capacidades documentadas:
 
 **Pendiente:** arqueo esperado versus real, diferencias de caja, retiros/depósitos, cierres parciales, pagos electrónicos, devoluciones sin comprobante original, integración con terminales, impresoras y controlador fiscal argentino.
 
+El análisis detallado de los 24 módulos CRM está en [MYCOMPANY_6_2_CRM_LEADS_MAP.md](MYCOMPANY_6_2_CRM_LEADS_MAP.md). Incluye el ciclo del lead, integraciones de comunicaciones y relación con ventas.
+
 ### 3.8 CRM: consultas → lead → seguimiento → venta
 
 Capacidades documentadas:
