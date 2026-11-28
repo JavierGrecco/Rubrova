@@ -1885,6 +1885,29 @@ La siguiente clasificación es una lectura inicial de sus fuentes; no implica qu
 
 **Prioridad de revisión:** \`CashRegister\`/\`CashRegisterFiscal\`, \`Crypto\`, \`InvoiceAdvance\` y las correcciones de facturas tienen impacto directo en integraciones, fiscalidad, caja y contabilidad. No se deben implementar sustitutos sin terminar primero el análisis de estos módulos y sus dependencias.
 
+#### Primera lectura de los módulos de plataforma que sí entran en la composición
+
+Estos módulos aparecen en el cierre de la aplicación y su código ya fue revisado a nivel de fuente. La descripción indica capacidades visibles, no una aceptación operativa de cada flujo.
+
+| Módulo | Capacidades identificadas | Puntos de control pendientes |
+|---|---|---|
+| \`Authentication\` | Usuarios y contactos, login, contraseña con hash SHA-256, token de autenticación, recuperación de contraseña, LDAP y configuración OAuth2 | Ciclo completo de alta/recuperación, MFA, expiración y revocación de tokens, secretos, configuración LDAP/OAuth2 y política de hash |
+| \`Security\` | Roles y membresías; permisos sobre navegación, acciones, propiedades y grupos; permisos heredados; formularios por defecto, acceso móvil/escritorio, reconexión y prevención de formularios duplicados | Denegación por defecto, herencia, caché, cambios de rol durante una sesión, cuentas privilegiadas y pruebas negativas por perfil |
+| \`Scheduler\` | Tareas programadas y sus detalles; ejecución por acción o script, inicio, horarios, días de semana/mes, periodicidad, timeout, manejo de excepciones y logs | Zona horaria, horario de verano, solapamientos, reintentos, idempotencia, permisos del usuario ejecutor y efectos de tareas fallidas |
+| \`Backup\` | Backups completos y parciales, rutas de binarios/dumps, multihilo, exclusión de tablas, rotación/depuración, logs y restauración personalizada por tabla/columna | Consistencia transaccional, cifrado, almacenamiento externo, retención, restauración real, recuperación ante desastre y auditoría de acceso |
+| \`ProcessMonitor\` | Monitor de procesos SQL y Java, usuario/equipo, consultas, transacciones, esperas, locks, bloqueos, deadlocks, stack traces, cancelación y terminación | Permisos estrictos, impacto de las acciones, sensibilidad de consultas/variables y pruebas controladas de cancelación |
+| \`Service\` | Diagnóstico y mantenimiento: validar clases/tablas/índices/materializaciones, recalcular estadísticas y propiedades, analizar/vacuum de base, limpiar temporales, reiniciar, consultar JVM, recolectar basura y generar heap dumps | Restringir cada acción, ventanas operativas, backup previo, impacto en producción y trazabilidad de ejecuciones |
+| \`Reflection\` | Metadatos de clases, formularios, navegador, acciones/propiedades, tablas, dependencias, materialización, estadísticas y configuración de columnas por usuario | Exposición de metadatos, límites de reflexión en runtime, permisos y diferencia entre introspección y ejecución dinámica |
+| \`Eval\` | Registro y ejecución de scripts desde un intérprete, variables tipadas y formularios de diagnóstico de errores | Alcance real de ejecución, permisos, aislamiento, auditoría, restricciones y posibilidad de acceder a datos o acciones privilegiadas |
+| \`Integration\` | Macros para identificar objetos exportables mediante IDs externos y facilitar relaciones con sistemas externos | Unicidad, sincronización, borrado, cambios de clave, idempotencia, versiones y resolución de conflictos |
+| \`SystemEvents\` | Eventos de inicio de cliente/sistema, conexiones, excepciones, trazas, usuario, dirección remota, cabeceras, cookies, parámetros y contexto HTTP | Retención, datos personales/secretos en logs, correlación, acceso y limpieza de información sensible |
+| \`System\` | Ciclo de vida de formularios (aplicar, cancelar, refrescar, cerrar), navegación, sesiones, eventos locales, apertura de archivos/enlaces y contexto HTTP | Semántica exacta de transacciones, cancelación, eventos anidados, permisos y comportamiento ante desconexiones |
+| \`Time\` | Cálculos de fechas, horas, intervalos, conversiones, truncado, diferencias, zonas horarias y fórmulas para PostgreSQL/SQL Server | Zona horaria efectiva, UTC/local, precisión, límites de calendario, horario de verano y diferencias entre motores |
+| \`Numerator\` | Numeradores configurables, series, mínimos/máximos, longitud, valor actual, relleno con ceros, generación automática y valores por defecto | Concurrencia, unicidad, huecos, anulaciones, cierres y requisitos legales de numeración |
+| \`DefaultData\` | Contrato y formulario para cargar datos iniciales mediante implementaciones de carga | Orden de carga, repetibilidad, actualización, rollback, separación entre datos iniciales y datos productivos |
+
+La revisión de estas fuentes ya permite identificar herramientas valiosas, pero también riesgos: \`Eval\`, \`Service\`, \`Backup\`, \`ProcessMonitor\` y las operaciones de autenticación requieren controles de acceso y procedimientos operativos específicos. No deben quedar habilitados indiscriminadamente para todos los usuarios.
+
 #### Módulos LSF de plataforma fuera del cierre actual
 
 El catálogo identifica 25 módulos del servidor lsFusion que no entran en el cierre de \`RubrovaCustom\`. Son candidatos de análisis, no capacidades activas de Rubrova:
