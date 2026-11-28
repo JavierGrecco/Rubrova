@@ -52,9 +52,16 @@ La inspección de las fuentes vendorizadas confirma que MyCompany ya incluye un 
 - [Consumo, producción y costo](../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderCost.lsf)
 - [Lotes de producción](../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderLot.lsf)
 
-También existe inventario por lote en [InvLedgerLot](../vendor/mycompany/src/main/lsfusion/inventory/ledgers/inv/InvLedgerLot.lsf) y captura de lotes en el POS mediante [PosDashboardLot](../vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardLot.lsf).
+También existe inventario por lote en [InvLedgerLot](../vendor/mycompany/src/main/lsfusion/inventory/ledgers/inv/InvLedgerLot.lsf) y captura de lotes en el POS mediante [PosDashboardLot](../vendor/mycompany/src/main/lsfusion/retail/pos/dashboard/PosDashboardLot.lsf). Las extensiones nativas de fabricación y facturación conservan las cantidades por lote en líneas de consumo/producción y venta.
 
-**Límite identificado en la fuente actual:** el maestro nativo `Inventory.Lot` guarda identificador y producto, pero no contiene fecha de elaboración, vencimiento ni condiciones de conservación. El POS admite la captura de lotes, pero eso no demuestra que Rubrova ya seleccione automáticamente FEFO, impida vender vencidos ni complete una trazabilidad alimentaria de punta a punta.
+**Límites adicionales confirmados en la fuente actual:**
+
+- El maestro nativo `Inventory.Lot` guarda identificador y producto, pero no fecha de elaboración, vencimiento ni condiciones de conservación.
+- La acción nativa `Manufacturing.checkAvailability` de `ManufacturingOrderReady.lsf` calcula disponibilidad por ubicación y producto (`prevAvailable(location, item))); no elige ni reserva lotes FEFO. La existencia de `ManufacturingOrderLot.lsf` permite asignar cantidades por lote en las líneas, pero no demuestra que el chequeo de disponibilidad haya validado cada lote.
+- El macro nativo `defineDocLot` verifica que el producto del lote coincida con el de la línea y que la suma asignada a lotes no quede por debajo de la cantidad cuando el documento queda listo. No evalúa vencimiento, cuarentena ni vida útil.
+- `ManufacturingOrderDone.markAsDone` completa cantidades reales desde las cantidades planificadas cuando esas cantidades no fueron ingresadas. Para alimentos, ese comportamiento requiere una barrera explícita de confirmación/revisión antes de cerrar una tanda.
+
+Por lo tanto, el POS admite captura de lotes y fabricación mantiene relaciones por lote, pero **Rubrova todavía no selecciona automáticamente FEFO, no bloquea alimentos vencidos ni garantiza reservas/consumos válidos por lote**.
 
 Por eso la estrategia es extender los documentos, lotes y ledgers nativos; no crear una segunda receta, un segundo stock, una segunda caja ni un ledger alternativo en Python.
 
