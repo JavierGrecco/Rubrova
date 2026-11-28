@@ -72,6 +72,16 @@ const fixtureCatalog = {
       makeModule("Partner", { domain: "masterdata", path: "vendor/mycompany/src/main/lsfusion/masterdata/partners/Partner.lsf" }),
       makeModule("PurchaseOrderReceipt", { domain: "purchase", path: "vendor/mycompany/src/main/lsfusion/purchase/inventory/receipts/orders/PurchaseOrderReceipt.lsf" }),
       makeModule("PurchaseOrder", { domain: "purchase", path: "vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf" }),
+      makeModule("Bom", { domain: "manufacturing", path: "vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf" }),
+      makeModule("ManufacturingOrder", { domain: "manufacturing", path: "vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf" }),
+      makeModule("WorkCenter", { domain: "manufacturing", path: "vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkCenter.lsf" }),
+      makeModule("WorkOrder", { domain: "manufacturing", path: "vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkOrder.lsf" }),
+      makeModule("Project", { domain: "projectManagement", path: "vendor/mycompany/src/main/lsfusion/projectManagement/projects/Project.lsf" }),
+      makeModule("ProjectAssignment", { domain: "projectManagement", path: "vendor/mycompany/src/main/lsfusion/projectManagement/projects/ProjectAssignment.lsf" }),
+      makeModule("TimeEntry", { domain: "projectManagement", path: "vendor/mycompany/src/main/lsfusion/projectManagement/timeEntries/TimeEntry.lsf" }),
+      makeModule("ProjectTimeEntry", { domain: "projectManagement", path: "vendor/mycompany/src/main/lsfusion/projectManagement/projects/timeentries/ProjectTimeEntry.lsf" }),
+      makeModule("ProjectManufacturingOrder", { domain: "projectManagement", path: "vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrder.lsf" }),
+      makeModule("ProjectManufacturingOrderTimeEntry", { domain: "projectManagement", path: "vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrderTimeEntry.lsf" }),
     ],
   },
   lsFusion: { modules: [] },
@@ -222,6 +232,27 @@ test("prioriza pasaportes de compra, facturación, POS y entidades maestras", ()
     const route = resolveModuleIntegrationRoute(fixtureCatalog, moduleName);
     assert.equal(route.found, true);
     assert.equal(route.passport.path, passportPath);
+  }
+});
+
+test("prioriza fichas individuales de fabricación y proyectos integrados", () => {
+  const expected = {
+    Bom: "docs/platform-audit/modules/Bom.md",
+    ManufacturingOrder: "docs/platform-audit/modules/ManufacturingOrder.md",
+    WorkCenter: "docs/platform-audit/modules/WorkCenter.md",
+    WorkOrder: "docs/platform-audit/modules/WorkOrder.md",
+    Project: "docs/platform-audit/modules/Project.md",
+    ProjectAssignment: "docs/platform-audit/modules/ProjectAssignment.md",
+    TimeEntry: "docs/platform-audit/modules/TimeEntry.md",
+    ProjectTimeEntry: "docs/platform-audit/modules/ProjectTimeEntry.md",
+    ProjectManufacturingOrder: "docs/platform-audit/modules/ProjectManufacturingOrder.md",
+    ProjectManufacturingOrderTimeEntry: "docs/platform-audit/modules/ProjectManufacturingOrderTimeEntry.md",
+  };
+  for (const [moduleName, passportPath] of Object.entries(expected)) {
+    const route = resolveModuleIntegrationRoute(fixtureCatalog, moduleName);
+    assert.equal(route.found, true);
+    assert.equal(route.passport.path, passportPath);
+    assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md");
   }
 });
 

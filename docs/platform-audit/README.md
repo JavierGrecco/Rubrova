@@ -4,13 +4,13 @@
 
 **Este es el punto de entrada obligatorio para cualquier integrante, desarrollador o agente que trabaje en Rubrova.** Su propósito es localizar toda la investigación existente, indicar el orden de lectura según la tarea y conectar los mapas de dominio con los documentos de arquitectura, producto, seguridad, runtime y reutilización. No alcanza con abrir un único mapa y asumir que la funcionalidad está aislada.
 
-**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.125 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
-- **87 documentos mantenidos por Rubrova fuera de `vendor/`**: los **83 documentos Markdown en `docs/`** (54 generales + 29 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
+**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.136 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
+- **98 documentos mantenidos por Rubrova fuera de `vendor/`**: los **94 documentos Markdown en `docs/`** (54 generales + 40 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
 - **1.038 archivos Markdown dentro de `vendor/`**: 1.031 páginas de documentación upstream incluidas en las cinco raíces que indexa `audit-source-docs.mjs` (347 MyCompany + 684 lsFusion), más 7 README/CHANGELOG/guías de soporte del snapshot.
 
 El catálogo de documentos mantenidos por Rubrova está enlazado en este archivo; las 1.031 páginas upstream se enumeran por ruta, idioma, título y encabezados en el registro generado `rubrova-source-document-catalog`. Los siete Markdown adicionales del snapshot se enumeran expresamente en la sección 9. Los archivos binarios/imagenes upstream también quedan listados en el catálogo generado, pero ni el índice ni el registro afirman que cada página o imagen haya sido leída funcionalmente.
 
-El test `scripts/platform/test-platform-map-entry.mjs` comprueba que los **87 Markdown mantenidos por Rubrova fuera de vendor/** estén incluidos en el índice y que los siete documentos auxiliares del snapshot no queden omitidos. `audit-source-docs.mjs` vuelve a generar el índice completo de páginas upstream desde los cinco directorios fijados. Si se incorpora un documento, fuente, idioma o recurso nuevo, debe clasificarse y enlazarse antes de pasar la prevalidación.
+El test `scripts/platform/test-platform-map-entry.mjs` comprueba que los **98 Markdown mantenidos por Rubrova fuera de vendor/** estén incluidos en el índice y que los siete documentos auxiliares del snapshot no queden omitidos. `audit-source-docs.mjs` vuelve a generar el índice completo de páginas upstream desde los cinco directorios fijados. Si se incorpora un documento, fuente, idioma o recurso nuevo, debe clasificarse y enlazarse antes de pasar la prevalidación.
 
 **Persistencia de los registros generados:** GitHub Actions publica `rubrova-lsf-source-catalog` y `rubrova-source-document-catalog` como artefactos con retención de 30 días. No son archivos permanentes de Git ni reemplazan este índice. Para conservar una copia consultable de los registros en el equipo de trabajo, ejecutar desde la raíz:
 
@@ -137,8 +137,18 @@ Para estos módulos no hay que quedarse sólo con el resumen del dominio: abrir 
 | Pos | [Ficha Pos](modules/Pos.md) · `docs/platform-audit/modules/Pos.md` | Caja lógica, empresa, computadora y controladores |
 | Product | [Ficha Product](modules/Product.md) · `docs/platform-audit/modules/Product.md` | Maestro físico, Item, unidades, variantes, barcode y lotes |
 | Partner | [Ficha Partner](modules/Partner.md) · `docs/platform-audit/modules/Partner.md` | Identidad común y especializaciones legales/comerciales |
+| Bom | [Ficha Bom](modules/Bom.md) · `docs/platform-audit/modules/Bom.md` | Estructura, componentes, subproductos, BOM anidada y operaciones |
+| ManufacturingOrder | [Ficha ManufacturingOrder](modules/ManufacturingOrder.md) · `docs/platform-audit/modules/ManufacturingOrder.md` | Orden, estados, reservas, cantidades, inventario, lotes y costos |
+| WorkCenter | [Ficha WorkCenter](modules/WorkCenter.md) · `docs/platform-audit/modules/WorkCenter.md` | Centro de trabajo y límites de planificación |
+| WorkOrder | [Ficha WorkOrder](modules/WorkOrder.md) · `docs/platform-audit/modules/WorkOrder.md` | Operaciones, centros, duración y estados |
+| Project | [Ficha Project](modules/Project.md) · `docs/platform-audit/modules/Project.md` | Proyecto, empresa, manager, estado y documentos relacionados |
+| ProjectAssignment | [Ficha ProjectAssignment](modules/ProjectAssignment.md) · `docs/platform-audit/modules/ProjectAssignment.md` | Asignaciones, roles, vigencia y acceso |
+| TimeEntry | [Ficha TimeEntry](modules/TimeEntry.md) · `docs/platform-audit/modules/TimeEntry.md` | Registro base de horas |
+| ProjectTimeEntry | [Ficha ProjectTimeEntry](modules/ProjectTimeEntry.md) · `docs/platform-audit/modules/ProjectTimeEntry.md` | Asociación de horas a proyecto y restricciones |
+| ProjectManufacturingOrder | [Ficha ProjectManufacturingOrder](modules/ProjectManufacturingOrder.md) · `docs/platform-audit/modules/ProjectManufacturingOrder.md` | Asociación proyecto–orden y propagación desde ventas |
+| ProjectManufacturingOrderTimeEntry | [Ficha ProjectManufacturingOrderTimeEntry](modules/ProjectManufacturingOrderTimeEntry.md) · `docs/platform-audit/modules/ProjectManufacturingOrderTimeEntry.md` | Partes de horas por orden y costo laboral |
 
-**Estado de fichas individuales:** hay doce fichas individuales disponibles, con análisis específico. Para cualquier otro módulo, el CLI indica que todavía no hay ficha individual y deriva al dossier y a la plantilla obligatoria.
+**Estado de fichas individuales:** hay veintidós fichas individuales disponibles, con análisis específico. Para cualquier otro módulo, el CLI indica que todavía no hay ficha individual y deriva al dossier y a la plantilla obligatoria.
 
 ### 4.0 Integración por módulo exacto — ruta obligatoria
 
@@ -160,6 +170,7 @@ El CLI consulta los **856 módulos del snapshot** inventariados: 800 MyCompany, 
 | Factura, deuda, cobro, pago o cuenta | Directorio por módulo, luego `Invoice`, `Bill`, `Debt`, `IncomingPayment`, `OutgoingPayment` o `Payment` | Invoicing/Ledgers → Sales/Purchase/Retail → Inventory/Returns → Accounting Interoperability |
 | Caja, turno, pago mixto o devolución POS | Directorio por módulo, luego `Pos`, `PosDashboardPayment`, `PosDashboardReturn`, `Session`, `SessionInvoice` o `SessionPayment` | Retail/POS → Sales → Invoicing/Payments → Inventory → Terminales/identidad/seguridad |
 | Producto, socio, empresa, empleado, unidad o SKU | Directorio por módulo, luego `Item`, `Product`, `Partner`, `Company`, `Employee` o `ProductSku` | Master Data → todos los documentos consumidores → Utilities |
+| Fabricación, proyectos, tiempos u órdenes de trabajo | Directorio por módulo y guía obligatoria Fabricación + Proyectos; luego ficha individual | Manufacturing → ProjectManagement/Assignments/TimeEntry → Sales/Purchase → Inventory/ResLedger/CostLedger → Master Data |
 | BOM, orden de fabricación u operación | Directorio por módulo, luego `Bom`, `ManufacturingOrder`, `WorkCenter` o `WorkOrder` | Manufacturing → Sales → Purchase → Inventory/CostLedger → Master Data |
 | CRM, asistencia, flota o proyecto | Directorio por módulo y dossier específico | Master Data → Sales/Invoicing/Projects/HR/Fleet → Utilities → Security |
 
@@ -254,6 +265,7 @@ El sistema transaccional sigue siendo dueño de ventas, pagos, caja, compras, st
 | Dossier | Alcance y limitación actual | Seguir leyendo / dependencias |
 |---|---|---|
 | [MYCOMPANY_6_2_FUNCTIONAL_MAP](../platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md) · `docs/platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md` | Mapa funcional general, composición, clasificación de dominios y cobertura de los 800 módulos. | Todos los dominios; Manufacturing; módulos fuera del cierre; 16 módulos no regionales y composición de RubrovaCustom. |
+| [MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION](MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md) · `docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md` | Guía obligatoria de BOM, órdenes, WorkOrders, ledgers, proyectos, asignaciones, partes de horas, ventas y costo laboral. | Leer antes de diseñar o modificar fabricación, proyectos, tiempos, operaciones o costos; incluye configuración, comunicación, pruebas y brechas. |
 | [MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP](../platform-audit/MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md) · `docs/platform-audit/MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md` | POS, caja, sesiones, medios de pago, devoluciones, picking y turnos. | Sales/Pricing, Invoicing/Ledger, Inventory/Ledger, Master Data, Utilities y capacidades lsFusion; terminales y checkout cuando aplique. |
 | [MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP](../platform-audit/MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md) · `docs/platform-audit/MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md` | Ventas, pedidos, precios, descuentos, despacho, ledger comercial, costo y margen. | Retail/POS, Inventory/Ledger, Invoicing/Ledger, CRM, Master Data y Utilities. |
 | [MYCOMPANY_6_2_INVOICING_LEDGER_MAP](../platform-audit/MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md) · `docs/platform-audit/MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md` | Facturas, notas, deuda, imputaciones, pagos, cuentas, impuestos y ledger. | Sales, Purchase, Retail/POS, Inventory, Master Data, Accounting Interoperability y Payments. |

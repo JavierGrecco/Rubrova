@@ -33,6 +33,17 @@ function filesUnder(directory) {
 const requiredDossiers = [
   "MYCOMPANY_6_2_FUNCTIONAL_MAP.md",
   "MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md",
+  "MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md",
+  "modules/Bom.md",
+  "modules/ManufacturingOrder.md",
+  "modules/WorkCenter.md",
+  "modules/WorkOrder.md",
+  "modules/Project.md",
+  "modules/ProjectAssignment.md",
+  "modules/TimeEntry.md",
+  "modules/ProjectTimeEntry.md",
+  "modules/ProjectManufacturingOrder.md",
+  "modules/ProjectManufacturingOrderTimeEntry.md",
   "modules/PurchaseOrder.md",
   "modules/Invoice.md",
   "modules/Bill.md",
@@ -95,8 +106,8 @@ test("el índice existe y contiene todos los documentos mantenidos por Rubrova f
   const files = markdownFiles(".", { excludeVendor: true });
   const docsFiles = markdownFiles("docs");
 
-  assert.equal(docsFiles.length, 83, "Cambió el inventario de docs/: actualizar el catálogo.");
-  assert.equal(files.length, 87, "Cambió el inventario Markdown fuera de vendor/: clasificar cada alta o baja.");
+  assert.equal(docsFiles.length, 94, "Cambió el inventario de docs/: actualizar el catálogo.");
+  assert.equal(files.length, 98, "Cambió el inventario Markdown fuera de vendor/: clasificar cada alta o baja.");
   for (const file of files) {
     assert.ok(index.includes(file), `Documento fuera de vendor sin clasificar en el índice integral: ${file}`);
   }
@@ -122,7 +133,7 @@ test("los siete documentos Markdown auxiliares de vendor quedan identificados", 
 test("todos los archivos de docs, incluidos fixtures y recursos gráficos, están catalogados", () => {
   const index = read(indexPath);
   const files = filesUnder("docs");
-  assert.equal(files.length, 91, "Cambió el inventario completo de docs/: actualizar el catálogo.");
+  assert.equal(files.length, 102, "Cambió el inventario completo de docs/: actualizar el catálogo.");
   for (const file of files) {
     assert.ok(index.includes(file), `Recurso de docs sin clasificar en el índice: ${file}`);
   }
@@ -156,20 +167,20 @@ test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos his
     "Inventario, stock, depósitos, conteos y costos",
     "Facturación, impuestos, deuda, pagos y contabilidad argentina",
     "800 módulos LSF",
-    "83 documentos Markdown en",
-    "1.125 archivos Markdown",
-    "87 documentos mantenidos por Rubrova",
+    "94 documentos Markdown en",
+    "1.136 archivos Markdown",
+    "98 documentos mantenidos por Rubrova",
     "1.038 archivos Markdown",
     "1.031 páginas de documentación upstream",
     "retención de 30 días",
-    "91 archivos",
+    "102 archivos",
     "demand-monthly-history.json",
     "mycompany-native-replenishment-export.json",
     "platform-evaluation.json",
     "stockout-censored-demand.json",
     "rubrova-hero.svg",
     "directorio de integración por módulo",
-    "doce fichas individuales disponibles",
+    "veintidós fichas individuales disponibles",
     "856 módulos",
     "856 módulos del snapshot",
     "Ficha InvLedger",

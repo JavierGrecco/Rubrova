@@ -60,9 +60,9 @@ export const DOMAIN_GUIDES = {
     coverage: "Inventario inicial; revisión individual y adecuación argentina pendientes.",
   },
   projectManagement: {
-    path: "docs/platform-audit/MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md",
-    title: "Proyectos, tareas e integraciones",
-    coverage: "Mapa de dominio disponible; flujos y aceptación pendientes.",
+    path: "docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md",
+    title: "Proyectos, tiempos y fabricación integrados",
+    coverage: "Fuentes principales de proyecto/tiempos/fabricación revisadas; acceso, costo laboral y aceptación E2E pendientes.",
   },
   fleet: {
     path: "docs/platform-audit/MYCOMPANY_6_2_FLEET_VEHICLE_COSTS_MAP.md",
@@ -70,9 +70,9 @@ export const DOMAIN_GUIDES = {
     coverage: "Mapa de dominio disponible; flujos y aceptación pendientes.",
   },
   manufacturing: {
-    path: "docs/platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md",
-    title: "Mapa funcional general — dominio Manufacturing",
-    coverage: "No existe todavía un dossier de integración de fabricación dedicado; fuente E2E pendiente.",
+    path: "docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md",
+    title: "Fabricación y proyectos integrados",
+    coverage: "Fuentes principales revisadas; pruebas E2E, permisos y conciliación de ledgers pendientes.",
   },
   "(raíz)": {
     path: "docs/platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md",
@@ -142,6 +142,46 @@ const MODULE_PASSPORTS = {
     path: "docs/platform-audit/modules/Partner.md",
     title: "Ficha de integración — Partner",
   },
+  Bom: {
+    path: "docs/platform-audit/modules/Bom.md",
+    title: "Ficha de integración — Bom",
+  },
+  ManufacturingOrder: {
+    path: "docs/platform-audit/modules/ManufacturingOrder.md",
+    title: "Ficha de integración — ManufacturingOrder",
+  },
+  WorkCenter: {
+    path: "docs/platform-audit/modules/WorkCenter.md",
+    title: "Ficha de integración — WorkCenter",
+  },
+  WorkOrder: {
+    path: "docs/platform-audit/modules/WorkOrder.md",
+    title: "Ficha de integración — WorkOrder",
+  },
+  Project: {
+    path: "docs/platform-audit/modules/Project.md",
+    title: "Ficha de integración — Project",
+  },
+  ProjectAssignment: {
+    path: "docs/platform-audit/modules/ProjectAssignment.md",
+    title: "Ficha de integración — ProjectAssignment",
+  },
+  TimeEntry: {
+    path: "docs/platform-audit/modules/TimeEntry.md",
+    title: "Ficha de integración — TimeEntry",
+  },
+  ProjectTimeEntry: {
+    path: "docs/platform-audit/modules/ProjectTimeEntry.md",
+    title: "Ficha de integración — ProjectTimeEntry",
+  },
+  ProjectManufacturingOrder: {
+    path: "docs/platform-audit/modules/ProjectManufacturingOrder.md",
+    title: "Ficha de integración — ProjectManufacturingOrder",
+  },
+  ProjectManufacturingOrderTimeEntry: {
+    path: "docs/platform-audit/modules/ProjectManufacturingOrderTimeEntry.md",
+    title: "Ficha de integración — ProjectManufacturingOrderTimeEntry",
+  },
 };
 
 const PASSPORT_OVERRIDES = {
@@ -196,6 +236,21 @@ const PASSPORT_OVERRIDES = {
   Product: "Datos maestros §§4–6 — producto físico, unidades, variantes y barcode.",
   Item: "Datos maestros §§4–6 — maestro abstracto de artículo.",
   Partner: "Datos maestros §§2–3 — identidad común y especializaciones.",
+  Bom: "Fabricación §1 — estructura, componentes, subproductos, operaciones y cantidades base.",
+  ManufacturingOrder: "Fabricación §§2–4 — documento, estados, reservas, inventario, lotes y costos.",
+  WorkCenter: "Fabricación §5 — maestro de centros; no implica capacidad finita.",
+  WorkOrder: "Fabricación §5 — operaciones, centros, estado y duración estimada.",
+  Project: "Proyectos §1 — contexto, estado, responsable, empresa y documentos relacionados.",
+  ProjectAssignment: "Proyectos §2 — asignaciones, roles, vigencia y seguridad.",
+  TimeEntry: "Proyectos §3 — registro base de horas por empleado/fecha/tipo.",
+  ProjectTimeEntry: "Proyectos §3 — asociación de TimeEntry a Project y obligación por tipo.",
+  ProjectManufacturingOrder: "Fabricación/Proyectos §6 — asociación de órdenes al proyecto y propagación desde ventas.",
+  ProjectManufacturingOrderTimeEntry: "Fabricación/Proyectos §7 — parte de horas por orden, consistencia y costo laboral.",
+  ProjectManufacturingOrderTimesheet: "Fabricación/Proyectos §7 — carga desde timesheet supervisor.",
+  ProjectManufacturingOrderCost: "Fabricación/Proyectos §8 — salario de partes de horas imputado al costo de la orden.",
+  ProjectTimeEntryPayslip: "Proyectos/Costos §8 — tarifa abstracta, salario y detalle de nómina.",
+  SalesOrderManufacturing: "Ventas/Manufacturing §9 — BOM en línea y creación de órdenes desde pedidos confirmados.",
+  ProjectSalesOrderManufacturing: "Ventas/Proyectos §9 — propaga Project del pedido a la orden de fabricación.",
   Company: "Datos maestros §3 — empresa propia/titular de documentos y cuentas.",
   Employee: "Datos maestros §3 — empleado/usuario y relaciones.",
   ProductSku: "Datos maestros §6 + inventario §5 — SKU, unidades y códigos.",

@@ -68,6 +68,7 @@ El mapeo no es una investigación opcional ni conocimiento que dependa de quien 
 - [Índice obligatorio de mapeo y estado de cobertura](docs/platform-audit/README.md): inventarios, dossiers por dominio, módulos fuera de la composición y pendientes reales.
 - [Mapa de capacidades de lsFusion 6.2](docs/platform-audit/LSFUSION_6_2_CAPABILITY_MAP.md): lenguaje, runtime, formularios, sesiones, persistencia, APIs, clientes y herramientas.
 - [Mapa funcional de MyCompany 6.2](docs/platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md): composición, 800 módulos, dominios y documentación fuente.
+- [Guía obligatoria de Fabricación + Proyectos](docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md): BOM, órdenes, operaciones, ledgers, proyectos, asignaciones, partes de horas, costos e integración con ventas. Incluye arquitectura de comunicación, configuración y pruebas requeridas.
 - [Manual técnico canónico](docs/ENGINEERING_MASTER.md): decisiones, contratos, evidencias, estado y roadmap.
 
 El relevamiento sigue **EN CURSO**. Que una capacidad esté inventariada, documentada o incluida por `REQUIRE` no demuestra que esté cargada, habilitada, conciliada ni aceptada en runtime. Cada avance debe consultar los mapas, justificar si reutiliza/extiende/adapta/construye y actualizar el dossier y el manual en el mismo cambio.

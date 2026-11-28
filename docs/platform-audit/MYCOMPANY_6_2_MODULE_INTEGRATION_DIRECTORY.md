@@ -28,9 +28,9 @@ El [registro estructural completo de módulos](../../.github/workflows/documenta
 
 ### 1.1 Cobertura de fichas individuales — estado real
 
-Las **81 entradas manuales** de este directorio son rutas rápidas por módulo con fuente exacta, primera lectura y relaciones. No deben interpretarse como 81 pasaportes individuales completos.
+Las **86 entradas manuales** de este directorio son rutas rápidas por módulo con fuente exacta, primera lectura y relaciones. No deben interpretarse como 81 pasaportes individuales completos.
 
-Ya hay **doce fichas individuales** con análisis específico:
+Ya hay **veintidós fichas individuales** con análisis específico:
 
 | Módulo | Pasaporte individual | Qué concentra |
 |---|---|---|
@@ -46,6 +46,16 @@ Ya hay **doce fichas individuales** con análisis específico:
 | Pos | [Ficha Pos](modules/Pos.md) | Caja lógica, empresa, computadora y controladores |
 | Product | [Ficha Product](modules/Product.md) | Maestro físico, Item, unidades, variantes, barcode y lotes |
 | Partner | [Ficha Partner](modules/Partner.md) | Identidad común y especializaciones legales/comerciales |
+| Bom | [Ficha Bom](modules/Bom.md) | Estructura, componentes, subproductos, BOM anidada y operaciones |
+| ManufacturingOrder | [Ficha ManufacturingOrder](modules/ManufacturingOrder.md) | Documento, estados, reservas, inventario, lotes y costo |
+| WorkCenter | [Ficha WorkCenter](modules/WorkCenter.md) | Maestro de centro y límites de capacidad |
+| WorkOrder | [Ficha WorkOrder](modules/WorkOrder.md) | Routing, operaciones, duración y estados |
+| Project | [Ficha Project](modules/Project.md) | Contexto de proyecto, estado y documentos relacionados |
+| ProjectAssignment | [Ficha ProjectAssignment](modules/ProjectAssignment.md) | Miembros, roles, vigencia y acceso |
+| TimeEntry | [Ficha TimeEntry](modules/TimeEntry.md) | Registro común de horas |
+| ProjectTimeEntry | [Ficha ProjectTimeEntry](modules/ProjectTimeEntry.md) | Horas por proyecto, filtros y obligatoriedad |
+| ProjectManufacturingOrder | [Ficha ProjectManufacturingOrder](modules/ProjectManufacturingOrder.md) | Proyecto asociado a orden de fabricación |
+| ProjectManufacturingOrderTimeEntry | [Ficha ProjectManufacturingOrderTimeEntry](modules/ProjectManufacturingOrderTimeEntry.md) | Horas imputadas a la orden y costo laboral |
 
 Los otros módulos siguen teniendo una ruta al dossier de dominio y al CLI, pero no una ficha individual aprobada. Ante una integración que modifique su modelo, estado, API, permisos o efectos, completar el [pasaporte de módulo](MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) y enlazarlo aquí antes de considerar terminado el cambio. La herramienta no inventa casos de uso ni convierte un inventario estructural en documentación funcional.
 
@@ -198,14 +208,29 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 | Módulo exacto | Fuente LSF | Primera lectura obligatoria | Seguir con / estado |
 |---|---|---|---|
 | `Manufacturing` | [Manufacturing.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/Manufacturing.lsf) | Mapa funcional, dominio Manufacturing | Es compositor; todavía falta una ficha de proceso de fabricación E2E. |
-| `Bom` | [Bom.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf) | Mapa funcional, Manufacturing; ventas §2.6 | BOM, producto, empresa y configuración; revisar estructura, versiones, consumos y costos antes de crear equivalente. |
-| `ManufacturingOrder` | [ManufacturingOrder.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf) | Mapa funcional, Manufacturing; ventas §2.6; compras §7 | Orden, BOM, ubicación, fechas y documento; ciclo y ledger de consumo/terminado aún requieren análisis dedicado. |
-| `WorkCenter` | [WorkCenter.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkCenter.lsf) | Mapa funcional, Manufacturing | Centro de trabajo; dependencias con configuración y WorkOrder. Ficha propia pendiente. |
-| `WorkOrder` | [WorkOrder.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkOrder.lsf) | Mapa funcional, Manufacturing | Orden de trabajo y centro; seguir operaciones, tiempos, lotes, completado y órdenes madre. Ficha propia pendiente. |
+| `Bom` | [Bom.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf) | [Ficha Bom](modules/Bom.md) + guía Fabricación/Proyectos | Estructura, cantidades base, subproductos, operaciones y BOM anidada. |
+| `ManufacturingOrder` | [ManufacturingOrder.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf) | [Ficha ManufacturingOrder](modules/ManufacturingOrder.md) + guía Fabricación/Proyectos | Documento central; revisar estado real, reservas, inventario, costos, lotes y vínculo de proyecto. |
+| `WorkCenter` | [WorkCenter.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkCenter.lsf) | [Ficha WorkCenter](modules/WorkCenter.md) + guía Fabricación/Proyectos | Maestro nativo; no demuestra capacidad finita ni calendario. |
+| `WorkOrder` | [WorkOrder.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkOrder.lsf) | [Ficha WorkOrder](modules/WorkOrder.md) + guía Fabricación/Proyectos | Operación derivada de BOM; revisar regeneración, estado y duración estimada. |
 
 **No crear recetas, consumos, órdenes, mermas o costos paralelos** sin cerrar el análisis nativo de BOM, ManufacturingOrder, WorkOrder, sus reservas y ledgers.
 
-### 3.8 CRM, RR. HH., flota y proyectos
+### 3.8 Proyectos, asignaciones, partes de horas y órdenes de fabricación
+
+**Ruta obligatoria:** [guía Fabricación + Proyectos](MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md) y [mapa de Proyectos](MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md). Esta integración conecta documentos nativos, no una API interna.
+
+| Módulo exacto | Fuente LSF | Primera lectura obligatoria | Seguir con / estado |
+|---|---|---|---|
+| `Project` | [Project.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/Project.lsf) | [Ficha Project](modules/Project.md) | Contexto de trabajo y documentos; seguir asignaciones, ventas, compras, fabricación, tiempos y reportes. |
+| `ProjectAssignment` | [ProjectAssignment.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/ProjectAssignment.lsf) | [Ficha ProjectAssignment](modules/ProjectAssignment.md) | Roles, fechas de vigencia y filtros de acceso; probar usuario global/sin asignaciones. |
+| `TimeEntry` | [TimeEntry.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/timeEntries/TimeEntry.lsf) | [Ficha TimeEntry](modules/TimeEntry.md) | Registro base de horas; seguir Project, Task, nómina y timesheets. |
+| `ProjectTimeEntry` | [ProjectTimeEntry.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/timeentries/ProjectTimeEntry.lsf) | [Ficha ProjectTimeEntry](modules/ProjectTimeEntry.md) | Proyecto por parte, projectRequired y filtros de acceso. |
+| `ProjectManufacturingOrder` | [ProjectManufacturingOrder.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrder.lsf) | [Ficha ProjectManufacturingOrder](modules/ProjectManufacturingOrder.md) | Vínculo Project↔ManufacturingOrder y creación desde proyecto. |
+| `ProjectManufacturingOrderTimeEntry` | [ProjectManufacturingOrderTimeEntry.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrderTimeEntry.lsf) | [Ficha ProjectManufacturingOrderTimeEntry](modules/ProjectManufacturingOrderTimeEntry.md) | Asociación TimeEntry↔ManufacturingOrder y coherencia de proyecto. |
+
+**No crear project ledger, worklog, receta, orden ni costo paralelos.** Usar los formularios y ledgers nativos; respetar permisos y el punto de extensión `fill`.
+
+### 3.9 CRM, RR. HH., flota y proyectos
 
 Estas áreas tienen dossiers específicos y una ruta de integración, pero su análisis funcional no es exhaustivo. No habilitan uso productivo sin completar formularios, estados, permisos, APIs y pruebas.
 
