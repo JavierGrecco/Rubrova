@@ -248,7 +248,7 @@ export function resolveModuleIntegrationRoute(catalog, query) {
   const related = [
     { path: guide.path, title: guide.title, reason: "Dossier funcional principal del dominio/tema." },
   ];
-  if (module.product === "MyCompany 6.2" && module.domain !== "masterdata") {
+  if (module.product === "MyCompany 6.2" && module.domain !== "masterdata" && module.domain !== "utils") {
     related.push({
       path: "docs/platform-audit/MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md",
       title: "Datos maestros y relaciones transversales",
