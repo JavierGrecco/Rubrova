@@ -118,6 +118,30 @@ const MODULE_PASSPORTS = {
     path: "docs/platform-audit/modules/Session.md",
     title: "Ficha de integración — Session",
   },
+  PurchaseOrder: {
+    path: "docs/platform-audit/modules/PurchaseOrder.md",
+    title: "Ficha de integración — PurchaseOrder",
+  },
+  Invoice: {
+    path: "docs/platform-audit/modules/Invoice.md",
+    title: "Ficha de integración — Invoice",
+  },
+  Bill: {
+    path: "docs/platform-audit/modules/Bill.md",
+    title: "Ficha de integración — Bill",
+  },
+  Pos: {
+    path: "docs/platform-audit/modules/Pos.md",
+    title: "Ficha de integración — Pos",
+  },
+  Product: {
+    path: "docs/platform-audit/modules/Product.md",
+    title: "Ficha de integración — Product",
+  },
+  Partner: {
+    path: "docs/platform-audit/modules/Partner.md",
+    title: "Ficha de integración — Partner",
+  },
 };
 
 const PASSPORT_OVERRIDES = {
