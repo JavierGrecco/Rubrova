@@ -3,7 +3,7 @@
 
 **Fuente única de verdad técnica.** Este manual centraliza el conocimiento para mantener y evolucionar Rubrova POS+ERP: qué incorporamos, qué reutilizamos, cómo se conectan los módulos, quién es dueño de cada dato, qué contratos protegen los procesos, qué se ha probado y qué falta demostrar.
 
-**Corte de estado:** 27 de noviembre de 2026  
+**Corte de estado:** 28 de noviembre de 2026  
 **Base de main antes de consolidar este manual:** [84121794b9570a4418970272349331bed4cc1711](https://github.com/JavierGrecco/Rubrova/commit/84121794b9570a4418970272349331bed4cc1711)  
 **Commit que consolidó los anexos:** [1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b](https://github.com/JavierGrecco/Rubrova/commit/1c3bf7a8235f4128eea2b5f0b0c4b34f8822b67b)  
 **Corrección posterior de enlaces internos:** [57118291eaedffe3aa85a90bcc167cd5fee4d69f](https://github.com/JavierGrecco/Rubrova/commit/57118291eaedffe3aa85a90bcc167cd5fee4d69f)  
@@ -85,7 +85,7 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 - El run [#523](https://github.com/JavierGrecco/Rubrova/actions/runs/46044560960), SHA `da3eb82`, pasó prevalidación, sintaxis Windows, compilación completa y smoke nativo macOS ARM64. Su log permitió identificar el botón nativo `Devolver`; el selector inicial del inspector contenía un espacio que el DOM de lsFusion no serializa. El arreglo y su aserción obligatoria se incorporan en REP-042; su validación de runtime queda pendiente del siguiente run.
 - El run [#516](https://github.com/JavierGrecco/Rubrova/actions/runs/46050676363), sobre `9b6459c`, pasó prevalidación, validación sintáctica Windows y build completo, pero el smoke macOS ARM64 falló en la aserción inmediata de filas de `GRID(si)`. La API del turno reportó una venta y el snapshot posterior mostró una fila y el botón `Devolver` disponible; no fue evidencia de una segunda venta ni de una diferencia de caja/stock. La lectura repetida de una grilla que aún podía actualizarse es la hipótesis principal, no una causa raíz demostrada.
 - La revisión `847cdcd090ac3356bb7a0634fe96e88cc1c2031b` introduce una espera explícita hasta que la grilla tenga exactamente una fila y una fila seleccionada; `fb1ba3032108ccf71a81e1d8c840b71150520de5` agrega las regresiones estáticas correspondientes. El [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222) pasó prevalidación, sintaxis Windows, compilación y empaquetado. El servidor nativo inició y la UI abrió la nota de crédito en borrador; falló después al buscar la etiqueta española de la acción de descarte, aunque el botón renderizado era `New receipt (shift F12)`. El problema ya no es la espera de la grilla.
-- En `f932b9d` y `051506f` el smoke pasa a localizar el descarte por la propiedad nativa estable `PROPERTY(newReceipt(s))` y admite las etiquetas española e inglesa observadas. Se añadió una regresión estática. El [run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880), SHA `051506f6f25aa08692a331e0e002b1b6a4ea11ee`, estaba pendiente de asignación de jobs al último corte; no se afirma aceptación de runtime. La etiqueta inglesa indica además una discrepancia de localización que requiere investigación separada.
+- En `f932b9d` y `051506f` el smoke pasó a localizar el descarte por la propiedad nativa estable `PROPERTY(newReceipt(s))` y admitir las etiquetas española e inglesa. El [run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880), SHA `051506f6f25aa08692a331e0e002b1b6a4ea11ee`, terminó en failure durante la prevalidación: la nueva aserción estática sobreescapaba los paréntesis de la propiedad. Windows pasó; compilación y smoke quedaron omitidos. No fue una falla del servidor ni una aceptación funcional.
 - La especificación funcional de [elaboración y trazabilidad alimentaria](FOOD_PRODUCTION_AND_TRACEABILITY.md) documenta el perfil de rotisería sobre fabricación, BOM, inventario y lotes nativos. Es diseño funcional; aún no hay un módulo Rubrova de metadatos alimentarios/vencimiento/FEFO ni una aceptación runtime del ciclo alimentario.
 - Los resultados históricos permanecen en los reportes numerados. Las secciones 2–10 describen el estado operativo actual y distinguen validación pre-merge de validación del SHA integrado.
 
@@ -103,7 +103,8 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 | Inspección DOM de ventas del turno y acción nativa `Devolver` | [Run #524](https://github.com/JavierGrecco/Rubrova/actions/runs/46047336284), SHA `3bdb371` | Aceptado: una grilla, una venta, una fila seleccionada y una acción nativa encontrada, visible y habilitada. El run confirmó el selector corregido en macOS ARM64; todavía no pulsó la acción |
 | Clic nativo de devolución, creación/descartado de nota y ausencia de efectos de ledger | Siguiente run tras `3bdb371` | Implementación REP-043: el smoke debe pulsar `Devolver`, comprobar `GRID(bl)` y `posPayment(s,b)`, descartar el borrador con `Nueva venta` y conciliar que el turno/stock sigan intactos. Pendiente de runtime |
 | Espera estable de grilla, apertura de nota y acción de cobro en devolución | [Run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), SHA `fb1ba303` | Prevalidación, sintaxis Windows, build/paquete y arranque del servidor nativo aprobados; se abrió la nota de crédito con una línea. Falló al descartar porque el test buscaba `Nueva venta` pero el botón visible era `New receipt (shift F12)`; sin evidencia de descarte ni de ausencia de efectos en ledger |
-| Identidad estable de la acción de descarte | [Run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880), SHA `051506f` | Cambio del inspector y regresión estática integrados; el run estaba pendiente de jobs al último corte. Clic, descarte, conciliación y ausencia de efectos en ledger todavía no aceptados |
+| Identidad estable de la acción de descarte y regresión estática | [Run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880), SHA `051506f` | Windows pasó; prevalidación falló por una regex sobreescapada. Build y smoke fueron omitidos. No hay aceptación funcional de clic, descarte o conciliación |
+| Localización MyCompany es_AR | Bundle base 6.2 frente al bundle Rubrova | Cotejo estático: 1.559 claves base; 122 presentes en es_AR (121 con valor distinto del inglés, una idéntica), 1.437 sin entrada local y 59 claves propias. No equivale a cobertura visual |
 | Regresiones del patcher y compilación de snapshots fijados | [Run #522](https://github.com/JavierGrecco/Rubrova/actions/runs/46040538593) y [run #27](https://github.com/JavierGrecco/Rubrova/actions/runs/46040538788), SHA `3c0d49e` | 7/7 pruebas unitarias del patcher; prevalidación compartida, build y empaquetado MyCompany/lsFusion aprobados; incorporación de fuentes fijadas aprobada |
 | Demostración local persistente | Run #519, job nativo macOS ARM64 | Aceptación limitada: abrió la sesión de la caja demo y la búsqueda devolvió exactamente un producto de demostración. La ruta `demo_mode` termina tras validar catálogo; no agrega la línea al recibo ni cobra. No presentar el marcador demo como aceptación de una venta |
 | Backup PostgreSQL | Run #458 | Backup, verificación y restauración en una DB aislada pasaron dentro del smoke nativo |
@@ -1687,20 +1688,112 @@ Antes de implementar una capacidad:
 | Analítica | proyección/exportación read-only desde ledger y documentos | escribir sobre hechos históricos |
 | Capacidad independiente real | servicio con datos y contrato propios | servicio nominal que comparte tablas sin dueño claro |
 
-## 9. Plan de conocimiento pendiente
+## 9. Catálogo funcional y conocimiento integral de MyCompany / lsFusion
 
-El repositorio contiene cientos de módulos MyCompany; no es honesto afirmar que todos sus contratos están completamente mapeados por esta primera investigación. Esta guía cubre en profundidad el recorrido POS más crítico. El inventario debe crecer por dominio y evidencia:
+La auditoría previa de los anexos A y B es la base de trabajo y se conserva. No debe interpretarse como un análisis completo de los 800 módulos: el Anexo A es un inventario reuse-first con estudios por capacidad; el Anexo B profundiza en composición, transacciones, APIs y circuitos comerciales especialmente relevantes. La propia investigación anterior dejó explícita esta limitación. Esta sección convierte ese pendiente en un programa de cobertura trazable para que ninguna capacidad propia se proponga sin conocer primero la alternativa nativa.
 
-1. Compras y abastecimiento: PurchaseOrder → recepción parcial/completa → costos → factura proveedor → pagos.
-2. Ventas no POS y mayorista: SalesOrder → despacho parcial → facturación → cobros/deuda.
-3. Devoluciones/reembolsos fuera de Retail y notas de crédito no minoristas.
-4. Impuestos, documentos fiscales y localización argentina/ARCA.
-5. Costos, lotes, vencimientos, fabricación, recetas y mermas.
-6. CRM/clientes, cuentas corrientes y límites de crédito.
-7. Usuarios, permisos, auditoría y aislamiento por compañía.
-8. Integraciones de archivos, impresión, dispositivos y sincronización offline.
+### 9.1 Inventario real de MyCompany 6.2
 
-Por dominio, producir: mapa de módulos y dependencias; clases y relaciones; acciones públicas; puntos de extensión; estados e invariantes; ciclo de vida del ledger; API/formatos; escenarios de excepción; matriz de tests. No inferir que un módulo es seguro de extender sólo porque su nombre coincide con la necesidad.
+En el árbol vendorizado y fijado por Rubrova se identifican 800 archivos de módulo LSF. Su distribución por carpeta de dominio es:
+
+| Dominio / carpeta | Módulos LSF | Lectura inicial |
+|---|---:|---|
+| Facturación / invoicing | 134 | facturas, notas de crédito, pagos, deuda, impuestos, documentos e informes |
+| Inventario / inventory | 112 | existencias, almacenes, recepciones, despachos, movimientos, reservas, lotes, conteos y costos |
+| Regionalizaciones / region | 96 | extensiones específicas de países y proveedores; no se cargan por estar vendorizadas |
+| Ventas / sales | 92 | listas de precio, descuentos, pedidos, reservas, fulfillment y ledgers |
+| Datos maestros / masterdata | 84 | productos, servicios, socios, empresas, empleados, monedas, ubicaciones, categorías y atributos |
+| Proyectos / projectManagement | 78 | proyectos, tareas, asignaciones, tiempo, materiales y vínculos con documentos |
+| Compras / purchase | 49 | pedidos, proveedores, abastecimiento, recepciones, facturación y pagos |
+| Fabricación / manufacturing | 41 | BOM, operaciones, órdenes, estaciones, consumos, productos terminados y costos |
+| Comercio minorista / retail | 30 | POS, cajas, turnos, recibos, pagos, devoluciones y experiencia de mostrador |
+| Recursos humanos / humanResources | 25 | empleados, asistencia, reclutamiento y nómina |
+| CRM / crm | 24 | leads, actividades, campañas, fuentes y oportunidades comerciales |
+| Utilidades / utils | 21 | documentación, herramientas e infraestructura funcional compartida |
+| Flota / fleet | 13 | vehículos, conductores, contratos, servicios y mantenimiento |
+| Raíz | 1 | composición y punto de entrada del conjunto |
+
+Los conteos describen archivos de módulo por directorio, no cantidad de funciones ni prueba de que cada módulo esté cargado. Los 96 archivos regionales son una señal de extensibilidad, no una invitación a activar indiscriminadamente ATOL, KSeF, CRPT, Wazzup u otros flujos de jurisdicciones y proveedores distintos. En la revisión fijada no hay una raíz argentina/ARCA.
+
+### 9.2 Estado de profundidad del análisis
+
+| Área | Profundidad actual | Qué falta para declarar dominio conocido |
+|---|---|---|
+| POS, turnos, ventas, pagos, devoluciones y caja | Análisis de fuentes, contratos de ledgers y varias pruebas nativas; el smoke reciente de descarte POS sigue pendiente | completar devolución visual y conciliación; mapear formularios, acciones, parámetros, descuentos, impuestos, roles y escenarios de caja |
+| Inventario, stocktake y reservas | Análisis detallado de Adjustment/AdjustmentList, ledger físico, reservas, barcode y API de reposición | cerrar transferencias, picking, put-away, aceptación en destino, mermas, paquetes, multiubicación y concurrencia |
+| Compras / procure-to-pay | Circuito y relaciones principales documentados a nivel de fuente | mapa completo de cotizaciones, órdenes, recepciones parciales, factura, costos adicionales, deuda, pagos, devoluciones y permisos |
+| Ventas mayoristas / order-to-cash | Pedido, reserva, despacho parcial, facturación y SalesLedger documentados | cobertura de descuentos, crédito, límites, cobros, devoluciones, entregas, cancelaciones y reportes |
+| Datos maestros | Inventario de clases y reglas generales | formularios, atributos, variantes, unidades, genealogía de socios, políticas de duplicados y APIs por entidad |
+| Costos y valoración | Tipos de costo y relaciones principales revisados; FIFO mantiene escenarios de validación pendientes | capas FIFO, AVCO, costo estándar, costo histórico, gastos de recepción, fabricación, monedas, ajustes retroactivos e informes |
+| Fabricación | Existencia de BOM, órdenes, WorkOrder, reservas, costos, lotes y mermas confirmada en fuente | circuito E2E nativo, operaciones/centros, planificación, rendimientos, versiones, subproductos y controles |
+| CRM, proyectos, RR. HH. y flota | Capacidades identificadas; sin análisis exhaustivo de formularios y ciclos de vida | casos de uso, estados, permisos, APIs, relaciones con facturación/ventas y pruebas de persistencia |
+| Seguridad y plataforma | Roles, permisos, acceso a ubicaciones, scheduler, monitor y backup investigados en fuente | matriz por rol/documento, auditoría de negocio, restauración completa, recuperación y pruebas por sistema operativo |
+| Regionalizaciones | Inventario de carpetas y patrones relevantes; módulos no activados por defecto | decisión individual sólo cuando un caso argentino concreto justifique adaptar una integración |
+
+El término analizado se reserva para una capacidad seguida desde su interfaz y configuración hasta acciones, clases y relaciones, estados, restricciones, ledgers, informes, permisos y excepciones. Un nombre de archivo, una entrada en REQUIRE, un formulario compilado o una descripción comercial no bastan.
+
+### 9.3 Ficha obligatoria por módulo y capacidad
+
+Para cada módulo relevante del perfil comercial activo, el catálogo debe responder:
+
+1. **Identidad y carga:** ruta exacta, MODULE, NAMESPACE, REQUIRE, módulo raíz que lo incorpora y dependencias.
+2. **Configuración:** datos iniciales, tipos de documento, parámetros, compañía/ubicación, permisos y condiciones que habilitan u ocultan el caso de uso.
+3. **Interfaz e interacción:** menú y navegación, formularios, paneles, grillas, filtros, acciones, atajos, diálogos, validaciones y secuencia de operación.
+4. **Modelo de datos:** clases, propiedades persistentes/locales/calculadas, cardinalidades, claves, relaciones entre cabecera, líneas y documentos de origen, y snapshots históricos.
+5. **Reglas:** estados y transiciones, CONSTRAINT, WHEN, eventos, hooks abstractos, cancelación, aplicación, sesiones anidadas, permisos y efectos concurrentes.
+6. **Efecto contable y operativo:** ledger que registra el hecho, momento exacto del movimiento, reservas frente a stock físico, impacto en caja/deuda/costo e informes consumidores.
+7. **Integración:** APIs @@api, formato JSON, autenticación, filtros, errores, vacíos, idempotencia, límites y contratos externos.
+8. **Excepciones:** edición, borrado, cancelación, devoluciones, duplicados, parcialidad, reversión, simultaneidad, reinicio y restauración.
+9. **Evidencia:** pruebas estáticas, build, carga runtime, uso funcional y aceptación E2E; indicar exactamente qué nivel se alcanzó.
+
+Cada ficha enlaza el código exacto, las pantallas y módulos relacionados. Se mantiene un grafo de dependencias REQUIRE y un mapa separado de relaciones de negocio: una dependencia entre módulos no demuestra una relación transaccional.
+
+### 9.4 Orden de cobertura y criterio reuse-first
+
+El relevamiento avanzará por recorridos de negocio relacionados, no por orden alfabético:
+
+1. **Fundaciones compartidas:** navegación, configuración, compañías, socios, catálogo, unidades, categorías, roles, seguridad y ubicaciones.
+2. **Comercio minorista:** apertura/cierre de turnos, recibos, búsqueda/barcode, precios, descuentos, pagos, caja, devoluciones, stock y reportes.
+3. **Inventario completo:** recepciones, despachos, reservas, lotes, ubicaciones, transferencias, stocktake, picking, put-away, mermas, valoración y conciliaciones.
+4. **Compras:** demanda, cotización, pedido, recepción, factura, costos de servicio/flete, deuda, pagos y devoluciones.
+5. **Ventas:** cotización, pedidos, reserva, despacho, facturación, cobranzas, deuda, devoluciones y SalesLedger.
+6. **Producción:** BOM, órdenes, estaciones, WorkOrder, consumo real, producto terminado, subproductos, merma, costos y aprovisionamiento por demanda.
+7. **Finanzas e informes:** cuentas, bancos, deuda, calendario, impuestos, valoración, reportes y límites fiscales argentinos.
+8. **Dominios complementarios:** CRM, proyectos, RR. HH., flota, documentación, scheduler y servicios regionales aplicables.
+
+Para cada necesidad, la decisión queda en una de cuatro categorías: **nativo configurable**; **extensión Rubrova sobre contrato nativo**; **adaptador** para fronteras externas; **desarrollo propio nuevo** sólo si la brecha está probada. Debe indicarse el módulo nativo considerado y por qué no alcanza antes de aprobar una nueva entidad, pantalla, API, proceso o ledger.
+
+La meta no es activar los 800 módulos indiscriminadamente. Es conocerlos y aprovechar las capacidades pertinentes de cada perfil, manteniendo desactivadas las opciones regionales, especializadas o innecesarias hasta que exista un caso real, configuración segura y aceptación. Cada producto, documento, pago, deuda y movimiento conserva una única autoridad.
+
+### 9.5 Diferenciales propios de Rubrova
+
+El diferencial no debe reemplazar el ERP base, sino potenciarlo donde el negocio lo necesita:
+
+- UX de operación diaria simplificada y coherente, con perfiles de comercio, autoservicio, rotisería y otros rubros.
+- Localización argentina real: vocabulario, impuestos, comprobantes/ARCA, medios de cobro, formatos, políticas y contingencia.
+- Operación local recuperable, sincronización selectiva y flujos resistentes a cortes, sin duplicar autoridad de datos.
+- Inteligencia operativa auditable: rentabilidad, demanda, reposición, mermas y recomendaciones, separando hechos y estimaciones.
+- Trazabilidad alimentaria y controles de rotisería sobre inventario y fabricación nativos.
+- Integraciones locales de hardware, pagos, comercio electrónico y logística por adaptadores sustituibles.
+
+Estas son líneas de producto; no equivalen a declarar que cada capacidad está implementada.
+
+### 9.6 Localización española: cobertura y puerta de aceptación
+
+La plataforma de interfaz y los mensajes del motor tienen bundles propios; la traducción del negocio MyCompany utiliza MyCompanyResourceBundle. No se debe confundir que el cliente GWT y los mensajes de servidor estén en español con que todos los rótulos de MyCompany lo estén.
+
+En el snapshot upstream 6.2 se encontraron los bundles base, polaco y ruso; no hay un bundle español upstream. Rubrova mantiene su propio archivo MyCompanyResourceBundle_es_AR.properties. Tras incorporar New_receipt=Nueva venta, el cotejo estático del bundle base (1.559 claves) registra 122 claves upstream presentes en es_AR; 121 tienen un valor distinto al inglés, una conserva exactamente el valor upstream y 1.437 no tienen entrada local. Además hay 59 claves propias de Rubrova. Estos conteos miden presencia y diferencia de valores; **no certifican calidad lingüística ni aceptación visual**.
+
+Reglas obligatorias:
+
+- Todo menú, formulario, botón, acción, filtro, estado, diálogo, mensaje, reporte y documentación operativa visible al usuario debe presentarse en español argentino cuando el usuario opera con locale es_AR.
+- No se acepta el fallback inglés en los flujos habilitados del perfil. Una clave traducida en un archivo no cierra el trabajo hasta verla en el runtime.
+- Traducir por los módulos realmente activados y sus pantallas; no es necesario activar ni traducir funcionalidad regional que no se utiliza, pero sí cubrir por completo cada perfil habilitado.
+- Revisar por separado los recursos de MyCompany, GWT, servidor y web. Los captions hard-coded en LSF deben usar claves de recursos o una extensión explícita y testeada.
+- Mantener un glosario común (por ejemplo: caja, turno, cobro, reintegro, recepción, despacho, existencia, reserva, proveedor y orden de producción) y no mezclar dos términos para el mismo concepto.
+- El smoke nativo debe comprobar menús y acciones visibles en español. Para la devolución POS, la aceptación exige Nueva venta (con o sin el atajo visible), no New receipt.
+
+La cobertura de recursos se compara automáticamente con el bundle base, pero la puerta definitiva es visual y funcional: abrir cada pantalla del perfil activo, comprobar sus controles y mensajes y fallar ante texto inglés inesperado. La cifra de cobertura debe actualizarse junto con cada traducción y no puede presentarse como completa mientras haya claves o pantallas activas sin validar.
 
 ## 10. Referencias de código y documentación
 
@@ -3513,12 +3606,11 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 
 ### 2026-11-27 — REP-046 — Descarte POS independiente de la etiqueta traducida
 
-- **Evidencia:** en el run #527, la UI abrió correctamente el borrador y mostró `New receipt (shift F12)`; el test buscaba exactamente `Nueva venta` y falló. El servidor lsFusion informó `Logics instance has successfully started` y `Server has successfully started`; por tanto, no se clasifica como fallo de arranque.
-- **Cambio:** el mapa del inspector relaciona `Nueva venta` con el contenedor nativo `PROPERTY(newReceipt(s))`. El helper permite las dos etiquetas observadas, pero la identidad del botón es la propiedad de lsFusion. Se incorpora la regresión en `validate-mycompany-extension.test.mjs`.
-- **Commits:** `f932b9dc305bd692760300bb8bcecb78e2fe84b6` (inspector) y `051506f6f25aa08692a331e0e002b1b6a4ea11ee` (test).
-- **Pendiente:** run #529 debe demostrar el click real, que CANCEL descarta el borrador, que vuelve la pantalla de recibo y que cantidad de ventas, devoluciones, caja y ledger quedan intactos. Revisar por separado por qué el caption de `newReceipt(s)` aparece en inglés pese al locale `es_AR`.
-- **Estado:** cambio integrado en `main`; aceptación nativa pendiente.
-
+- **Evidencia:** en el run #527, la UI abrió el borrador y mostró New receipt (shift F12); el test buscaba Nueva venta y falló. El servidor lsFusion informó que la instancia y el servidor se iniciaron correctamente; no fue un fallo de arranque.
+- **Cambio inicial:** el inspector pasó a identificar la acción por PROPERTY(newReceipt(s)), sin depender del texto visible. El helper admitió ambas etiquetas para el diagnóstico.
+- **Run #529:** la prevalidación falló en la aserción estática que usaba una regex con paréntesis sobreescapados. Windows pasó; compilación y smoke se omitieron. No se alcanzó el runtime.
+- **Corrección actual:** la regresión compara el selector con texto literal, se añade New_receipt=Nueva venta al bundle es_AR y el smoke exige que el botón nativo se muestre en español antes de ejecutar CANCEL. El alias inglés ya no satisface la aceptación de este flujo.
+- **Estado:** corrección integrada a main; el siguiente run debe demostrar el rótulo español, el descarte, la vuelta al recibo y la ausencia de efectos en ventas, devoluciones, caja y stock.
 
 ### 2026-11-27 — REP-047 — Contrato técnico de trazabilidad alimentaria sobre los ledgers nativos
 
@@ -3529,3 +3621,12 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - FEFO requiere asignación y reserva transaccional por lote, no sólo ordenar los lotes por fecha. Hasta que haya prueba de concurrencia y ausencia de doble consumo, se mantiene la asignación explícita nativa.
 - **Estado:** contrato de diseño precisado en `FOOD_PRODUCTION_AND_TRACEABILITY.md` y Hito E bis. No se agregó todavía código funcional ni se afirma una aceptación runtime alimentaria.
 
+### 2026-11-28 — REP-048 — Cobertura integral de la base y localización real de MyCompany 6.2
+
+- Se confirma que el análisis previo se conserva en los anexos A y B. El Anexo A inventaría y estudia capacidades reuse-first; el B profundiza la composición, transacciones, APIs y circuitos POS, devolución, caja e inventario. No constituye una ficha funcional exhaustiva de los 800 módulos.
+- Se verificó el inventario de 800 archivos LSF y su distribución por dominio en la sección 9.1. Los 96 módulos regionales son opcionales y no deben activarse sin justificar país, proveedor y adaptación.
+- Se establece una ficha común por capacidad: carga y dependencias, configuración, pantallas, acciones/hooks, clases/relaciones, estados/constraints, ledgers, reportes, APIs, permisos, excepciones y evidencia runtime.
+- Se establece que primero se configura y utiliza la función nativa; después se extiende un contrato nativo; se utiliza un adaptador en fronteras externas; sólo se crea una capacidad propia nueva cuando la brecha esté demostrada.
+- El bundle base MyCompany contiene 1.559 claves y no hay bundle español upstream en la fuente fijada. El bundle es_AR de Rubrova, tras añadir New_receipt=Nueva venta, tiene 181 entradas: 122 claves upstream presentes (121 con valor distinto del inglés y una idéntica), 1.437 claves upstream sin entrada local y 59 claves específicas de Rubrova.
+- La presencia de una clave no demuestra calidad ni visualización. El smoke POS exige ahora el caption español real en la acción nativa Nueva venta antes de descartar el borrador. El runtime debe demostrarlo.
+- **Estado:** el catálogo de cobertura y el conteo de traducciones están incorporados; el relevamiento exhaustivo y la aceptación visual de la nueva localización siguen pendientes.
