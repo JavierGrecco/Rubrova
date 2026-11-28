@@ -1994,6 +1994,16 @@ test("la fixture inicializa todos los booleanos con NULL y el smoke extrae ubica
 });
 
 
+test("la referencia vendorReference del fixture de factura delivered respeta el límite MyCompany", () => {
+  const match = nativeReplenishmentFixtureSource.match(/Purchase\.vendorReference\(billLifecycleOrderCI\)\s*<-\s*'([^']+)'/);
+  assert.ok(match, "No se encontró el vendorReference del pedido Bill delivered");
+  assert.equal(match[1], "rubrova-ci-bill-delivered");
+  assert.ok(Buffer.byteLength(match[1], "utf8") <= 30,
+    "vendorReference excede el límite de 30 caracteres de MyCompany");
+  assert.equal((nativeReplenishmentFixtureSource.match(/rubrova-ci-bill-delivered/g) || []).length, 2,
+    "La referencia corta debe coincidir en la creación y búsqueda del pedido");
+});
+
 test("la recepción Done concilia ubicación principal, hija, put-away, costo y reemplazo", () => {
   for (const fragment of [
     "rubrova-ci-done-location",
