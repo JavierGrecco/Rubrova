@@ -551,8 +551,10 @@ def click_exact_action(page: Any, label: str) -> bool:
     actual_label = button.evaluate(
         'element => (element.innerText || element.value || element.textContent || "").trim()'
     )
-    if actual_label != label:
+    accepted_labels = ACTION_LABEL_ALIASES.get(label, (label,))
+    if actual_label not in accepted_labels:
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_LABEL_MISMATCH={actual_label!r}")
+        print(f"UI_ACTION_{label.upper().replace(' ', '_')}_ACCEPTED_LABELS={json.dumps(accepted_labels, ensure_ascii=False)}")
         return False
 
     button.scroll_into_view_if_needed()
@@ -652,6 +654,13 @@ ACTION_CONTAINER_BY_LABEL = {
     # The payment dialog exposes the visible caption, but GWT omits it from the accessible role name.
     "Ok (ctrl ENTER)": "PROPERTY(overFormOk)",
     "Cerrar turno": "PROPERTY(close(s))",
+    # The upstream POS action is stable even when its caption falls back to English.
+    "Nueva venta": "PROPERTY(newReceipt(s))",
+}
+
+ACTION_LABEL_ALIASES = {
+    # The server can expose the native action caption in English despite the es-AR POS bundle.
+    "Nueva venta": ("Nueva venta", "New receipt (shift F12)"),
 }
 
 
@@ -1933,8 +1942,8 @@ def verify_native_return_draft(
     page.screenshot(path=str(draft_screenshot), full_page=True)
     print(f"UI_RETURN_DRAFT_SCREENSHOT={draft_screenshot}")
 
-    # The bill footer exposes the upstream newReceipt action as "Nueva venta".
-    # It starts with CANCEL, so it must abandon this unconfirmed credit-note draft.
+    # Locate the native newReceipt property, not a translated caption: this action begins
+    # with CANCEL and safely abandons the unconfirmed credit-note draft.
     if not click_exact_action(page, "Nueva venta"):
         visible_snapshot(page, "UI_RETURN_DRAFT_NEW_RECEIPT_ACTION_NOT_FOUND")
         raise RuntimeError(
