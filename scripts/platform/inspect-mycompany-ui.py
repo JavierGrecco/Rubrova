@@ -486,6 +486,11 @@ def select_pos_register(page: Any, register_name: str) -> None:
 
 
 def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) -> bool:
+    accepted_labels = (
+        ("Nueva venta", "Nueva venta (shift F12)")
+        if require_spanish and label == "Nueva venta"
+        else ACTION_LABEL_ALIASES.get(label, (label,))
+    )
     # Prefer the stable lsFusion property container, but GWT can leave a hidden
     # projection node with that ID while the actual visible submit control is elsewhere.
     container = ACTION_CONTAINER_BY_LABEL.get(label)
@@ -508,38 +513,53 @@ def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) 
             )
 
     if button is None:
-        # Resolve the visible action by its accessible name at click time.
-        # Never retain a DOM index: GWT can replace controls during rerenders.
-        button = page.get_by_role("button", name=label, exact=True)
-        accessible_count = button.count()
-        if accessible_count != 1:
-            # Some lsFusion builds render toolbar actions as input[type=submit].
-            button = page.locator(
-                f'input[type="submit"][value={json.dumps(label, ensure_ascii=False)}]:visible'
+        # Resolver el control por una de las etiquetas completas admitidas.
+        # Nunca se usa un índice DOM: GWT puede reemplazar controles al redibujar.
+        matched_buttons = []
+        accessible_counts = {}
+        submit_counts = {}
+        for candidate_label in accepted_labels:
+            accessible = page.get_by_role("button", name=candidate_label, exact=True)
+            accessible_count = accessible.count()
+            accessible_counts[candidate_label] = accessible_count
+            if accessible_count == 1 and accessible.is_visible():
+                matched_buttons.append(accessible)
+                continue
+            if accessible_count != 0:
+                continue
+
+            # Algunas versiones de lsFusion renderizan acciones como input[type=submit].
+            submit = page.locator(
+                f'input[type="submit"][value={json.dumps(candidate_label, ensure_ascii=False)}]:visible'
             )
-            submit_count = button.count()
-            if submit_count != 1:
-                print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
-                print(f"UI_ACTION_{label.upper().replace(' ', '_')}_MATCH_COUNT={accessible_count}")
-                print(f"UI_ACTION_{label.upper().replace(' ', '_')}_SUBMIT_MATCH_COUNT={submit_count}")
-                print(
-                    f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
-                    + json.dumps(
-                        page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
-                            """elements => elements.map(element => ({
-                                tag: element.tagName.toLowerCase(),
-                                text: (element.innerText || element.value || element.textContent || "").trim(),
-                                container: element.getAttribute("lsfusion-container") || "",
-                                visible: getComputedStyle(element).display !== "none" &&
-                                    getComputedStyle(element).visibility !== "hidden" &&
-                                    !!(element.offsetWidth || element.offsetHeight),
-                                outerHTML: element.outerHTML.slice(0, 700)
-                            }))"""
-                        ),
-                        ensure_ascii=False,
-                    )
+            submit_count = submit.count()
+            submit_counts[candidate_label] = submit_count
+            if submit_count == 1:
+                matched_buttons.append(submit)
+
+        if len(matched_buttons) != 1:
+            print(f"UI_ACTION_{label.upper().replace(' ', '_')}_FOUND=false")
+            print(f"UI_ACTION_{label.upper().replace(' ', '_')}_MATCH_COUNTS={json.dumps(accessible_counts, ensure_ascii=False)}")
+            print(f"UI_ACTION_{label.upper().replace(' ', '_')}_SUBMIT_MATCH_COUNTS={json.dumps(submit_counts, ensure_ascii=False)}")
+            print(
+                f"UI_ACTION_{label.upper().replace(' ', '_')}_DIAGNOSTIC="
+                + json.dumps(
+                    page.locator('button, input[type="submit"], [role="button"]').evaluate_all(
+                        """elements => elements.map(element => ({
+                            tag: element.tagName.toLowerCase(),
+                            text: (element.innerText || element.value || element.textContent || "").trim(),
+                            container: element.getAttribute("lsfusion-container") || "",
+                            visible: getComputedStyle(element).display !== "none" &&
+                                getComputedStyle(element).visibility !== "hidden" &&
+                                !!(element.offsetWidth || element.offsetHeight),
+                            outerHTML: element.outerHTML.slice(0, 700)
+                        }))"""
+                    ),
+                    ensure_ascii=False,
                 )
-                return False
+            )
+            return False
+        button = matched_buttons[0]
 
     try:
         button.wait_for(state="visible", timeout=12_000)
@@ -551,7 +571,6 @@ def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) 
     actual_label = button.evaluate(
         'element => (element.innerText || element.value || element.textContent || "").trim()'
     )
-    accepted_labels = (("Nueva venta", "Nueva venta (shift F12)") if require_spanish and label == "Nueva venta" else ACTION_LABEL_ALIASES.get(label, (label,)))
     if actual_label not in accepted_labels:
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_LABEL_MISMATCH={actual_label!r}")
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_ACCEPTED_LABELS={json.dumps(accepted_labels, ensure_ascii=False)}")
@@ -661,8 +680,9 @@ ACTION_CONTAINER_BY_LABEL = {
 }
 
 ACTION_LABEL_ALIASES = {
-    # The server can expose the native action caption in English despite the es-AR POS bundle.
-    "Nueva venta": ("Nueva venta", "New receipt (shift F12)"),
+    # El botón de lsFusion puede incluir el atajo de teclado en el texto visible.
+    # Se aceptan sólo estas variantes exactas de la acción nativa en español/inglés.
+    "Nueva venta": ("Nueva venta", "Nueva venta (shift F12)", "New receipt (shift F12)"),
 }
 
 
