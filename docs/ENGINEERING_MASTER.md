@@ -546,7 +546,7 @@ Stocktake cero, FIFO temporal, SalesLedger de costo real, permisos por ubicació
 Mac físico, offline, backup integral y restore en PC nueva. Salida: instalación y recuperación sin dependencia cloud, con datos, adjuntos y configuración verificables.
 
 ### Hito E bis — elaboración de alimentos y rotisería (diseño documentado; implementación pendiente)
-Reutilizar fabricación/BOM, órdenes, consumo, producto terminado, lotes y ledgers de MyCompany. Extender los lotes con fecha de elaboración/vencimiento y bloqueo; exigir trazabilidad de ingredientes en recepción, consumo en tanda y producto terminado antes de venta; integrar controles de inocuidad como registros configurables. FEFO automático, captura de temperaturas y aceptación del ciclo no están implementados. Salida: fixtures de fabricación, pruebas de lote en ambos sentidos, vencimiento/bloqueo al cobrar y conciliación de existencias/costos tras reinicio. Especificación: [FOOD_PRODUCTION_AND_TRACEABILITY.md](FOOD_PRODUCTION_AND_TRACEABILITY.md).
+Reutilizar `Inventory.Lot`, `ReceiptLot`, `ManufacturingOrderLot`, `InvoiceLot`, `PosDashboardLot`, `ShipmentLot` y `InvLedgerLot`; no crear otro lote ni ledger. La primera extensión añade metadata alimentaria y una clasificación explícita de productos sujetos a control. Luego incorpora validación transaccional de lote elegible/saldo en consumo, venta y despacho; la recepción puede dejar lotes retenidos, y la devolución requiere inspección antes de volver a habilitar existencias. En fabricación se debe bloquear el cierre basado sólo en cantidades planificadas. FEFO queda desactivado hasta tener asignación/reserva por lote segura ante concurrencia; temperatura y otras listas de control se implementan como registros configurables, sin valores sanitarios universales. La fixture nativa aislada debe cubrir recepción → tanda → producto terminado → venta, trazabilidad inversa y hacia adelante, lotes retenidos/vencidos, merma, balances y reinicio. La aceptación comercial requiere validación del establecimiento y responsable competente. Especificación: [FOOD_PRODUCTION_AND_TRACEABILITY.md](FOOD_PRODUCTION_AND_TRACEABILITY.md).
 
 ### Hito E — ERP administrativo y localización argentina
 Compras, recepción parcial, proveedores, costo puesto, cuentas corrientes, bancos, ARCA e interoperabilidad contable. Salida: circuito comercial/contable/fiscal conciliado.
@@ -3502,14 +3502,6 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - **Evidencia del run #527:** prevalidación compartida y sintaxis PowerShell pasaron; la compilación lsFusion/MyCompany terminó y el empaquetado seguía en ejecución al corte. El smoke macOS ARM64 aún no se acepta.
 - **Criterio de cierre:** run completo en `success`; marcadores `UI_RETURN_ACTION_CLICKED`, `UI_RETURN_DRAFT_GRID_RENDERED`, `UI_RETURN_DRAFT_DISCARDED` y `UI_RETURN_DRAFT_NO_LEDGER_EFFECT`; conservar turno, caja y stock originales.
 
-### 2026-11-27 — REP-046 — Descarte POS independiente de la etiqueta traducida
-
-- **Evidencia:** en el run #527, la UI abrió correctamente el borrador y mostró `New receipt (shift F12)`; el test buscaba exactamente `Nueva venta` y falló. El servidor lsFusion informó `Logics instance has successfully started` y `Server has successfully started`; por tanto, no se clasifica como fallo de arranque.
-- **Cambio:** el mapa del inspector relaciona `Nueva venta` con el contenedor nativo `PROPERTY(newReceipt(s))`. El helper permite las dos etiquetas observadas, pero la identidad del botón es la propiedad de lsFusion. Se incorpora la regresión en `validate-mycompany-extension.test.mjs`.
-- **Commits:** `f932b9dc305bd692760300bb8bcecb78e2fe84b6` (inspector) y `051506f6f25aa08692a331e0e002b1b6a4ea11ee` (test).
-- **Pendiente:** run #529 debe demostrar el click real, que CANCEL descarta el borrador, que vuelve la pantalla de recibo y que cantidad de ventas, devoluciones, caja y ledger quedan intactos. Revisar por separado por qué el caption de `newReceipt(s)` aparece en inglés pese al locale `es_AR`.
-- **Estado:** cambio integrado en `main`; aceptación nativa pendiente.
-
 ### 2026-11-27 — REP-045 — Perfil inicial de producción alimentaria documentado
 
 - La inspección de `MyCompany.lsf` y `Manufacturing.lsf` confirma que fabricación nativa, BOM, órdenes, consumo, producto terminado, costos, merma y lotes ya forman parte de la suite vendorizada. `InvLedgerLot` mantiene el stock por lote y `PosDashboardLot` permite capturar lotes desde el POS.
@@ -3518,3 +3510,21 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - `ManufacturingOrderDone.markAsDone` puede completar producción y consumo reales con las cantidades previstas cuando están vacías. Para alimentos se necesita una barrera de confirmación de cantidades reales antes de finalizar una tanda.
 - Se documentó en `docs/FOOD_PRODUCTION_AND_TRACEABILITY.md` la forma de extender esos contratos nativos para tienda + rotisería, con versiones de receta, tandas, consumos/producción reales, merma, costo, trazabilidad hacia adelante/atrás y validación sanitaria supervisada. Se enlazó desde `SECTOR_PROFILES.md` y `PRODUCT_CAPABILITY_MAP.md`.
 - **Estado:** especificación funcional en `main`; no hay todavía código ni aceptación runtime de vencimientos, FEFO, temperatura, recall o lotes alimentarios. No activar el flujo como productivo.
+
+### 2026-11-27 — REP-046 — Descarte POS independiente de la etiqueta traducida
+
+- **Evidencia:** en el run #527, la UI abrió correctamente el borrador y mostró `New receipt (shift F12)`; el test buscaba exactamente `Nueva venta` y falló. El servidor lsFusion informó `Logics instance has successfully started` y `Server has successfully started`; por tanto, no se clasifica como fallo de arranque.
+- **Cambio:** el mapa del inspector relaciona `Nueva venta` con el contenedor nativo `PROPERTY(newReceipt(s))`. El helper permite las dos etiquetas observadas, pero la identidad del botón es la propiedad de lsFusion. Se incorpora la regresión en `validate-mycompany-extension.test.mjs`.
+- **Commits:** `f932b9dc305bd692760300bb8bcecb78e2fe84b6` (inspector) y `051506f6f25aa08692a331e0e002b1b6a4ea11ee` (test).
+- **Pendiente:** run #529 debe demostrar el click real, que CANCEL descarta el borrador, que vuelve la pantalla de recibo y que cantidad de ventas, devoluciones, caja y ledger quedan intactos. Revisar por separado por qué el caption de `newReceipt(s)` aparece en inglés pese al locale `es_AR`.
+- **Estado:** cambio integrado en `main`; aceptación nativa pendiente.
+
+
+### 2026-11-27 — REP-047 — Contrato técnico de trazabilidad alimentaria sobre los ledgers nativos
+
+- Se inspeccionaron los módulos nativos `ReceiptLot`, `BillReceiptLot`, `ManufacturingOrderLot`, `InvoiceLot`, `PosDashboardLot`, `ShipmentLot`, `InvoiceShipmentLot`, `CreditNoteLot` e `InvLedgerLot`.
+- El lote ya circula por recepción, consumo, producción, venta, despacho y devolución. `InvLedgerLot` calcula existencia por ubicación/lote; no se necesita otro libro de movimientos.
+- La extensión propia debe ampliar `Inventory.Lot` con metadata alimentaria y diferenciar productos con política alimentaria de productos que sólo usan lotes por trazabilidad general. La elegibilidad se comprobará al consumir/vender/despachar, no al aceptar físicamente una recepción.
+- FEFO requiere asignación y reserva transaccional por lote, no sólo ordenar los lotes por fecha. Hasta que haya prueba de concurrencia y ausencia de doble consumo, se mantiene la asignación explícita nativa.
+- **Estado:** contrato de diseño precisado en `FOOD_PRODUCTION_AND_TRACEABILITY.md` y Hito E bis. No se agregó todavía código funcional ni se afirma una aceptación runtime alimentaria.
+
