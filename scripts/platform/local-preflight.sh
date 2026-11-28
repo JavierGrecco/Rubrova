@@ -20,6 +20,7 @@ Uso: bash scripts/platform/local-preflight.sh [--all|--platform|--replenishment]
 
   --all             Ejecuta las dos capas rápidas (opción predeterminada).
   --platform        Extensiones, configuración, supervisor y scripts de plataforma.
+                   Incluye consulta exacta por módulo y rutas de integración.
   --replenishment   Pruebas Python, fixtures y conversión del contrato de reposición.
 
 No inicia PostgreSQL, lsFusion, Tomcat, Docker ni servicios externos.
@@ -82,6 +83,9 @@ run_platform() {
   run_step "$NODE_BIN" scripts/platform/audit-lsf-source.mjs --json-output "$OUTPUT_DIR/lsfusion-source-catalog.json" --markdown-output "$OUTPUT_DIR/lsfusion-module-register.md"
   run_step "$NODE_BIN" --test scripts/platform/audit-source-docs.test.mjs
   run_step "$NODE_BIN" --test scripts/platform/test-platform-map-entry.mjs
+  run_step "$NODE_BIN" --test scripts/platform/module-integration-route.test.mjs
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module InvLedger
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module MasterDataP
   run_step "$NODE_BIN" scripts/platform/audit-source-docs.mjs --json-output "$OUTPUT_DIR/source-document-catalog.json" --markdown-output "$OUTPUT_DIR/source-document-register.md"
   run_step "$NODE_BIN" --test scripts/evaluation/fixture-validator.test.mjs
   run_step "$PYTHON_BIN" scripts/platform/test_runtime_config.py
