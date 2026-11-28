@@ -52,6 +52,10 @@ const fixtureCatalog = {
   myCompany: {
     modules: [
       makeModule("InvLedger", { requires: ["Product", "Location"] }),
+      makeModule("Product", { domain: "masterdata", path: "vendor/mycompany/src/main/lsfusion/masterdata/items/products/Product.lsf" }),
+      makeModule("Location", { domain: "inventory", path: "vendor/mycompany/src/main/lsfusion/inventory/locations/Location.lsf" }),
+      makeModule("GeoUtils", { domain: "utils", path: "vendor/mycompany/src/main/lsfusion/utils/GeoUtils.lsf" }),
+      makeModule("RegionalTax", { domain: "region", path: "vendor/mycompany/src/main/lsfusion/region/RegionalTax.lsf" }),
       makeModule("Inventory", { requires: ["InvLedger", "Receipt"] }),
       makeModule("Receipt", { requires: ["InvLedger", "ResLedger"] }),
       makeModule("ResLedger", { requires: ["InvLedger"] }),
@@ -76,7 +80,12 @@ test("resuelve un módulo por nombre MODULE exacto y devuelve su dossier princip
 test("identifica REQUIRE directos y consumidores directos sin confundirlos", () => {
   const route = resolveModuleIntegrationRoute(fixtureCatalog, "InvLedger");
   assert.deepEqual(route.requires, ["Product", "Location"]);
+  assert.deepEqual(route.requireDetails.map(item => item.path), [
+    "vendor/mycompany/src/main/lsfusion/masterdata/items/products/Product.lsf",
+    "vendor/mycompany/src/main/lsfusion/inventory/locations/Location.lsf",
+  ]);
   assert.deepEqual(route.consumers.map(item => item.moduleName), ["Inventory", "Receipt", "ResLedger"]);
+  assert.ok(route.consumers.every(item => item.path.endsWith(".lsf")));
 });
 
 test("resuelve también el nombre exacto del archivo fuente", () => {
@@ -84,6 +93,19 @@ test("resuelve también el nombre exacto del archivo fuente", () => {
   assert.equal(route.found, true);
   assert.equal(route.moduleName, "SalesOrder");
   assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md");
+});
+
+test("resuelve el nombre base y el nombre de archivo LSF", () => {
+  const route = resolveModuleIntegrationRoute(fixtureCatalog, "SalesOrder.lsf");
+  assert.equal(route.found, true);
+  assert.equal(route.moduleName, "SalesOrder");
+});
+
+test("envía utilidades y módulos regionales a sus dossiers específicos", () => {
+  const utility = resolveModuleIntegrationRoute(fixtureCatalog, "GeoUtils");
+  const regional = resolveModuleIntegrationRoute(fixtureCatalog, "RegionalTax");
+  assert.equal(utility.guide.path, "docs/platform-audit/MYCOMPANY_6_2_UTILITY_MODULES.md");
+  assert.equal(regional.guide.path, "docs/platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md");
 });
 
 test("advierte cuando un módulo existe pero queda fuera del cierre actual", () => {
