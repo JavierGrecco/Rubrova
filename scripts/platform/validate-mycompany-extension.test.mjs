@@ -1001,7 +1001,7 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(runtimeSmokeSource.includes("Retail.paid(rubrovaCITestSession(), Retail.cashPaymentMethod())"));
   assert.ok(uiSmokeSource.includes('"Cerrar turno": "PROPERTY(close(s))"'));
   assert.ok(uiSmokeSource.includes("STABLE_SELECTOR_HIDDEN=true"));
-  assert.ok(uiSmokeSource.includes('page.get_by_role("button", name=label, exact=True)'));
+  assert.ok(uiSmokeSource.includes('page.get_by_role("button", name=candidate_label, exact=True)'));
   assert.ok(uiSmokeSource.includes('input[type="submit"][value='));
   assert.ok(uiSmokeSource.includes("Never retain a DOM index"));
   assert.ok(uiSmokeSource.includes("def accept_ls_fusion_confirmation"));
