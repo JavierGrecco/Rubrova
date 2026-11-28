@@ -4,8 +4,8 @@
 
 **Este es el punto de entrada obligatorio para cualquier integrante, desarrollador o agente que trabaje en Rubrova.** Su propósito es localizar toda la investigación existente, indicar el orden de lectura según la tarea y conectar los mapas de dominio con los documentos de arquitectura, producto, seguridad, runtime y reutilización. No alcanza con abrir un único mapa y asumir que la funcionalidad está aislada.
 
-**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.113 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
-- **75 documentos mantenidos por Rubrova fuera de `vendor/`**: los **71 documentos Markdown en `docs/`** (54 generales + 17 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
+**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.119 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
+- **81 documentos mantenidos por Rubrova fuera de `vendor/`**: los **77 documentos Markdown en `docs/`** (54 generales + 23 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
 - **1.038 archivos Markdown dentro de `vendor/`**: 1.031 páginas de documentación upstream incluidas en las cinco raíces que indexa `audit-source-docs.mjs` (347 MyCompany + 684 lsFusion), más 7 README/CHANGELOG/guías de soporte del snapshot.
 
 El catálogo de documentos mantenidos por Rubrova está enlazado en este archivo; las 1.031 páginas upstream se enumeran por ruta, idioma, título y encabezados en el registro generado `rubrova-source-document-catalog`. Los siete Markdown adicionales del snapshot se enumeran expresamente en la sección 9. Los archivos binarios/imagenes upstream también quedan listados en el catálogo generado, pero ni el índice ni el registro afirman que cada página o imagen haya sido leída funcionalmente.
@@ -44,7 +44,7 @@ Quedan allí `lsfusion-source-catalog.json`, `lsfusion-module-register.md`, `sou
 4. [Manual técnico canónico](../ENGINEERING_MASTER.md): secciones vigentes 1–11 primero; en especial cómo se mantiene la fuente de verdad, estado de `main`, contratos, decisiones, evidencias, sección 9 y puerta 9.7.
 5. [Arquitectura](../ARCHITECTURE.md), [composición de módulos](../MODULE_COMPOSITION.md), [inicio de implementación](../IMPLEMENTATION_START.md) y [procedencia/fork](../SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md).
 6. [Forma de trabajo](../WORKFLOW.md): procedimiento de cambios, pruebas, revisión e integración.
-7. Elegir la ruta funcional de la sección 4. No es necesario leer de punta a punta los 71 documentos para cada tarea; sí es obligatorio consultar el recorrido relevante y los documentos relacionados que indique.
+7. Elegir la ruta funcional de la sección 4. No es necesario leer de punta a punta los 77 documentos para cada tarea; sí es obligatorio consultar el recorrido relevante y los documentos relacionados que indique.
 
 ### 2.2 Antes de implementar cualquier capacidad
 
@@ -118,6 +118,19 @@ Los conteos por dominio se solapan. Un mismo módulo puede extender otros domini
 No convertir un nivel en otro por inferencia.
 
 ## 4. Rutas de lectura por tipo de trabajo
+
+### Fichas individuales ya disponibles
+
+Para estos módulos no hay que quedarse sólo con el resumen del dominio: abrir directamente el pasaporte individual y después el mapa transversal correspondiente.
+
+| Módulo exacto | Ficha de integración | Alcance de lectura |
+|---|---|---|
+| InvLedger | [Ficha InvLedger](modules/InvLedger.md) | Movimiento físico, saldos, ubicación, aceptación y productores |
+| ResLedger | [Ficha ResLedger](modules/ResLedger.md) | Reservas, esperados, signos, disponible y reglas de ubicación |
+| CostLedger | [Ficha CostLedger](modules/CostLedger.md) | Valoración estándar/AVCO/FIFO, recálculo y riesgos |
+| Receipt | [Ficha Receipt](modules/Receipt.md) | Recepción, entidades, validaciones y efectos en ledgers |
+| SalesOrder | [Ficha SalesOrder](modules/SalesOrder.md) | Pedido, entidades, estados y documentos derivados |
+| Session | [Ficha Session](modules/Session.md) | Apertura/cierre de POS, hooks y conciliación del turno |
 
 ### 4.0 Integración por módulo exacto — ruta obligatoria
 
@@ -361,7 +374,7 @@ Este catálogo complementa los 14 dossiers anteriores. Incluye **todos** los doc
 
 ### 7.1 Recursos de soporte y fixtures bajo `docs/`
 
-Además de los 71 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **79 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
+Además de los 77 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **85 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
 
 | Archivo | Qué contiene / para qué sirve | Leer junto con |
 |---|---|---|
@@ -411,7 +424,7 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `scripts/platform/audit-source-docs.test.mjs` | Pruebas del índice documental | Al cambiar el indexador |
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
 | `.github/workflows/documentation-map.yml` | Valida catálogo, rutas por módulo, plantilla, generadores upstream y recursos de `docs/` ante cambios documentales | Gate CI documental obligatorio |
-| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 79 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
+| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 85 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
 | `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
 | `patches/lsfusion/README.md` | Política para parches directos al motor: cuándo usar extensión, procedencia, archivos upstream afectados, versión y pruebas | Antes de modificar directamente `vendor/platform` |
