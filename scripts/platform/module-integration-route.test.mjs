@@ -61,6 +61,7 @@ const fixtureCatalog = {
       makeModule("ResLedger", { requires: ["InvLedger"] }),
       makeModule("OptionalModule", { active: false }),
       makeModule("SalesOrder", { domain: "sales", path: "vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf" }),
+      makeModule("PurchaseOrder", { domain: "purchase", path: "vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf" }),
     ],
   },
   lsFusion: { modules: [] },
@@ -113,7 +114,7 @@ test("un módulo sin pasaporte individual lo declara y conserva el dossier de do
   const route = resolveModuleIntegrationRoute(fixtureCatalog, "PurchaseOrder");
   assert.equal(route.found, true);
   assert.equal(route.passport, null);
-  assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md");
+  assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md");
 });
 
 test("advierte cuando un módulo existe pero queda fuera del cierre actual", () => {
