@@ -309,19 +309,19 @@ export function renderModuleIntegrationRoute(route) {
     `- **Consumidores directos detectados (${route.consumers.length}):** ${route.consumers.length ? route.consumers.map(item => \`${item.moduleName}\`).join(", ") : "(ninguno en el catálogo estructural)" }`,
     "",
     "## Primera lectura obligatoria",
-    `- [${route.guide.title}](../../${route.guide.path})`,
+    `- **Dossier primario:** ${route.guide.path} — ${route.guide.title}`,
     `- **Cobertura conocida:** ${route.guide.coverage}`,
     route.passportNote ? `- **Nota de integración:** ${route.passportNote}` : "- **Nota de integración:** no hay override funcional específico registrado; seguir el dossier de dominio y completar la ficha del módulo si el cambio lo requiere.",
     "",
     "## Siguiente lectura",
-    ...route.related.map(item => `- [${item.title}](../../${item.path}) — ${item.reason}`),
+    ...route.related.map(item => `- **${item.title}:** ${item.path} — ${item.reason}`),
     "",
     "## Declaraciones detectadas en fuente",
     ...route.declarations.map(item => `- **${item.label}:** ${item.count}${item.names.length ? ` — ${item.names.join(", ")}` : ""}`),
     "",
     "## Límite de la salida",
     route.parserLimits,
-    "Esta ruta acelera la localización y no es una ficha de integración aceptada. Antes de modificar, verificar la implementación exacta, estados, transacciones, permisos, efectos en documentos/ledgers, consumidores y pruebas runtime.",
+    "Esta ruta acelera la localización, pero no sustituye una ficha de integración aceptada. Antes de modificar, verificar la implementación exacta, estados, transacciones, permisos, efectos en documentos/ledgers, consumidores y pruebas runtime.",
   ];
   return lines.join("\n");
 }
