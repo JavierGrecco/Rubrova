@@ -1852,6 +1852,8 @@ Los niveles de evidencia no se mezclan:
 
 Una compilación verde no equivale a un módulo cargado; un formulario visible no equivale a una operación correcta; una prueba aislada no equivale a conciliación integral.
 
+El mapa funcional ampliado se mantiene en [MYCOMPANY_6_2_FUNCTIONAL_MAP.md](platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md). Este archivo documenta procesos y relaciones por dominio, fuentes de documentación upstream y evidencia pendiente. No reemplaza las fichas por módulo que todavía faltan.
+
 #### Composición real y módulos fuera del cierre
 
 ##### Resultados estructurales iniciales (no equivalen a aceptación funcional)
