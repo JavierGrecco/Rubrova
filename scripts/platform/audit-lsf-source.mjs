@@ -97,14 +97,14 @@ export function parseLsfSource(source, filePath = "") {
   const requires = requireBody.split(",").map((part) => part.trim()).filter(Boolean);
 
   const declarations = {
-    classes: declarationMatches(code, /^\s*(?:EXTEND\s+)?CLASS\s+(?:ABSTRACT\s+)?([A-Za-z_][A-Za-z0-9_]*)/gm),
-    forms: declarationMatches(code, /^\s*(?:EXTEND\s+)?FORM\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
-    navigators: declarationMatches(code, /^\s*(?:EXTEND\s+)?NAVIGATOR\b/gm).map((x) => ({ ...x, name: null })),
-    tables: declarationMatches(code, /^\s*TABLE\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
-    constraints: declarationMatches(code, /^\s*CONSTRAINT\b/gm).map((x) => ({ ...x, name: null })),
-    indexes: declarationMatches(code, /^\s*INDEX\s+([A-Za-z_][A-Za-z0-9_]*)/gim),
-    whenEvents: declarationMatches(code, /^\s*WHEN\b/gm).map((x) => ({ ...x, name: null })),
-    onEvents: declarationMatches(code, /^\s*ON\b/gm).map((x) => ({ ...x, name: null })),
+    classes: declarationMatches(code, /^(?:EXTEND\s+)?CLASS\s+(?:ABSTRACT\s+)?([A-Za-z_][A-Za-z0-9_]*)/gm),
+    forms: declarationMatches(code, /^(?:EXTEND\s+)?FORM\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    navigators: declarationMatches(code, /^(?:EXTEND\s+)?NAVIGATOR\b/gm).map((x) => ({ ...x, name: null })),
+    tables: declarationMatches(code, /^TABLE\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    constraints: declarationMatches(code, /^CONSTRAINT\b/gm).map((x) => ({ ...x, name: null })),
+    indexes: declarationMatches(code, /^INDEX\s+([A-Za-z_][A-Za-z0-9_]*)/gim),
+    whenEvents: declarationMatches(code, /^WHEN\b/gm).map((x) => ({ ...x, name: null })),
+    onEvents: declarationMatches(code, /^ON\b/gm).map((x) => ({ ...x, name: null })),
     apiAnnotations: declarationMatches(code, /@@api\b/gm).map((x) => ({ ...x, name: null })),
     noAuthAnnotations: declarationMatches(code, /@@noauth\b/gm).map((x) => ({ ...x, name: null })),
   };
