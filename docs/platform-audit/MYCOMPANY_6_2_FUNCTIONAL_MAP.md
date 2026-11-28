@@ -305,6 +305,8 @@ Capacidades documentadas:
 
 **Pendiente:** reglas de calendario, horas extras, ausencias, permisos, datos biométricos/fotos, acceso a ubicación, retención de datos, configuración real de haberes y validación legal argentina. La asistencia y el cálculo de sueldo deben analizarse como subsistemas separados.
 
+El análisis detallado de los 78 módulos de proyectos e integraciones está en [MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md](MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md). Incluye workflow, tiempos, turnos, fabricación, haberes y documentos asociados.
+
 ### 3.10 Gestión de proyectos: tareas → asignaciones → tiempos → costos
 
 Capacidades documentadas:

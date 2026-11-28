@@ -1909,6 +1909,8 @@ El mapa completo de los 24 módulos CRM, estados por tipo, Kanban, comunicacione
 
 El análisis de los 25 módulos de RR. HH., reclutamiento, asistencia móvil/kiosco, recibos, lotes, deuda y pagos está en [MYCOMPANY_6_2_HR_ATTENDANCE_PAYROLL_MAP.md](platform-audit/MYCOMPANY_6_2_HR_ATTENDANCE_PAYROLL_MAP.md).
 
+El mapa de los 78 módulos de proyectos, tareas, equipos, workflow, tiempos, turnos y sus integraciones con fabricación, nómina, asistencia, compras, ventas e inventario está en [MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md](platform-audit/MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md).
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.
