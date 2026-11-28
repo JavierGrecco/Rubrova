@@ -37,19 +37,25 @@ Rubrova es un producto propio que conduzco como **Product Owner y responsable de
 El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las capacidades planificadas se presentan como visión y evolución progresiva; las tablas de estado y los documentos técnicos indican qué está implementado, probado, en validación o pendiente.
 
 
-> **Estado del proyecto · 27 de noviembre de 2026**
+> **Estado del proyecto · 28 de noviembre de 2026**
 >
 > Rubrova sigue siendo un piloto integrado POS + ERP; **no es una versión productiva**. La aceptación anterior [run #524](https://github.com/JavierGrecco/Rubrova/actions/runs/46047336284) confirmó en macOS ARM64 una venta en el turno y la acción nativa **Devolver** visible y habilitada, pero todavía no había pulsado la acción.
 >
-> El [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), SHA `fb1ba3032108ccf71a81e1d8c840b71150520de5`, pasó prevalidación, sintaxis Windows, compilación y empaquetado. El servidor nativo también inició correctamente y la UI llegó a abrir una nota de crédito en borrador con su línea y acción de pago. El smoke falló después, al intentar descartarla: buscaba el texto español `Nueva venta`, pero la interfaz expuso el botón upstream `New receipt (shift F12)`. **No se demostró todavía el descarte ni la ausencia de efectos en caja/ledger.**
+> El [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), SHA fb1ba303, pasó prevalidación, sintaxis Windows, compilación y empaquetado. El servidor nativo inició y la UI abrió una nota de crédito en borrador; falló al descartarla porque el botón se mostraba como New receipt (shift F12) en lugar de Nueva venta. No se demostró el descarte ni la ausencia de efectos en caja/ledger.
 >
-> Se corrigió el test para localizar la acción por su identidad estable `PROPERTY(newReceipt(s))` y aceptar las dos etiquetas observadas, y se añadió una regresión estática. La revisión actual es `051506f6f25aa08692a331e0e002b1b6a4ea11ee`; su [run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880) estaba pendiente de asignación de jobs al último corte. **La corrección aún no tiene aceptación de runtime.** El rótulo inglés observado también deja pendiente revisar por qué no se aplica en esa vista el recurso `es_AR`; no debe confundirse la robustez del test con una corrección de localización del producto.
+> La corrección por identidad nativa se integró en f932b9d y su regresión en 051506f. El [run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880) terminó en failure durante la prevalidación: la regex de la nueva aserción estática sobreescapaba los paréntesis. Windows pasó; build y smoke fueron omitidos. No fue una falla del servidor ni una prueba de aceptación funcional.
 >
-> **Estado GitHub:** `main` conserva dos ramas visibles: `main` y `work/pos-refund-cumulative-method-guard`. La segunda quedó obsoleta después de integrar el límite de reintegros y está pendiente de eliminación. No hay PR abiertos y `main` aún no tiene protección por reglas obligatorias.
+> En el commit 1321c2d se corrigió la regresión para comparar el selector con texto literal, se añadió New_receipt=Nueva venta al recurso es_AR y el smoke exige el caption español en el botón real antes de descartar el borrador. El [run #530](https://github.com/JavierGrecco/Rubrova/actions/runs/46092959665) está validando esta revisión; la traducción y la secuencia todavía no tienen aceptación de runtime.
 >
-> El runtime local nativo y la restauración de PostgreSQL tienen pruebas automatizadas previas, pero aún faltan aceptación en el equipo físico del comercio, modo offline, instalación funcional Windows/Linux, backup integral con adjuntos y una jornada comercial supervisada.
+> El análisis reuse-first previo de MyCompany/lsFusion se conserva en los anexos A y B del [manual técnico](docs/ENGINEERING_MASTER.md). El inventario confirma 800 módulos LSF y define el trabajo que falta para conocer de manera sistemática las relaciones, pantallas, acciones, estados, ledgers, APIs, permisos y casos de uso por dominio.
 >
-> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) está documentada; la extensión de metadatos de lote, bloqueos por vencimiento, trazabilidad y guardas de producción continúa pendiente de implementación y validación.
+> La localización de MyCompany sigue siendo parcial: el bundle base contiene 1.559 claves; el bundle es_AR contiene 122 de esas claves (121 con valor distinto del inglés y una idéntica), mientras 1.437 no tienen entrada local. Hay además 59 claves propias de Rubrova. La cobertura de archivos no equivale a aceptación visual.
+>
+> **Estado GitHub:** main conserva dos ramas visibles: main y work/pos-refund-cumulative-method-guard. La segunda quedó obsoleta después de integrar el límite de reintegros y está pendiente de eliminación. No hay PR abiertos y main aún no tiene protección por reglas obligatorias.
+>
+> Aún faltan aceptación en el equipo físico del comercio, modo offline, instalación funcional Windows/Linux, backup integral con adjuntos y una jornada comercial supervisada.
+>
+> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) está documentada; metadatos de lote, bloqueos por vencimiento, trazabilidad y guardas de producción siguen pendientes de implementación y validación.
 >
 > Seguimiento: [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
 
