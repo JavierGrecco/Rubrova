@@ -31,6 +31,7 @@ on:
       - 'scripts/platform/test-platform-map-entry.mjs'
       - 'scripts/platform/module-integration-route.mjs'
       - 'scripts/platform/module-integration-route.test.mjs'
+      - 'scripts/platform/local-preflight.sh'
       - 'scripts/platform/audit-lsf-source.mjs'
       - 'scripts/platform/audit-lsf-source.test.mjs'
       - 'scripts/platform/audit-source-docs.mjs'
