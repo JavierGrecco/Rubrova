@@ -53,6 +53,7 @@ const mandatoryToolPaths = [
   "docs/ENGINEERING_MASTER.md",
   "docs/WORKFLOW.md",
   ".github/pull_request_template.md",
+  ".github/workflows/documentation-map.yml",
   "platform/source-lock.json",
   "platform/mycompany-6.2.lock.json",
   "extensions/lsfusion/RubrovaCustom.lsf",
@@ -162,7 +163,12 @@ test("README, AGENTS, workflow y plantilla mantienen visible la obligación de c
   const agents = read("AGENTS.md");
   const workflow = read("docs/WORKFLOW.md");
   const template = read(".github/pull_request_template.md");
+  const docWorkflow = read(".github/workflows/documentation-map.yml");
 
+  assert.ok(docWorkflow.includes("'docs/**'"));
+  assert.ok(docWorkflow.includes("scripts/platform/test-platform-map-entry.mjs"));
+  assert.ok(docWorkflow.includes("scripts/platform/audit-lsf-source.mjs"));
+  assert.ok(docWorkflow.includes("scripts/platform/audit-source-docs.mjs"));
   assert.ok(readme.includes("docs/platform-audit/README.md"));
   assert.ok(agents.includes("docs/platform-audit/README.md"));
   assert.ok(agents.includes("Regla reuse-first obligatoria"));
