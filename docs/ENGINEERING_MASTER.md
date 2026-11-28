@@ -4018,3 +4018,14 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - **Límites:** Linux x86_64 y Docker/Linux fueron omitidos; Windows tuvo sólo validación sintáctica; `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. El backup/restore comprobado fue de PostgreSQL aislado, no una recuperación integral con adjuntos en otra máquina. No extrapolar a producción.
 - **Próxima puerta:** el workflow #615 no ejercita Bill/Debt/OutgoingPayment. La fixture de SupplierBillLifecycle debe pasar su propia aceptación runtime.
 
+### 2026-11-28 — REP-061 — Fixture runtime de cancelación de factura delivered
+
+- **Fixture agregada:** `scripts/platform/fixtures/RubrovaCIReplenishmentFixture.lsf` crea un pedido de compra independiente de 3 unidades, precio de origen 1.000, y deja desactivada explícitamente la creación automática de una Receipt desde Bill para aislar la ruta PurchaseOrder→Receipt→Bill.
+- **Secuencia:** recepción nativa Done de 2 unidades, `Purchase.createBill` bajo política delivered, cambio deliberado del precio de la línea de factura a 1.250, captura de costo de Receipt, cancelación nativa de Bill y captura de si ReceiptLine sigue activa/vinculada y si la cantidad vuelve a estar disponible para reemitir.
+- **Persistencia:** la API de diagnóstico guarda los resultados una sola vez y devuelve los mismos datos en la segunda lectura posterior al reinicio. La fixture no modifica filas de ledgers; utiliza acciones y propiedades nativas.
+- **UI/smoke:** `inspect-mycompany-ui.py` ejecuta la sonda en el smoke inicial y en el modo persisted-only; el workflow exige un marcador de evidencia capturada en ambos momentos.
+- **Pruebas estáticas:** los guards Node y la prevalidación compartida aprobaron en el workflow #616. La validación sintáctica Windows también aprobó.
+- **Estado runtime:** el build/packaging de lsFusion/MyCompany y smoke nativo sigue en curso. No declarar todavía el comportamiento delivered aceptado ni parchear upstream.
+- **Decisión:** si la cancelación de Bill deja Receipt activa pero `toBillShipped` en cero por la referencia persistente, confirmar primero la regla funcional y luego diseñar una corrección que mantenga el historial. Si el costo permanece basado en la factura cancelada, verificar precedencia de `ABSTRACT CASE` y el fallback al precio del pedido.
+- **Próximo paso:** revisar logs del workflow [#616](https://github.com/JavierGrecco/Rubrova/actions/runs/46160101852), ajustar la fixture si la acción API de creación requiere interacción UI, y sólo tras un resultado medido abrir cambio upstream.
+

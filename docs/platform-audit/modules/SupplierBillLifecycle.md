@@ -283,13 +283,13 @@ Pendiente de runtime:
 
 ## 13. Estado y próximos pasos
 
-**Estado actual:** fuente de 37 módulos relevada en el grupo, relaciones y principales fórmulas documentadas; se identificó una asimetría potencial al cancelar una factura delivered (ver §3.2). No existe aún una aceptación runtime E2E que cubra pedido→factura→recepción→costo→deuda→pago→saldo de cuenta. La validación #613 corresponde sólo a Receipt/stock/put-away/costo y no acepta factura, deuda ni pago.
+**Estado actual:** fuente de 37 módulos relevada y relaciones/fórmulas documentadas. Se identificó la asimetría potencial al cancelar una factura delivered (§3.2) y ya se añadió una fixture CI que ejecuta el flujo nativo y captura su lectura tras reinicio. El workflow #616 está probando la nueva sonda; todavía no hay resultado runtime aceptado. No existe aún una aceptación E2E completa de pedido→factura→recepción→costo→deuda→pago→saldo de cuenta. La validación #613 corresponde sólo a Receipt/stock/put-away/costo y no acepta factura, deuda ni pago.
 
 Siguiente bloque de evidencia:
-1. fixture independiente de proveedor/pedido/factura para ordered y delivered;
-2. precio de pedido/factura distinto para medir la precedencia de cost(ReceiptLine);
-3. pago parcial y total, prueba de referencia ambigua y lectura del balance con OutgoingPayment Ready/Done;
-4. repetir después del reinicio y conciliar líneas de pedido, BillLine, ReceiptLine, Debt, Payment y saldo de cuenta.
+1. **En ejecución en workflow #616:** pedido de 3, recepción Done de 2, Bill delivered de 2 a precio distinto del pedido, cancelación nativa de Bill y lectura de stock/costo/enlace/cantidad facturable; repetir consulta después del reinicio.
+2. Según el resultado, corregir con un parche estrecho sólo si se confirma el defecto, preservando el historial documental.
+3. Fixture separada de pagos parciales/totales, referencia ambigua y lectura del balance con OutgoingPayment Ready/Done.
+4. Conciliar después del reinicio OrderLine, BillLine, ReceiptLine, Debt, Payment y saldo de cuenta.
 
 ## 14. Lecturas relacionadas
 
