@@ -1889,6 +1889,8 @@ La distribución inicial de los 96 módulos regionales es Bulgaria (7), Polonia 
 
 En lsFusion también hay módulos de soporte del servidor fuera de la composición actual: herramientas de documentos, Excel, impresión, imágenes, OpenCV, SQL, mensajería, RabbitMQ, WebSocket, gráficos y componentes de interfaz. Se deben identificar como capacidades opcionales y describir su configuración, dependencias y condiciones de uso; no se deben presentar como activadas en Rubrova mientras no se incorporen al grafo y se prueben.
 
+El detalle de los 96 módulos regionales (Bulgaria, Polonia y Rusia), con ruta, área y estado de revisión, está en [MYCOMPANY_6_2_REGIONAL_MODULES.md](platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md). Se mantienen fuera del cierre, no descartados; la capacidad se describe como inferida cuando todavía no se leyó la fuente.
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.

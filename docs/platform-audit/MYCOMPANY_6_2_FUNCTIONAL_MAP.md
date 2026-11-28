@@ -264,6 +264,9 @@ Capacidades documentadas:
 
 ## 4. Módulos fuera del cierre actual: revisar antes de programar reemplazos
 
+El inventario completo de los 96 módulos regionales por país y ruta está en [MYCOMPANY_6_2_REGIONAL_MODULES.md](MYCOMPANY_6_2_REGIONAL_MODULES.md). Incluye capacidades iniciales inferidas y el nivel de lectura de fuente; no representa una aceptación funcional.
+
+
 Los 112 módulos MyCompany fuera del cierre de \`RubrovaCustom\` no están descartados. Se separan en 96 módulos regionales y 16 no regionales. Los 16 no regionales documentados individualmente se detallan en el manual de ingeniería, sección 9.7; incluyen lotes en put-away/picking, correcciones y anticipos, GTIN, impresión de deuda, \`CashRegister\`, \`CashRegisterFiscal\`, \`Crypto\`, \`Audio\` y \`PosDashboardReturnShipment\`.
 
 La regionalización contiene 7 módulos de Bulgaria, 26 de Polonia y 63 de Rusia. Entre ellos hay capacidades de impuestos/impresión/documentos, marcación, pagos, certificados, datos legales, telefonía y conectores específicos. No se debe traducir el nombre de un módulo ni suponer que su presencia equivale a soporte normativo argentino. Cada módulo regional requiere una ficha que explique país, proveedor, servicio externo, configuración, dependencias, licencias, credenciales, datos transmitidos y límites legales.
