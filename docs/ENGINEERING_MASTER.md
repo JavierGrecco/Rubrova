@@ -3525,6 +3525,7 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - Se inspeccionaron los módulos nativos `ReceiptLot`, `BillReceiptLot`, `ManufacturingOrderLot`, `InvoiceLot`, `PosDashboardLot`, `ShipmentLot`, `InvoiceShipmentLot`, `CreditNoteLot` e `InvLedgerLot`.
 - El lote ya circula por recepción, consumo, producción, venta, despacho y devolución. `InvLedgerLot` calcula existencia por ubicación/lote; no se necesita otro libro de movimientos.
 - La extensión propia debe ampliar `Inventory.Lot` con metadata alimentaria y diferenciar productos con política alimentaria de productos que sólo usan lotes por trazabilidad general. La elegibilidad se comprobará al consumir/vender/despachar, no al aceptar físicamente una recepción.
+- `PosDashboardLot.processBarCode` registra el lote escaneado en la línea, pero no hace el control de vencimiento/retención. `ReceiptDone.validate` puede ofrecer rellenar cantidades faltantes con `initialDemand`; el dato previsto no debe sustituir el conteo físico de un ingreso alimentario. `ManufacturingOrderDone.markAsDone` puede sustituir datos reales vacíos por cantidades planificadas.
 - FEFO requiere asignación y reserva transaccional por lote, no sólo ordenar los lotes por fecha. Hasta que haya prueba de concurrencia y ausencia de doble consumo, se mantiene la asignación explícita nativa.
 - **Estado:** contrato de diseño precisado en `FOOD_PRODUCTION_AND_TRACEABILITY.md` y Hito E bis. No se agregó todavía código funcional ni se afirma una aceptación runtime alimentaria.
 
