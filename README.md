@@ -39,17 +39,17 @@ El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las cap
 
 > **Estado del proyecto · 27 de noviembre de 2026**
 >
-> Rubrova sigue siendo un piloto integrado POS + ERP; **no es una versión productiva**. La última aceptación de interfaz anterior, [run #524](https://github.com/JavierGrecco/Rubrova/actions/runs/46047336284), confirmó en macOS ARM64 que el turno muestra una venta y que la acción nativa **Devolver** está visible y habilitada. No llegó a pulsar la acción.
+> Rubrova sigue siendo un piloto integrado POS + ERP; **no es una versión productiva**. La aceptación anterior [run #524](https://github.com/JavierGrecco/Rubrova/actions/runs/46047336284) confirmó en macOS ARM64 una venta en el turno y la acción nativa **Devolver** visible y habilitada, pero todavía no había pulsado la acción.
 >
-> El smoke posterior [run #516](https://github.com/JavierGrecco/Rubrova/actions/runs/46050676363) pasó prevalidación, validación sintáctica de Windows y compilación completa, pero falló al comprobar las filas de la grilla del POS. La API del turno y el snapshot de la interfaz mostraron una sola venta; el diagnóstico apunta a una comprobación antes de que la grilla termine su actualización asíncrona. Se endureció la espera y se agregó una regresión en los commits `847cdcd` y `fb1ba30`.
+> El [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), SHA `fb1ba3032108ccf71a81e1d8c840b71150520de5`, pasó prevalidación, sintaxis Windows, compilación y empaquetado. El servidor nativo también inició correctamente y la UI llegó a abrir una nota de crédito en borrador con su línea y acción de pago. El smoke falló después, al intentar descartarla: buscaba el texto español `Nueva venta`, pero la interfaz expuso el botón upstream `New receipt (shift F12)`. **No se demostró todavía el descarte ni la ausencia de efectos en caja/ledger.**
 >
-> La validación de esa corrección está en el [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), sobre el SHA `fb1ba3032108ccf71a81e1d8c840b71150520de5`. Al último corte, prevalidación y validación Windows pasaron; el empaquetado de servidor/cliente seguía en ejecución. **El smoke nativo todavía no está aceptado para esta corrección.**
+> Se corrigió el test para localizar la acción por su identidad estable `PROPERTY(newReceipt(s))` y aceptar las dos etiquetas observadas, y se añadió una regresión estática. La revisión actual es `051506f6f25aa08692a331e0e002b1b6a4ea11ee`; su [run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880) estaba pendiente de asignación de jobs al último corte. **La corrección aún no tiene aceptación de runtime.** El rótulo inglés observado también deja pendiente revisar por qué no se aplica en esa vista el recurso `es_AR`; no debe confundirse la robustez del test con una corrección de localización del producto.
 >
 > **Estado GitHub:** `main` conserva dos ramas visibles: `main` y `work/pos-refund-cumulative-method-guard`. La segunda quedó obsoleta después de integrar el límite de reintegros y está pendiente de eliminación. No hay PR abiertos y `main` aún no tiene protección por reglas obligatorias.
 >
 > El runtime local nativo y la restauración de PostgreSQL tienen pruebas automatizadas previas, pero aún faltan aceptación en el equipo físico del comercio, modo offline, instalación funcional Windows/Linux, backup integral con adjuntos y una jornada comercial supervisada.
 >
-> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) ya está documentada; sus controles de lotes/vencimientos y el flujo de elaboración todavía deben implementarse y validarse.
+> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) está documentada; la extensión de metadatos de lote, bloqueos por vencimiento, trazabilidad y guardas de producción continúa pendiente de implementación y validación.
 >
 > Seguimiento: [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
 
