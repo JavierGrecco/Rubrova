@@ -75,6 +75,7 @@ test("resuelve un módulo por nombre MODULE exacto y devuelve su dossier princip
   assert.equal(route.domain, "inventory");
   assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md");
   assert.equal(route.sourceCommit, "mycompany-sha");
+  assert.equal(route.passport.path, "docs/platform-audit/modules/InvLedger.md");
 });
 
 test("identifica REQUIRE directos y consumidores directos sin confundirlos", () => {
@@ -108,6 +109,13 @@ test("envía utilidades y módulos regionales a sus dossiers específicos", () =
   assert.equal(regional.guide.path, "docs/platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md");
 });
 
+test("un módulo sin pasaporte individual lo declara y conserva el dossier de dominio", () => {
+  const route = resolveModuleIntegrationRoute(fixtureCatalog, "PurchaseOrder");
+  assert.equal(route.found, true);
+  assert.equal(route.passport, null);
+  assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md");
+});
+
 test("advierte cuando un módulo existe pero queda fuera del cierre actual", () => {
   const route = resolveModuleIntegrationRoute(fixtureCatalog, "OptionalModule");
   assert.equal(route.found, true);
@@ -124,6 +132,8 @@ test("renderiza una ruta que separa primera lectura, dependencias y límites del
   const route = resolveModuleIntegrationRoute(fixtureCatalog, "InvLedger");
   const output = renderModuleIntegrationRoute(route);
   assert.match(output, /Primera lectura obligatoria/);
+  assert.match(output, /Ficha individual/);
+  assert.match(output, /modules\/InvLedger\.md/);
   assert.match(output, /Datos maestros y relaciones transversales/);
   assert.match(output, /REQUIRE directos/);
   assert.match(output, /Consumidores directos detectados/);
@@ -183,6 +193,11 @@ test("los nombres del directorio coinciden con MODULE declarado en cada archivo 
 
 test("la plantilla de ficha conserva los controles mínimos de integración y aceptación", () => {
   const template = read("docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md");
+  for (const moduleName of ["InvLedger", "ResLedger", "CostLedger", "Receipt", "SalesOrder", "Session"]) {
+    const passportPath = `docs/platform-audit/modules/${moduleName}.md`;
+    assert.ok(existsSync(path.join(root, passportPath)), `Falta ficha individual de ${moduleName}`);
+    assert.ok(read(passportPath).includes(`Ficha de integración — ${moduleName}`));
+  }
   for (const marker of [
     "Modelo de datos y relaciones",
     "Contratos de integración y comunicación",
