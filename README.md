@@ -32,11 +32,9 @@ Rubrova es una plataforma de gestión comercial en desarrollo. Busca reunir la o
 
 **Dirección de producto:** experiencia simple en el mostrador, control operativo completo para la administración y datos confiables para decidir.
 
-### Product Ownership y desarrollo asistido por IA
+### Product Ownership y evolución del producto
 
-Rubrova es un producto propio que conduzco como **Product Owner y responsable de su evolución**. Utilizo IA generativa como apoyo para investigar, diseñar e implementar, mientras mantengo la dirección del producto y la aceptación de cada entrega: defino la visión y el alcance funcional, priorizo módulos y roadmap, establezco reglas de negocio y criterios de aceptación, evalúo arquitectura y seguridad, pruebo los resultados y guío nuevas iteraciones cuando una solución no cumple lo esperado.
-
-El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las capacidades planificadas se presentan como visión y evolución progresiva; las tablas de estado y los documentos técnicos indican qué está implementado, probado, en validación o pendiente.
+Rubrova es un producto propio bajo dirección de producto y responsabilidad explícita sobre su evolución. Esto comprende la definición de visión y alcance funcional, priorización de módulos y roadmap, reglas de negocio, criterios de aceptación, evaluación de arquitectura y seguridad, y validación de cada entrega. Las capacidades planificadas se presentan como evolución progresiva; el estado técnico y la documentación distinguen qué está implementado, probado, en validación o pendiente.
 
 
 > **Estado del proyecto · 28 de noviembre de 2026**
