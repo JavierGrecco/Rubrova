@@ -61,9 +61,38 @@ También existe inventario por lote en [InvLedgerLot](../vendor/mycompany/src/ma
 - El macro nativo `defineDocLot` verifica que el producto del lote coincida con el de la línea y que la suma asignada a lotes no quede por debajo de la cantidad cuando el documento queda listo. No evalúa vencimiento, cuarentena ni vida útil.
 - `ManufacturingOrderDone.markAsDone` completa cantidades reales desde las cantidades planificadas cuando esas cantidades no fueron ingresadas. Para alimentos, ese comportamiento requiere una barrera explícita de confirmación/revisión antes de cerrar una tanda.
 
-Por lo tanto, el POS admite captura de lotes y fabricación mantiene relaciones por lote, pero **Rubrova todavía no selecciona automáticamente FEFO, no bloquea alimentos vencidos ni garantiza reservas/consumos válidos por lote**.
+### Mapa técnico de trazabilidad nativa
 
-Por eso la estrategia es extender los documentos, lotes y ledgers nativos; no crear una segunda receta, un segundo stock, una segunda caja ni un ledger alternativo en Python.
+La ruta de los datos ya está distribuida entre los documentos y el ledger existentes:
+
+| Etapa | Módulo nativo | Dato que ya relaciona | Trabajo propio pendiente |
+|---|---|---|---|
+| Recepción | `ReceiptLot` | Lote en cada línea de recepción (`ReceiptLine`) y movimientos en `ReceiptInvLedger` | Incorporar metadata alimentaria y retención de lotes; no marcar como apto por el solo hecho de recibirlo |
+| Factura de compra → recepción | `BillReceiptLot` | Copia las cantidades por lote de la factura a las líneas recibidas | Comprobar que la metadata y las referencias del lote sobrevivan el flujo real de recepción |
+| Consumo de ingredientes | `ManufacturingOrderLot` | Lotes y cantidades por línea consumida | Rechazar lotes bloqueados/vencidos en el momento de consumo y validar saldo disponible del lote |
+| Producto terminado | `ManufacturingOrderLot` | Lotes y cantidades producidas; permite generar identificadores para nuevos lotes | Exigir cantidad real, responsable y fecha/vida útil aprobada antes de cerrar la tanda |
+| Venta POS | `PosDashboardLot` + `InvoiceLot` | Captura lote en el POS y mantiene cantidad por lote en la línea de venta | Aplicar elegibilidad, vigencia y saldo por lote antes de confirmar la venta |
+| Despacho | `ShipmentLot` + `InvoiceShipmentLot` | Conserva la asignación de lote en las líneas despachadas | Comprobar que no pueda despacharse una cantidad mayor ni un lote retenido |
+| Devolución | `CreditNoteLot` | Copia los lotes de las líneas originales a la nota de crédito | Definir cuarentena/inspección del retorno; no reincorporar automáticamente alimentos devueltos al stock vendible |
+| Saldo y movimientos | `InvLedgerLot` | Calcula entradas, salidas y existencia por ubicación y lote | Mantener el ledger nativo como autoridad y conciliar el agregado por producto con sus lotes |
+
+La relación de documentos y los movimientos por lote son la base de la trazabilidad hacia atrás y hacia adelante. La interfaz de consulta consolidada todavía debe construirse y verificarse con documentos reales del runtime; no se presume que una relación existente en fuente sea ya un informe de recall operativo.
+
+### Contrato propuesto para la extensión Rubrova
+
+- Mantener `Inventory.Lot` como identidad maestra. Agregarle metadata propia (fecha/hora de elaboración o fraccionamiento, límite de duración aprobado, tipo de fecha, condición de conservación, estado de retención/bloqueo, motivo y responsable), sin duplicar el lote ni los movimientos.
+- Distinguir los productos que requieren trazabilidad alimentaria de los que usan lotes por otros motivos. El flag nativo `MasterData.dataUseLot(Product)` controla el uso general de lotes; la política de inocuidad debe aplicarse sólo al subconjunto alimentario que se configure explícitamente.
+- Permitir recibir un lote y dejarlo en revisión/retención. La recepción física no constituye por sí sola una autorización de uso o venta.
+- En la salida para consumo, fabricación, venta o despacho, comprobar en una única transacción: producto correcto, lote elegible para la fecha de operación, no retenido, saldo positivo suficiente y cantidad asignada igual a la línea.
+- Al terminar fabricación, no completar cantidades reales con el plan. Exigir revisión explícita de consumos y rendimiento; los lotes de salida deben tener su fecha de elaboración y un límite de uso aprobado por el responsable.
+- En devoluciones de alimentos, conservar el vínculo con lote original y registrar inspección/retención antes de cualquier reincorporación al inventario vendible.
+- Mantener historial de cambios de metadata y acciones de retención; los usuarios operativos no deben poder borrar o alterar retroactivamente el origen.
+
+No se activará FEFO automático hasta que exista una asignación por lote determinista, con bloqueo transaccional, manejo de concurrencia y pruebas contra doble consumo. Una lista ordenada por vencimiento no es una reserva. No se inventarán duraciones, temperaturas ni plazos genéricos.
+
+Por lo tanto, el POS admite captura de lotes y fabricación mantiene relaciones por lote, pero **Rubrova todavía no selecciona automáticamente FEFO, no bloquea alimentos vencidos/retendidos ni garantiza reservas/consumos válidos por lote**.
+
+La estrategia es extender los documentos, lotes y ledgers nativos; no crear una segunda receta, un segundo stock, una segunda caja ni un ledger alternativo en Python.
 
 ## 4. Recetas y versiones
 
