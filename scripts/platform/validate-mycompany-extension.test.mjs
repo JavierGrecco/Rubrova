@@ -2016,3 +2016,12 @@ test("la recepción Done concilia ubicación principal, hija, put-away, costo y 
   assert.match(uiSmokeSource, /verify_purchase_receipt_done_cancellation\(context, url\)/);
   assert.match(nativeSmokeSource, /UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true/);
 });
+
+test("la sonda de recepción Done guarda el pendiente inmediatamente después de recibir", () => {
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaCIDonePutReceivedPending\(\) <- \(OVERRIDE Purchase[.]toReceive/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaCIDonePlainReceivedPending\(\) <- \(OVERRIDE Purchase[.]toReceive/);
+  assert.match(uiSmokeSource, /"putReceivedPending": 1/);
+  assert.match(uiSmokeSource, /"putCanceledPending": 3/);
+  assert.match(uiSmokeSource, /"plainReceivedPending": 0/);
+  assert.match(uiSmokeSource, /"plainCanceledPending": 4/);
+});
