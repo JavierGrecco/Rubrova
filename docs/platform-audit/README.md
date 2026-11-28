@@ -138,6 +138,8 @@ Para estos módulos no hay que quedarse sólo con el resumen del dominio: abrir 
 | Product | [Ficha Product](modules/Product.md) · `docs/platform-audit/modules/Product.md` | Maestro físico, Item, unidades, variantes, barcode y lotes |
 | Partner | [Ficha Partner](modules/Partner.md) · `docs/platform-audit/modules/Partner.md` | Identidad común y especializaciones legales/comerciales |
 
+**Estado de fichas individuales:** hay doce fichas de integración específicas disponibles. Para cualquier otro módulo, el CLI indica que todavía no hay ficha individual y deriva al dossier y a la plantilla obligatoria.
+
 ### 4.0 Integración por módulo exacto — ruta obligatoria
 
 Cuando una tarea nombra un módulo o archivo LSF concreto, la lectura debe empezar por el **nombre declarado en `MODULE`**, no sólo por el dominio:
