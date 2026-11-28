@@ -289,6 +289,13 @@ export function resolveModuleIntegrationRoute(catalog, query) {
       reason: utilities.length > 0 ? `REQUIRE incluye utilidades compartidas: ${utilities.join(", ")}.` : "Revisar macros y mecanismos transversales antes de crear una alternativa propia.",
     });
   }
+  if (!passport) {
+    related.push({
+      path: "docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md",
+      title: "Plantilla obligatoria de ficha de integración",
+      reason: "No existe todavía un pasaporte individual para este módulo; completarlo cuando el cambio afecte entidades, estados, contratos, permisos o efectos.",
+    });
+  }
   if (module.product === "Extensiones Rubrova") {
     related.push(
       { path: "docs/MODULE_COMPOSITION.md", title: "Composición de módulos", reason: "Contrato de composición y ownership de las extensiones propias." },
@@ -368,7 +375,7 @@ export function renderModuleIntegrationRoute(route) {
     `- **Dominio de archivo:** ${route.domain}`,
     `- **Namespace:** ${route.namespace || "(sin namespace declarado)"}`,
     `- **Fuente exacta:** \`${route.path}\``,
-    `- **Commit de origen:** ${route.sourceCommit || "(ver source-lock)" }`,
+    `- **Commit de origen:** ${route.sourceCommit || (route.product === "Extensiones Rubrova" ? "(fuente propia: revisar HEAD de main)" : "(ver source-lock)") }`,
     `- **REQUIRE directos (${route.requires.length}):** ${route.requireDetails.length ? route.requireDetails.map(item => item.path ? \`${item.moduleName} (${item.product}: ${item.path})\` : \`${item.moduleName} (no resuelto en el catálogo)\`).join("; ") : "(ninguno)" }`,
     `- **Consumidores directos detectados (${route.consumers.length}):** ${route.consumers.length ? route.consumers.map(item => \`${item.moduleName} (${item.product}: ${item.path})\`).join("; ") : "(ninguno en el catálogo estructural)" }`,
     "",
