@@ -1972,6 +1972,19 @@ def verify_native_return_draft(
             "No se pudo descartar la nota en borrador mediante la acción nativa 'Nueva venta' en español."
         )
     print("UI_RETURN_DRAFT_DISCARD_ACTION_SPANISH=true")
+    # Nueva venta is a native lsFusion CONFIRM action. The first click only opens
+    # the GWT modal; accept its affirmative option before expecting the new receipt.
+    discard_confirmation = accept_ls_fusion_confirmation(page, "Nueva venta")
+    if (
+        not discard_confirmation.startswith("¿Confirma que desea ejecutar la acción")
+        or '"Nueva venta"' not in discard_confirmation
+    ):
+        visible_snapshot(page, "UI_RETURN_DRAFT_DISCARD_CONFIRMATION_UNEXPECTED")
+        raise RuntimeError(
+            "La acción nativa 'Nueva venta' no presentó su confirmación esperada: "
+            + discard_confirmation
+        )
+    print("UI_RETURN_DRAFT_DISCARD_CONFIRMATION_ACCEPTED=true")
     receipt_grid = page.locator('[lsfusion-container="GRID(l)"]')
     try:
         receipt_grid.wait_for(state="visible", timeout=15_000)
