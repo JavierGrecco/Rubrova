@@ -12,7 +12,10 @@ import { pathToFileURL } from "node:url";
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const MYCOMPANY_ROOT = "vendor/mycompany/src/main/lsfusion";
 const PLATFORM_ROOT = "vendor/platform";
+const RUBROVA_EXTENSIONS_ROOT = "extensions/lsfusion";
+const APPLICATION_ROOT_MODULE = "RubrovaCustom";
 const SOURCE_LOCK_PATH = "platform/source-lock.json";
+const DOCUMENTATION_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".svg"];
 
 function walkFiles(directory, extension) {
   const result = [];
@@ -20,6 +23,19 @@ function walkFiles(directory, extension) {
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) result.push(...walkFiles(absolute, extension));
     else if (entry.isFile() && entry.name.endsWith(extension)) {
+      result.push(path.relative(ROOT, absolute).split(path.sep).join("/"));
+    }
+  }
+  return result.sort();
+}
+
+function walkFilesByExtensions(directory, extensions) {
+  const accepted = new Set(extensions.map((extension) => extension.toLowerCase()));
+  const result = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...walkFilesByExtensions(absolute, extensions));
+    else if (entry.isFile() && accepted.has(path.extname(entry.name).toLowerCase())) {
       result.push(path.relative(ROOT, absolute).split(path.sep).join("/"));
     }
   }
@@ -139,7 +155,7 @@ function countBy(items, keyFor) {
   return Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)));
 }
 
-function closureFrom(rootName, moduleMap) {
+export function closureFrom(rootName, moduleMap) {
   const found = new Set();
   const unresolved = new Set();
   const queue = [rootName];
@@ -181,21 +197,31 @@ function packageBucket(filePath) {
   const index = filePath.indexOf(marker);
   if (index < 0) return "(fuera de Java)";
   const parts = filePath.slice(index + marker.length).split("/");
-  return parts.length >= 3 ? parts.slice(0, 3).join("/") : parts.join("/");
+  const packageParts = parts.slice(0, -1);
+  return packageParts.length ? packageParts.slice(0, 3).join("/") : "(paquete raíz)";
 }
 
 export function buildSourceCatalog(root = ROOT) {
   const myRoot = path.join(root, MYCOMPANY_ROOT);
   const platformRoot = path.join(root, PLATFORM_ROOT);
+  const extensionsRoot = path.join(root, RUBROVA_EXTENSIONS_ROOT);
+
   const myFiles = walkFiles(myRoot, ".lsf");
   const platformFiles = walkFiles(platformRoot, ".lsf");
+  const extensionFiles = walkFiles(extensionsRoot, ".lsf");
   const myModules = myFiles.map((file) => parseLsfSource(readFileSync(path.join(root, file), "utf8"), file));
   const platformModules = platformFiles.map((file) => parseLsfSource(readFileSync(path.join(root, file), "utf8"), file));
+  const extensionModules = extensionFiles.map((file) => parseLsfSource(readFileSync(path.join(root, file), "utf8"), file));
   const myJavaFiles = walkFiles(platformRoot, ".java");
-  const enDocs = walkFiles(path.join(platformRoot, "docs/en"), ".md");
-  const ruDocs = walkFiles(path.join(platformRoot, "docs/ru"), ".md");
 
-  const allModules = [...platformModules, ...myModules];
+  const enDocsRoot = path.join(platformRoot, "docs/en");
+  const ruDocsRoot = path.join(platformRoot, "docs/ru");
+  const enDocs = walkFiles(enDocsRoot, ".md");
+  const ruDocs = walkFiles(ruDocsRoot, ".md");
+  const enImages = walkFilesByExtensions(enDocsRoot, DOCUMENTATION_IMAGE_EXTENSIONS);
+  const ruImages = walkFilesByExtensions(ruDocsRoot, DOCUMENTATION_IMAGE_EXTENSIONS);
+
+  const allModules = [...platformModules, ...myModules, ...extensionModules];
   const nameCounts = countBy(allModules, (module) => module.moduleName || "(sin MODULE)");
   const duplicateNames = Object.entries(nameCounts)
     .filter(([name, count]) => name !== "(sin MODULE)" && count > 1)
@@ -204,9 +230,14 @@ export function buildSourceCatalog(root = ROOT) {
   for (const module of allModules) {
     if (module.moduleName && !moduleMap.has(module.moduleName)) moduleMap.set(module.moduleName, module);
   }
-  const mainClosure = closureFrom("MyCompany", moduleMap);
-  const loadedMyCompanyNames = new Set(mainClosure.moduleNames);
+
+  const myCompanyClosure = closureFrom("MyCompany", moduleMap);
+  const applicationClosure = closureFrom(APPLICATION_ROOT_MODULE, moduleMap);
+  const myCompanyRootNames = new Set(myCompanyClosure.moduleNames);
+  const applicationNames = new Set(applicationClosure.moduleNames);
+  const applicationModules = applicationClosure.moduleNames.map((name) => moduleMap.get(name));
   const unclassifiedFiles = allModules.filter((module) => !module.moduleName).map((module) => module.path);
+
   const lock = JSON.parse(readFileSync(path.join(root, SOURCE_LOCK_PATH), "utf8"));
   const mySourceLock = lock.sources.find((source) => source.name === "MyCompany");
   const platformSourceLock = lock.sources.find((source) => source.name === "lsFusion platform");
@@ -214,35 +245,70 @@ export function buildSourceCatalog(root = ROOT) {
   const myCompanyEntries = myModules.map((module) => ({
     ...module,
     domain: domainOf(module.path, MYCOMPANY_ROOT),
-    reachableFromMyCompanyRoot: loadedMyCompanyNames.has(module.moduleName),
+    reachableFromMyCompanyRoot: myCompanyRootNames.has(module.moduleName),
+    reachableFromApplicationRoot: applicationNames.has(module.moduleName),
   }));
   const platformEntries = platformModules.map((module) => ({
     ...module,
     domain: domainOf(module.path, PLATFORM_ROOT),
+    reachableFromApplicationRoot: applicationNames.has(module.moduleName),
+  }));
+  const extensionEntries = extensionModules.map((module) => ({
+    ...module,
+    domain: domainOf(module.path, RUBROVA_EXTENSIONS_ROOT),
+    reachableFromApplicationRoot: applicationNames.has(module.moduleName),
   }));
 
+  const applicationSourceCounts = {
+    myCompany: applicationModules.filter((module) => module.path.startsWith(MYCOMPANY_ROOT + "/")).length,
+    lsFusion: applicationModules.filter((module) => module.path.startsWith(PLATFORM_ROOT + "/")).length,
+    rubrova: applicationModules.filter((module) => module.path.startsWith(RUBROVA_EXTENSIONS_ROOT + "/")).length,
+  };
+
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     method: "Inventario estático de archivos y declaraciones LSF; no interpreta la semántica ni valida la ejecución.",
     sources: {
       myCompany: { tag: mySourceLock.tag, commit: mySourceLock.commit, license: mySourceLock.license },
       lsFusion: { tag: platformSourceLock.tag, commit: platformSourceLock.commit, license: platformSourceLock.license },
     },
+    applicationComposition: {
+      rootModule: APPLICATION_ROOT_MODULE,
+      resolvedModuleCount: applicationClosure.moduleNames.length,
+      sourceModuleCounts: applicationSourceCounts,
+      unresolvedRequirements: applicationClosure.unresolvedRequirements,
+      modulesOutsideApplicationClosure: {
+        myCompany: myCompanyEntries.filter((module) => !module.reachableFromApplicationRoot).map((module) => module.moduleName).sort(),
+        lsFusion: platformEntries.filter((module) => !module.reachableFromApplicationRoot).map((module) => module.moduleName).sort(),
+        rubrova: extensionEntries.filter((module) => !module.reachableFromApplicationRoot).map((module) => module.moduleName).sort(),
+      },
+    },
     myCompany: {
       lsfFileCount: myModules.length,
       lockedLsfFileCount: mySourceLock.observedLsfModules,
       domainCounts: countBy(myCompanyEntries, (module) => module.domain),
-      reachableFromMainRootCount: myCompanyEntries.filter((module) => module.reachableFromMyCompanyRoot).length,
-      outsideMainRootClosureCount: myCompanyEntries.filter((module) => !module.reachableFromMyCompanyRoot).length,
-      mainRootUnresolvedRequirements: mainClosure.unresolvedRequirements,
+      reachableFromMyCompanyRootCount: myCompanyEntries.filter((module) => module.reachableFromMyCompanyRoot).length,
+      outsideMyCompanyRootClosureCount: myCompanyEntries.filter((module) => !module.reachableFromMyCompanyRoot).length,
+      reachableFromApplicationRootCount: myCompanyEntries.filter((module) => module.reachableFromApplicationRoot).length,
+      outsideApplicationClosureCount: myCompanyEntries.filter((module) => !module.reachableFromApplicationRoot).length,
+      myCompanyRootUnresolvedRequirements: myCompanyClosure.unresolvedRequirements,
       duplicateModuleNames: duplicateNames.filter((entry) => myModules.some((module) => module.moduleName === entry.name)),
       modules: myCompanyEntries,
+    },
+    rubrovaExtensions: {
+      lsfFileCount: extensionModules.length,
+      modules: extensionEntries,
     },
     lsFusion: {
       lsfFileCount: platformModules.length,
       javaSourceFileCount: myJavaFiles.length,
       lockedJavaSourceFileCount: platformSourceLock.observedJavaFiles,
       documentationMarkdown: { en: enDocs.length, ru: ruDocs.length },
+      documentationImages: { en: enImages.length, ru: ruImages.length },
+      documentationAssets: {
+        en: { markdown: enDocs.length, images: enImages.length, total: enDocs.length + enImages.length },
+        ru: { markdown: ruDocs.length, images: ruImages.length, total: ruDocs.length + ruImages.length },
+      },
       documentationTopicCounts: countBy(enDocs, classifyPlatformDoc),
       javaPackageCounts: countBy(myJavaFiles, packageBucket),
       modules: platformEntries,
@@ -252,6 +318,7 @@ export function buildSourceCatalog(root = ROOT) {
       duplicateModuleNamesAcrossSnapshots: duplicateNames,
       myCompanyCountMatchesLock: myModules.length === mySourceLock.observedLsfModules,
       platformJavaCountMatchesLock: myJavaFiles.length === platformSourceLock.observedJavaFiles,
+      applicationDependenciesResolved: applicationClosure.unresolvedRequirements.length === 0,
     },
   };
 }
@@ -274,12 +341,13 @@ function runCli() {
 
   const catalog = buildSourceCatalog();
   console.log("Catálogo estructural de fuentes Rubrova");
-  console.log("MyCompany 6.2: " + catalog.myCompany.lsfFileCount + " módulos LSF (lock: " + catalog.myCompany.lockedLsfFileCount + ").");
-  console.log("  Alcanzables desde MyCompany: " + catalog.myCompany.reachableFromMyCompanyRootCount + "; fuera del cierre: " + catalog.myCompany.outsideMainRootClosureCount + ".");
+  console.log("Raíz de aplicación: " + catalog.applicationComposition.rootModule + ".");
+  console.log("Composición alcanzable: " + catalog.applicationComposition.resolvedModuleCount + " módulos; MyCompany " + catalog.applicationComposition.sourceModuleCounts.myCompany + ", plataforma " + catalog.applicationComposition.sourceModuleCounts.lsFusion + ", Rubrova " + catalog.applicationComposition.sourceModuleCounts.rubrova + ".");
+  console.log("Dependencias sin resolver: " + catalog.applicationComposition.unresolvedRequirements.length + ".");
+  console.log("MyCompany 6.2: " + catalog.myCompany.lsfFileCount + " módulos LSF (lock: " + catalog.myCompany.lockedLsfFileCount + "); fuera de la composición: " + catalog.myCompany.outsideApplicationClosureCount + ".");
+  console.log("Extensiones propias: " + catalog.rubrovaExtensions.lsfFileCount + " módulos LSF.");
   console.log("lsFusion 6.2: " + catalog.lsFusion.lsfFileCount + " archivos LSF, " + catalog.lsFusion.javaSourceFileCount + " fuentes Java.");
-  console.log("Documentación de plataforma: " + catalog.lsFusion.documentationMarkdown.en + " páginas en inglés y " + catalog.lsFusion.documentationMarkdown.ru + " en ruso.");
-  console.log("Archivos LSF sin MODULE: " + catalog.quality.filesWithoutModuleHeader.length + "; nombres duplicados: " + catalog.quality.duplicateModuleNamesAcrossSnapshots.length + ".");
-  console.log("Alcance: inventario estructural; no equivale a un mapa funcional ni a aceptación de runtime.");
+  console.log("Documentación: inglés " + catalog.lsFusion.documentationAssets.en.markdown + " Markdown + " + catalog.lsFusion.documentationAssets.en.images + " imágenes; ruso " + catalog.lsFusion.documentationAssets.ru.markdown + " Markdown + " + catalog.lsFusion.documentationAssets.ru.images + " imágenes.");
 
   if (outputPath) {
     const absolute = path.resolve(outputPath);
@@ -295,6 +363,12 @@ function runCli() {
   }
   if (catalog.myCompany.duplicateModuleNames.length > 0) {
     throw new Error("Hay nombres de módulo MyCompany duplicados; revisar el catálogo.");
+  }
+  if (!catalog.quality.applicationDependenciesResolved) {
+    throw new Error("La composición RubrovaCustom contiene dependencias sin resolver; revisar el grafo.");
+  }
+  if (catalog.rubrovaExtensions.lsfFileCount === 0) {
+    throw new Error("No se encontraron las extensiones LSF de Rubrova.");
   }
 }
 

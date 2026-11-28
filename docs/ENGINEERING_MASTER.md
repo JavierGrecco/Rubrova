@@ -1850,9 +1850,19 @@ Los niveles de evidencia no se mezclan:
 
 Una compilación verde no equivale a un módulo cargado; un formulario visible no equivale a una operación correcta; una prueba aislada no equivale a conciliación integral.
 
+#### Composición real y módulos fuera del cierre
+
+La raíz de la aplicación de Rubrova es `RubrovaCustom`, no `MyCompany` a secas. La auditoría debe recorrer `REQUIRE` desde esa raíz e incluir, además de los snapshots de MyCompany y lsFusion, los siete módulos LSF propios de `extensions/lsfusion`. El catálogo separa el cierre de MyCompany base de la composición real de Rubrova para no confundir módulos opcionales con dependencias ya cargadas.
+
+En una primera lectura de la fuente 6.2 aparecen 112 módulos MyCompany fuera del cierre del módulo base: 96 corresponden a regionalizaciones y 16 son módulos no regionales que necesitan revisión individual. Entre estos últimos hay extensiones de lotes para put-away y picking, correcciones de facturas y facturas de compra, anticipos, embalajes, GTIN, impresión de deuda, módulos fiscales de caja y movimientos de devolución. **Estar fuera de `REQUIRE` no demuestra que un módulo sea inútil o inaccesible**; significa que todavía no forma parte del cierre de dependencias calculado y que debe analizarse antes de decidir activarlo.
+
+La distribución inicial de los 96 módulos regionales es Bulgaria (7), Polonia (26) y Rusia (63). No se debe asumir que los módulos de esos países resuelven obligaciones argentinas. La presencia o ausencia de soporte fiscal argentino debe investigarse contra los módulos concretos y sus contratos, no inferirse únicamente de los nombres de carpetas.
+
+En lsFusion también hay módulos de soporte del servidor fuera de la composición actual: herramientas de documentos, Excel, impresión, imágenes, OpenCV, SQL, mensajería, RabbitMQ, WebSocket, gráficos y componentes de interfaz. Se deben identificar como capacidades opcionales y describir su configuración, dependencias y condiciones de uso; no se deben presentar como activadas en Rubrova mientras no se incorporen al grafo y se prueben.
+
 #### Catálogo estructural automático
 
-El script [audit-lsf-source.mjs](../scripts/platform/audit-lsf-source.mjs) genera un índice de los archivos LSF de MyCompany y la plataforma, sus encabezados, dependencias y declaraciones estructurales. La prevalidación ejecuta sus pruebas y compara los conteos con los locks de origen; GitHub Actions conserva el JSON como artefacto.
+El script [audit-lsf-source.mjs](../scripts/platform/audit-lsf-source.mjs) genera un índice de los archivos LSF de MyCompany, la plataforma y las extensiones Rubrova; calcula el cierre de `RubrovaCustom`, diferencia módulos cargados de los que quedan fuera de esa composición y registra declaraciones estructurales. También compara los conteos con los locks de origen y cuenta por separado archivos Markdown e imágenes de la documentación. La prevalidación ejecuta sus pruebas y GitHub Actions conserva el JSON como artefacto.
 
 Este catálogo ayuda a detectar archivos no inventariados, dependencias y cambios en la base. **No interpreta por sí solo todas las funciones, no descubre la semántica completa del código y no reemplaza las fichas manuales ni las pruebas de runtime.** Sus conteos nunca deben presentarse como porcentaje de cobertura funcional.
 
@@ -3751,7 +3761,15 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 
 - Se formaliza el relevamiento exhaustivo de MyCompany 6.2 y lsFusion 6.2 como puerta bloqueante: no se avanza con nuevas funciones ni con la siguiente etapa del roadmap hasta cerrar la cobertura definida en 9.7.
 - Se vuelve explícito que los 800 módulos tienen que estar identificados y clasificados, incluidos los opcionales y regionales; los conteos del árbol no equivalen a cobertura funcional.
-- El inventario actual de la revisión fijada también identifica 49 archivos LSF de la plataforma, 3.330 fuentes Java y 431 páginas Markdown en inglés más 431 en ruso. Estos conteos sirven como base de trazabilidad, no como análisis semántico de todas las capacidades.
+- El inventario de la revisión fijada identifica 800 módulos LSF MyCompany, 49 archivos LSF de la plataforma y 3.330 fuentes Java. La documentación de plataforma contiene 342 archivos Markdown y 89 imágenes en cada idioma (431 recursos en inglés y 431 en ruso). Estos conteos sirven como base de trazabilidad, no como análisis semántico de todas las capacidades.
 - Se incorpora un catálogo automático de estructura y dependencias, con pruebas y comparación contra los locks de origen. El resultado se publica como artefacto de CI para poder revisar el inventario completo.
 - **Límite explícito:** el catálogo automático no certifica comportamiento, carga, permisos, configuración ni conciliación. La ficha funcional y la evidencia de runtime siguen siendo obligatorias.
 - **Estado:** puerta ABIERTA. Se permite únicamente investigación, inventario, documentación, herramientas de auditoría y pruebas necesarias para demostrar las capacidades nativas.
+
+### 2026-11-28 — REP-051 — Composición real y conteo de documentación
+
+- Se corrige el inventario de documentación lsFusion: cada idioma contiene 342 archivos Markdown y 89 imágenes (78 PNG, 10 SVG y 1 JPG en inglés; 79 PNG, 9 SVG y 1 JPG en ruso), no 431 páginas Markdown.
+- Se establece `RubrovaCustom` como raíz de la aplicación para calcular el cierre de dependencias. El cálculo separado desde `MyCompany` sigue siendo útil para reconocer las dependencias propias de la solución y los módulos opcionales.
+- Se incorporan al catálogo los siete módulos LSF propios de Rubrova. El grafo debe resolver el requisito `RubrovaRetailRefundLimits` declarado desde la composición real y no presentarlo como una dependencia externa faltante.
+- Los 112 módulos MyCompany fuera del cierre base requieren clasificación: 96 regionales y 16 no regionales. Esta condición es una lista de revisión, no una decisión de descartarlos.
+- **Estado:** relevamiento ABIerto; el nuevo informe debe validar el cierre desde `RubrovaCustom` y los conteos de las dos fuentes fijadas.

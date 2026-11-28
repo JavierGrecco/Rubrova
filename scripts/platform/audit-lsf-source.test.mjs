@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { maskLsfNonCode, parseLsfSource } from "./audit-lsf-source.mjs";
+import { closureFrom, maskLsfNonCode, parseLsfSource } from "./audit-lsf-source.mjs";
 
 test("identifica encabezado, dependencias y declaraciones del módulo", () => {
   const source = [
@@ -60,4 +60,23 @@ test("preserva líneas al enmascarar comentarios y cadenas", () => {
   assert.equal(masked.split("\n").length, source.split("\n").length);
   assert.equal(masked.split("\n")[2].trim(), "FORM x;");
   assert.equal(masked.split("\n")[6].trim(), "CLASS X;");
+});
+
+test("calcula el cierre de dependencias desde la raíz real de Rubrova", () => {
+  const modules = new Map([
+    ["RubrovaCustom", { requires: ["MyCompany", "RubrovaExtension"] }],
+    ["MyCompany", { requires: ["Ventas", "Inventario"] }],
+    ["Ventas", { requires: [] }],
+    ["Inventario", { requires: [] }],
+    ["RubrovaExtension", { requires: ["Ventas"] }],
+  ]);
+  const closure = closureFrom("RubrovaCustom", modules);
+  assert.deepEqual(closure.moduleNames, [
+    "Inventario",
+    "MyCompany",
+    "RubrovaCustom",
+    "RubrovaExtension",
+    "Ventas",
+  ]);
+  assert.deepEqual(closure.unresolvedRequirements, []);
 });
