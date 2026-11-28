@@ -488,6 +488,16 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]confirmed\(purchaseOrderCI\)/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaPrepareOutgoingReservation/);
   assert.match(nativeReplenishmentFixtureSource, /Inventory[.]precheckAvailability\(rubrovaCIOutgoingShipment\(\)\)/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaTestPurchaseReceiptCancellationReservationApi/);
+  assert.match(nativeReplenishmentFixtureSource, /Inventory[.]cancel\(rubrovaCIReceiptOriginal\(\)\)/);
+  assert.match(nativeReplenishmentFixtureSource, /Purchase[.]quantity\(rubrovaCIIncomingOrderLine\(\)\) <- 4/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReceiptExpectedAfterCancel/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReceiptExpectedAfterReplacement/);
+  assert.match(uiSmokeSource, /def verify_purchase_receipt_cancellation_reservation\(/);
+  assert.match(uiSmokeSource, /rubrovaTestPurchaseReceiptCancellationReservationApi/);
+  assert.match(uiSmokeSource, /UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true/);
+  assert.match(uiSmokeSource, /verify_purchase_receipt_cancellation_reservation\(context, url\)/);
+  assert.match(nativeSmokeSource, /UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true/);
   assert.match(uiSmokeSource, /def prepare_ci_outgoing_reservation\(/);
   assert.match(uiSmokeSource, /rubrovaPrepareOutgoingReservation/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_CI_RESERVATION_PREPARED=/);
