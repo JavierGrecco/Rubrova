@@ -143,6 +143,8 @@ El análisis detallado de movimientos físicos, reservas, costos, recepciones, u
 
 Las utilidades transversales (documentos, plantillas, historial, adjuntos, correo, numeración, geolocalización, lector de códigos y criptografía) están detalladas en [MYCOMPANY_6_2_UTILITY_MODULES.md](MYCOMPANY_6_2_UTILITY_MODULES.md).
 
+[MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md](MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md) contiene el análisis detallado de los 134 módulos de facturación y de sus ledgers, relaciones y cálculos. El análisis fiscal sigue siendo genérico y la adecuación argentina no está demostrada.
+
 ### 3.5 Facturación, deuda, impuestos y pagos
 
 La documentación enumera:
