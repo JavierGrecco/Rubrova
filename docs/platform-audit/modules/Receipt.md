@@ -82,17 +82,6 @@ La ubicación participa del control de acceso por ubicación; proveedor y produc
 
 **Estado de aceptación:** pendiente de runtime, WMS y conciliación E2E.
 
-## 9. Lecturas siguientes
-
-- [InvLedger](InvLedger.md), [ResLedger](ResLedger.md) y [CostLedger](CostLedger.md).
-- [Compras](../MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md) §§3–4 y [facturación](../MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md).
-- [Datos maestros](../MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md) para Product, Partner, Company, Location y unidades.
-- [Utilidades](../MYCOMPANY_6_2_UTILITY_MODULES.md) para Doc, FileUtils, BarCode y numeración.
-- [Resiliencia de integraciones](../../INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) para WMS, idempotencia y estados inciertos.
-
-**Definición de terminado:** reconstruir cada línea desde pedido proveedor hasta recepción, stock físico, costo y factura, con parciales, cancelaciones y permisos probados.
-
-
 ## 8.1 Aceptación runtime de cancelación posterior a Done (#17)
 
 La fixture efímera de CI crea dos órdenes independientes sobre un depósito aislado con saldo inicial de 10 unidades y una ubicación hija vacía. El primer pedido es de 3 unidades: se reciben 2 y queda 1 pendiente; el segundo pedido de 4 unidades se recibe completo. Ambos usan precio de compra de $1.000 por unidad y las acciones nativas de recepción.
@@ -109,3 +98,13 @@ Estos saldos e importes son **objetivos de aceptación**, todavía no resultados
 La fixture crea documentos de compra, registra cantidades recibidas, crea el detalle nativo de put-away y ejecuta las acciones nativas de validar, ubicar y cancelar. No inserta, elimina ni modifica manualmente registros de los ledgers físicos, de ubicación interna o de costo.
 
 La aprobación sólo acepta el circuito sintético de recepción física/costo en MyCompany 6.2; no equivale a conciliación con una base comercial real ni a homologación productiva.
+
+## 9. Lecturas siguientes
+
+- [InvLedger](InvLedger.md), [ResLedger](ResLedger.md) y [CostLedger](CostLedger.md).
+- [Compras](../MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md) §§3–4 y [facturación](../MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md).
+- [Datos maestros](../MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md) para Product, Partner, Company, Location y unidades.
+- [Utilidades](../MYCOMPANY_6_2_UTILITY_MODULES.md) para Doc, FileUtils, BarCode y numeración.
+- [Resiliencia de integraciones](../../INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) para WMS, idempotencia y estados inciertos.
+
+**Definición de terminado:** reconstruir cada línea desde pedido proveedor hasta recepción, stock físico, costo y factura, con parciales, cancelaciones y permisos probados.
