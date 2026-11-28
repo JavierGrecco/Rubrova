@@ -6,9 +6,16 @@ Estas reglas aplican a toda tarea sobre Rubrova. No dependas de la memoria de un
 
 1. Leer `README.md`.
 2. Leer `docs/platform-audit/README.md`: es la puerta obligatoria del mapeo de MyCompany 6.2 y lsFusion 6.2.
-3. Leer `docs/ENGINEERING_MASTER.md` para conocer estado, evidencia, decisiones, contratos y roadmap.
-4. Leer `docs/WORKFLOW.md` y el dossier de cada dominio afectado.
-5. Confirmar los commits fijados en `platform/source-lock.json` y la composición real desde `extensions/lsfusion/RubrovaCustom.lsf`.
+3. Identificar el nombre exacto `MODULE` que se va a tocar y buscarlo en `docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md`. Si no aparece en la tabla manual, ejecutar `node scripts/platform/module-integration-route.mjs --module NombreExacto`.
+4. Leer la primera sección indicada por el directorio/CLI, el dossier principal, la ficha del módulo y los documentos transversales que el resultado recomiende. No empezar desde el nombre del archivo ni desde una suposición.
+5. Leer `docs/ENGINEERING_MASTER.md` para conocer estado, evidencia, decisiones, contratos y roadmap.
+6. Leer `docs/WORKFLOW.md` y confirmar los commits fijados en `platform/source-lock.json` y la composición real desde `extensions/lsfusion/RubrovaCustom.lsf`.
+
+
+
+### Ruta obligatoria por módulo
+
+Cuando una tarea mencione un módulo o archivo LSF concreto, usar el directorio por nombre exacto. El comando `module-integration-route.mjs` es la forma obligatoria de resolver cualquier módulo de los snapshots, incluidos los que no tienen ficha manual todavía. Revisar tanto `REQUIRE` (dependencia de código) como consumidores directos y relaciones de negocio (documentos/ledgers); no son equivalentes. Si la salida marca un módulo fuera de `RubrovaCustom`, no asumir que está cargado o habilitado. Cuando el módulo no tenga análisis suficiente, completar la ficha con `MODULE_INTEGRATION_PASSPORT_TEMPLATE.md` antes de aprobar el cambio.
 
 ## Regla reuse-first obligatoria
 
