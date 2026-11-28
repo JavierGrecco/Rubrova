@@ -141,6 +141,8 @@ El manual describe un modelo de inventario con:
 
 El análisis detallado de movimientos físicos, reservas, costos, recepciones, ubicación interna, despachos, traslados, aceptación y ajustes está en [MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md](MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md). El mapa identifica tres ledgers y deja marcado el riesgo de fecha en FIFO, todavía pendiente de reproducción.
 
+Las utilidades transversales (documentos, plantillas, historial, adjuntos, correo, numeración, geolocalización, lector de códigos y criptografía) están detalladas en [MYCOMPANY_6_2_UTILITY_MODULES.md](MYCOMPANY_6_2_UTILITY_MODULES.md).
+
 ### 3.5 Facturación, deuda, impuestos y pagos
 
 La documentación enumera:

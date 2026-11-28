@@ -1893,6 +1893,8 @@ El detalle de los 96 módulos regionales (Bulgaria, Polonia y Rusia), con ruta, 
 
 El análisis en profundidad de inventario y los tres ledgers está en [MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md](platform-audit/MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md). Incluye la fuente exacta, los cálculos, circuitos y riesgos pendientes de prueba.
 
+El análisis de las 21 utilidades compartidas de MyCompany está en [MYCOMPANY_6_2_UTILITY_MODULES.md](platform-audit/MYCOMPANY_6_2_UTILITY_MODULES.md). Incluye dependencias, macros, recursos web, contratos abstractos y riesgos pendientes de prueba.
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.
