@@ -1004,6 +1004,7 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes('page.get_by_role("button", name=candidate_label, exact=True)'));
   assert.ok(uiSmokeSource.includes('input[type="submit"][value='));
   assert.ok(uiSmokeSource.includes("Nunca se usa un índice DOM"));
+  assert.ok(uiSmokeSource.includes('("Nueva venta", "Nueva venta (shift F12)")\n        if require_spanish and label == "Nueva venta"'));
   assert.ok(uiSmokeSource.includes("def accept_ls_fusion_confirmation"));
   assert.ok(uiSmokeSource.includes('page.locator(".modal.show")'));
   assert.ok(uiSmokeSource.includes('modal.locator(".modal-footer button.btn-primary")'));
@@ -1035,7 +1036,7 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes('button[lsfusion-container="PROPERTY(posPayment(s,b))"]'));
   assert.ok(uiSmokeSource.includes('click_exact_action(page, "Nueva venta", require_spanish=True)'));
   assert.ok(uiSmokeSource.includes('"Nueva venta": "PROPERTY(newReceipt(s))"'));
-  assert.ok(uiSmokeSource.includes('"Nueva venta": ("Nueva venta", "Nueva venta (shift F12)")'));
+  assert.ok(uiSmokeSource.includes('"Nueva venta": ("Nueva venta", "Nueva venta (shift F12)", "New receipt (shift F12)")'));
   assert.ok(uiSmokeSource.includes('require_spanish and label == "Nueva venta"'));
   assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_DISCARD_ACTION_SPANISH=true"));
   assert.ok(uiSmokeSource.includes("UI_ACTION_NUEVA_VENTA_LABEL_ES=true"));
