@@ -11,6 +11,8 @@ on:
       - '.github/pull_request_template.md'
       - '.github/workflows/documentation-map.yml'
       - 'scripts/platform/test-platform-map-entry.mjs'
+      - 'scripts/platform/module-integration-route.mjs'
+      - 'scripts/platform/module-integration-route.test.mjs'
       - 'scripts/platform/audit-lsf-source.mjs'
       - 'scripts/platform/audit-lsf-source.test.mjs'
       - 'scripts/platform/audit-source-docs.mjs'
@@ -54,8 +56,11 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Validar los 77 recursos bajo docs y el catálogo de 1.111 documentos
+      - name: Validar los 79 recursos bajo docs y el catálogo de 1.113 documentos
         run: node --test scripts/platform/test-platform-map-entry.mjs
+
+      - name: Probar la resolución de integración por módulo exacto
+        run: node --test scripts/platform/module-integration-route.test.mjs
 
       - name: Probar los generadores de catálogos upstream
         run: |
