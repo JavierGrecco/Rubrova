@@ -377,6 +377,7 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `scripts/platform/audit-source-docs.mjs` | Índice de páginas Markdown, idioma, ruta, título y encabezados de docs upstream | Para localizar material de MyCompany/lsFusion por idioma y tema |
 | `scripts/platform/audit-source-docs.test.mjs` | Pruebas del índice documental | Al cambiar el indexador |
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
+| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 77 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
 | `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
 | `patches/lsfusion/README.md` | Política para parches directos al motor: cuándo usar extensión, procedencia, archivos upstream afectados, versión y pruebas | Antes de modificar directamente `vendor/platform` |
