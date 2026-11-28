@@ -37,15 +37,21 @@ Rubrova es un producto propio que conduzco como **Product Owner y responsable de
 El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las capacidades planificadas se presentan como visión y evolución progresiva; las tablas de estado y los documentos técnicos indican qué está implementado, probado, en validación o pendiente.
 
 
-> **Estado del proyecto · 26 de noviembre de 2026**
+> **Estado del proyecto · 27 de noviembre de 2026**
 >
-> Rubrova continúa como piloto integrado POS + ERP; no es una versión productiva. En [la validación de plataforma #417](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), el preflight, la compilación completa y el smoke nativo macOS ARM64 terminaron correctamente. El smoke autenticó, verificó la exportación nativa de reposición sobre fixtures, completó una venta sintética, concilió caja y stock, cerró el turno, reinició el runtime y comprobó la persistencia.
+> Rubrova sigue siendo un piloto integrado POS + ERP; **no es una versión productiva**. La última aceptación de interfaz anterior, [run #524](https://github.com/JavierGrecco/Rubrova/actions/runs/46047336284), confirmó en macOS ARM64 que el turno muestra una venta y que la acción nativa **Devolver** está visible y habilitada. No llegó a pulsar la acción.
 >
-> La misma ejecución creó un respaldo lógico de PostgreSQL, verificó sus checksums y lo restauró en una base nueva (`rubrova_restore_ci`) sin sobrescribir `rubrova_dev`. Es una primera recuperación **sólo de PostgreSQL**: todavía no incluye adjuntos ni documentos externos. El modo offline macOS no se probó; Linux/Docker fueron omitidos y Windows sólo pasó validación sintáctica.
+> El smoke posterior [run #516](https://github.com/JavierGrecco/Rubrova/actions/runs/46050676363) pasó prevalidación, validación sintáctica de Windows y compilación completa, pero falló al comprobar las filas de la grilla del POS. La API del turno y el snapshot de la interfaz mostraron una sola venta; el diagnóstico apunta a una comprobación antes de que la grilla termine su actualización asíncrona. Se endureció la espera y se agregó una regresión en los commits `847cdcd` y `fb1ba30`.
 >
-> **Estado GitHub:** `main` es la única rama visible y no hay PR abiertos. La rama principal todavía no está protegida por reglas obligatorias. La prueba en el runner Apple Silicon no sustituye la prueba en el Mac físico ni una jornada comercial real.
+> La validación de esa corrección está en el [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), sobre el SHA `fb1ba3032108ccf71a81e1d8c840b71150520de5`. Al último corte, prevalidación y validación Windows pasaron; el empaquetado de servidor/cliente seguía en ejecución. **El smoke nativo todavía no está aceptado para esta corrección.**
 >
-> Seguimiento: [validación de plataforma #45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) · [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
+> **Estado GitHub:** `main` conserva dos ramas visibles: `main` y `work/pos-refund-cumulative-method-guard`. La segunda quedó obsoleta después de integrar el límite de reintegros y está pendiente de eliminación. No hay PR abiertos y `main` aún no tiene protección por reglas obligatorias.
+>
+> El runtime local nativo y la restauración de PostgreSQL tienen pruebas automatizadas previas, pero aún faltan aceptación en el equipo físico del comercio, modo offline, instalación funcional Windows/Linux, backup integral con adjuntos y una jornada comercial supervisada.
+>
+> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) ya está documentada; sus controles de lotes/vencimientos y el flujo de elaboración todavía deben implementarse y validarse.
+>
+> Seguimiento: [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
 
 ## Propuesta de producto
 
