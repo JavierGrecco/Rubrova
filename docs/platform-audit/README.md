@@ -4,7 +4,15 @@
 
 **Este es el punto de entrada obligatorio para cualquier integrante, desarrollador o agente que trabaje en Rubrova.** Su propósito es localizar toda la investigación existente, indicar el orden de lectura según la tarea y conectar los mapas de dominio con los documentos de arquitectura, producto, seguridad, runtime y reutilización. No alcanza con abrir un único mapa y asumir que la funcionalidad está aislada.
 
-**Estado del catálogo documental:** inventario de `docs/` verificado sobre `main`: 54 documentos Markdown generales + 15 documentos Markdown en `docs/platform-audit/` = **69 documentos Markdown catalogados**, incluido este índice. El test `scripts/platform/test-platform-map-entry.mjs` comprueba que cada archivo Markdown bajo `docs/` tenga una referencia en este catálogo. Si se incorpora un documento nuevo, debe clasificarse y conectarse antes de pasar la prevalidación.
+**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.111 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
+- **73 documentos mantenidos por Rubrova fuera de `vendor/`**: los 69 de `docs/` (54 generales + 15 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
+- **1.038 archivos Markdown dentro de `vendor/`**: 1.031 páginas de documentación upstream incluidas en las cinco raíces que indexa `audit-source-docs.mjs` (347 MyCompany + 684 lsFusion), más 7 README/CHANGELOG/guías de soporte del snapshot.
+
+El catálogo de documentos mantenidos por Rubrova está enlazado en este archivo; las 1.031 páginas upstream se enumeran por ruta, idioma, título y encabezados en el registro generado `rubrova-source-document-catalog`. Los siete Markdown adicionales del snapshot se enumeran expresamente en la sección 9. Los archivos binarios/imagenes upstream también quedan listados en el catálogo generado, pero ni el índice ni el registro afirman que cada página o imagen haya sido leída funcionalmente.
+
+El test `scripts/platform/test-platform-map-entry.mjs` comprueba que los **73 Markdown mantenidos por Rubrova fuera de vendor/** estén incluidos en el índice y que los siete documentos auxiliares del snapshot no queden omitidos. `audit-source-docs.mjs` vuelve a generar el índice completo de páginas upstream desde los cinco directorios fijados. Si se incorpora un documento, fuente, idioma o recurso nuevo, debe clasificarse y enlazarse antes de pasar la prevalidación.
+
+**Persistencia de los registros generados:** GitHub Actions publica `rubrova-lsf-source-catalog` y `rubrova-source-document-catalog` como artefactos con retención de 30 días. No son archivos permanentes de Git ni reemplazan este índice. Se pueden regenerar desde la raíz con `bash scripts/platform/local-preflight.sh --platform`; el código de ambos generadores y sus pruebas sí permanece versionado. Ante una actualización de los locks, regenerar y revisar los registros antes de aprobar el nuevo snapshot.
 
 **Estado del relevamiento técnico:** **EN CURSO / puerta 9.7 ABIERTA.** El catálogo documental exhaustivo no significa que se hayan leído y conciliado funcionalmente todos los módulos, páginas fuente, herramientas o capacidades. Los 800 módulos MyCompany están inventariados estructuralmente, no todos tienen ficha funcional completa ni pruebas de runtime. No se debe declarar completo el mapeo de MyCompany/lsFusion.
 
@@ -354,6 +362,13 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
 | `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
+| `patches/lsfusion/README.md` | Política para parches directos al motor: cuándo usar extensión, procedencia, archivos upstream afectados, versión y pruebas | Antes de modificar directamente `vendor/platform` |
+| `vendor/UPSTREAM_SOURCES.md` | Procedencia y límites de los snapshots upstream incluidos | Al revisar licencias, procedencia o cambios de origen |
+| `vendor/mycompany/README.md` y `vendor/mycompany/CHANGELOG.md` | Orientación y cambios declarados por MyCompany upstream | Al investigar un comportamiento, regresión o actualización de MyCompany |
+| `vendor/platform/README.md`, `vendor/platform/README_ru.md` y `vendor/platform/CHANGELOG.md` | Orientación y cambios declarados por lsFusion upstream | Al investigar lenguaje, runtime o actualizar la plataforma |
+| `vendor/platform/server/src/main/resources/web/objects/multiselect/README.md` | Documentación incluida junto al componente multiselect del servidor web | Al extender o diagnosticar ese componente visual |
+
+**Cobertura upstream:** los 1.031 documentos de las cinco raíces oficiales (347 MyCompany en inglés/polaco/ruso; 684 lsFusion en inglés/ruso) aparecen individualmente en `source-document-register.md` y `source-document-catalog.json`. El registro es estructural (ruta, idioma, título, encabezados e imágenes), no una lectura ni una certificación de la semántica. Los siete archivos de soporte indicados arriba quedan fuera de esas raíces y por eso se catalogan aquí por separado.
 | `scripts/platform/apply-rubrova-source-patches.py` | Aplica parches Rubrova sobre fuentes upstream con controles explícitos | Al compilar la fuente modificada |
 | `extensions/lsfusion/` | Extensiones propias de Rubrova | Antes de modificar módulos upstream; revisar si la extensión existente basta |
 | `patches/lsfusion/` | Parches que afectan directamente el motor | Sólo cuando una extensión no alcanza; documentar origen, motivo y tests |
