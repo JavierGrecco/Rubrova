@@ -62,7 +62,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Validar los 85 recursos bajo docs y el catálogo de 1.119 documentos
+      - name: Validar los 91 recursos bajo docs y el catálogo de 1.125 documentos
         run: node --test scripts/platform/test-platform-map-entry.mjs
 
       - name: Probar la resolución de integración por módulo exacto
@@ -70,6 +70,10 @@ jobs:
           node --test scripts/platform/module-integration-route.test.mjs
           node scripts/platform/module-integration-route.mjs --module InvLedger
           node scripts/platform/module-integration-route.mjs --module MasterDataP
+          node scripts/platform/module-integration-route.mjs --module PurchaseOrder
+          node scripts/platform/module-integration-route.mjs --module Invoice
+          node scripts/platform/module-integration-route.mjs --module Pos
+          node scripts/platform/module-integration-route.mjs --module Partner
 
       - name: Probar los generadores de catálogos upstream
         run: |
