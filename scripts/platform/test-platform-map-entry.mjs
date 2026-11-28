@@ -20,6 +20,16 @@ function markdownFiles(directory, { excludeVendor = false } = {}) {
   return result.sort();
 }
 
+function filesUnder(directory) {
+  const result = [];
+  for (const entry of readdirSync(path.join(root, directory), { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...filesUnder(absolute));
+    else if (entry.isFile()) result.push(absolute.split(path.sep).join("/"));
+  }
+  return result.sort();
+}
+
 const requiredDossiers = [
   "MYCOMPANY_6_2_FUNCTIONAL_MAP.md",
   "MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md",
@@ -92,6 +102,15 @@ test("los siete documentos Markdown auxiliares de vendor quedan identificados", 
   }
 });
 
+test("todos los archivos de docs, incluidos fixtures y recursos gráficos, están catalogados", () => {
+  const index = read(indexPath);
+  const files = filesUnder("docs");
+  assert.equal(files.length, 77, "Cambió el inventario completo de docs/: actualizar el catálogo.");
+  for (const file of files) {
+    assert.ok(index.includes(file), `Recurso de docs sin clasificar en el índice: ${file}`);
+  }
+});
+
 test("todos los dossiers especializados están presentes y enlazados", () => {
   const index = read(indexPath);
   for (const dossier of requiredDossiers) {
@@ -126,6 +145,12 @@ test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos his
     "1.038 archivos Markdown",
     "1.031 páginas de documentación upstream",
     "retención de 30 días",
+    "77 archivos",
+    "demand-monthly-history.json",
+    "mycompany-native-replenishment-export.json",
+    "platform-evaluation.json",
+    "stockout-censored-demand.json",
+    "rubrova-hero.svg",
     "puerta 9.7",
   ]) {
     assert.ok(index.toLowerCase().includes(marker.toLowerCase()), `Falta una ruta o regla obligatoria: ${marker}`);
