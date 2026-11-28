@@ -260,6 +260,7 @@ export function resolveModuleIntegrationRoute(catalog, query) {
 
   const module = exact[0];
   const guide = domainGuideFor(module);
+  const passport = MODULE_PASSPORTS[module.moduleName] || null;
   const requireDetails = (module.requires || []).map(name => {
     const dependency = allModules.find(candidate => candidate.moduleName === name);
     return dependency
@@ -322,7 +323,6 @@ export function resolveModuleIntegrationRoute(catalog, query) {
     reason: "Contratos de módulos, extensión, sesiones, transacciones y frontera de autoridad.",
   });
 
-  const passport = MODULE_PASSPORTS[module.moduleName] || null;
   const passportNote = PASSPORT_OVERRIDES[module.moduleName] || null;
   const inApplication = module.reachableFromApplicationRoot === true;
   const compositionState = inApplication
