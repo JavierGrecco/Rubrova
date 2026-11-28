@@ -22,9 +22,26 @@ node scripts/platform/module-integration-route.mjs --module Receipt
 node scripts/platform/module-integration-route.mjs --module NombreExactoDelModulo
 ```
 
-El comando resuelve módulos de MyCompany 6.2, lsFusion 6.2 y extensiones Rubrova. Devuelve: archivo fuente, versión fijada, estado dentro/fuera del cierre de `RubrovaCustom`, namespace, `REQUIRE` directos, consumidores directos, declaraciones estructurales detectadas, dossier primario y lecturas transversales. Acepta también el nombre exacto del archivo `.lsf`. Si el módulo no está en la composición, lo advierte; nunca debe asumirse que puede usarse sin incorporarlo y probarlo.
+El comando resuelve los 856 módulos del snapshot (800 MyCompany, 49 lsFusion y 7 extensiones Rubrova). Devuelve: archivo fuente, versión fijada, estado dentro/fuera del cierre de `RubrovaCustom`, namespace, `REQUIRE` directos con sus rutas, consumidores directos con sus rutas, declaraciones estructurales detectadas, ficha individual si existe, dossier de dominio y lecturas transversales. Acepta nombre `MODULE`, basename `.lsf` o ruta exacta. Si el módulo no está en la composición, lo advierte; nunca debe asumirse que puede usarse sin incorporarlo y probarlo.
 
 El [registro estructural completo de módulos](../../.github/workflows/documentation-map.yml) se regenera en CI como artefacto de 30 días. El CLI es la ruta persistente y repetible para consultar cualquier módulo del snapshot sin depender de que una persona conserve ese artefacto.
+
+### 1.1 Cobertura de fichas individuales — estado real
+
+Las **81 entradas manuales** de este directorio son rutas rápidas por módulo con fuente exacta, primera lectura y relaciones. No deben interpretarse como 81 pasaportes individuales completos.
+
+Ya hay seis fichas individuales con análisis específico:
+
+| Módulo | Pasaporte individual | Qué concentra |
+|---|---|---|
+| InvLedger | [Ficha InvLedger](modules/InvLedger.md) | Contrato de movimiento físico, saldos, ubicación, aceptación y productores |
+| ResLedger | [Ficha ResLedger](modules/ResLedger.md) | Signo de reservas/esperados, disponible, skipAvailable y productores |
+| CostLedger | [Ficha CostLedger](modules/CostLedger.md) | Costos estándar, AVCO, FIFO, recálculo y riesgo temporal |
+| Receipt | [Ficha Receipt](modules/Receipt.md) | Cabecera/líneas, validaciones y circuito recepción→reserva→movimiento→costo |
+| SalesOrder | [Ficha SalesOrder](modules/SalesOrder.md) | Pedido, entidades, estados y documentos derivados |
+| Session | [Ficha Session](modules/Session.md) | Apertura/cierre, hooks, POS y asociación de documentos |
+
+Los otros módulos siguen teniendo una ruta al dossier de dominio y al CLI, pero no una ficha individual aprobada. Ante una integración que modifique su modelo, estado, API, permisos o efectos, completar el [pasaporte de módulo](MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) y enlazarlo aquí antes de considerar terminado el cambio. La herramienta no inventa casos de uso ni convierte un inventario estructural en documentación funcional.
 
 ## 2. Reglas para interpretar la ruta
 
@@ -61,12 +78,12 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 | Módulo exacto | Fuente LSF | Primera lectura obligatoria | Seguir con / relaciones que no se deben romper |
 |---|---|---|---|
 | `Inventory` | [Inventory.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/Inventory.lsf) | Dossier §1 y mapa funcional | Es compositor del dominio. Seguir `Receipt`, `Shipment`, `Adjustment`, `Scrap`, `InvLedger`, `ResLedger`, `CostLedger`, `Location`, reportes y master data. |
-| `InvLedger` | [InvLedger.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/inv/InvLedger.lsf) | Dossier §1.1 | Distinguir ingreso/egreso físico, ubicación origen/destino, activo, `notAccepted`, corte temporal y agregación. Seguir `ReceiptInv`, `ShipmentInv`, `AdjustmentInv`, `ScrapInv` y aceptación. |
-| `ResLedger` | [ResLedger.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/res/ResLedger.lsf) | Dossier §1.2 | Separar reserva positiva, esperado negativo, bruto, planificado, `skipAvailable` y disponible. Seguir `ReceiptRes`, `ShipmentReady`, `ShipmentRes`, ventas y reposición. |
-| `CostLedger` | [CostLedger.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/cost/CostLedger.lsf) | Dossier §1.3 | No confundir costo planificado, AVCO, FIFO y movimiento físico. Seguir `ReceiptCost`, `ShipmentCost`, `AdjustmentCost`, `CostLocation`, `CostProduct` e informes; atender el riesgo FIFO anotado en el dossier. |
+| `InvLedger` | [InvLedger.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/inv/InvLedger.lsf) | [Ficha InvLedger](modules/InvLedger.md) → dossier §1.1 | Distinguir ingreso/egreso físico, ubicación origen/destino, activo, `notAccepted`, corte temporal y agregación. Seguir `ReceiptInv`, `ShipmentInv`, `AdjustmentInv`, `ScrapInv` y aceptación. |
+| `ResLedger` | [ResLedger.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/res/ResLedger.lsf) | [Ficha ResLedger](modules/ResLedger.md) → dossier §1.2 | Separar reserva positiva, esperado negativo, bruto, planificado, `skipAvailable` y disponible. Seguir `ReceiptRes`, `ShipmentReady`, `ShipmentRes`, ventas y reposición. |
+| `CostLedger` | [CostLedger.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/cost/CostLedger.lsf) | [Ficha CostLedger](modules/CostLedger.md) → dossier §1.3 | No confundir costo planificado, AVCO, FIFO y movimiento físico. Seguir `ReceiptCost`, `ShipmentCost`, `AdjustmentCost`, `CostLocation`, `CostProduct` e informes; atender el riesgo FIFO anotado en el dossier. |
 | `CostLocation` | [CostLocation.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/cost/CostLocation.lsf) | Dossier §1.3 | La ubicación de costo puede agrupar ubicaciones físicas; revisar herencia y jerarquía antes de conciliar. |
 | `CostProduct` | [CostProduct.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/ledgers/cost/CostProduct.lsf) | Dossier §1.3 | Seguir categoría, producto y `ItemCost`; costo de maestro no equivale necesariamente a valoración real. |
-| `Receipt` | [Receipt.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/receipts/Receipt.lsf) | Dossier §2.1 | Seguir `ReceiptType`, `ReceiptReady`, `ReceiptDone`, `ReceiptRes`, `ReceiptInv`, `ReceiptCost`, `ReceiptPutAway`, `PurchaseOrderReceipt`, `Bill` y master data. |
+| `Receipt` | [Receipt.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/receipts/Receipt.lsf) | [Ficha Receipt](modules/Receipt.md) → dossier §2.1 | Seguir `ReceiptType`, `ReceiptReady`, `ReceiptDone`, `ReceiptRes`, `ReceiptInv`, `ReceiptCost`, `ReceiptPutAway`, `PurchaseOrderReceipt`, `Bill` y master data. |
 | `ReceiptType` | [ReceiptType.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptType.lsf) | Dossier §§2.1–2.5 | La configuración puede alterar numeración, ubicación y comportamiento; revisar `increaseAvailableStock` y `putAway` en los módulos que la consumen. |
 | `ReceiptReady` | [ReceiptReady.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptReady.lsf) | Dossier §2.2 | Estado listo y reserva esperada; seguir `ResLedger`, selección, cancelación y cierre. |
 | `ReceiptDone` | [ReceiptDone.lsf](../../vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptDone.lsf) | Dossier §2.3 | Cantidad real recibida y fecha/hora efectiva; seguir `ReceiptInv`, `ReceiptRes`, `ReceiptCost` y put-away. |
@@ -94,7 +111,7 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 | Módulo exacto | Fuente LSF | Primera lectura obligatoria | Seguir con / relaciones que no se deben romper |
 |---|---|---|---|
 | `Sales` | [Sales.lsf](../../vendor/mycompany/src/main/lsfusion/sales/Sales.lsf) | Dossier §§1–8 | Es compositor comercial. Usar submódulos de pedido, precios, descuentos, ledger, despacho, facturación, compras y fabricación; no atribuirle propiedad individual a la raíz. |
-| `SalesOrder` | [SalesOrder.lsf](../../vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf) | Dossier §2 | Cabecera/líneas, cliente/empresa, moneda, ubicación, impuestos, descuentos, actividad, condiciones y documento origen. Seguir módulos de estado y downstream. |
+| `SalesOrder` | [SalesOrder.lsf](../../vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf) | [Ficha SalesOrder](modules/SalesOrder.md) → dossier §2 | Cabecera/líneas, cliente/empresa, moneda, ubicación, impuestos, descuentos, actividad, condiciones y documento origen. Seguir módulos de estado y downstream. |
 | `SalesOrderConfirmed` | [SalesOrderConfirmed.lsf](../../vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrderConfirmed.lsf) | Dossier §2.2 | Confirmación y precondiciones; seguir estado enviado/cancelado/bloqueado, reserva y consecuencias en despacho. |
 | `SalesOrderCanceled` | [SalesOrderCanceled.lsf](../../vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrderCanceled.lsf) | Dossier §2.2 | Cancelación y restricciones por documentos derivados; comprobar despacho, factura y fabricación asociada antes de revertir. |
 | `SalesOrderShipment` | [SalesOrderShipment.lsf](../../vendor/mycompany/src/main/lsfusion/sales/inventory/shipments/orders/SalesOrderShipment.lsf) | Dossier §2.3 | Pedido→despacho, reservas y entregas parciales. Seguir `Shipment`, `ShipmentReady`, `ShipmentDone`, picking, `ShipmentInv` y ledger comercial. |
@@ -145,7 +162,7 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 | `Pos` | [Pos.lsf](../../vendor/mycompany/src/main/lsfusion/retail/pos/Pos.lsf) | Dossier §2 | Caja lógica, empresa, computadora y driver; seguir PosPaymentMethod, PaymentMethod, usuario y sesión. |
 | `PosPaymentMethod` | [PosPaymentMethod.lsf](../../vendor/mycompany/src/main/lsfusion/retail/pos/PosPaymentMethod.lsf) | Dossier §2 | Habilitación por caja y cuenta vinculada; revisar titularidad empresa, Payment y caja central. |
 | `PaymentMethod` | [PaymentMethod.lsf](../../vendor/mycompany/src/main/lsfusion/retail/payments/PaymentMethod.lsf) | Dossier §4 | Método de cobro entrante y tipo de pago saliente para devoluciones; seguir cuentas, cobros y terminales. |
-| `Session` | [Session.lsf](../../vendor/mycompany/src/main/lsfusion/retail/sessions/Session.lsf) | Dossier §3 | Turno, apertura/cierre, único turno abierto por POS y hooks before/after; seguir facturas, pagos, retiros y cierre. |
+| `Session` | [Session.lsf](../../vendor/mycompany/src/main/lsfusion/retail/sessions/Session.lsf) | [Ficha Session](modules/Session.md) → dossier §3 | Turno, apertura/cierre, único turno abierto por POS y hooks before/after; seguir facturas, pagos, retiros y cierre. |
 | `SessionInvoice` | [SessionInvoice.lsf](../../vendor/mycompany/src/main/lsfusion/retail/sessions/SessionInvoice.lsf) | Dossier §3 | Relación sesión↔factura/nota y totales netos; seguir Invoice/CreditNote y estados. |
 | `SessionPayment` | [SessionPayment.lsf](../../vendor/mycompany/src/main/lsfusion/retail/sessions/SessionPayment.lsf) | Dossier §4 | Importes por medio de pago; seguir IncomingPayment, OutgoingPayment, InvoiceDebt y BillDebt. |
 | `SessionShipment` | [SessionShipment.lsf](../../vendor/mycompany/src/main/lsfusion/retail/sessions/SessionShipment.lsf) | Dossier §3 | Relación de despacho con sesión; seguir inventario, factura y logística. |
