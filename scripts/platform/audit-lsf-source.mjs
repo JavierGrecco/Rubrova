@@ -105,29 +105,108 @@ function declarationMatches(source, expression) {
   }));
 }
 
+/**
+ * Conserva únicamente sentencias de nivel superior.
+ * Evita contar referencias a formularios dentro de NAVIGATOR o bloques DESIGN
+ * como si fueran nuevas declaraciones. El cuerpo META se registra aparte:
+ * sus sentencias son plantillas y no se ejecutan hasta expandir el metacódigo.
+ */
+export function topLevelLsfSource(source) {
+  const code = maskLsfNonCode(source);
+  const lines = code.split("\n");
+  const visible = [];
+  let braceDepth = 0;
+  let inMeta = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const startsMeta = braceDepth === 0 && !inMeta && /^META\b/.test(trimmed);
+    const endsMeta = inMeta && /^END\b/.test(trimmed);
+    const isVisible = braceDepth === 0 && !inMeta;
+
+    visible.push(isVisible ? line : " ".repeat(line.length));
+
+    if (startsMeta) inMeta = true;
+    else if (endsMeta) inMeta = false;
+
+    for (const character of line) {
+      if (character === "{") braceDepth += 1;
+      else if (character === "}") braceDepth = Math.max(0, braceDepth - 1);
+    }
+  }
+
+  return visible.join("\n");
+}
+
+const NON_ACTION_BLOCK_KEYWORDS = new Set([
+  "AFTER", "BEFORE", "CLASS", "CONSTRAINT", "DESIGN", "FORM", "GROUP",
+  "META", "MODULE", "NAVIGATOR", "NAMESPACE", "ON", "REQUIRE", "TABLE",
+  "WHEN", "WINDOW",
+]);
+
 export function parseLsfSource(source, filePath = "") {
   const code = maskLsfNonCode(source);
-  const moduleName = code.match(/^\s*MODULE\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/m)?.[1] || null;
-  const namespace = code.match(/^\s*NAMESPACE\s+([A-Za-z_][A-Za-z0-9_.]*)\s*;/m)?.[1] || null;
-  const requireBody = code.match(/^\s*REQUIRE\b([\s\S]*?);/m)?.[1] || "";
+  const topLevel = topLevelLsfSource(source);
+  const moduleName = topLevel.match(/^MODULE\s+([A-Za-z_][A-Za-z0-9_]*)\s*;/m)?.[1] || null;
+  const namespace = topLevel.match(/^NAMESPACE\s+([A-Za-z_][A-Za-z0-9_.]*)\s*;/m)?.[1] || null;
+  const requireBody = topLevel.match(/^REQUIRE\b([\s\S]*?);/m)?.[1] || "";
   const requires = requireBody.split(",").map((part) => part.trim()).filter(Boolean);
 
+  const explicitActions = declarationMatches(
+    topLevel,
+    /^ACTION\s+([A-Za-z_][A-Za-z0-9_]*)\b/gm,
+  );
+  const implicitActions = declarationMatches(
+    topLevel,
+    /^([A-Za-z_][A-Za-z0-9_]*)\s*(?:'[^'\n]*'\s*)?(?:\([^)\n]*\)\s*)?\{/gm,
+  ).filter((entry) => !NON_ACTION_BLOCK_KEYWORDS.has(entry.name.toUpperCase()));
+
+  const propertyDeclarations = declarationMatches(
+    topLevel,
+    /^([A-Za-z_][A-Za-z0-9_]*)(?:\s+'[^'\n]*')?(?:\s*\([^)\n]*\))?\s*=(?!=|>)/gm,
+  );
+  const propertyExtensions = declarationMatches(
+    topLevel,
+    /^([A-Za-z_][A-Za-z0-9_]*)(?:\s*\[[^\]\n]+\])?\s*\([^)\n]*\)\s*\+=/gm,
+  );
+  const actionExtensions = declarationMatches(
+    topLevel,
+    /^(?:ACTION\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\([^)\n]*\)\s*\+(?![=])/gm,
+  );
+
   const declarations = {
-    classes: declarationMatches(code, /^(?:EXTEND\s+)?CLASS\s+(?:ABSTRACT\s+)?([A-Za-z_][A-Za-z0-9_]*)/gm),
-    forms: declarationMatches(code, /^(?:EXTEND\s+)?FORM\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
-    navigators: declarationMatches(code, /^(?:EXTEND\s+)?NAVIGATOR\b/gm).map((x) => ({ ...x, name: null })),
-    tables: declarationMatches(code, /^TABLE\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
-    constraints: declarationMatches(code, /^CONSTRAINT\b/gm).map((x) => ({ ...x, name: null })),
-    indexes: declarationMatches(code, /^INDEX\s+([A-Za-z_][A-Za-z0-9_]*)/gim),
-    whenEvents: declarationMatches(code, /^WHEN\b/gm).map((x) => ({ ...x, name: null })),
-    onEvents: declarationMatches(code, /^ON\b/gm).map((x) => ({ ...x, name: null })),
+    classes: declarationMatches(topLevel, /^CLASS\s+(?:ABSTRACT\s+)?([A-Za-z_][A-Za-z0-9_]*)/gm),
+    classExtensions: declarationMatches(topLevel, /^EXTEND\s+CLASS\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    forms: declarationMatches(topLevel, /^FORM\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    formExtensions: declarationMatches(topLevel, /^EXTEND\s+FORM\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    navigators: declarationMatches(topLevel, /^NAVIGATOR\b/gm).map((x) => ({ ...x, name: null })),
+    navigatorExtensions: declarationMatches(topLevel, /^EXTEND\s+NAVIGATOR\b/gm).map((x) => ({ ...x, name: null })),
+    properties: propertyDeclarations,
+    propertyExtensions,
+    actions: [...explicitActions, ...implicitActions].sort((a, b) => a.line - b.line),
+    actionExtensions,
+    groups: declarationMatches(topLevel, /^GROUP\s+(?:NATIVE\s+)?([A-Za-z_][A-Za-z0-9_]*)/gm),
+    designs: declarationMatches(topLevel, /^DESIGN\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    windows: declarationMatches(topLevel, /^WINDOW\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    metaStatements: declarationMatches(topLevel, /^META\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    tables: declarationMatches(topLevel, /^TABLE\s+([A-Za-z_][A-Za-z0-9_]*)/gm),
+    constraints: declarationMatches(topLevel, /^CONSTRAINT\b/gm).map((x) => ({ ...x, name: null })),
+    indexes: declarationMatches(topLevel, /^INDEX\b/gm).map((x) => ({ ...x, name: null })),
+    whenEvents: declarationMatches(topLevel, /^WHEN\b/gm).map((x) => ({ ...x, name: null })),
+    onEvents: declarationMatches(topLevel, /^ON\b/gm).map((x) => ({ ...x, name: null })),
+    beforeStatements: declarationMatches(topLevel, /^BEFORE\b/gm).map((x) => ({ ...x, name: null })),
+    afterStatements: declarationMatches(topLevel, /^AFTER\b/gm).map((x) => ({ ...x, name: null })),
     apiAnnotations: declarationMatches(code, /@@api\b/gm).map((x) => ({ ...x, name: null })),
     noAuthAnnotations: declarationMatches(code, /@@noauth\b/gm).map((x) => ({ ...x, name: null })),
+    macroInvocations: declarationMatches(code, /^@[A-Za-z_][A-Za-z0-9_]*/gm),
   };
 
   const counts = Object.fromEntries(
     Object.entries(declarations).map(([key, values]) => [key, values.length]),
   );
+  counts.actionDeclarationsAreHeuristic = true;
+  counts.propertyDeclarationsAreTopLevelEqualsStatements = true;
+  counts.macroExpansionIsNotIncluded = true;
 
   return {
     path: filePath,
@@ -267,7 +346,7 @@ export function buildSourceCatalog(root = ROOT) {
 
   return {
     schemaVersion: 2,
-    method: "Inventario estático de archivos y declaraciones LSF; no interpreta la semántica ni valida la ejecución.",
+    method: "Inventario estático de archivos y declaraciones LSF de nivel superior; las acciones sin palabra clave se detectan por patrón y las expansiones META/macros no se interpretan. No valida la semántica ni la ejecución.",
     sources: {
       myCompany: { tag: mySourceLock.tag, commit: mySourceLock.commit, license: mySourceLock.license },
       lsFusion: { tag: platformSourceLock.tag, commit: platformSourceLock.commit, license: platformSourceLock.license },
@@ -346,6 +425,11 @@ function runCli() {
   console.log("Dependencias sin resolver: " + catalog.applicationComposition.unresolvedRequirements.length + ".");
   console.log("MyCompany 6.2: " + catalog.myCompany.lsfFileCount + " módulos LSF (lock: " + catalog.myCompany.lockedLsfFileCount + "); fuera de la composición: " + catalog.myCompany.outsideApplicationClosureCount + ".");
   console.log("Extensiones propias: " + catalog.rubrovaExtensions.lsfFileCount + " módulos LSF.");
+  const declarationTotals = [...catalog.myCompany.modules, ...catalog.lsFusion.modules, ...catalog.rubrovaExtensions.modules].reduce((total, module) => {
+    for (const key of ["properties", "propertyExtensions", "actions", "actionExtensions", "classes", "classExtensions", "forms", "formExtensions", "navigators", "constraints", "whenEvents", "onEvents", "metaStatements", "macroInvocations"]) total[key] = (total[key] || 0) + (module.counts[key] || 0);
+    return total;
+  }, {});
+  console.log("Declaraciones detectadas (fuente, sin expansión de macros): " + JSON.stringify(declarationTotals) + ".");
   console.log("lsFusion 6.2: " + catalog.lsFusion.lsfFileCount + " archivos LSF, " + catalog.lsFusion.javaSourceFileCount + " fuentes Java.");
   console.log("Documentación: inglés " + catalog.lsFusion.documentationAssets.en.markdown + " Markdown + " + catalog.lsFusion.documentationAssets.en.images + " imágenes; ruso " + catalog.lsFusion.documentationAssets.ru.markdown + " Markdown + " + catalog.lsFusion.documentationAssets.ru.images + " imágenes.");
 
