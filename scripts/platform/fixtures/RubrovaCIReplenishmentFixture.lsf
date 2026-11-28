@@ -353,7 +353,7 @@ loadDefaultData () + {
             Purchase.confirmed(billLifecycleOrderCI) <- TRUE;
         }
         // Esta prueba usa la ruta PO -> Receipt -> Bill; no generar una Receipt adicional desde Bill.
-        Invoicing.autoCreateReceipt(Invoicing.billType('bill')) <- FALSE;
+        Invoicing.autoCreateReceipt(Invoicing.billType('bill')) <- NULL;
         Purchase.invoicingPolicy(Purchase.orderType('order')) <- Purchase.InvoicingPolicy.delivered;
         rubrovaCIDoneReceiptSeeded() <- TRUE;
     }

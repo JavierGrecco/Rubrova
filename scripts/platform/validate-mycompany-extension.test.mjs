@@ -2016,6 +2016,8 @@ test("la recepción Done concilia ubicación principal, hija, put-away, costo y 
   assert.match(uiSmokeSource, /verify_purchase_receipt_done_cancellation\(context, url\)/);
   assert.match(nativeSmokeSource, /UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaTestSupplierBillDeliveredCancellationApi/);
+  assert.match(nativeReplenishmentFixtureSource, /Invoicing[.]autoCreateReceipt\(Invoicing[.]billType\(\x27bill\x27\)\) <- NULL/);
+  assert.doesNotMatch(nativeReplenishmentFixtureSource, /autoCreateReceipt\(Invoicing[.]billType\(\x27bill\x27\)\) <- FALSE/);
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]createBill\(rubrovaCIBillLifecycleOrder\(\)\)/);
   assert.match(nativeReplenishmentFixtureSource, /Invoicing[.]cancel\(rubrovaCIBillLifecycleOriginal\(\)\)/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaCIBillLifecycleReceiptCostAfterCancel/);
