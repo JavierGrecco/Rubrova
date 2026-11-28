@@ -361,7 +361,7 @@ Este catálogo complementa los 14 dossiers anteriores. Incluye **todos** los doc
 
 ### 7.1 Recursos de soporte y fixtures bajo `docs/`
 
-Además de los 69 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **79 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
+Además de los 71 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **79 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
 
 | Archivo | Qué contiene / para qué sirve | Leer junto con |
 |---|---|---|
@@ -411,7 +411,7 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `scripts/platform/audit-source-docs.test.mjs` | Pruebas del índice documental | Al cambiar el indexador |
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
 | `.github/workflows/documentation-map.yml` | Valida catálogo, rutas por módulo, plantilla, generadores upstream y recursos de `docs/` ante cambios documentales | Gate CI documental obligatorio |
-| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 77 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
+| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 79 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
 | `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
 | `patches/lsfusion/README.md` | Política para parches directos al motor: cuándo usar extensión, procedencia, archivos upstream afectados, versión y pruebas | Antes de modificar directamente `vendor/platform` |
