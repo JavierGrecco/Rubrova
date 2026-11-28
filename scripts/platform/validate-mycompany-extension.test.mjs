@@ -931,7 +931,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
   assert.match(uiSmokeSource, /def wait_for_payment_dialog\(page: Any, timeout_seconds: int = 20\)/);
   assert.ok(uiSmokeSource.includes("def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) -> bool"));
-  assert.match(uiSmokeSource, /page[.]get_by_role\("button", name=label, exact=True\)/);
+  assert.match(uiSmokeSource, /page[.]get_by_role\("button", name=candidate_label, exact=True\)/);
   assert.doesNotMatch(uiSmokeSource, /def wait_for_exact_link\(/);
   assert.ok(uiSmokeSource.includes('search_tab.click(no_wait_after=True)'));
   assert.ok(uiSmokeSource.includes('UI_ITEM_SEARCH_TAB_CLICKED=true'));
@@ -944,7 +944,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(uiSmokeSource.includes("page.locator(f'a[lsfusion-container=\"{container}\"]')"));
   assert.match(uiSmokeSource, /UI_NAV_LINK_.*_MATCH_COUNT/);
   assert.match(uiSmokeSource, /navigator_diagnostics\(page\)/);
-  assert.doesNotMatch(uiSmokeSource, /page[.]get_by_role\("link", name=label, exact=True\)/);
+  assert.doesNotMatch(uiSmokeSource, /page[.]get_by_role\("link", name=candidate_label, exact=True\)/);
   assert.match(uiSmokeSource, /submenu_label: str \| None = None/);
   assert.match(uiSmokeSource, /UI_NAV_LINK_.*_CLICKED=true/);
   assert.ok(uiSmokeSource.includes('click_exact_link(page, "Comercio", submenu_label="Punto de venta")'));
