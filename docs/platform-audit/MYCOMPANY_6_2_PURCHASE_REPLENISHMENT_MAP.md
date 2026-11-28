@@ -73,6 +73,8 @@ La recepción mantiene relación con pedido y línea original. El sistema:
 
 ## 4. Pedido → factura de proveedor
 
+**Pasaporte de integración relacionado:** [SupplierBillLifecycle](modules/SupplierBillLifecycle.md), que amplía este mapa con Bill, BillReceipt, deuda, pago, cuenta y la precedencia de costos.
+
 Fuentes:
 - \`purchase/invoicing/bills/orders/PurchaseOrderBill.lsf\`
 - \`PurchaseOrderBillStatus.lsf\`
@@ -95,7 +97,7 @@ La factura conserva la relación con el origen. Se muestran cantidades facturada
 
 La deuda, los pagos y los saldos se resuelven por las clases del dominio \`Invoicing\`; consultar [MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md](MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md).
 
-**Pendiente:** factura parcial, diferencia de precio, diferencia de cantidad, impuestos, moneda, recepción no facturada, factura sin recepción, cancelación, devolución y corrección.
+**Pendiente:** factura parcial, diferencia de precio, diferencia de cantidad, impuestos, moneda, recepción no facturada, factura sin recepción, cancelación, devolución y corrección. El pago/deuda/ledger de cuenta y el costo de recepción originado en factura se analizan en el pasaporte SupplierBillLifecycle; no se consideran aceptados por la revisión estática.
 
 ## 5. Listas de precios de proveedor
 

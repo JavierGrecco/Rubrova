@@ -49,7 +49,10 @@ Fuente principal: \`invoicing/invoices/Invoice.lsf\`.
 - La cuenta del cliente debe pertenecer al mismo cliente; la cuenta propia debe pertenecer a la empresa seleccionada.
 - Las líneas validan que el artículo pueda venderse, toman unidad/precio predeterminados y heredan la moneda de la cabecera.
 
-### 2.2 Factura de proveedor — \`Bill\`
+### 2.2 Factura de proveedor
+
+**Pasaporte de integración:** [SupplierBillLifecycle](modules/SupplierBillLifecycle.md), con el enlace al pedido, las dos rutas de recepción, deuda, pago saliente, costo, moneda y cuentas.
+ — \`Bill\`
 
 Fuente principal: \`invoicing/bills/Bill.lsf\`.
 
@@ -75,6 +78,8 @@ Las fuentes separan al menos borrador, listo/para pagar, pagado/terminado y canc
 **Pendiente:** reproducir todos los cambios de estado, sus eventos y el efecto de edición, cancelación, reactivación y cambio de importes sobre la deuda.
 
 ## 3. Ledger de deuda
+
+**Lectura complementaria:** [SupplierBillLifecycle](modules/SupplierBillLifecycle.md) §§6–8 explica cómo Bill y OutgoingPayment se extienden como IncomingDebt/OutgoingDebt y cómo se enlazan con Payment.
 
 Fuente: \`invoicing/ledgers/Debt.lsf\`.
 

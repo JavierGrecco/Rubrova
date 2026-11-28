@@ -63,6 +63,11 @@ Ya hay **veintidós fichas individuales** con análisis específico:
 
 [ReceiptLifecycle](modules/ReceiptLifecycle.md) agrupa las fronteras nativas de ReceiptType, Receipt, ReceiptSelection, ReceiptReady, ReceiptDone, ReceiptCanceled, ReceiptRes, ReceiptInv, ReceiptPutAway, ReceiptCost y los cuatro módulos de PurchaseOrderReceipt. Es una guía de integración del circuito completo, no una declaración de que esos módulos tengan fichas individuales separadas. Incluye autoridad por dato, fórmulas de parciales, transacciones, ledgers, la dependencia protegida de ReceiptRes y resultados de runtime #609/#613.
 
+
+### Pasaporte integrado del circuito de factura de proveedor y pago
+
+[SupplierBillLifecycle](modules/SupplierBillLifecycle.md) reúne 37 módulos de PurchaseOrderBill, Bill, BillReceipt, BillPayment, OutgoingPayment, Debt y Payment. Explica la separación ordered/delivered, la recepción originada en factura, el costo por precedencia de ABSTRACT CASE, la imputación y el movimiento de cuenta. Es un grupo de integración, no 37 fichas individuales adicionales.
+
 Los otros módulos siguen teniendo una ruta al dossier de dominio y al CLI, pero no una ficha individual aprobada. Ante una integración que modifique su modelo, estado, API, permisos o efectos, completar el [pasaporte de módulo](MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) y enlazarlo aquí antes de considerar terminado el cambio. La herramienta no inventa casos de uso ni convierte un inventario estructural en documentación funcional.
 
 ## 2. Reglas para interpretar la ruta
@@ -154,7 +159,7 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 | `PurchaseOrder` | [PurchaseOrder.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf) | Ficha individual; pedido, proveedor, empresa, parciales y documentos derivados · [Mapa de compras](../MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md) §2 | [Ficha PurchaseOrder](modules/PurchaseOrder.md) · Cabecera/líneas, proveedor, empresa, moneda, ubicación, condiciones y costo. Seguir estados y documentos derivados. |
 | `PurchaseOrderConfirmed` | [PurchaseOrderConfirmed.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrderConfirmed.lsf) | Dossier §2 | Confirmación de pedido; seguir recepciones, facturación, reservas y cambios/cancelación. |
 | `PurchaseOrderReceipt` | [PurchaseOrderReceipt.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/inventory/receipts/orders/PurchaseOrderReceipt.lsf) | [Pasaporte del ciclo ReceiptLifecycle](modules/ReceiptLifecycle.md) §§3, 4 y 6; dossier §3 | Pedido→recepción; seguir Receipt, cantidades recibidas, reservas esperadas, put-away, costo y recepción parcial. |
-| `PurchaseOrderBill` | [PurchaseOrderBill.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/invoicing/bills/orders/PurchaseOrderBill.lsf) | Dossier §4 | Pedido→factura proveedor; seguir Bill/BillDebt, política de facturación por pedido/recibido, recepciones y pagos. |
+| `PurchaseOrderBill` | [PurchaseOrderBill.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/invoicing/bills/orders/PurchaseOrderBill.lsf) | [Pasaporte SupplierBillLifecycle](modules/SupplierBillLifecycle.md) §§1, 3 y 4; dossier §4 | Pedido→factura proveedor; seguir Bill/BillDebt, política ordered/delivered, recepciones y pagos. |
 | `PurchaseOrderShipmentAuto` | [PurchaseOrderShipmentAuto.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/inventory/shipments/orders/PurchaseOrderShipmentAuto.lsf) | Dossier §6 | Reposición automática nativa por proveedor/periodo; comparar su ventana, agregados y pack con el planificador Rubrova, sin duplicarlo. |
 | `PurchasePricelist` | [PurchasePricelist.lsf](../../vendor/mycompany/src/main/lsfusion/purchase/pricelists/PurchasePricelist.lsf) | Dossier §5 | Precios de proveedor, importaciones, vigencia y aplicación a pedidos/costos. Seguir Master Data y moneda. |
 
@@ -167,11 +172,11 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 |---|---|---|---|
 | `Invoicing` | [Invoicing.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/Invoicing.lsf) | Dossier §§1–8 | Composición financiera; seguir Invoice, Bill, Debt, Payment, IncomingPayment, OutgoingPayment, impuestos, cuentas y calendario. |
 | `Invoice` | [Invoice.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf) | Ficha individual; factura de venta, deuda, cobros y notas de crédito · [Mapa de facturación](../MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md) §§2–3 | [Ficha Invoice](modules/Invoice.md) · Factura de venta, impuestos y líneas; seguir estados, InvoiceDebt, crédito/devolución, cobros y ledger comercial. |
-| `Bill` | [Bill.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf) | Ficha individual; factura proveedor, costo, deuda y pagos · [Mapa de facturación](../MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md) §§2–5 | [Ficha Bill](modules/Bill.md) · Factura proveedor; seguir recepción/compra, costo de línea, deuda saliente, pagos, impuestos y correcciones. |
-| `Debt` | [Debt.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/ledgers/Debt.lsf) | Dossier §3 | Ledger de deudas, imputaciones parciales, socio/empresa, moneda y saldo; seguir Invoice/Bill y pagos. |
-| `Payment` | [Payment.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/ledgers/Payment.lsf) | Dossier §§4–5 | Movimientos de cuentas y conciliación; distinguir caja/banco, cobro/pago y sesión POS. |
+| `Bill` | [Bill.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf) | Ficha individual; factura proveedor, costo, deuda y pagos · [Pasaporte SupplierBillLifecycle](modules/SupplierBillLifecycle.md) §§2–9 · [Mapa de facturación](../MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md) §§2–5 | [Ficha Bill](modules/Bill.md) · Factura proveedor; seguir PurchaseOrderBill, BillReceipt, BillDebt, Payment, impuestos y correcciones. |
+| `Debt` | [Debt.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/ledgers/Debt.lsf) | [Pasaporte SupplierBillLifecycle](modules/SupplierBillLifecycle.md) §§6–8; dossier §3 | Ledger abstracto, imputaciones parciales, socio/empresa, moneda y saldo; seguir Bill, OutgoingPayment y pagos. |
+| `Payment` | [Payment.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/ledgers/Payment.lsf) | [Pasaporte SupplierBillLifecycle](modules/SupplierBillLifecycle.md) §§7–8; dossier §§4–5 | Movimientos de cuenta; distinguir Ready/Done, caja/banco, cobro/pago y sesión POS. |
 | `IncomingPayment` | [IncomingPayment.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/payments/incoming/IncomingPayment.lsf) | Dossier §5.1 | Cobro y aplicación a deuda; seguir Payment, InvoiceDebt, SessionPayment y medios de pago. |
-| `OutgoingPayment` | [OutgoingPayment.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf) | Dossier §5.2 | Pago/salida y aplicación a deuda; seguir BillDebt, reintegros y SessionPayment. |
+| `OutgoingPayment` | [OutgoingPayment.lsf](../../vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf) | [Pasaporte SupplierBillLifecycle](modules/SupplierBillLifecycle.md) §§1.4, 6–8; dossier §5.2 | Pago/salida, estados Ready/Done/Canceled y aplicación a deuda; seguir BillPayment, BillDebt y Payment. |
 
 ### 3.5 Retail, POS, turnos y medios de pago
 

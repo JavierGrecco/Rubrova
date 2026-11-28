@@ -4,8 +4,8 @@
 
 **Este es el punto de entrada obligatorio para cualquier integrante, desarrollador o agente que trabaje en Rubrova.** Su propósito es localizar toda la investigación existente, indicar el orden de lectura según la tarea y conectar los mapas de dominio con los documentos de arquitectura, producto, seguridad, runtime y reutilización. No alcanza con abrir un único mapa y asumir que la funcionalidad está aislada.
 
-**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.137 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
-- **99 documentos mantenidos por Rubrova fuera de `vendor/`**: los **95 documentos Markdown en `docs/`** (54 generales + 41 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
+**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.138 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
+- **100 documentos mantenidos por Rubrova fuera de `vendor/`**: los **96 documentos Markdown en `docs/`** (54 generales + 42 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
 - **1.038 archivos Markdown dentro de `vendor/`**: 1.031 páginas de documentación upstream incluidas en las cinco raíces que indexa `audit-source-docs.mjs` (347 MyCompany + 684 lsFusion), más 7 README/CHANGELOG/guías de soporte del snapshot.
 
 El catálogo de documentos mantenidos por Rubrova está enlazado en este archivo; las 1.031 páginas upstream se enumeran por ruta, idioma, título y encabezados en el registro generado `rubrova-source-document-catalog`. Los siete Markdown adicionales del snapshot se enumeran expresamente en la sección 9. Los archivos binarios/imagenes upstream también quedan listados en el catálogo generado, pero ni el índice ni el registro afirman que cada página o imagen haya sido leída funcionalmente.
@@ -125,6 +125,8 @@ Para estos módulos no hay que quedarse sólo con el resumen del dominio: abrir 
 
 El [pasaporte integrado ReceiptLifecycle](modules/ReceiptLifecycle.md) cubre un grupo pequeño de módulos que forman una sola secuencia. No cambia el conteo de 22 fichas individuales ni convierte el grupo en una ficha individual por archivo LSF.
 
+El [pasaporte integrado SupplierBillLifecycle](modules/SupplierBillLifecycle.md) agrupa 37 módulos de factura/proveedor/deuda/pago. Al igual que ReceiptLifecycle, no aumenta el conteo de 22 fichas individuales.
+
 | Módulo exacto | Ficha de integración | Alcance de lectura |
 |---|---|---|
 | InvLedger | [Ficha InvLedger](modules/InvLedger.md) · `docs/platform-audit/modules/InvLedger.md` | Movimiento físico, saldos, ubicación, aceptación y productores |
@@ -137,6 +139,7 @@ El [pasaporte integrado ReceiptLifecycle](modules/ReceiptLifecycle.md) cubre un 
 | PurchaseOrder | [Ficha PurchaseOrder](modules/PurchaseOrder.md) · `docs/platform-audit/modules/PurchaseOrder.md` | Pedido de compra, proveedor, parciales y documentos derivados |
 | Invoice | [Ficha Invoice](modules/Invoice.md) · `docs/platform-audit/modules/Invoice.md` | Factura de venta, deuda, cobros y notas de crédito |
 | Bill | [Ficha Bill](modules/Bill.md) · `docs/platform-audit/modules/Bill.md` | Factura proveedor, costos, deuda y pagos |
+| SupplierBillLifecycle (grupo) | [Pasaporte SupplierBillLifecycle](modules/SupplierBillLifecycle.md) · `docs/platform-audit/modules/SupplierBillLifecycle.md` | Pedido→Bill ordered/delivered→BillReceipt/costo→Debt→OutgoingPayment→Payment |
 | Pos | [Ficha Pos](modules/Pos.md) · `docs/platform-audit/modules/Pos.md` | Caja lógica, empresa, computadora y controladores |
 | Product | [Ficha Product](modules/Product.md) · `docs/platform-audit/modules/Product.md` | Maestro físico, Item, unidades, variantes, barcode y lotes |
 | Partner | [Ficha Partner](modules/Partner.md) · `docs/platform-audit/modules/Partner.md` | Identidad común y especializaciones legales/comerciales |
@@ -399,7 +402,7 @@ Este catálogo complementa los 14 dossiers anteriores. Incluye **todos** los doc
 
 ### 7.1 Recursos de soporte y fixtures bajo `docs/`
 
-Además de los 95 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **103 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
+Además de los 96 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **104 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
 
 | Archivo | Qué contiene / para qué sirve | Leer junto con |
 |---|---|---|

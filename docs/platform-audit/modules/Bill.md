@@ -41,6 +41,7 @@ Declara formularios `bill`, `bills`, `billLines`, navegación, historial de cabe
 | Deuda | BillDebt + Debt | Extiende IncomingDebt por la factura proveedor |
 | Pago | OutgoingPayment / Payment | Imputa el pago y reduce saldo pendiente |
 | Origen compra/recepción | PurchaseOrderBill / PurchaseOrderBillReceipt | Conserva relación con pedido y recepción |
+| Pago y costo de recepción | BillPayment / BillReceiptCost / OutgoingPaymentDebt | Registra pago propuesto, costo por moneda y extensión de deuda; ver pasaporte integrado |
 
 El mapa de facturación señala que Bill representa IncomingDebt; el nombre incoming/outgoing es terminología de clases y no debe traducirse de forma mecánica como flujo de efectivo. Los pagos parciales se representan mediante imputaciones monetarias. Estado pagado puede derivarse de deuda totalmente imputada, salvo hooks de extensión.
 
@@ -73,7 +74,7 @@ El mapa de facturación señala que Bill representa IncomingDebt; el nombre inco
 8. Error/reintento, doble envío y recuperación.
 9. Fiscalidad y comprobantes argentinos como gate independiente.
 
-**Aceptación:** lectura de fuente y dossier; runtime y conciliación contable pendientes.
+**Aceptación:** lectura estática y composición de fuentes; runtime E2E de pedido→factura→recepción→costo→deuda→pago→saldo de cuenta y conciliación contable pendientes. Ver [SupplierBillLifecycle](SupplierBillLifecycle.md).
 
 ## 8. Lecturas siguientes
 
