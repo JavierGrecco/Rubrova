@@ -4,6 +4,18 @@
 
 Este documento consolida la primera lectura de la documentación funcional incluida en el snapshot de MyCompany 6.2 y su contraste parcial con los módulos LSF. Describe capacidades que aparecen en la documentación o en el código; no significa que cada pantalla, acción o escenario haya sido ejecutado en el runtime de Rubrova.
 
+## 0. Entrada por módulo: consulta obligatoria
+
+Este mapa es la visión general del producto. Cuando el trabajo vaya a modificar un módulo concreto, **no alcanza con quedarse en esta vista por dominio**: abrir el [directorio de integración por módulo](MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md), buscar el nombre exacto declarado en `MODULE` y seguir la primera lectura indicada. Para cualquier módulo no incluido en las tablas rápidas, ejecutar:
+
+```bash
+node scripts/platform/module-integration-route.mjs --module NombreExacto
+```
+
+La consulta devuelve ruta de fuente, namespace, cierre de `RubrovaCustom`, `REQUIRE`, consumidores directos y dossier recomendado. Una dependencia de código no sustituye la relación funcional; ambas deben ser revisadas.
+
+Si falta una ficha de integración suficiente, completar [la plantilla obligatoria](MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) antes de aprobar una adaptación. Lo que todavía no se investigó debe quedar como pendiente, sin convertir una ruta documental en una afirmación de comportamiento.
+
 ## 1. Reglas para interpretar este mapa
 
 Cada capacidad debe pasar por niveles distintos de evidencia:
