@@ -284,6 +284,8 @@ Capacidades documentadas:
 
 **Pendiente:** idempotencia de webhooks, tratamiento de llamadas duplicadas, múltiples contactos para un teléfono, permisos, privacidad, auditoría, plantillas, integración real de correo y telefonía, y relación con los módulos de mensajería externos de lsFusion.
 
+El mapa específico de RR. HH. y haberes está en [MYCOMPANY_6_2_HR_ATTENDANCE_PAYROLL_MAP.md](MYCOMPANY_6_2_HR_ATTENDANCE_PAYROLL_MAP.md). Incluye el flujo de asistencia y los límites de adecuación laboral argentina.
+
 ### 3.9 Recursos humanos: selección → empleado → asistencia → haberes
 
 Capacidades documentadas:
