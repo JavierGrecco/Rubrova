@@ -1897,6 +1897,8 @@ El análisis de las 21 utilidades compartidas de MyCompany está en [MYCOMPANY_6
 
 El análisis de facturación, deuda, imputaciones, pagos, cuentas, monedas, impuestos y calendario está en [MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md](platform-audit/MYCOMPANY_6_2_INVOICING_LEDGER_MAP.md).
 
+El detalle de ventas, listas de precios, descuentos, ledger comercial, márgenes, APIs y generación de compras/fabricación está en [MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md](platform-audit/MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md).
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.

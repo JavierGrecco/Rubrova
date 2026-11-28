@@ -93,6 +93,8 @@ Capacidades adicionales documentadas:
 
 **Pendiente:** revisar los módulos de importación, precios, deuda, cantidades por unidad de medida, anulaciones, facturas parciales, moneda, impuestos, conciliación de pagos y todos los eventos de cambio de estado. Ejecutar y conciliar el circuito completo con entregas parciales, facturas parciales, pagos parciales y cancelaciones.
 
+El mapa detallado de 92 módulos de ventas está en [MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md](MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md). Incluye reglas de precios, descuentos, ledger y relaciones con compras/fabricación.
+
 ### 3.3 Ventas: lead → pedido → reserva/entrega → factura → cobranza
 
 El flujo de ventas integra CRM, inventario y facturación:
