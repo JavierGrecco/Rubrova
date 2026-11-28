@@ -1042,6 +1042,76 @@ def prepare_ci_outgoing_reservation(context: Any, url: str) -> None:
     }, ensure_ascii=False))
 
 
+def verify_purchase_receipt_cancellation_reservation(context: Any, url: str) -> None:
+    """Observe native expected/planned/available after canceling a predicted purchase receipt."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(
+        endpoint + "rubrovaTestPurchaseReceiptCancellationReservationApi",
+        timeout=30_000,
+    )
+    print(f"UI_REPLENISHMENT_RECEIPT_CANCELLATION_HTTP={response.status}")
+    if response.status != 200:
+        raise RuntimeError(
+            "La reproducción de cancelación de recepción respondió "
+            f"HTTP {response.status}: {response.text()[:1600]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError(
+            "La reproducción de cancelación de recepción no devolvió JSON válido."
+        ) from error
+    if isinstance(payload, list):
+        payload = payload[0] if len(payload) == 1 else {}
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "La reproducción de cancelación de recepción no devolvió un objeto JSON."
+        )
+
+    print(
+        "UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS="
+        + json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    )
+    if payload.get("executed") is not True:
+        raise RuntimeError("La reproducción nativa de cancelación no quedó marcada como ejecutada.")
+
+    def quantity(field: str) -> float:
+        value = payload.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(
+                f"La reproducción de recepción devolvió {field} no numérico: {value!r}."
+            )
+        return float(value)
+
+    # These assertions confirm the native cancellation and purchase-order
+    # recalculation actually ran. Ledger figures are retained as diagnostics
+    # first; the next revision will turn the observed behavior into assertions.
+    if payload.get("originalCanceledAfterCancel") is not True:
+        raise RuntimeError(
+            "La acción nativa no dejó cancelada la recepción prevista: "
+            + json.dumps(payload, ensure_ascii=False)
+        )
+    if payload.get("originalDoneAfterCancel") is not False:
+        raise RuntimeError(
+            "La recepción prevista debía seguir sin completar tras la cancelación: "
+            + json.dumps(payload, ensure_ascii=False)
+        )
+    if payload.get("replacementDistinct") is not True or payload.get("replacementReady") is not True:
+        raise RuntimeError(
+            "El cambio de cantidad no generó una nueva recepción prevista independiente: "
+            + json.dumps(payload, ensure_ascii=False)
+        )
+    if payload.get("replacementCanceled") is True:
+        raise RuntimeError("La nueva recepción generada quedó cancelada inesperadamente.")
+    if abs(quantity("replacementExpectedQuantity") - 4.0) > 0.001:
+        raise RuntimeError(
+            "La nueva recepción no conservó la demanda pendiente de cuatro unidades: "
+            + json.dumps(payload, ensure_ascii=False)
+        )
+
+    print("UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true")
+
+
 def verify_replenishment_source_export(context: Any, url: str) -> None:
     """Validate the native MyCompany export without mutating the ERP."""
     prepare_ci_outgoing_reservation(context, url)
