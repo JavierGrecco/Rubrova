@@ -28,7 +28,7 @@ El [registro estructural completo de módulos](../../.github/workflows/documenta
 
 ### 1.1 Cobertura de fichas individuales — estado real
 
-Las **86 entradas manuales** de este directorio son rutas rápidas por módulo con fuente exacta, primera lectura y relaciones. No deben interpretarse como 81 pasaportes individuales completos.
+Las **86 entradas manuales** de este directorio son rutas rápidas por módulo con fuente exacta, primera lectura y relaciones. No deben interpretarse como 86 pasaportes individuales completos.
 
 Ya hay **veintidós fichas individuales** con análisis específico:
 
@@ -207,7 +207,7 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 
 | Módulo exacto | Fuente LSF | Primera lectura obligatoria | Seguir con / estado |
 |---|---|---|---|
-| `Manufacturing` | [Manufacturing.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/Manufacturing.lsf) | Mapa funcional, dominio Manufacturing | Es compositor; todavía falta una ficha de proceso de fabricación E2E. |
+| `Manufacturing` | [Manufacturing.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/Manufacturing.lsf) | [Guía obligatoria Fabricación + Proyectos](MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md) | Compositor del dominio; revisar sus 41 fuentes LSF por separado. La guía E2E es de proceso, no un pasaporte exhaustivo de todo el compositor. |
 | `Bom` | [Bom.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf) | [Ficha Bom](modules/Bom.md) + guía Fabricación/Proyectos | Estructura, cantidades base, subproductos, operaciones y BOM anidada. |
 | `ManufacturingOrder` | [ManufacturingOrder.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf) | [Ficha ManufacturingOrder](modules/ManufacturingOrder.md) + guía Fabricación/Proyectos | Documento central; revisar estado real, reservas, inventario, costos, lotes y vínculo de proyecto. |
 | `WorkCenter` | [WorkCenter.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkCenter.lsf) | [Ficha WorkCenter](modules/WorkCenter.md) + guía Fabricación/Proyectos | Maestro nativo; no demuestra capacidad finita ni calendario. |
@@ -230,7 +230,7 @@ Los enlaces de fuente apuntan al archivo LSF fijado en el snapshot de MyCompany.
 
 **No crear project ledger, worklog, receta, orden ni costo paralelos.** Usar los formularios y ledgers nativos; respetar permisos y el punto de extensión `fill`.
 
-### 3.9 CRM, RR. HH., flota y proyectos
+### 3.9 CRM, RR. HH. y flota
 
 Estas áreas tienen dossiers específicos y una ruta de integración, pero su análisis funcional no es exhaustivo. No habilitan uso productivo sin completar formularios, estados, permisos, APIs y pruebas.
 
@@ -243,7 +243,6 @@ Estas áreas tienen dossiers específicos y una ruta de integración, pero su an
 | `Fleet` | [Fleet.lsf](../../vendor/mycompany/src/main/lsfusion/fleet/Fleet.lsf) | [Flota y costos](MYCOMPANY_6_2_FLEET_VEHICLE_COSTS_MAP.md) | Composición de vehículos/servicios y gastos; seguir Master Data, Bills y Project Management. |
 | `Vehicle` | [Vehicle.lsf](../../vendor/mycompany/src/main/lsfusion/fleet/vehicles/Vehicle.lsf) | Flota y costos §2 | Vehículo, modelo, combustible, categoría y archivos; ficha E2E de mantenimiento pendiente. |
 | `ProjectManagement` | [ProjectManagement.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/ProjectManagement.lsf) | [Proyectos e integraciones](MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md) | Composición; seguir proyectos, tareas, HR, compras, ventas, fabricación y facturación. |
-| `Project` | [Project.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/Project.lsf) | Proyectos e integraciones §2 | Proyecto, estado/tipo, empresa y empleados; seguir tarea, asignación, tiempo y documentos financieros. |
 | `Task` | [Task.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/tasks/Task.lsf) | Proyectos e integraciones §3 | Tarea y workflow; seguir estados, dependencias, asignaciones, tiempos, notificaciones y permisos. |
 
 ## 4. Rutas transversales obligatorias

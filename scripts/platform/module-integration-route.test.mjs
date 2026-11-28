@@ -253,6 +253,9 @@ test("prioriza fichas individuales de fabricación y proyectos integrados", () =
     assert.equal(route.found, true);
     assert.equal(route.passport.path, passportPath);
     assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md");
+    assert.equal(route.mandatoryIntegration.required, true);
+    assert.match(route.mandatoryIntegration.rules.join(" "), /no introducir HTTP o microservicios internos/);
+    assert.match(route.mandatoryIntegration.rules.join(" "), /nunca escribirlos directamente/);
   }
 });
 
@@ -272,12 +275,32 @@ test("renderiza una ruta que separa primera lectura, dependencias y límites del
   const route = resolveModuleIntegrationRoute(fixtureCatalog, "InvLedger");
   const output = renderModuleIntegrationRoute(route);
   assert.match(output, /Primera lectura obligatoria/);
+  assert.match(output, /Contrato obligatorio de integración/);
+  assert.match(output, /no introducir HTTP o microservicios internos/);
   assert.match(output, /Ficha individual/);
   assert.match(output, /modules\/InvLedger\.md/);
   assert.match(output, /Datos maestros y relaciones transversales/);
   assert.match(output, /REQUIRE directos/);
   assert.match(output, /Consumidores directos detectados/);
   assert.match(output, /no sustituye una ficha de integración aceptada/i);
+});
+
+test("el preflight platform consulta módulos críticos de fabricación y proyectos", () => {
+  const preflight = read("scripts/platform/local-preflight.sh");
+  for (const moduleName of [
+    "Bom",
+    "ManufacturingOrder",
+    "WorkCenter",
+    "WorkOrder",
+    "Project",
+    "ProjectAssignment",
+    "TimeEntry",
+    "ProjectTimeEntry",
+    "ProjectManufacturingOrder",
+    "ProjectManufacturingOrderTimeEntry",
+  ]) {
+    assert.ok(preflight.includes(`--module ${moduleName}`), `El preflight no consulta ${moduleName}`);
+  }
 });
 
 test("el directorio manual enlaza archivos LSF existentes y módulos del catálogo de 6.2", () => {

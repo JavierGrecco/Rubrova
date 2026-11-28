@@ -466,6 +466,22 @@ export function resolveModuleIntegrationRoute(catalog, query) {
   const module = exact[0];
   const guide = domainGuideFor(module);
   const passport = MODULE_PASSPORTS[module.moduleName] || null;
+  const mandatoryIntegration = ["manufacturing", "projectManagement"].includes(module.domain)
+    ? {
+      required: true,
+      guidePath: "docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md",
+      title: "Contrato obligatorio Fabricación + Proyectos",
+      rules: [
+        "Leer la guía integral y la ficha individual antes de modificar el módulo.",
+        "Reutilizar clases, documentos, propiedades, acciones y formularios nativos; no crear recetas, órdenes, proyectos, worklogs o costos paralelos.",
+        "Los módulos internos se comunican por REQUIRE, clases, propiedades, acciones, formularios y hooks lsFusion dentro del mismo ERP; no introducir HTTP o microservicios internos.",
+        "InvLedger, ResLedger y CostLedger son los propietarios de los saldos físicos, reservas/esperados y valoración; nunca escribirlos directamente.",
+        "Respetar APPLY/CANCEL, NEWSESSION, permisos de proyecto/empleado/ubicación y puntos de extensión upstream.",
+        "Separar cantidad planificada de cantidad real; no cerrar fabricación si el runtime sólo completa cantidades planificadas.",
+        "Validar composición, dependencias transitivas, impacto documental, pruebas runtime y conciliación tras reinicio antes de aceptar.",
+      ],
+    }
+    : null;
   const requireDetails = (module.requires || []).map(name => {
     const matches = allModules.filter(candidate => candidate.moduleName === name);
     if (matches.length === 0) return { moduleName: name, path: null, product: null, domain: null, unresolved: true };
@@ -566,6 +582,7 @@ export function resolveModuleIntegrationRoute(catalog, query) {
     transitiveConsumers: consumerImpact.modules,
     ambiguousTransitiveConsumers: consumerImpact.ambiguous,
     guide,
+    mandatoryIntegration,
     passport,
     passportNote,
     declarations: declarationSummary(module),
@@ -622,6 +639,17 @@ export function renderModuleIntegrationRoute(route) {
     route.parserLimits,
     "Esta ruta acelera la localización, pero no sustituye una ficha de integración aceptada. Antes de modificar, verificar la implementación exacta, estados, transacciones, permisos, efectos en documentos/ledgers, consumidores y pruebas runtime.",
   ];
+  if (route.mandatoryIntegration) {
+    const nextReadingIndex = lines.indexOf("## Siguiente lectura");
+    lines.splice(
+      nextReadingIndex,
+      0,
+      "",
+      "## Contrato obligatorio de integración",
+      `- **Guía obligatoria:** ${route.mandatoryIntegration.guidePath}`,
+      ...route.mandatoryIntegration.rules.map(rule => `- ${rule}`),
+    );
+  }
   return lines.join("\n");
 }
 

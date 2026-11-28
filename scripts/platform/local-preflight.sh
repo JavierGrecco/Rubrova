@@ -90,6 +90,16 @@ run_platform() {
   run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module Invoice
   run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module Pos
   run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module Partner
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module Bom
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module ManufacturingOrder
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module WorkCenter
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module WorkOrder
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module Project
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module ProjectAssignment
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module TimeEntry
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module ProjectTimeEntry
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module ProjectManufacturingOrder
+  run_step "$NODE_BIN" scripts/platform/module-integration-route.mjs --module ProjectManufacturingOrderTimeEntry
   run_step "$NODE_BIN" scripts/platform/audit-source-docs.mjs --json-output "$OUTPUT_DIR/source-document-catalog.json" --markdown-output "$OUTPUT_DIR/source-document-register.md"
   run_step "$NODE_BIN" --test scripts/evaluation/fixture-validator.test.mjs
   run_step "$PYTHON_BIN" scripts/platform/test_runtime_config.py
