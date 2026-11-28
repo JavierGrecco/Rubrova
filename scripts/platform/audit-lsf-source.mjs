@@ -10,6 +10,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+const MYCOMPANY_PROJECT_ROOT = "vendor/mycompany";
 const MYCOMPANY_ROOT = "vendor/mycompany/src/main/lsfusion";
 const PLATFORM_ROOT = "vendor/platform";
 const RUBROVA_EXTENSIONS_ROOT = "extensions/lsfusion";
@@ -27,6 +28,52 @@ function walkFiles(directory, extension) {
     }
   }
   return result.sort();
+}
+
+function walkAllFiles(directory) {
+  const result = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...walkAllFiles(absolute));
+    else if (entry.isFile()) result.push(path.relative(ROOT, absolute).split(path.sep).join("/"));
+  }
+  return result.sort();
+}
+
+function extensionOf(filePath) {
+  return path.extname(filePath).toLowerCase() || "(sin extensión)";
+}
+
+function classifyMyCompanyProjectFile(filePath) {
+  const extension = extensionOf(filePath);
+  if (extension === ".lsf") return "Módulo LSF";
+  if (extension === ".jrxml") return "Plantilla JasperReports";
+  if (extension === ".java") return "Extensión Java";
+  if (extension === ".js") return "Componente JavaScript";
+  if (extension === ".css") return "Hoja de estilos";
+  if (extension === ".properties") return "Configuración o traducción";
+  if (extension === ".sql") return "Script SQL";
+  if ([".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].includes(extension)) return "Imagen o recurso gráfico";
+  if (extension === ".md") return "Documentación Markdown";
+  if ([".xml", ".json", ".yml", ".yaml"].includes(extension)) return "Metadatos o configuración estructurada";
+  return "Otro recurso";
+}
+
+export function parseJavaSource(source, filePath = "") {
+  const packageName = source.match(/^package\s+([A-Za-z0-9_.]+)\s*;/m)?.[1] || "(paquete raíz)";
+  const types = [...source.matchAll(/^(?:(?:public|protected|private|abstract|final|static|sealed|non-sealed|strictfp)\s+)*(class|interface|enum|record|@interface)\s+([A-Za-z_$][A-Za-z0-9_$]*)/gm)]
+    .map((match) => ({
+      kind: match[1],
+      name: match[2],
+      line: source.slice(0, match.index).split("\n").length,
+    }));
+  return {
+    path: filePath,
+    packageName,
+    lineCount: source.split("\n").length,
+    importCount: [...source.matchAll(/^import\s+(?:static\s+)?[^;]+;/gm)].length,
+    topLevelTypes: types,
+  };
 }
 
 function walkFilesByExtensions(directory, extensions) {
@@ -284,6 +331,7 @@ export function buildSourceCatalog(root = ROOT) {
   const myRoot = path.join(root, MYCOMPANY_ROOT);
   const platformRoot = path.join(root, PLATFORM_ROOT);
   const extensionsRoot = path.join(root, RUBROVA_EXTENSIONS_ROOT);
+  const myCompanyProjectRoot = path.join(root, MYCOMPANY_PROJECT_ROOT);
 
   const myFiles = walkFiles(myRoot, ".lsf");
   const platformFiles = walkFiles(platformRoot, ".lsf");
@@ -292,6 +340,16 @@ export function buildSourceCatalog(root = ROOT) {
   const platformModules = platformFiles.map((file) => parseLsfSource(readFileSync(path.join(root, file), "utf8"), file));
   const extensionModules = extensionFiles.map((file) => parseLsfSource(readFileSync(path.join(root, file), "utf8"), file));
   const myJavaFiles = walkFiles(platformRoot, ".java");
+  const myCompanyProjectFiles = walkAllFiles(myCompanyProjectRoot);
+  const platformProjectFiles = walkAllFiles(platformRoot);
+  const myCompanyJavaFiles = walkFiles(myCompanyProjectRoot, ".java");
+  const myCompanyJavaCatalog = myCompanyJavaFiles.map((file) =>
+    parseJavaSource(readFileSync(path.join(root, file), "utf8"), file),
+  );
+  const platformJavaCatalog = myJavaFiles.map((file) =>
+    parseJavaSource(readFileSync(path.join(root, file), "utf8"), file),
+  );
+
 
   const enDocsRoot = path.join(platformRoot, "docs/en");
   const ruDocsRoot = path.join(platformRoot, "docs/ru");
@@ -378,7 +436,29 @@ export function buildSourceCatalog(root = ROOT) {
       lsfFileCount: extensionModules.length,
       modules: extensionEntries,
     },
+    myCompanyProject: {
+      fileCount: myCompanyProjectFiles.length,
+      extensionCounts: countBy(myCompanyProjectFiles, extensionOf),
+      categoryCounts: countBy(myCompanyProjectFiles, classifyMyCompanyProjectFile),
+      javaSourceCount: myCompanyJavaFiles.length,
+      javaSources: myCompanyJavaCatalog,
+      reportTemplates: myCompanyProjectFiles.filter((file) => extensionOf(file) === ".jrxml"),
+      webAssets: myCompanyProjectFiles.filter((file) => [".js", ".css"].includes(extensionOf(file))),
+      propertyFiles: myCompanyProjectFiles.filter((file) => extensionOf(file) === ".properties"),
+      sqlScripts: myCompanyProjectFiles.filter((file) => extensionOf(file) === ".sql"),
+      imageAssets: myCompanyProjectFiles.filter((file) => [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"].includes(extensionOf(file))),
+      files: myCompanyProjectFiles.map((file) => ({
+        path: file,
+        extension: extensionOf(file),
+        category: classifyMyCompanyProjectFile(file),
+      })),
+    },
+
     lsFusion: {
+      projectFileCount: platformProjectFiles.length,
+      projectExtensionCounts: countBy(platformProjectFiles, extensionOf),
+      mavenModuleFileCounts: countBy(platformProjectFiles, (file) => file.slice(PLATFORM_ROOT.length + 1).split("/")[0]),
+      javaSourceCatalog: platformJavaCatalog,
       lsfFileCount: platformModules.length,
       javaSourceFileCount: myJavaFiles.length,
       lockedJavaSourceFileCount: platformSourceLock.observedJavaFiles,
@@ -579,7 +659,8 @@ function runCli() {
     return total;
   }, {});
   console.log("Declaraciones detectadas (fuente, sin expansión de macros): " + JSON.stringify(declarationTotals) + ".");
-  console.log("lsFusion 6.2: " + catalog.lsFusion.lsfFileCount + " archivos LSF, " + catalog.lsFusion.javaSourceFileCount + " fuentes Java.");
+  console.log("MyCompany: " + catalog.myCompanyProject.fileCount + " archivos de proyecto, incluidos " + catalog.myCompanyProject.reportTemplates.length + " plantillas JRXML, " + catalog.myCompanyProject.webAssets.length + " recursos JS/CSS y " + catalog.myCompanyProject.javaSourceCount + " clases Java.");
+  console.log("lsFusion 6.2: " + catalog.lsFusion.projectFileCount + " archivos de proyecto, " + catalog.lsFusion.lsfFileCount + " módulos LSF y " + catalog.lsFusion.javaSourceFileCount + " fuentes Java.");
   console.log("Documentación: inglés " + catalog.lsFusion.documentationAssets.en.markdown + " Markdown + " + catalog.lsFusion.documentationAssets.en.images + " imágenes; ruso " + catalog.lsFusion.documentationAssets.ru.markdown + " Markdown + " + catalog.lsFusion.documentationAssets.ru.images + " imágenes.");
 
   if (outputPath) {

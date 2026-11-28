@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { closureFrom, maskLsfNonCode, parseLsfSource, topLevelLsfSource } from "./audit-lsf-source.mjs";
+import { closureFrom, maskLsfNonCode, parseJavaSource, parseLsfSource, topLevelLsfSource } from "./audit-lsf-source.mjs";
 
 test("identifica encabezado, dependencias y declaraciones del módulo", () => {
   const source = [
@@ -148,4 +148,20 @@ test("calcula el cierre de dependencias desde la raíz real de Rubrova", () => {
     "Ventas",
   ]);
   assert.deepEqual(closure.unresolvedRequirements, []);
+});
+
+test("extrae el paquete y los tipos públicos principales de fuentes Java", () => {
+  const java = [
+    "package mycompany.utils.crypto;",
+    "import java.security.KeyPair;",
+    "import java.util.List;",
+    "public final class GenerateCSRAction {",
+    "}",
+  ].join("\n");
+  const parsed = parseJavaSource(java, "src/main/java/mycompany/utils/crypto/GenerateCSRAction.java");
+  assert.equal(parsed.packageName, "mycompany.utils.crypto");
+  assert.equal(parsed.importCount, 2);
+  assert.deepEqual(parsed.topLevelTypes.map((type) => [type.kind, type.name]), [
+    ["class", "GenerateCSRAction"],
+  ]);
 });
