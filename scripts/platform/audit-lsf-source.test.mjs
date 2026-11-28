@@ -203,8 +203,8 @@ test("el registro estructural incorpora recursos MyCompany y fuentes Java de pla
       projectFiles: ["vendor/platform/server/src/main/java/example/System.java", "vendor/platform/server/src/main/lsfusion/system/System.lsf"],
     },
   });
-  assert.match(markdown, /report\\.jrxml/);
-  assert.match(markdown, /Custom\\.java/);
-  assert.match(markdown, /System\\.java/);
-  assert.match(markdown, /messages\\.properties/);
+  assert.match(markdown, /report[.]jrxml/);
+  assert.match(markdown, /Custom[.]java/);
+  assert.match(markdown, /System[.]java/);
+  assert.match(markdown, /messages[.]properties/);
 });
