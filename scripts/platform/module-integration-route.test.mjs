@@ -6,6 +6,7 @@ import {
   resolveModuleIntegrationRoute,
   renderModuleIntegrationRoute,
 } from "./module-integration-route.mjs";
+import { buildSourceCatalog } from "./audit-lsf-source.mjs";
 
 const root = process.cwd();
 const read = (file) => readFileSync(path.join(root, file), "utf8");
@@ -132,6 +133,29 @@ test("el directorio manual enlaza archivos LSF existentes y módulos del catálo
     "vendor/mycompany/src/main/lsfusion/masterdata/partners/Partner.lsf",
   ]) {
     assert.ok(linkedFiles.has(expected), `Falta una ruta de módulo crítico: ${expected}`);
+  }
+});
+
+test("los nombres del directorio coinciden con MODULE declarado en cada archivo LSF", () => {
+  const directory = read("docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md");
+  const catalog = buildSourceCatalog();
+  const byPath = new Map([
+    ...catalog.myCompany.modules,
+    ...catalog.lsFusion.modules,
+    ...catalog.rubrovaExtensions.modules,
+  ].map(module => [module.path, module]));
+
+  const rows = [...directory.matchAll(/^\| `([^`]+)` \| \[[^\]]+\]\(\.\.\/\.\.\/(vendor\/[^)]+\.lsf)\)/gm)];
+  assert.ok(rows.length >= 65, "El directorio debe enrutar al menos 65 módulos con nombre y fuente exactos.");
+
+  for (const [, declaredName, sourcePath] of rows) {
+    const module = byPath.get(sourcePath);
+    assert.ok(module, `El archivo no está en el catálogo LSF: ${sourcePath}`);
+    assert.equal(
+      module.moduleName,
+      declaredName,
+      `El directorio debe usar MODULE declarado, no el nombre del archivo: ${sourcePath}`,
+    );
   }
 });
 
