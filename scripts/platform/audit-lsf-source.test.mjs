@@ -9,7 +9,7 @@ test("identifica encabezado, dependencias y declaraciones del módulo", () => {
     "REQUIRE Base, Proveedores;",
     "NAMESPACE Compras;",
     "CLASS ABSTRACT Pedido 'Pedido';",
-    "EXTEND CLASS Pedido {",
+    "EXTEND CLASS Pedido { }",
     "FORM pedido 'Pedido';",
     "EXTEND FORM pedido PROPERTIES copiar;",
     "NAVIGATOR {",

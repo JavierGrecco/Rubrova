@@ -139,7 +139,7 @@ export function topLevelLsfSource(source) {
 }
 
 const NON_ACTION_BLOCK_KEYWORDS = new Set([
-  "AFTER", "BEFORE", "CLASS", "CONSTRAINT", "DESIGN", "FORM", "GROUP",
+  "ACTION", "AFTER", "BEFORE", "CLASS", "CONSTRAINT", "DESIGN", "FORM", "GROUP",
   "META", "MODULE", "NAVIGATOR", "NAMESPACE", "ON", "REQUIRE", "TABLE",
   "WHEN", "WINDOW",
 ]);
