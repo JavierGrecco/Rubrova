@@ -52,6 +52,8 @@ Caja rápida, lector y productos frecuentes; catálogo precargado y alta rápida
 - Pronóstico de cantidades por día y franja horaria.
 - Rentabilidad por plato, porción y combinación.
 
+Diseño funcional detallado: [Elaboración de alimentos, rotisería y trazabilidad](FOOD_PRODUCTION_AND_TRACEABILITY.md). El flujo debe compartir recetas, inventario, lotes, caja y ventas con el comercio minorista; no se implementará como una aplicación paralela.
+
 ## Gastronomía, cafeterías y restaurantes
 
 Capacidades opcionales: mesas y sectores, comandas, división de cuenta, mozos, monitor de cocina y barra, reservas, pedidos anticipados, propinas, recetas, ingredientes, stock, delivery y menú QR.
