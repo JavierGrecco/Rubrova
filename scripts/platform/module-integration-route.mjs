@@ -49,6 +49,16 @@ export const DOMAIN_GUIDES = {
     title: "RR. HH., asistencia y payroll",
     coverage: "Mapa de dominio disponible; flujos y aceptación pendientes.",
   },
+  utils: {
+    path: "docs/platform-audit/MYCOMPANY_6_2_UTILITY_MODULES.md",
+    title: "Utilidades compartidas",
+    coverage: "Lectura inicial de 21 módulos; runtime y validación de cada integración pendientes.",
+  },
+  region: {
+    path: "docs/platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md",
+    title: "Módulos regionales",
+    coverage: "Inventario inicial; revisión individual y adecuación argentina pendientes.",
+  },
   projectManagement: {
     path: "docs/platform-audit/MYCOMPANY_6_2_PROJECT_MANAGEMENT_INTEGRATIONS_MAP.md",
     title: "Proyectos, tareas e integraciones",
