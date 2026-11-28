@@ -3997,3 +3997,13 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - **Evidencia:** lectura de fuentes y composición; no se declara runtime E2E de factura/proveedor/pago aceptado. #613 sólo acepta el circuito Receipt/stock/put-away/costo, no Bill/Debt/Payment.
 - **Impacto en cobertura:** se añade un segundo pasaporte integrado (SupplierBillLifecycle) y se mantienen 22 fichas individuales. El árbol Markdown crece de 1.137 a 1.138; los documentos mantenidos fuera de vendor pasan de 99 a 100.
 - **Puerta 9.7:** continúa ABIERTA.
+
+### 2026-11-28 — REP-059 — Riesgo de enlace de línea persistente al cancelar factura delivered
+
+- **Fuentes contrastadas:** `utils/Doc.lsf` macro `defineDocLineRelation`, `PurchaseOrderBillReceipt.lsf`, `PurchaseOrderBill.lsf`, `BillCanceled.lsf` y `BillReceipt.lsf`.
+- **Contrato de la relación:** la macro define `billLine = DATA BillLine (ReceiptLine)`, una referencia persistente de la línea de recepción a la línea de factura.
+- **Asimetría observada en fuente:** `PurchaseOrderBill.billed` suma sólo Bill Ready no canceladas; por tanto, la cantidad de la factura cancelada deja de contar como facturada. Sin embargo, `PurchaseOrderBillReceipt.toBillShipped` sólo suma ReceiptLine activas con `NOT billLine(sl)`; no filtra la factura relacionada por su estado activo. `BillCanceled.cancel` marca el flag en una nueva sesión, sin limpiar la relación de línea.
+- **Hipótesis funcional:** al cancelar una Bill creada bajo política `delivered`, la ReceiptLine física podría seguir activa pero continuar excluida de otra factura, impidiendo reemitir/corregir el documento por la misma política. La macro de relación genera navegación y vínculos documentales; no aporta por sí sola una liberación al cancelar.
+- **No es un defecto confirmado:** debe probarse en runtime aislado: PO de 3, Receipt Done de 2, Bill delivered de 2, cancelación nativa, recalcular `toBillShipped`, generar una Bill sustituta y comprobar que sólo exista una factura activa por cantidad. Registrar también que stock/costo de la recepción existente no se dupliquen ni se cancelen por una cancelación financiera.
+- **Diferenciar de BillReceipt autoCreateReceipt:** ese flujo tiene otro `WHEN` que cancela una Receipt ligada si `autoCreateReceipt` es verdadero y hay una sola Bill. No confundir esa ruta con una Receipt nacida del pedido y posteriormente facturada por delivered.
+- **Estado:** riesgo de fuente documentado; prueba runtime pendiente. No modificar upstream hasta observar el comportamiento y confirmar la regla operativa.

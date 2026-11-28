@@ -131,6 +131,9 @@ PurchaseOrderBillReceipt calcula la cantidad pendiente a facturar a partir de Re
 
 El campo toBillShipped tiene ese nombre en la fuente, pero en este flujo representa cantidad recibida, no cantidad enviada al cliente.
 
+**Riesgo de cancelación de factura — fuente revisada, runtime pendiente.** La macro `defineDocLineRelation(bill, receipt, ...)` crea `billLine = DATA BillLine (ReceiptLine)`, una referencia persistente entre líneas. `BillCanceled.cancel` sólo marca `canceled(Bill)` en una nueva sesión y no borra ese vínculo. A su vez, `PurchaseOrderBillReceipt.toBillShipped` exige `NOT billLine(ReceiptLine)`, pero no comprueba si la factura relacionada continúa activa. `PurchaseOrderBill.billed` sí excluye las facturas canceladas. La fuente muestra así una asimetría: una Bill cancelada deja de contar como facturada para el pedido, pero su ReceiptLine podría continuar excluida de la ruta `delivered` para crear una factura sustituta. No declarar defecto hasta probarlo en runtime.
+
+
 PurchaseOrderBillReceiptInitial inicializa InvoicingPolicy.delivered para los tipos de pedido. PurchaseOrderBillInitial asigna el tipo de factura bill al tipo de pedido de ID order. Son datos iniciales; revisar configuración efectiva antes de crear otros tipos de pedido.
 
 ### 3.3 “Paid” por línea no es un importe pagado
@@ -259,6 +262,7 @@ Pendiente de runtime:
 | Reference substring | No se imputa una factura homónima/solapada por falso positivo |
 | Ready vs Done | Determinar si Ready debe reducir balance de cuenta y mostrar saldo comprometido/ejecutado por separado |
 | Moneda | Tipo de cambio fechado, redondeo y edición de fecha después de imputar |
+| Cancelar Bill delivered y reemitirla | La ReceiptLine vuelve a quedar facturable o la política define otro camino explícito; no debe quedar una recepción activa imposible de facturar | 
 | Cancelar factura/pago | Deuda, imputaciones y cuenta se recalculan sin dejar contrapartidas activas incorrectas |
 | Fiscalidad | Comprobantes e impuestos argentinos homologados por separado |
 
@@ -279,7 +283,7 @@ Pendiente de runtime:
 
 ## 13. Estado y próximos pasos
 
-**Estado actual:** fuente de 37 módulos relevada en el grupo, relaciones y principales fórmulas documentadas; no existe aún una aceptación runtime E2E que cubra pedido→factura→recepción→costo→deuda→pago→saldo de cuenta. La validación #613 corresponde sólo a Receipt/stock/put-away/costo y no acepta factura, deuda ni pago.
+**Estado actual:** fuente de 37 módulos relevada en el grupo, relaciones y principales fórmulas documentadas; se identificó una asimetría potencial al cancelar una factura delivered (ver §3.2). No existe aún una aceptación runtime E2E que cubra pedido→factura→recepción→costo→deuda→pago→saldo de cuenta. La validación #613 corresponde sólo a Receipt/stock/put-away/costo y no acepta factura, deuda ni pago.
 
 Siguiente bloque de evidencia:
 1. fixture independiente de proveedor/pedido/factura para ordered y delivered;
