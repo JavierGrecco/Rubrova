@@ -13,6 +13,7 @@ on:
       - 'scripts/platform/test-platform-map-entry.mjs'
       - 'scripts/platform/module-integration-route.mjs'
       - 'scripts/platform/module-integration-route.test.mjs'
+      - 'scripts/platform/local-preflight.sh'
       - 'scripts/platform/module-integration-route.mjs'
       - 'scripts/platform/module-integration-route.test.mjs'
       - 'scripts/platform/audit-lsf-source.mjs'
@@ -60,7 +61,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Validar los 79 recursos bajo docs y el catálogo de 1.113 documentos
+      - name: Validar los 85 recursos bajo docs y el catálogo de 1.119 documentos
         run: node --test scripts/platform/test-platform-map-entry.mjs
 
       - name: Probar la resolución de integración por módulo exacto
