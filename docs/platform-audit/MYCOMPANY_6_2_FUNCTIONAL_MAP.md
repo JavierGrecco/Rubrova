@@ -52,6 +52,8 @@ Las cantidades son conteos de archivos/módulos de la versión fijada, no cantid
 
 ## 3. Circuitos de negocio identificados
 
+El análisis específico de los 84 módulos de datos maestros está en [MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md](MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md). Incluye entidades, especializaciones, reglas transversales, importadores y APIs.
+
 ### 3.1 Datos maestros como base transversal
 
 Los datos maestros alimentan los documentos y controlan las reglas de selección:

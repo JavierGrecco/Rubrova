@@ -1901,6 +1901,8 @@ El detalle de ventas, listas de precios, descuentos, ledger comercial, márgenes
 
 El mapa específico de compras, recepción, facturación por pedido/recibido, listas de precios, importación, reposición y relación con fabricación está en [MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md](platform-audit/MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md).
 
+El detalle de las 84 fuentes de datos maestros, sus entidades, reglas de titularidad, unidades/ratios, variantes, APIs, importadores y relaciones está en [MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md](platform-audit/MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md).
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.
