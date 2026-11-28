@@ -64,7 +64,10 @@ jobs:
         run: node --test scripts/platform/test-platform-map-entry.mjs
 
       - name: Probar la resolución de integración por módulo exacto
-        run: node --test scripts/platform/module-integration-route.test.mjs
+        run: |
+          node --test scripts/platform/module-integration-route.test.mjs
+          node scripts/platform/module-integration-route.mjs --module InvLedger
+          node scripts/platform/module-integration-route.mjs --module MasterDataP
 
       - name: Probar los generadores de catálogos upstream
         run: |
