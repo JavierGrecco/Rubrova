@@ -1142,6 +1142,72 @@ def verify_purchase_receipt_cancellation_reservation(context: Any, url: str) -> 
     print("UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true")
 
 
+
+def verify_purchase_receipt_done_cancellation(context: Any, url: str) -> None:
+    """Reconcile native Done receipt cancellation, child put-away and cost."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(endpoint + "rubrovaTestPurchaseReceiptDoneCancellationApi", timeout=45_000)
+    print(f"UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_HTTP={response.status}")
+    if response.status != 200:
+        raise RuntimeError(
+            "La sonda Done respondió HTTP "
+            f"{response.status}: {response.text()[:1600]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La sonda Done no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if len(payload) == 1 else {}
+    if not isinstance(payload, dict) or payload.get("executed") is not True:
+        raise RuntimeError("La secuencia nativa Done no terminó correctamente: " + str(payload))
+    print("UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_DIAGNOSTICS=" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
+
+    def q(field: str) -> float:
+        value = payload.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"Cantidad inválida en {field}: {value!r}")
+        return float(value)
+
+    # Targets, not observed results, until this runtime gate succeeds.
+    expected = {
+        "putBaselineMain": 10, "putBaselineChild": 0, "putBaselineCost": 0, "putBaselinePending": 2,
+        "putReceivedMain": 11, "putReceivedChild": 1, "putReceivedCost": 2000,
+        "putReceivedQuantity": 2, "putQuantity": 1, "putLedgerDone": 1, "putReceivedPending": 0,
+        "putCanceledMain": 10, "putCanceledChild": 0, "putCanceledCost": 0, "putCanceledPending": 2,
+        "putReplacementDemand": 2,
+        "plainBaselineMain": 10, "plainBaselineChild": 0, "plainBaselineCost": 0, "plainBaselinePending": 4,
+        "plainReceivedMain": 14, "plainReceivedChild": 0, "plainReceivedCost": 4000,
+        "plainReceivedQuantity": 4, "plainPutQuantity": 0, "plainLedgerDone": 0, "plainReceivedPending": 0,
+        "plainCanceledMain": 10, "plainCanceledChild": 0, "plainCanceledCost": 0, "plainCanceledPending": 4,
+        "plainReplacementDemand": 4,
+        "persistedMain": 10, "persistedChild": 0, "persistedPutCost": 0, "persistedPlainCost": 0,
+    }
+    for field, target in expected.items():
+        actual = q(field)
+        if abs(actual - target) > 0.001:
+            raise RuntimeError(f"Conciliación Done incorrecta en {field}: esperado {target}, recibido {actual}")
+
+    for field in (
+        "putDocumentFlag", "putOriginalReady", "putOriginalDone", "putOriginalCanceled",
+        "putReplacementDistinct", "putReplacementReady",
+        "plainOriginalReady", "plainOriginalDone", "plainOriginalCanceled",
+        "plainReplacementDistinct", "plainReplacementReady",
+    ):
+        if payload.get(field) is not True:
+            raise RuntimeError(f"Falta {field}=true en sonda Done.")
+    for field in ("putReplacementCanceled", "plainReplacementCanceled", "plainDocumentFlag"):
+        if payload.get(field) is True:
+            raise RuntimeError(f"{field}=true inesperado en sonda Done.")
+
+    for before, after in (("putOriginalNumber", "putReplacementNumber"), ("plainOriginalNumber", "plainReplacementNumber")):
+        if not payload.get(before) or not payload.get(after) or payload[before] == payload[after]:
+            raise RuntimeError(f"La recepción reemplazante no es distinta: {before}/{after}.")
+    if abs(q("putReceivedMain") + q("putReceivedChild") - 12) > 0.001:
+        raise RuntimeError("El put-away duplicó o perdió unidades entre ubicación principal e hija.")
+    print("UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true")
+
+
 def verify_replenishment_source_export(context: Any, url: str) -> None:
     """Validate the native MyCompany export without mutating the ERP."""
     prepare_ci_outgoing_reservation(context, url)
@@ -2481,6 +2547,7 @@ def inspect_page(url: str) -> int:
                 verify_replenishment_source_export(context, url)
                 if os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() != "true":
                     verify_purchase_receipt_cancellation_reservation(context, url)
+                    verify_purchase_receipt_done_cancellation(context, url)
                     verify_return_quantity_guard(context, url)
                     verify_stocktake_barcode_semantics(context, url)
                 if not final_text.strip():

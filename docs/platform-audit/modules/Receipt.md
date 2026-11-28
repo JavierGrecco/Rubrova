@@ -91,3 +91,21 @@ La ubicación participa del control de acceso por ubicación; proveedor y produc
 - [Resiliencia de integraciones](../../INTEGRATION_RESILIENCE_AND_ERROR_HANDLING.md) para WMS, idempotencia y estados inciertos.
 
 **Definición de terminado:** reconstruir cada línea desde pedido proveedor hasta recepción, stock físico, costo y factura, con parciales, cancelaciones y permisos probados.
+
+
+## 8.1 Aceptación runtime de cancelación posterior a Done (#17)
+
+La fixture efímera de CI crea dos órdenes independientes sobre un depósito aislado con saldo inicial de 10 unidades y una ubicación hija vacía. Cada orden utiliza precio de compra de $1.000 por unidad y se completa mediante la acción nativa de recepción.
+
+| Escenario | Momento | Depósito principal | Ubicación hija | Costo de la recepción |
+|---|---|---:|---:|---:|
+| Recibir 2 y ubicar 1 en hija | Después de Done/put-away | 11 | 1 | 2.000 |
+| Mismo escenario | Después de cancelar | 10 | 0 | 0 |
+| Recibir 4 sin put-away | Después de Done | 14 | 0 | 4.000 |
+| Mismo escenario | Después de cancelar | 10 | 0 | 0 |
+
+Estos saldos e importes son **objetivos de aceptación**, todavía no resultados medidos. El inspector exige tolerancia máxima de 0,001, comprueba que la cantidad ubicada no se duplique entre origen y destino y exige una recepción Ready distinta por la cantidad que vuelve a quedar pendiente. La misma sonda se ejecuta durante el arranque inicial y, en modo de consulta, después de reiniciar el servidor.
+
+La fixture crea documentos de compra, registra cantidades recibidas, crea el detalle nativo de put-away y ejecuta las acciones nativas de validar, ubicar y cancelar. No inserta, elimina ni modifica manualmente registros de los ledgers físicos, de ubicación interna o de costo.
+
+La aprobación sólo acepta el circuito sintético de recepción física/costo en MyCompany 6.2; no equivale a conciliación con una base comercial real ni a homologación productiva.

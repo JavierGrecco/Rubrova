@@ -1992,3 +1992,27 @@ test("la fixture inicializa todos los booleanos con NULL y el smoke extrae ubica
     "La extracción de módulo:línea:columna no debe aceptar horas HH:MM:SS.");
   assert.match(nativeSmokeSource, /Exception while starting logics instance/);
 });
+
+
+test("la recepción Done concilia ubicación principal, hija, put-away, costo y reemplazo", () => {
+  for (const fragment of [
+    "rubrova-ci-done-location",
+    "rubrova-ci-done-child-location",
+    "rubrova-ci-done-putaway",
+    "rubrova-ci-done-no-putaway",
+    "Inventory.done(rubrovaCIDonePutOriginalLine()) <- 2",
+    "Inventory.validate(rubrovaCIDonePutOriginal())",
+    "NEW donePutAwayCI = Inventory.ReceiptPutAway",
+    "Inventory.markAsPutAway(rubrovaCIDonePutOriginal())",
+    "Inventory.cancel(rubrovaCIDonePutOriginal())",
+    "Inventory.done(rubrovaCIDonePlainOriginalLine()) <- 4",
+    "Inventory.validate(rubrovaCIDonePlainOriginal())",
+    "Inventory.cancel(rubrovaCIDonePlainOriginal())",
+    "Inventory.costAmount(rubrovaCIDonePutOriginal())",
+    "Inventory.costAmount(rubrovaCIDonePlainOriginal())",
+    "rubrovaCIDoneReceiptRun() <- TRUE"
+  ]) assert.ok(nativeReplenishmentFixtureSource.includes(fragment), "Falta paso Receipt Done: " + fragment);
+  assert.match(uiSmokeSource, /def verify_purchase_receipt_done_cancellation\(/);
+  assert.match(uiSmokeSource, /verify_purchase_receipt_done_cancellation\(context, url\)/);
+  assert.match(nativeSmokeSource, /UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true/);
+});

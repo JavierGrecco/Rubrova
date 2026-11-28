@@ -265,3 +265,234 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         replacementCanceled = rubrovaCIReceiptReplacementCanceled(),
         replacementExpectedQuantity = rubrovaCIReceiptReplacementDemand();
 } @@api;
+
+
+// Recepciones Done: cancelación, put-away, ledgers físicos y costo.
+// Datos exclusivamente efímeros de CI. Ninguna operación modifica ledgers a mano.
+rubrovaCIDoneReceiptSeeded = DATA BOOLEAN ();
+rubrovaCIDoneReceiptRun = DATA BOOLEAN ();
+rubrovaCIDoneLocation() = GROUP MAX Inventory.Location l IF Inventory.id(l) = 'rubrova-ci-done-location';
+rubrovaCIDoneChild() = GROUP MAX Inventory.Location l IF Inventory.id(l) = 'rubrova-ci-done-child-location';
+
+loadDefaultData () + {
+    IF NOT rubrovaCIDoneLocation() THEN
+        NEW doneLocationCI = Inventory.Location {
+            Inventory.id(doneLocationCI) <- 'rubrova-ci-done-location';
+            Inventory.name(doneLocationCI) <- 'Depósito Done CI';
+            Inventory.company(doneLocationCI) <- MasterData.defaultCompany();
+        }
+    IF NOT rubrovaCIDoneChild() THEN
+        NEW doneChildCI = Inventory.Location {
+            Inventory.id(doneChildCI) <- 'rubrova-ci-done-child-location';
+            Inventory.name(doneChildCI) <- 'Ubicación hija Done CI';
+            Inventory.company(doneChildCI) <- MasterData.defaultCompany();
+            Inventory.parent(doneChildCI) <- rubrovaCIDoneLocation();
+        }
+    Inventory.positiveOnHand(rubrovaCIDoneLocation()) <- TRUE;
+    Inventory.putAway(Inventory.receiptType('receipt')) <- TRUE;
+
+    IF NOT rubrovaCIDoneReceiptSeeded() THEN {
+        NEW doneStockCI = Inventory.Adjustment {
+            Inventory.type(doneStockCI) <- Inventory.AdjustmentType.all;
+            Inventory.location(doneStockCI) <- rubrovaCIDoneLocation();
+            Inventory.inProgress(doneStockCI) <- TRUE;
+            NEW doneStockLineCI = Inventory.AdjustmentLine {
+                Inventory.adjustment(doneStockLineCI) <- doneStockCI;
+                Inventory.product(doneStockLineCI) <- Sales.rubrovaCITestProduct();
+                Inventory.location(doneStockLineCI) <- rubrovaCIDoneLocation();
+                Inventory.realQuantity(doneStockLineCI) <- 10;
+            }
+            Inventory.done(doneStockCI) <- TRUE;
+        }
+        NEW donePutOrderCI = Purchase.Order {
+            Purchase.type(donePutOrderCI) <- Purchase.orderType('order');
+            Purchase.vendor(donePutOrderCI) <- rubrovaCIReplenishmentPartner();
+            Purchase.company(donePutOrderCI) <- MasterData.defaultCompany();
+            Purchase.location(donePutOrderCI) <- rubrovaCIDoneLocation();
+            Purchase.currency(donePutOrderCI) <- MasterData.defaultCurrency();
+            Purchase.scheduledDateTime(donePutOrderCI) <- currentDateTime();
+            Purchase.vendorReference(donePutOrderCI) <- 'rubrova-ci-done-putaway';
+            NEW donePutLineCI = Purchase.OrderLine {
+                Purchase.order(donePutLineCI) <- donePutOrderCI;
+                Purchase.item(donePutLineCI) <- Sales.rubrovaCITestProduct();
+                Purchase.quantity(donePutLineCI) <- 2;
+                Purchase.price(donePutLineCI) <- 1000;
+            }
+            Purchase.confirmed(donePutOrderCI) <- TRUE;
+        }
+        NEW donePlainOrderCI = Purchase.Order {
+            Purchase.type(donePlainOrderCI) <- Purchase.orderType('order');
+            Purchase.vendor(donePlainOrderCI) <- rubrovaCIReplenishmentPartner();
+            Purchase.company(donePlainOrderCI) <- MasterData.defaultCompany();
+            Purchase.location(donePlainOrderCI) <- rubrovaCIDoneLocation();
+            Purchase.currency(donePlainOrderCI) <- MasterData.defaultCurrency();
+            Purchase.scheduledDateTime(donePlainOrderCI) <- currentDateTime();
+            Purchase.vendorReference(donePlainOrderCI) <- 'rubrova-ci-done-no-putaway';
+            NEW donePlainLineCI = Purchase.OrderLine {
+                Purchase.order(donePlainLineCI) <- donePlainOrderCI;
+                Purchase.item(donePlainLineCI) <- Sales.rubrovaCITestProduct();
+                Purchase.quantity(donePlainLineCI) <- 4;
+                Purchase.price(donePlainLineCI) <- 1000;
+            }
+            Purchase.confirmed(donePlainOrderCI) <- TRUE;
+        }
+        rubrovaCIDoneReceiptSeeded() <- TRUE;
+    }
+}
+
+rubrovaCIDonePutOrder() = GROUP MAX Purchase.Order o IF Purchase.vendorReference(o) = 'rubrova-ci-done-putaway';
+rubrovaCIDonePutOrderLine() = GROUP MAX Purchase.OrderLine l IF Purchase.order(l) = rubrovaCIDonePutOrder();
+rubrovaCIDonePutReceipt() = Purchase.reserveReceipt(rubrovaCIDonePutOrder());
+rubrovaCIDonePutReceiptLine() = GROUP MAX Inventory.ReceiptLine l IF Inventory.receipt(l) = rubrovaCIDonePutReceipt();
+
+rubrovaCIDonePlainOrder() = GROUP MAX Purchase.Order o IF Purchase.vendorReference(o) = 'rubrova-ci-done-no-putaway';
+rubrovaCIDonePlainOrderLine() = GROUP MAX Purchase.OrderLine l IF Purchase.order(l) = rubrovaCIDonePlainOrder();
+rubrovaCIDonePlainReceipt() = Purchase.reserveReceipt(rubrovaCIDonePlainOrder());
+rubrovaCIDonePlainReceiptLine() = GROUP MAX Inventory.ReceiptLine l IF Inventory.receipt(l) = rubrovaCIDonePlainReceipt();
+
+rubrovaCIDonePutOriginal = DATA Inventory.Receipt ();
+rubrovaCIDonePutOriginalLine = DATA Inventory.ReceiptLine ();
+rubrovaCIDonePutReplacement = DATA Inventory.Receipt ();
+rubrovaCIDonePlainOriginal = DATA Inventory.Receipt ();
+rubrovaCIDonePlainOriginalLine = DATA Inventory.ReceiptLine ();
+rubrovaCIDonePlainReplacement = DATA Inventory.Receipt ();
+
+rubrovaCIDonePutBaseMain = DATA NUMERIC[16,3] ();
+rubrovaCIDonePutBaseChild = DATA NUMERIC[16,3] ();
+rubrovaCIDonePutBaseCost = DATA NUMERIC[14,2] ();
+rubrovaCIDonePutBasePending = DATA NUMERIC[16,3] ();
+rubrovaCIDonePutReceivedMain = DATA NUMERIC[16,3] ();
+rubrovaCIDonePutReceivedChild = DATA NUMERIC[16,3] ();
+rubrovaCIDonePutReceivedCost = DATA NUMERIC[14,2] ();
+
+rubrovaCIDonePlainBaseMain = DATA NUMERIC[16,3] ();
+rubrovaCIDonePlainBaseChild = DATA NUMERIC[16,3] ();
+rubrovaCIDonePlainBaseCost = DATA NUMERIC[14,2] ();
+rubrovaCIDonePlainBasePending = DATA NUMERIC[16,3] ();
+rubrovaCIDonePlainReceivedMain = DATA NUMERIC[16,3] ();
+rubrovaCIDonePlainReceivedChild = DATA NUMERIC[16,3] ();
+rubrovaCIDonePlainReceivedCost = DATA NUMERIC[14,2] ();
+
+rubrovaTestPurchaseReceiptDoneCancellationApi () {
+    IF NOT rubrovaCIDoneReceiptRun() THEN {
+        rubrovaCIDonePutOriginal() <- rubrovaCIDonePutReceipt();
+        rubrovaCIDonePutOriginalLine() <- rubrovaCIDonePutReceiptLine();
+        rubrovaCIDonePlainOriginal() <- rubrovaCIDonePlainReceipt();
+        rubrovaCIDonePlainOriginalLine() <- rubrovaCIDonePlainReceiptLine();
+        IF NOT rubrovaCIDonePutOriginal() OR NOT rubrovaCIDonePutOriginalLine()
+            OR NOT rubrovaCIDonePlainOriginal() OR NOT rubrovaCIDonePlainOriginalLine() THEN RETURN;
+
+        // A: baseline 10/0, receive 2, distribute 1 to child, then cancel.
+        rubrovaCIDonePutBaseMain() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePutBaseChild() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePutBaseCost() <- (OVERRIDE Inventory.costAmount(rubrovaCIDonePutOriginal()), 0);
+        rubrovaCIDonePutBasePending() <- (OVERRIDE Purchase.toReceive(rubrovaCIDonePutOrderLine()), 0);
+        Inventory.done(rubrovaCIDonePutOriginalLine()) <- 2;
+        APPLY;
+        IF canceled() THEN RETURN;
+        Inventory.validate(rubrovaCIDonePutOriginal());
+        APPLY;
+        IF canceled() THEN RETURN;
+        NEW donePutAwayCI = Inventory.ReceiptPutAway {
+            Inventory.receiptLine(donePutAwayCI) <- rubrovaCIDonePutOriginalLine();
+            Inventory.location(donePutAwayCI) <- rubrovaCIDoneChild();
+            Inventory.quantity(donePutAwayCI) <- 1;
+        }
+        APPLY;
+        IF canceled() THEN RETURN;
+        Inventory.markAsPutAway(rubrovaCIDonePutOriginal());
+        APPLY;
+        IF canceled() THEN RETURN;
+        rubrovaCIDonePutReceivedMain() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePutReceivedChild() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePutReceivedCost() <- (OVERRIDE Inventory.costAmount(rubrovaCIDonePutOriginal()), 0);
+        Inventory.cancel(rubrovaCIDonePutOriginal());
+        APPLY;
+        IF canceled() THEN RETURN;
+        rubrovaCIDonePutReplacement() <- Purchase.reserveReceipt(rubrovaCIDonePutOrder());
+
+        // B: independent order, receive 4 without put-away, then cancel.
+        rubrovaCIDonePlainBaseMain() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePlainBaseChild() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePlainBaseCost() <- (OVERRIDE Inventory.costAmount(rubrovaCIDonePlainOriginal()), 0);
+        rubrovaCIDonePlainBasePending() <- (OVERRIDE Purchase.toReceive(rubrovaCIDonePlainOrderLine()), 0);
+        Inventory.done(rubrovaCIDonePlainOriginalLine()) <- 4;
+        APPLY;
+        IF canceled() THEN RETURN;
+        Inventory.validate(rubrovaCIDonePlainOriginal());
+        APPLY;
+        IF canceled() THEN RETURN;
+        rubrovaCIDonePlainReceivedMain() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePlainReceivedChild() <- (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIDonePlainReceivedCost() <- (OVERRIDE Inventory.costAmount(rubrovaCIDonePlainOriginal()), 0);
+        Inventory.cancel(rubrovaCIDonePlainOriginal());
+        APPLY;
+        IF canceled() THEN RETURN;
+        rubrovaCIDonePlainReplacement() <- Purchase.reserveReceipt(rubrovaCIDonePlainOrder());
+
+        rubrovaCIDoneReceiptRun() <- TRUE;
+        APPLY;
+        IF canceled() THEN RETURN;
+    }
+
+    EXPORT JSON FROM
+        executed = rubrovaCIDoneReceiptRun(),
+        putBaselineMain = rubrovaCIDonePutBaseMain(),
+        putBaselineChild = rubrovaCIDonePutBaseChild(),
+        putBaselineCost = rubrovaCIDonePutBaseCost(),
+        putBaselinePending = rubrovaCIDonePutBasePending(),
+        putReceivedMain = rubrovaCIDonePutReceivedMain(),
+        putReceivedChild = rubrovaCIDonePutReceivedChild(),
+        putReceivedCost = rubrovaCIDonePutReceivedCost(),
+        putReceivedQuantity = (OVERRIDE Inventory.done(rubrovaCIDonePutOriginalLine()), 0),
+        putQuantity = (OVERRIDE Inventory.put(rubrovaCIDonePutOriginalLine()), 0),
+        putLedgerDone = (OVERRIDE Inventory.ledgerDone(rubrovaCIDonePutOriginalLine()), 0),
+        putReceivedPending = (OVERRIDE Purchase.toReceive(rubrovaCIDonePutOrderLine()), 0),
+        putDocumentFlag = Inventory.putAway(rubrovaCIDonePutOriginal()),
+        putCanceledMain = (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0),
+        putCanceledChild = (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0),
+        putCanceledCost = (OVERRIDE Inventory.costAmount(rubrovaCIDonePutOriginal()), 0),
+        putCanceledPending = (OVERRIDE Purchase.toReceive(rubrovaCIDonePutOrderLine()), 0),
+        putOriginalReady = Inventory.ready(rubrovaCIDonePutOriginal()),
+        putOriginalDone = Inventory.done(rubrovaCIDonePutOriginal()),
+        putOriginalCanceled = Inventory.canceled(rubrovaCIDonePutOriginal()),
+        putReplacementDistinct = rubrovaCIDonePutReplacement()
+            AND rubrovaCIDonePutReplacement() != rubrovaCIDonePutOriginal(),
+        putReplacementReady = Inventory.ready(rubrovaCIDonePutReplacement()),
+        putReplacementCanceled = Inventory.canceled(rubrovaCIDonePutReplacement()),
+        putReplacementDemand = (OVERRIDE Inventory.initialDemand(
+            GROUP MAX Inventory.ReceiptLine l IF Inventory.receipt(l) = rubrovaCIDonePutReplacement()), 0),
+        putOriginalNumber = Inventory.number(rubrovaCIDonePutOriginal()),
+        putReplacementNumber = Inventory.number(rubrovaCIDonePutReplacement()),
+        plainBaselineMain = rubrovaCIDonePlainBaseMain(),
+        plainBaselineChild = rubrovaCIDonePlainBaseChild(),
+        plainBaselineCost = rubrovaCIDonePlainBaseCost(),
+        plainBaselinePending = rubrovaCIDonePlainBasePending(),
+        plainReceivedMain = rubrovaCIDonePlainReceivedMain(),
+        plainReceivedChild = rubrovaCIDonePlainReceivedChild(),
+        plainReceivedCost = rubrovaCIDonePlainReceivedCost(),
+        plainReceivedQuantity = (OVERRIDE Inventory.done(rubrovaCIDonePlainOriginalLine()), 0),
+        plainPutQuantity = (OVERRIDE Inventory.put(rubrovaCIDonePlainOriginalLine()), 0),
+        plainLedgerDone = (OVERRIDE Inventory.ledgerDone(rubrovaCIDonePlainOriginalLine()), 0),
+        plainReceivedPending = (OVERRIDE Purchase.toReceive(rubrovaCIDonePlainOrderLine()), 0),
+        plainDocumentFlag = Inventory.putAway(rubrovaCIDonePlainOriginal()),
+        plainCanceledMain = (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0),
+        plainCanceledChild = (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0),
+        plainCanceledCost = (OVERRIDE Inventory.costAmount(rubrovaCIDonePlainOriginal()), 0),
+        plainCanceledPending = (OVERRIDE Purchase.toReceive(rubrovaCIDonePlainOrderLine()), 0),
+        plainOriginalReady = Inventory.ready(rubrovaCIDonePlainOriginal()),
+        plainOriginalDone = Inventory.done(rubrovaCIDonePlainOriginal()),
+        plainOriginalCanceled = Inventory.canceled(rubrovaCIDonePlainOriginal()),
+        plainReplacementDistinct = rubrovaCIDonePlainReplacement()
+            AND rubrovaCIDonePlainReplacement() != rubrovaCIDonePlainOriginal(),
+        plainReplacementReady = Inventory.ready(rubrovaCIDonePlainReplacement()),
+        plainReplacementCanceled = Inventory.canceled(rubrovaCIDonePlainReplacement()),
+        plainReplacementDemand = (OVERRIDE Inventory.initialDemand(
+            GROUP MAX Inventory.ReceiptLine l IF Inventory.receipt(l) = rubrovaCIDonePlainReplacement()), 0),
+        plainOriginalNumber = Inventory.number(rubrovaCIDonePlainOriginal()),
+        plainReplacementNumber = Inventory.number(rubrovaCIDonePlainReplacement()),
+        persistedMain = (OVERRIDE Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0),
+        persistedChild = (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0),
+        persistedPutCost = (OVERRIDE Inventory.costAmount(rubrovaCIDonePutOriginal()), 0),
+        persistedPlainCost = (OVERRIDE Inventory.costAmount(rubrovaCIDonePlainOriginal()), 0);
+} @@api;
