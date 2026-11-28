@@ -336,6 +336,25 @@ loadDefaultData () + {
             }
             Purchase.confirmed(donePlainOrderCI) <- TRUE;
         }
+        NEW billLifecycleOrderCI = Purchase.Order {
+            Purchase.type(billLifecycleOrderCI) <- Purchase.orderType('order');
+            Purchase.vendor(billLifecycleOrderCI) <- rubrovaCIReplenishmentPartner();
+            Purchase.company(billLifecycleOrderCI) <- MasterData.defaultCompany();
+            Purchase.location(billLifecycleOrderCI) <- rubrovaCIDoneLocation();
+            Purchase.currency(billLifecycleOrderCI) <- MasterData.defaultCurrency();
+            Purchase.scheduledDateTime(billLifecycleOrderCI) <- currentDateTime();
+            Purchase.vendorReference(billLifecycleOrderCI) <- 'rubrova-ci-bill-delivered-cancel';
+            NEW billLifecycleOrderLineCI = Purchase.OrderLine {
+                Purchase.order(billLifecycleOrderLineCI) <- billLifecycleOrderCI;
+                Purchase.item(billLifecycleOrderLineCI) <- Sales.rubrovaCITestProduct();
+                Purchase.quantity(billLifecycleOrderLineCI) <- 3;
+                Purchase.price(billLifecycleOrderLineCI) <- 1000;
+            }
+            Purchase.confirmed(billLifecycleOrderCI) <- TRUE;
+        }
+        // Esta prueba usa la ruta PO -> Receipt -> Bill; no generar una Receipt adicional desde Bill.
+        Invoicing.autoCreateReceipt(Invoicing.billType('bill')) <- FALSE;
+        Purchase.invoicingPolicy(Purchase.orderType('order')) <- Purchase.InvoicingPolicy.delivered;
         rubrovaCIDoneReceiptSeeded() <- TRUE;
     }
 }
@@ -499,4 +518,134 @@ rubrovaTestPurchaseReceiptDoneCancellationApi () {
         persistedChild = (OVERRIDE Inventory.onHand(rubrovaCIDoneChild(), Sales.rubrovaCITestProduct()), 0),
         persistedPutCost = (OVERRIDE Inventory.costAmount(rubrovaCIDonePutOriginal()), 0),
         persistedPlainCost = (OVERRIDE Inventory.costAmount(rubrovaCIDonePlainOriginal()), 0);
+} @@api;
+
+
+// Diagnóstico descartable de Bill delivered: la cancelación financiera no debe borrar
+// ni alterar el hecho físico recibido. La prueba observa si el vínculo ReceiptLine->BillLine
+// bloquea la reemisión y cómo se resuelve el costo; no corrige la fuente.
+rubrovaCIBillLifecycleRun = DATA BOOLEAN ();
+rubrovaCIBillLifecycleOrder() = GROUP MAX Purchase.Order o
+    IF Purchase.vendorReference(o) = 'rubrova-ci-bill-delivered-cancel';
+rubrovaCIBillLifecycleOrderLine() = GROUP MAX Purchase.OrderLine ol
+    IF Purchase.order(ol) = rubrovaCIBillLifecycleOrder();
+rubrovaCIBillLifecycleReceipt() = Purchase.reserveReceipt(rubrovaCIBillLifecycleOrder());
+rubrovaCIBillLifecycleReceiptLine() = GROUP MAX Inventory.ReceiptLine rl
+    IF Inventory.receipt(rl) = rubrovaCIBillLifecycleReceipt();
+
+rubrovaCIBillLifecycleOriginal = DATA Invoicing.Bill ();
+rubrovaCIBillLifecycleOriginalLine = DATA Invoicing.BillLine ();
+rubrovaCIBillLifecycleBaseStock = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleReceivedStock = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleDeliveredBefore = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleBillLineQuantity = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleBillLinePrice = DATA NUMERIC[14,2] ();
+rubrovaCIBillLifecycleReceiptCostAfterBill = DATA NUMERIC[14,2] ();
+rubrovaCIBillLifecycleBillableAfterCancel = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleBilledAfterCancel = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleReplacementAllowed = DATA BOOLEAN ();
+rubrovaCIBillLifecycleReceiptStockAfterCancel = DATA NUMERIC[16,3] ();
+rubrovaCIBillLifecycleReceiptCostAfterCancel = DATA NUMERIC[14,2] ();
+rubrovaCIBillLifecycleReceiptActiveAfterCancel = DATA BOOLEAN ();
+rubrovaCIBillLifecycleBillActiveAfterCancel = DATA BOOLEAN ();
+rubrovaCIBillLifecycleBillCanceledAfterCancel = DATA BOOLEAN ();
+rubrovaCIBillLifecycleBillLineLinkedAfterCancel = DATA BOOLEAN ();
+rubrovaCIBillLifecycleReceiptDoneAfterCancel = DATA BOOLEAN ();
+rubrovaCIBillLifecycleOrderPendingAfterCancel = DATA NUMERIC[16,3] ();
+
+rubrovaTestSupplierBillDeliveredCancellationApi () {
+    IF NOT rubrovaCIBillLifecycleRun() THEN {
+        IF NOT rubrovaCIBillLifecycleOrder() OR NOT rubrovaCIBillLifecycleReceipt()
+            OR NOT rubrovaCIBillLifecycleReceiptLine() THEN RETURN;
+
+        rubrovaCIBillLifecycleBaseStock() <- (OVERRIDE
+            Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIBillLifecycleDeliveredBefore() <- (OVERRIDE
+            Purchase.toBillShipped(rubrovaCIBillLifecycleOrder()), 0);
+
+        Inventory.done(rubrovaCIBillLifecycleReceiptLine()) <- 2;
+        APPLY;
+        IF canceled() THEN RETURN;
+        Inventory.validate(rubrovaCIBillLifecycleReceipt());
+        APPLY;
+        IF canceled() THEN RETURN;
+
+        rubrovaCIBillLifecycleReceivedStock() <- (OVERRIDE
+            Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+
+        // Usar la acción nativa PurchaseOrderBill.createBill bajo política delivered.
+        Purchase.createBill(rubrovaCIBillLifecycleOrder());
+        APPLY;
+        IF canceled() THEN RETURN;
+
+        rubrovaCIBillLifecycleOriginal() <- (GROUP MAX Invoicing.Bill b
+            IF Purchase.in(rubrovaCIBillLifecycleOrder(), b) > 0);
+        IF NOT rubrovaCIBillLifecycleOriginal() THEN RETURN;
+        rubrovaCIBillLifecycleOriginalLine() <- (GROUP MAX Invoicing.BillLine bl
+            IF Invoicing.bill(bl) = rubrovaCIBillLifecycleOriginal());
+        IF NOT rubrovaCIBillLifecycleOriginalLine() THEN RETURN;
+
+        // Precio de factura intencionalmente distinto al precio del pedido (1000):
+        // permite observar qué productor de ReceiptCost gana en la composición real.
+        Invoicing.price(rubrovaCIBillLifecycleOriginalLine()) <- 1250;
+        APPLY;
+        IF canceled() THEN RETURN;
+        rubrovaCIBillLifecycleBillLineQuantity() <- Invoicing.quantity(rubrovaCIBillLifecycleOriginalLine());
+        rubrovaCIBillLifecycleBillLinePrice() <- Invoicing.price(rubrovaCIBillLifecycleOriginalLine());
+        rubrovaCIBillLifecycleReceiptCostAfterBill() <- (OVERRIDE
+            Inventory.costAmount(rubrovaCIBillLifecycleReceipt()), 0);
+
+        // La cancelación es sólo financiera: no cancelar manualmente la Receipt ni tocar ledgers.
+        Invoicing.cancel(rubrovaCIBillLifecycleOriginal());
+        APPLY;
+        IF canceled() THEN RETURN;
+
+        rubrovaCIBillLifecycleBillableAfterCancel() <- (OVERRIDE
+            Purchase.toBillShipped(rubrovaCIBillLifecycleOrder()), 0);
+        rubrovaCIBillLifecycleBilledAfterCancel() <- (OVERRIDE
+            Purchase.billed(rubrovaCIBillLifecycleOrderLine()), 0);
+        rubrovaCIBillLifecycleReplacementAllowed() <- Purchase.toBill(rubrovaCIBillLifecycleOrder());
+        rubrovaCIBillLifecycleReceiptStockAfterCancel() <- (OVERRIDE
+            Inventory.onHand(rubrovaCIDoneLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIBillLifecycleReceiptCostAfterCancel() <- (OVERRIDE
+            Inventory.costAmount(rubrovaCIBillLifecycleReceipt()), 0);
+        rubrovaCIBillLifecycleReceiptActiveAfterCancel() <- Inventory.active(rubrovaCIBillLifecycleReceipt());
+        rubrovaCIBillLifecycleBillActiveAfterCancel() <- Invoicing.active(rubrovaCIBillLifecycleOriginal());
+        rubrovaCIBillLifecycleBillCanceledAfterCancel() <- Invoicing.canceled(rubrovaCIBillLifecycleOriginal());
+        rubrovaCIBillLifecycleBillLineLinkedAfterCancel() <-
+            Invoicing.billLine(rubrovaCIBillLifecycleReceiptLine()) = rubrovaCIBillLifecycleOriginalLine();
+        rubrovaCIBillLifecycleReceiptDoneAfterCancel() <- Inventory.done(rubrovaCIBillLifecycleReceipt());
+        rubrovaCIBillLifecycleOrderPendingAfterCancel() <- (OVERRIDE
+            Purchase.toReceive(rubrovaCIBillLifecycleOrderLine()), 0);
+
+        rubrovaCIBillLifecycleRun() <- TRUE;
+        APPLY;
+        IF canceled() THEN RETURN;
+    }
+
+    EXPORT JSON FROM
+        executed = rubrovaCIBillLifecycleRun(),
+        orderNumber = Purchase.number(rubrovaCIBillLifecycleOrder()),
+        orderQuantity = Purchase.quantity(rubrovaCIBillLifecycleOrderLine()),
+        orderPrice = Purchase.price(rubrovaCIBillLifecycleOrderLine()),
+        receiptNumber = Inventory.number(rubrovaCIBillLifecycleReceipt()),
+        receiptQuantity = Inventory.done(rubrovaCIBillLifecycleReceiptLine()),
+        billNumber = Invoicing.number(rubrovaCIBillLifecycleOriginal()),
+        billLineQuantity = rubrovaCIBillLifecycleBillLineQuantity(),
+        billLinePrice = rubrovaCIBillLifecycleBillLinePrice(),
+        deliveredBillableBefore = rubrovaCIBillLifecycleDeliveredBefore(),
+        billCostAfterInvoice = rubrovaCIBillLifecycleReceiptCostAfterBill(),
+        billCanceledAfterCancel = rubrovaCIBillLifecycleBillCanceledAfterCancel(),
+        billActiveAfterCancel = rubrovaCIBillLifecycleBillActiveAfterCancel(),
+        receiptActiveAfterBillCancel = rubrovaCIBillLifecycleReceiptActiveAfterCancel(),
+        receiptDoneAfterBillCancel = rubrovaCIBillLifecycleReceiptDoneAfterCancel(),
+        billLineStillLinkedAfterCancel = rubrovaCIBillLifecycleBillLineLinkedAfterCancel(),
+        billableDeliveredAfterCancel = rubrovaCIBillLifecycleBillableAfterCancel(),
+        billedOrderQuantityAfterCancel = rubrovaCIBillLifecycleBilledAfterCancel(),
+        replacementBillAllowedAfterCancel = rubrovaCIBillLifecycleReplacementAllowed(),
+        orderPendingAfterBillCancel = rubrovaCIBillLifecycleOrderPendingAfterCancel(),
+        stockBeforeReceipt = rubrovaCIBillLifecycleBaseStock(),
+        stockAfterReceipt = rubrovaCIBillLifecycleReceivedStock(),
+        stockAfterBillCancel = rubrovaCIBillLifecycleReceiptStockAfterCancel(),
+        receiptCostAfterBillCancel = rubrovaCIBillLifecycleReceiptCostAfterCancel();
 } @@api;

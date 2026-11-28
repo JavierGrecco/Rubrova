@@ -2015,6 +2015,14 @@ test("la recepción Done concilia ubicación principal, hija, put-away, costo y 
   assert.match(uiSmokeSource, /def verify_purchase_receipt_done_cancellation\(/);
   assert.match(uiSmokeSource, /verify_purchase_receipt_done_cancellation\(context, url\)/);
   assert.match(nativeSmokeSource, /UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaTestSupplierBillDeliveredCancellationApi/);
+  assert.match(nativeReplenishmentFixtureSource, /Purchase[.]createBill\(rubrovaCIBillLifecycleOrder\(\)\)/);
+  assert.match(nativeReplenishmentFixtureSource, /Invoicing[.]cancel\(rubrovaCIBillLifecycleOriginal\(\)\)/);
+  assert.match(nativeReplenishmentFixtureSource, /rubrovaCIBillLifecycleReceiptCostAfterCancel/);
+  assert.match(uiSmokeSource, /def verify_supplier_bill_delivered_cancellation\(/);
+  assert.match(uiSmokeSource, /rubrovaTestSupplierBillDeliveredCancellationApi/);
+  assert.match(uiSmokeSource, /UI_SUPPLIER_BILL_DELIVERED_CANCELLATION_DIAGNOSTICS_CAPTURED=true/);
+  assert.match(nativeSmokeSource, /UI_SUPPLIER_BILL_DELIVERED_CANCELLATION_DIAGNOSTICS_CAPTURED=true/);
 });
 
 test("la sonda de recepción Done guarda el pendiente inmediatamente después de recibir", () => {

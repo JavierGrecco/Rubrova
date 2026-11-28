@@ -1208,6 +1208,88 @@ def verify_purchase_receipt_done_cancellation(context: Any, url: str) -> None:
     print("UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true")
 
 
+
+def verify_supplier_bill_delivered_cancellation(context: Any, url: str) -> None:
+    """Capture native delivered-bill cancellation, receipt linkage and valuation facts."""
+    endpoint = application_endpoint_url(url, "exec/Rubrova.")
+    response = context.request.get(
+        endpoint + "rubrovaTestSupplierBillDeliveredCancellationApi",
+        timeout=45_000,
+    )
+    print(f"UI_SUPPLIER_BILL_DELIVERED_CANCELLATION_HTTP={response.status}")
+    if response.status != 200:
+        raise RuntimeError(
+            "La sonda de factura delivered respondió "
+            f"HTTP {response.status}: {response.text()[:1600]}"
+        )
+    try:
+        payload = response.json()
+    except ValueError as error:
+        raise RuntimeError("La sonda de factura delivered no devolvió JSON válido.") from error
+    if isinstance(payload, list):
+        payload = payload[0] if len(payload) == 1 else {}
+    if not isinstance(payload, dict) or payload.get("executed") is not True:
+        raise RuntimeError("La reproducción de factura delivered no terminó: " + str(payload))
+    print(
+        "UI_SUPPLIER_BILL_DELIVERED_CANCELLATION_DIAGNOSTICS="
+        + json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    )
+
+    def quantity(field: str) -> float:
+        value = payload.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise RuntimeError(f"Cantidad inválida en sonda delivered ({field}): {value!r}")
+        return float(value)
+
+    for field, expected in {
+        "orderQuantity": 3.0,
+        "orderPrice": 1000.0,
+        "receiptQuantity": 2.0,
+        "billLineQuantity": 2.0,
+        "billLinePrice": 1250.0,
+        "deliveredBillableBefore": 2.0,
+        "orderPendingAfterBillCancel": 1.0,
+        "stockBeforeReceipt": 10.0,
+        "stockAfterReceipt": 12.0,
+        "stockAfterBillCancel": 12.0,
+    }.items():
+        actual = quantity(field)
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"Escenario base delivered incorrecto en {field}: esperado {expected}, recibido {actual}"
+            )
+
+    for field in (
+        "billCanceledAfterCancel",
+        "receiptActiveAfterBillCancel",
+        "receiptDoneAfterBillCancel",
+    ):
+        if payload.get(field) is not True:
+            raise RuntimeError(f"Falta {field}=true en sonda delivered.")
+
+    if payload.get("billActiveAfterCancel") is not False:
+        raise RuntimeError("La factura cancelada continúa activa en el ledger de deuda.")
+    cost_after_bill = quantity("billCostAfterInvoice")
+    cost_after_cancel = quantity("receiptCostAfterBillCancel")
+    print(
+        "UI_SUPPLIER_BILL_DELIVERED_COST_DIAGNOSTICS="
+        + json.dumps(
+            {
+                "orderUnitPrice": quantity("orderPrice"),
+                "billUnitPrice": quantity("billLinePrice"),
+                "receiptCostAfterInvoice": cost_after_bill,
+                "receiptCostAfterBillCancellation": cost_after_cancel,
+                "billableQuantityAfterBillCancellation": quantity("billableDeliveredAfterCancel"),
+                "billedOrderQuantityAfterBillCancellation": quantity("billedOrderQuantityAfterCancel"),
+                "replacementBillAllowed": payload.get("replacementBillAllowedAfterCancel"),
+                "billLineStillLinked": payload.get("billLineStillLinkedAfterCancel"),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+    print("UI_SUPPLIER_BILL_DELIVERED_CANCELLATION_DIAGNOSTICS_CAPTURED=true")
+
 def verify_replenishment_source_export(context: Any, url: str) -> None:
     """Validate the native MyCompany export without mutating the ERP."""
     prepare_ci_outgoing_reservation(context, url)
@@ -2548,6 +2630,7 @@ def inspect_page(url: str) -> int:
                 if os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() != "true":
                     verify_purchase_receipt_cancellation_reservation(context, url)
                     verify_purchase_receipt_done_cancellation(context, url)
+                    verify_supplier_bill_delivered_cancellation(context, url)
                     verify_return_quantity_guard(context, url)
                     verify_stocktake_barcode_semantics(context, url)
                 if not final_text.strip():
