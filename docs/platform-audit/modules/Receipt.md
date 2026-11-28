@@ -80,7 +80,7 @@ La ubicación participa del control de acceso por ubicación; proveedor y produc
 7. Cancelación, copia, edición y usuario sin acceso a la ubicación.
 8. Corte/reintento entre confirmación y registro de ledgers.
 
-**Estado de aceptación:** pendiente de runtime, WMS y conciliación E2E.
+**Estado de aceptación:** el escenario sintético de cancelación prevista Ready y cancelación posterior a Done quedó aprobado en runtime macOS ARM64 en los runs #609 y #613, incluida la lectura después del reinicio. WMS, permisos exhaustivos, interrupciones/reintentos y conciliación contra una base comercial real siguen fuera de esta aceptación.
 
 ## 8.1 Aceptación runtime de cancelación posterior a Done (#17)
 
@@ -93,7 +93,20 @@ La fixture efímera de CI crea dos órdenes independientes sobre un depósito ai
 | Recibir 4 sin put-away | Después de Done | 14 | 0 | 4.000 |
 | Mismo escenario | Después de cancelar | 10 | 0 | 0 |
 
-Estos saldos e importes son **objetivos de aceptación**, todavía no resultados medidos. El inspector exige tolerancia máxima de 0,001, comprueba que la cantidad ubicada no se duplique entre origen y destino y exige una recepción Ready distinta por la cantidad que vuelve a quedar pendiente. La misma sonda se ejecuta durante el arranque inicial y, en modo de consulta, después de reiniciar el servidor.
+Los siguientes son **resultados medidos** en el smoke nativo macOS ARM64 #613, con tolerancia 0,001. El caso parcial quedó registrado como recepción `PIC/000002` y su reemplazo como `PIC/000005`; el caso completo, `PIC/000003` y reemplazo `PIC/000006`. En ambos casos la recepción original conservó sus indicadores históricos `Ready`, `Done` y `Canceled`, mientras sus contribuciones activas a inventario y costo quedaron revertidas. La sonda emitió `UI_REPLENISHMENT_RECEIPT_DONE_CANCELLATION_VERIFIED=true` tanto durante la ejecución inicial como después del reinicio, donde volvió a leer principal 10, hija 0 y costo activo 0.
+
+
+
+### Resultados medidos — workflow nativo #613
+
+| Pedido | Etapa | Principal | Hija | Costo | Pendiente |
+|---|---|---:|---:|---:|---:|
+| 3; se recibieron 2 | Antes de cancelar | 11 | 1 | 2.000 | 1 |
+| 3; se recibieron 2 | Después de cancelar | 10 | 0 | 0 | 3 |
+| 4; se recibieron 4 | Antes de cancelar | 14 | 0 | 4.000 | 0 |
+| 4; se recibieron 4 | Después de cancelar | 10 | 0 | 0 | 4 |
+
+La lectura posterior al reinicio confirmó principal 10, hija 0 y costo de ambas recepciones igual a 0. Las nuevas recepciones quedaron distintas y Ready. Evidencia: [workflow #613](https://github.com/JavierGrecco/Rubrova/actions/runs/46119691078).
 
 La fixture crea documentos de compra, registra cantidades recibidas, crea el detalle nativo de put-away y ejecuta las acciones nativas de validar, ubicar y cancelar. No inserta, elimina ni modifica manualmente registros de los ledgers físicos, de ubicación interna o de costo.
 
