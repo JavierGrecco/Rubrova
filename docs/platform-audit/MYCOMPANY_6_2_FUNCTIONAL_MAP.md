@@ -68,6 +68,8 @@ Los datos maestros alimentan los documentos y controlan las reglas de selección
 
 **Pendiente:** revisar individualmente todas las propiedades, validaciones, atributos, códigos externos, políticas de archivo y deduplicación en los 84 módulos de datos maestros.
 
+El análisis detallado de los 49 módulos de compras y reposición está en [MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md](MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md). Incluye fuentes, políticas de facturación y límites de importación/reabastecimiento.
+
 ### 3.2 Compras: pedido → recepción → factura de proveedor → pago
 
 La documentación describe el circuito principal:

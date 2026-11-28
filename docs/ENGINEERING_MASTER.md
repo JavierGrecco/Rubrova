@@ -1899,6 +1899,8 @@ El análisis de facturación, deuda, imputaciones, pagos, cuentas, monedas, impu
 
 El detalle de ventas, listas de precios, descuentos, ledger comercial, márgenes, APIs y generación de compras/fabricación está en [MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md](platform-audit/MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md).
 
+El mapa específico de compras, recepción, facturación por pedido/recibido, listas de precios, importación, reposición y relación con fabricación está en [MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md](platform-audit/MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md).
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.
