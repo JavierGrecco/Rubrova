@@ -499,6 +499,20 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]quantity\(rubrovaCIIncomingOrderLine\(\)\) <- 4/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReceiptExpectedAfterCancel/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReceiptExpectedAfterReplacement/);
+  for (const suffix of ["Before", "WithAvailable", "AfterCancel", "AfterReplacement"]) {
+    assert.match(
+      nativeReplenishmentFixtureSource,
+      new RegExp("rubrovaCIReceiptOnHand" + suffix + "\\(\\) <- \\(OVERRIDE Inventory[.]onHand")
+    );
+  }
+  for (const [field, expected] of Object.entries({
+    baselineExpected: "3[.]0", baselinePlanned: "2[.]0", baselineAvailable: "8[.]0", baselineOnHand: "10[.]0",
+    withIncreaseAvailableExpected: "3[.]0", withIncreaseAvailablePlanned: "-1[.]0", withIncreaseAvailable: "11[.]0", withIncreaseAvailableOnHand: "10[.]0",
+    afterCancelExpected: "0[.]0", afterCancelPlanned: "2[.]0", afterCancelAvailable: "8[.]0", afterCancelOnHand: "10[.]0",
+    afterReplacementExpected: "4[.]0", afterReplacementPlanned: "-2[.]0", afterReplacementAvailable: "12[.]0", afterReplacementOnHand: "10[.]0",
+  })) {
+    assert.match(uiSmokeSource, new RegExp('"' + field + '": ' + expected));
+  }
   assert.match(uiSmokeSource, /if os[.]environ[.]get\("RUBROVA_UI_DEMO_MODE", "false"\)[.]lower\(\) != "true":\s+verify_purchase_receipt_cancellation_reservation/);
   assert.match(uiSmokeSource, /def verify_purchase_receipt_cancellation_reservation\(/);
   assert.match(uiSmokeSource, /rubrovaTestPurchaseReceiptCancellationReservationApi/);

@@ -155,14 +155,17 @@ rubrovaCIReceiptReplacement = DATA Inventory.Receipt ();
 rubrovaCIReceiptExpectedBefore = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptPlannedBefore = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptAvailableBefore = DATA NUMERIC[16,3] ();
+rubrovaCIReceiptOnHandBefore = DATA NUMERIC[16,3] ();
 
 rubrovaCIReceiptExpectedWithAvailable = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptPlannedWithAvailable = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptAvailableWithAvailable = DATA NUMERIC[16,3] ();
+rubrovaCIReceiptOnHandWithAvailable = DATA NUMERIC[16,3] ();
 
 rubrovaCIReceiptExpectedAfterCancel = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptPlannedAfterCancel = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptAvailableAfterCancel = DATA NUMERIC[16,3] ();
+rubrovaCIReceiptOnHandAfterCancel = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptOriginalReadyAfterCancel = DATA BOOLEAN ();
 rubrovaCIReceiptOriginalCanceledAfterCancel = DATA BOOLEAN ();
 rubrovaCIReceiptOriginalDoneAfterCancel = DATA BOOLEAN ();
@@ -170,6 +173,7 @@ rubrovaCIReceiptOriginalDoneAfterCancel = DATA BOOLEAN ();
 rubrovaCIReceiptExpectedAfterReplacement = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptPlannedAfterReplacement = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptAvailableAfterReplacement = DATA NUMERIC[16,3] ();
+rubrovaCIReceiptOnHandAfterReplacement = DATA NUMERIC[16,3] ();
 rubrovaCIReceiptReplacementDistinct = DATA BOOLEAN ();
 rubrovaCIReceiptReplacementReady = DATA BOOLEAN ();
 rubrovaCIReceiptReplacementCanceled = DATA BOOLEAN ();
@@ -183,6 +187,7 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         rubrovaCIReceiptExpectedBefore() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptPlannedBefore() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptAvailableBefore() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptOnHandBefore() <- (OVERRIDE Inventory.onHand(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
 
         // Turn on increaseAvailableStock to expose whether the canceled expected
         // receipt still participates in both expected and available calculations.
@@ -193,6 +198,7 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         rubrovaCIReceiptExpectedWithAvailable() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptPlannedWithAvailable() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptAvailableWithAvailable() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptOnHandWithAvailable() <- (OVERRIDE Inventory.onHand(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
 
         // Invoke the native cancellation action; do not update ledger rows directly.
         Inventory.cancel(rubrovaCIReceiptOriginal());
@@ -200,6 +206,7 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         rubrovaCIReceiptExpectedAfterCancel() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptPlannedAfterCancel() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptAvailableAfterCancel() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptOnHandAfterCancel() <- (OVERRIDE Inventory.onHand(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptOriginalReadyAfterCancel() <- Inventory.ready(rubrovaCIReceiptOriginal());
         rubrovaCIReceiptOriginalCanceledAfterCancel() <- Inventory.canceled(rubrovaCIReceiptOriginal());
         rubrovaCIReceiptOriginalDoneAfterCancel() <- Inventory.done(rubrovaCIReceiptOriginal());
@@ -214,6 +221,7 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         rubrovaCIReceiptExpectedAfterReplacement() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptPlannedAfterReplacement() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptAvailableAfterReplacement() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptOnHandAfterReplacement() <- (OVERRIDE Inventory.onHand(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptReplacementDistinct() <- rubrovaCIReceiptReplacement()
             AND rubrovaCIReceiptReplacement() != rubrovaCIReceiptOriginal();
         rubrovaCIReceiptReplacementReady() <- Inventory.ready(rubrovaCIReceiptReplacement());
@@ -236,18 +244,22 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         baselineExpected = rubrovaCIReceiptExpectedBefore(),
         baselinePlanned = rubrovaCIReceiptPlannedBefore(),
         baselineAvailable = rubrovaCIReceiptAvailableBefore(),
+        baselineOnHand = rubrovaCIReceiptOnHandBefore(),
         withIncreaseAvailableExpected = rubrovaCIReceiptExpectedWithAvailable(),
         withIncreaseAvailablePlanned = rubrovaCIReceiptPlannedWithAvailable(),
         withIncreaseAvailable = rubrovaCIReceiptAvailableWithAvailable(),
+        withIncreaseAvailableOnHand = rubrovaCIReceiptOnHandWithAvailable(),
         afterCancelExpected = rubrovaCIReceiptExpectedAfterCancel(),
         afterCancelPlanned = rubrovaCIReceiptPlannedAfterCancel(),
         afterCancelAvailable = rubrovaCIReceiptAvailableAfterCancel(),
+        afterCancelOnHand = rubrovaCIReceiptOnHandAfterCancel(),
         originalReadyAfterCancel = rubrovaCIReceiptOriginalReadyAfterCancel(),
         originalCanceledAfterCancel = rubrovaCIReceiptOriginalCanceledAfterCancel(),
         originalDoneAfterCancel = rubrovaCIReceiptOriginalDoneAfterCancel(),
         afterReplacementExpected = rubrovaCIReceiptExpectedAfterReplacement(),
         afterReplacementPlanned = rubrovaCIReceiptPlannedAfterReplacement(),
         afterReplacementAvailable = rubrovaCIReceiptAvailableAfterReplacement(),
+        afterReplacementOnHand = rubrovaCIReceiptOnHandAfterReplacement(),
         replacementDistinct = rubrovaCIReceiptReplacementDistinct(),
         replacementReady = rubrovaCIReceiptReplacementReady(),
         replacementCanceled = rubrovaCIReceiptReplacementCanceled(),

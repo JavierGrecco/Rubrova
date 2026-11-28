@@ -1083,9 +1083,39 @@ def verify_purchase_receipt_cancellation_reservation(context: Any, url: str) -> 
             )
         return float(value)
 
-    # These assertions confirm the native cancellation and purchase-order
-    # recalculation actually ran. Ledger figures are retained as diagnostics
-    # first; the next revision will turn the observed behavior into assertions.
+    # Reconciliation contract captured by native run #609. This API is called
+    # before and after the server restart; persisted fixture data must match.
+    expected_quantities = {
+        "baselineExpected": 3.0,
+        "baselinePlanned": 2.0,
+        "baselineAvailable": 8.0,
+        "baselineOnHand": 10.0,
+        "withIncreaseAvailableExpected": 3.0,
+        "withIncreaseAvailablePlanned": -1.0,
+        "withIncreaseAvailable": 11.0,
+        "withIncreaseAvailableOnHand": 10.0,
+        "afterCancelExpected": 0.0,
+        "afterCancelPlanned": 2.0,
+        "afterCancelAvailable": 8.0,
+        "afterCancelOnHand": 10.0,
+        "afterReplacementExpected": 4.0,
+        "afterReplacementPlanned": -2.0,
+        "afterReplacementAvailable": 12.0,
+        "afterReplacementOnHand": 10.0,
+    }
+    for field, expected in expected_quantities.items():
+        actual = quantity(field)
+        if abs(actual - expected) > 0.001:
+            raise RuntimeError(
+                f"Conciliación de reserva de recepción incorrecta en {field}: "
+                f"esperado {expected}, recibido {actual}. "
+                f"{json.dumps(payload, ensure_ascii=False)}"
+            )
+    if payload.get("originalReadyAfterCancel") is not True:
+        raise RuntimeError(
+            "La cancelación debe conservar la recepción original como Ready pero inactiva por canceled=true: "
+            + json.dumps(payload, ensure_ascii=False)
+        )
     if payload.get("originalCanceledAfterCancel") is not True:
         raise RuntimeError(
             "La acción nativa no dejó cancelada la recepción prevista: "

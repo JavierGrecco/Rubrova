@@ -3146,13 +3146,13 @@ La [investigación logística argentina](ARGENTINA_LOGISTICS_INTEGRATION.md) se 
 
 ## Resumen ejecutivo
 
-Rubrova dispone de un runtime propio de MyCompany 6.2 + lsFusion 6.2, compilado desde fuentes fijadas en el repositorio. El workflow [Validación del arranque de plataforma #417](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó correctamente e incluyó un smoke nativo macOS ARM64 sin Docker. La prueba pasó de inicio/login a venta, conciliación, cierre, reinicio y restauración lógica de PostgreSQL en una base nueva.
+Rubrova dispone de un runtime propio de MyCompany 6.2 + lsFusion 6.2, compilado desde fuentes fijadas en el repositorio. El workflow [Validación de plataforma #609](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654320) terminó correctamente e incluyó compilación completa, empaquetado y smoke nativo macOS ARM64 sin Docker. Además, la cancelación de una recepción prevista Ready fue verificada con ledgers nativos antes y después del reinicio. El snapshot MyCompany ya protegido quedó incorporado en [`32c5d75`](https://github.com/JavierGrecco/Rubrova/commit/32c5d759b07d7af0c620633bf87cc33b38b585ac); su compilación desde el árbol incorporado se está validando por separado.
 
 Esto habilita una siguiente etapa de ingeniería funcional sobre una base reproducible. **No significa que Rubrova esté listo para operación diaria ni producción.** Los datos del smoke son sintéticos, la exportación de reposición aún no se ha conciliado con una base comercial real y no se ha probado el runtime en el Mac físico del usuario.
 
 ## Última validación de plataforma
 
-[Run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), SHA `ac758d01`, terminó con `success`.
+[Run #609](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654320), SHA `12f041d93d361d16a938a48f803248e70e5b6e8f`, terminó con `success`. Prevalidación compartida, validación sintáctica Windows, compilación completa, empaquetado y smoke nativo macOS ARM64 aprobaron. La segunda compilación desde el snapshot integrado `32c5d75` está en el workflow [#28](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654281) y se mantiene pendiente hasta su conclusión.
 
 | Trabajo | Resultado | Alcance real |
 |---|---|---|
@@ -3167,7 +3167,7 @@ La suite del planificador también aprobó en [run 45854940442](https://github.c
 
 ## Evidencia funcional del smoke nativo
 
-La ejecución [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) registró:
+La evidencia funcional base de POS, stock y backup se conserva en [run #600](https://github.com/JavierGrecco/Rubrova/actions/runs/46108699011). La validación más reciente de runtime [run #609](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654320) agregó la conciliación de reservas de recepción prevista y confirmó persistencia tras reinicio:
 
 - Login autenticado con Chromium y navegación a Comercio → Punto de venta.
 - Sondas autenticadas de inventario, compromisos de salida y recepciones con HTTP 200.
@@ -3183,6 +3183,19 @@ El backup es **sólo PostgreSQL**. No incluye adjuntos, documentos externos, im�
 
 La ejecución usó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y dejó `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. No se certifica aún continuidad offline en macOS.
 
+### Conciliación de cancelación de recepción prevista — run #609
+
+| Fase | expected | planned | available |
+|---|---:|---:|---:|
+| Ready original, `increaseAvailableStock=NULL` | 3 | 2 | 8 |
+| Misma recepción, flag `TRUE` | 3 | -1 | 11 |
+| Cancelación nativa de recepción original | 0 | 2 | 8 |
+| Recepción distinta Ready por 4 unidades | 4 | -2 | 12 |
+
+- La API usó la acción nativa `Inventory.cancel`; la recepción original quedó `canceled=true` y `ready=true`, sin estar `done`. La orden generó otra recepción distinta y Ready, con demanda 4.
+- La sonda entregó los mismos valores antes y después del reinicio y emitió `UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true` en ambas lecturas. El smoke general y la instancia Demo separada terminaron con sus marcadores `passed`.
+- El siguiente gate incorpora comparación estricta de estas cantidades y captura `onHand` en cada etapa. La prueba de recepción Done, reversión del stock físico, put-away y costo aún no está implementada ni aceptada.
+
 ## Estado por capacidad
 
 | Capacidad | Estado | Límite pendiente |
@@ -3193,6 +3206,7 @@ La ejecución usó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y dejó `RUBROVA_NATIVE
 | Venta, factura, pago y stock | Aprobado | Vuelto, medios mixtos, descuentos complejos y cancelaciones |
 | Cierre básico de turno | Aprobado | Arqueo físico, diferencias e ingresos/retiros end-to-end |
 | Persistencia tras reinicio | Aprobado | Recuperación integral y rollback |
+| Cancelación de recepción prevista Ready | Aprobada en run #609 | Recepción Done: reversión física, put-away y costo |
 | Exportación de reposición | API y fixtures aprobadas | Conciliar con base MyCompany local real |
 | Planificador | Suite aprobada | Datos reales, cobertura y desempeño fuera de muestra |
 | Backup lógico PostgreSQL | Creación, verificación y restore a nueva DB aprobados | Adjuntos, documentos, retención, disco externo y asistente |
@@ -3218,13 +3232,14 @@ La reposición es estrictamente de lectura: no ejecuta `fillAuto`, no crea órde
 
 ## Próximas prioridades
 
-1. **Devolución segura:** activar y probar el control de cantidad retornada contra la factura original; validar devolución parcial/total, reintegro al medio original y stock restaurado sin duplicaciones.
+1. **Cancelación de recepción completada:** completar la prueba de recepción parcial y total Done; conciliar inventario por ubicación, put-away, costo, persistencia y recepción de reemplazo sin doble contabilización.
+2. **Devolución segura:** activar y probar el control de cantidad retornada contra la factura original; validar devolución parcial/total, reintegro al medio original y stock restaurado sin duplicaciones.
 2. **Caja completa:** probar ingreso/retiro nativos, saldo teórico por medio y arqueo físico con diferencia registrada, responsable y hora.
 3. **Prueba local en el Mac físico:** ejecutar preflight, doctor, arranque, venta, backup, restore y revisión de logs con Java 21 y PostgreSQL 18 ARM64.
 4. **Continuidad offline macOS:** repetir el smoke con salida externa bloqueada y recuperación de integraciones pendientes.
 5. **Windows x64:** instalación y smoke nativos completos.
 6. **Backup integral:** adjuntos, documentos, manifiesto, checksums, retención, copia externa desconectable y restauración guiada en otro equipo.
-7. **Reposición real:** capturar exportación autenticada de una base MyCompany local y conciliarla con sus ledgers antes de sugerir compras con datos reales.
+8. **Reposición real:** capturar exportación autenticada de una base MyCompany local y conciliarla con sus ledgers antes de sugerir compras con datos reales.
 
 ## Protección de la rama principal
 
@@ -3682,7 +3697,7 @@ En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado
 
 ### Estado de evidencia
 
-- La revisión canónica actual es `ac758d01`. El workflow [45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565) terminó con `success`: preflight compartido, compilación completa y smoke nativo macOS ARM64.
+- La validación de runtime más reciente [#609](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654320), SHA `12f041d`, terminó con `success`: preflight compartido, compilación, empaquetado y smoke nativo macOS ARM64. La fuente parcheada quedó incorporada en `main` mediante `32c5d75`; el workflow #28 comprueba en paralelo la compilación desde las fuentes vendorizadas.
 - El smoke autenticó mediante Chromium, confirmó las sondas de inventario/compromisos/recepciones HTTP 200 y verificó la exportación de reposición contra fixtures.
 - La prueba ejecutó venta sintética ARS 1.250, pago exacto en efectivo, factura/pago persistidos, salida de stock 10 → 9 y cierre de turno conciliado.
 - Tras reiniciar el runtime, factura, pago, stock, turno e incidencias siguieron disponibles en PostgreSQL. La Demo usó otra base y puertos aislados.
@@ -3691,7 +3706,7 @@ En CI, la puerta principal del runtime es el smoke nativo macOS ARM64, ejecutado
 - El alcance del paquete es **sólo PostgreSQL**. No contiene archivos adjuntos, imágenes, documentos externos, secretos ni binarios; no equivale a un backup portable completo.
 - La ejecución dejó `RUBROVA_NATIVE_EGRESS_BLOCKED=false` y `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested`. El modo offline macOS sigue pendiente.
 - Linux nativo y Docker/Linux fueron `skipped` en el push actual. La validación Windows fue de sintaxis, no de instalación funcional.
-- La exportación de reposición requiere conciliación con una base MyCompany local real; los fixtures son sintéticos. También falta aceptación en el Mac físico, periféricos y jornada supervisada.
+- La cancelación de una recepción prevista Ready fue conciliada en #609, pero cancelar una recepción Done requiere todavía pruebas de reversión física, ubicación put-away y costo. La exportación de reposición requiere conciliación con una base MyCompany local real; los fixtures son sintéticos. También falta aceptación en el Mac físico, periféricos y jornada supervisada.
 
 ### Controles del smoke nativo
 
@@ -3930,5 +3945,13 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - **Corrección decidida:** patcher versionado e idempotente sobre `ReceiptRes.lsf`: exigir `ReceiptCanceled` además de `ReceiptDone` y agregar `AND NOT canceled(receipt(line))` al filtro del ledger futuro. No usar `active(receipt)`, pues requiere `done(receipt)` y excluiría indebidamente recepciones previstas activas. No borrar ni modificar filas de ledgers manualmente.
 - **Control de regresión:** tests de patch limpio, repetición idempotente, rechazo de estado parcial, rechazo de drift de fuente y ausencia del objetivo. El inspector no debe invocar la API CI cuando corre contra la base demo separada; la lectura después del reinicio sigue siendo obligatoria para la instancia CI.
 - **Límite del run:** #608 terminó `failure` en la fase separada de demostración local porque el inspector intentó invocar una API exclusiva de la fixture CI, que no existe en la base demo. Las dos lecturas de diagnóstico CI (inicial y tras reinicio) sí respondieron y reportaron los mismos valores. Este error de aislamiento del inspector se corrige separadamente; no cambia el diagnóstico de negocio.
-- **Estado:** defecto reproducido; corrección en patcher y validación integrada pendientes. Issue #17 permanece abierto hasta que el nuevo build/smoke verde demuestre el filtro y la conciliación tras reinicio.
+- **Estado en aquel corte:** defecto reproducido; la corrección y validación integrada estaban pendientes. La evidencia y estado posterior se registran en REP-054.
+
+### 2026-11-28 — REP-054 — Corrección y conciliación de reservas tras cancelar una recepción prevista
+
+- **Cambio de código:** commit `12f041d93d361d16a938a48f803248e70e5b6e8f` incorpora un patcher estricto e idempotente, pruebas de sus cinco escenarios y una protección para que el inspector no invoque la API CI al abrir la instancia Demo. El snapshot `ReceiptRes.lsf` ya parcheado se integró automáticamente a `main` en [commit `32c5d75`](https://github.com/JavierGrecco/Rubrova/commit/32c5d759b07d7af0c620633bf87cc33b38b585ac).
+- **Validación:** [run #609](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654320), con checkout de `12f041d`, terminó `success`. Pasaron prevalidación, sintaxis Windows, compilación de lsFusion/MyCompany, empaquetado, servidor nativo macOS ARM64, smoke UI, reinicio y Demo aislada. No se ejecutó Linux ni Docker; Windows sólo validó sintaxis.
+- **Resultado medido:** baseline Ready `3/2/8`; con `increaseAvailableStock=TRUE` `3/-1/11`; tras cancelar la recepción original `0/2/8`; después de generar una recepción distinta de 4 unidades `4/-2/12`, en orden `expected/planned/available`. El registro volvió a coincidir después del reinicio. Marcadores `UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true` en ambas lecturas y `RUBROVA_NATIVE_SMOKE=passed`.
+- **Alcance de aceptación:** se corrigió el ledger futuro de una recepción Ready y no Done. El siguiente gate hará estrictas las cifras y añadirá `onHand` en cada fase. No se afirma todavía que la cancelación de una recepción Done revierta correctamente inventario, ubicaciones put-away o costo.
+- **Estado:** la hipótesis de reservas futuras se considera corregida y reproducida en CI; **issue #17 sigue abierto** por el segundo tramo: recepción parcial/completa Done, ledgers físicos, put-away, costo, persistencia y reemplazo, sin duplicaciones.
 

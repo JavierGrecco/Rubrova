@@ -1,17 +1,19 @@
 # Instalación y carga de la extensión Rubrova — MyCompany 6.2
 
 **Versión objetivo:** MyCompany 6.2 / lsFusion 6.x  
-**Estado:** lsFusion 6.2 y MyCompany 6.2 están vendorizados; el build produce servidor, lógica y cliente desde nuestras fuentes. El recorrido comercial completo fue aceptado anteriormente sobre Docker. El camino principal ahora es el runtime nativo sin Docker; su supervisor y su smoke de login están implementados, pero el ciclo de venta nativo, la instalación offline y la aceptación final siguen pendientes.
+**Estado:** lsFusion 6.2 y MyCompany 6.2 están vendorizados; el build produce servidor, lógica y cliente desde nuestras fuentes. El smoke nativo macOS ARM64 fue aceptado en CI en el run #609, incluyendo el circuito sintético POS, pruebas de reinicio y la conciliación de cancelación de recepciones previstas. La aceptación comercial sigue limitada: quedan fuera la operación offline certificada, el equipo físico del usuario, Windows funcional, periféricos, datos comerciales reales y homologación productiva.
 
 Para macOS, consultar también [Compatibilidad con macOS](MACOS_SUPPORT.md).
 
 ## Estado actual de aceptación del runtime
 
-La validación integrada más reciente es [run 45855055565](https://github.com/JavierGrecco/Rubrova/actions/runs/45855055565), sobre el commit `ac758d01e8fb1ef2bfdd65900a23281c9aab3c3a`. Terminó con `success`: preflight, validación sintáctica Windows, compilación completa y smoke nativo macOS ARM64.
+La validación integrada más reciente es [run #609](https://github.com/JavierGrecco/Rubrova/actions/runs/46113654320), revisión `12f041d93d361d16a938a48f803248e70e5b6e8f`. Terminó con `success`: prevalidación compartida, sintaxis PowerShell, compilación completa y empaquetado del runtime, además del smoke nativo macOS ARM64 sin Docker. El snapshot MyCompany/lsFusion protegido también quedó incorporado en [`32c5d75`](https://github.com/JavierGrecco/Rubrova/commit/32c5d759b07d7af0c620633bf87cc33b38b585ac); el workflow #28 está comprobando la compilación desde esas fuentes ya incorporadas y no se marca como aprobado hasta su conclusión.
 
-El smoke nativo ejecutó Java 21 ARM64, PostgreSQL 18 ARM64, servidor lsFusion/MyCompany, Tomcat 9 y Chromium sin Docker. Verificó login, navegación, sondas autenticadas de inventario/compromisos/recepciones, exportación nativa de sólo lectura contra fixtures, venta sintética ARS 1.250, pago exacto en efectivo, factura/pago y stock 10 → 9. También cerró el turno, reinició el runtime y comprobó la persistencia de las operaciones.
+El smoke #609 ejecutó Java 21 ARM64, PostgreSQL 18 ARM64, servidor lsFusion/MyCompany, Tomcat y Chromium. Confirmó login y navegación, operaciones sintéticas POS/inventario, APIs de reposición y recepciones, cancelación nativa de una recepción prevista, persistencia tras reinicio y aceptación de una segunda instancia Demo aislada. Los marcadores finales fueron `RUBROVA_NATIVE_SMOKE=passed` y `RUBROVA_NATIVE_DEMO_ACCEPTANCE=passed`.
 
-El smoke creó un backup lógico PostgreSQL, verificó el manifiesto y SHA-256 y restauró en `rubrova_restore_ci` sin sobrescribir `rubrova_dev`. El paquete declara alcance `postgresql-database-only`; no incluye adjuntos, documentos externos, imágenes ni secretos.
+La sonda de cancelación consultó el mismo conjunto de datos antes y después del reinicio. En la fase inicial registró `expected/planned/available = 3/2/8`; con `increaseAvailableStock=TRUE`, `3/-1/11`; después de cancelar la recepción, `0/2/8`; y al regenerar una recepción distinta por 4 unidades, `4/-2/12`. Ambas lecturas terminaron con `UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true`. El siguiente run incorpora también aserciones de `onHand` para cada fase.
+
+Los alcances que siguen pendientes son: aceptación con egress bloqueado, prueba en el Mac físico, instalación/operación Windows, Linux/Docker, periféricos, conciliación con una base comercial real y homologación productiva. Esta ejecución no es una autorización para producción.
 
 Límites de la ejecución:
 - `RUBROVA_NATIVE_EGRESS_BLOCKED=false`; el modo offline macOS quedó `not_tested`.
@@ -56,6 +58,12 @@ Esta vista previa utiliza los mismos artefactos compilados desde `vendor/platfor
 
 Dependencias locales: Java 21, herramientas PostgreSQL 18 (incluidos `initdb` y `pg_ctl`), Python 3 y los artefactos `server.jar`, `logics.jar` y `client.war`. El supervisor descarga Tomcat 9.0.124 desde Apache y verifica SHA-512 en el primer inicio, salvo que ya esté instalado y configurado.
 
+Antes de compilar hay que validar el snapshot vendorizado y aplicar dos veces los parches controlados. La segunda pasada debe ser idempotente; cualquier drift o estado parcial debe detener el build:
+
+    bash scripts/platform/validate-vendored-sources.sh
+    python3 scripts/platform/apply-rubrova-source-patches.py
+    python3 scripts/platform/apply-rubrova-source-patches.py
+
 Compilar desde la raíz del repositorio:
 
     mvn -B -ntp -f build/rubrova/pom.xml -Passemble -DskipTests package
@@ -75,7 +83,7 @@ La vista previa sirve el cliente en `http://127.0.0.1:8080/login`. Presionar Ctr
 
 Esta modalidad sigue siendo un entorno de desarrollo: la configuración local de PostgreSQL usa autenticación `trust` sobre loopback, el usuario inicial de la base puede no tener contraseña y no debe exponerse a la LAN ni recibir datos reales. El instalador productivo deberá usar SCRAM, almacén de secretos del sistema operativo, firma y permisos correctos.
 
-**Todavía no se acepta como instalación comercial:** falta ejecutar la venta completa sobre este runtime, completar la prueba en tu Mac y Windows, empaquetar las dependencias y demostrar una instalación limpia sin Internet.
+**Todavía no se acepta como instalación comercial:** completar la aceptación offline con egress bloqueado, probar el instalador y la operación en el Mac físico y Windows, validar periféricos y recuperación en una PC limpia, y ejecutar una jornada supervisada con datos reales.
 
 ## 3. Instalar de forma aislada
 
@@ -109,7 +117,7 @@ lsFusion permite cargar un módulo propio desde el classpath y establecer logics
 - RubrovaPOSLocalization.lsf, que contiene los captions y overrides de presentación del POS.
 - RubrovaIntegrationResilience.lsf, que concentra el manejo seguro de fallos de integraciones externas.
 - RubrovaPaymentTerminals.lsf, que registra cuentas de proveedor, terminales, asignaciones a caja/medio, intenciones, intentos, eventos, reintegros y líneas de liquidación. Es una base de configuración y trazabilidad; todavía no ejecuta cobros reales.
-- RubrovaReplenishmentExport.lsf, que expone cuatro acciones `@@api` autenticadas de solo lectura para inventario, compromisos de venta, recepciones y exportación consolidada. Su contrato está en validación de runtime; no debe usarse como fuente aceptada hasta superar el smoke nativo.
+- RubrovaReplenishmentExport.lsf, que expone cuatro acciones `@@api` autenticadas de solo lectura para inventario, compromisos de venta, recepciones y exportación consolidada. Sus contratos y fixtures pasaron el smoke nativo #609, incluida lectura posterior a reinicio; aún debe conciliarse con una base comercial MyCompany real antes de usarlo para sugerir compras reales.
 - MyCompanyResourceBundle_es_AR.properties, con traducciones de recursos base y los identificadores `rubrova.*`.
 
 Una limitación importante: varias cadenas del código 6.2 son literales ingleses en los módulos upstream. Los archivos ResourceBundle por sí solos sólo resuelven las cadenas que utilizan identificadores de localización. Por eso Rubrova cambia los captions necesarios mediante su propio `DESIGN` y claves entre llaves, sin editar los módulos originales. Los mensajes de error heredados y algunas etiquetas de filtros todavía no están traducidos; hay que registrarlos durante la prueba real y decidir si se resuelven con una extensión adicional o un parche de localización pequeño y mantenible.
@@ -164,7 +172,7 @@ La traducción actual es parcial. No habilitar el uso diario mientras falten tex
 
 El workflow `.github/workflows/platform-extension.yml` construye los tres artefactos desde las fuentes Rubrova y ejecuta un smoke sin Docker en Linux x86_64. Instala Java 21 y PostgreSQL 18 nativos, prepara Tomcat, inicia el runtime con `run-local-native-preview.py`, bloquea la salida externa y comprueba que el login y la navegación en español siguen disponibles por loopback.
 
-La prueba nativa actual no realiza todavía la venta sintética ni la conciliación de factura, pago, caja, stock y cierre. El siguiente paso es compartir con ella los fixtures del smoke comercial existente y repetir el mismo ciclo con PostgreSQL local; no se considerará aceptado el runtime nativo hasta entonces.
+La ruta nativa ya ejecuta el smoke funcional con fixtures sintéticas en macOS ARM64. El run #609 pasó login, navegación y operaciones POS/inventario, verificó APIs de reposición y reservas de recepciones, reinició servidor y base y comprobó la persistencia. La conciliación de cancelación de una recepción prevista quedó verificada antes y después del reinicio. No se incluyen aún datos comerciales reales, modo offline bloqueado, hardware físico ni aceptación productiva.
 
 ### Camino secundario: smoke Docker manual
 
@@ -181,9 +189,9 @@ El repositorio conserva `scripts/platform/test-runtime-smoke.sh`. Se activa manu
 9. Abre la aplicación con Chromium en locale `es-AR`, reintenta la carga mientras aparezca `NotBoundException` y, sólo en la base efímera de CI, inicia sesión con el usuario inicial `admin` sin contraseña. El test espera la transición a `/main`, tolera el reemplazo temporal del DOM por GWT y confirma el acceso cuando el menú queda estable. Luego navega a `Comercio → Punto de venta`, abre el turno sintético, busca un producto de prueba y lo agrega al recibo mediante la acción nativa de MyCompany. Confirma una venta por ARS 1.250 en efectivo, verifica factura/pago persistidos, entrada de stock 10 → 9 y conciliación de caja; luego cierra el turno y exige estado `CLOSED`, venta y efectivo conciliados. Finalmente simula timeout y respuestas HTTP 400/401/403/408/409/429/503, valida la clasificación/persistencia de ocho incidencias y confirma recuperación del proveedor. El puesto, el producto, las cuentas, los módulos de fixture y el resto de los datos son exclusivos de la base efímera; no se modifica el despliegue ni se incorporan datos de demostración al producto. Las capturas se guardan sólo tras estabilizarse el contenido.
 10. En caso de error, muestra estado y registros; siempre detiene los contenedores, elimina los volúmenes y limpia los archivos temporales, incluso los generados con permisos de administrador.
 
-La aceptación comercial completa [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) compiló servidor, lógica y cliente desde fuentes Rubrova y comprobó con Chromium login, venta por ARS 1.250, pago exacto en efectivo, factura/pago, stock 10 → 9, caja y cierre `CLOSED`. También reinició servidor/cliente sin borrar PostgreSQL y comprobó persistencia, ocho escenarios HTTP y recuperación. **Esa prueba se ejecutó en Docker.** No prueba todavía la venta nativa.
+La aceptación comercial completa [45503956218](https://github.com/JavierGrecco/Rubrova/actions/runs/45503956218) compiló servidor, lógica y cliente desde fuentes Rubrova y comprobó con Chromium login, venta por ARS 1.250, pago exacto en efectivo, factura/pago, stock 10 → 9, caja y cierre `CLOSED`. También reinició servidor/cliente sin borrar PostgreSQL y comprobó persistencia, ocho escenarios HTTP y recuperación. **Esa prueba se ejecutó en Docker.** Es evidencia complementaria, no sustituto del smoke nativo macOS ARM64 #609.
 
-El workflow se está reorganizando para que la ruta nativa sea la automática y Docker sea manual. La validación estática del supervisor, las pruebas unitarias y la comprobación de Windows ya pasan en la revisión actual; la compilación y el smoke nativo deben terminar antes de informar una aceptación.
+La ruta nativa es la puerta automática de CI; Docker/Linux permanece como diagnóstico manual y Windows sólo tiene validación sintáctica en el run #609. La compilación y el smoke nativo del run #609 terminaron correctamente, pero la segunda compilación que se ejecuta desde el árbol vendorizado integrado (#28) no debe considerarse aprobada hasta que concluya.
 
 ## 6. Criterio de finalización del Bloque 0
 
