@@ -201,6 +201,19 @@ En la factura de proveedor, \`BillPayment\` crea un \`OutgoingPayment\`:
 - imputa el saldo disponible;
 - permite ajustar el monto dentro del diálogo.
 
+
+**Detalle de la acción original `BillPayment.registerPayment` en la revisión MyCompany 6.2 fijada:**
+- se muestra sólo para Bill Ready;
+- aplica primero el documento y crea OutgoingPayment en una sesión nueva, con estado Ready;
+- `fill(p,b)` copia tipo de pago desde BillType, proveedor/cuenta del proveedor, empresa/cuenta de empresa y moneda;
+- propone `sourceLeft(b)` y aplica `paid(b,p) <- left(b,p)`; luego presenta el diálogo nativo de pago, y si el usuario reduce el importe limita la imputación a `amount[Debt](p)`;
+- `BillPaymentInitial` configura `vendorbank` como tipo predeterminado del Bill `bill`; para una prueba con CashAccount debe seleccionarse explícitamente un tipo que admita caja, como `vendorcash`, y asignar cuentas compatibles.
+
+**Semántica crítica de estados:** `OutgoingPaymentCanceled.active` considera activos tanto Ready como Done, excepto cancelados; `OutgoingPaymentLedger` agrega `-amount` al Payment ledger. Cambiar Ready a Done no crea un segundo movimiento. A su vez, BillDebt marca automáticamente Bill como Done/Paid cuando `amount[Debt](Bill) = paid(Bill)` y revierte la marca si la igualdad deja de cumplirse. Por eso una factura puede mostrar Paid mientras el último OutgoingPayment aún está Ready. Esto prueba deuda imputada, no confirmación del banco.
+
+**Saldo y titularidad:** `Payment.balance(Account)` suma sólo movimientos activos; el constraint rechaza balances negativos salvo `allowNegative(account)`. `OutgoingPayment` exige que `companyAccount` pertenezca a la empresa, `partnerAccount` al proveedor, y que BankAccount/CashAccount coincida con las capacidades del OutgoingPaymentType. La prueba debe crear fondos de apertura por una IncomingPayment nativa y cuentas sintéticas asignadas explícitamente; nunca debe alterar el saldo por SQL.
+
+**Fuentes MyCompany 6.2 fijadas:** [BillPayment](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/bills/payments/BillPayment.lsf), [BillPaymentInitial](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/bills/payments/BillPaymentInitial.lsf), [OutgoingPaymentCanceled](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentCanceled.lsf), [OutgoingPaymentLedger](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentLedger.lsf), [BillDebt](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/bills/BillDebt.lsf), [Payment](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/ledgers/Payment.lsf), [Account](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/accounts/Account.lsf).
 ### 5.4 Asociación automática por referencia
 
 Las fuentes \`IncomingPaymentDebt\` y \`OutgoingPaymentDebt\` observan cambios de referencia, socio y estado activo. Si la referencia contiene el número de una deuda compatible y \`canBePaid\` se cumple, imputan automáticamente el saldo pendiente.
@@ -303,4 +316,4 @@ Algunos módulos relevantes están fuera del cierre actual de \`RubrovaCustom\`;
 
 La lectura de las fuentes identificó el modelo abstracto de deuda, la relación de imputaciones, el ledger de movimientos de caja/banco, las facturas de venta y proveedor, los estados, pagos desde documentos, pagos automáticos por referencia, términos, calendario e impuestos configurables.
 
-**No se declara conciliado ni aceptado:** faltan pruebas del runtime de Rubrova, ejercicios con varias monedas, conciliación de cuentas, impuestos argentinos y escenarios completos de corrección/devolución.
+**No se declara conciliado ni aceptado:** las acciones/estados anteriores fueron confirmados por fuente exacta 6.2; faltan pruebas del runtime UI de Rubrova, pagos parciales/totales, cancelación de pago, conciliación de cuentas, ejercicios con varias monedas, impuestos argentinos y escenarios completos de corrección/devolución.
