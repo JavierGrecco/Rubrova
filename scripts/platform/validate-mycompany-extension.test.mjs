@@ -39,6 +39,8 @@ const incomingPaymentInitialSource = read("vendor/mycompany/src/main/lsfusion/in
 const outgoingPaymentInitialSource = read("vendor/mycompany/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentInitial.lsf");
 const nativeIntegrationFixtureSource = read("scripts/platform/fixtures/RubrovaCIIntegrationFixture.lsf");
 const nativeReplenishmentFixtureSource = read("scripts/platform/fixtures/RubrovaCIReplenishmentFixture.lsf");
+const sourcePatcherSource = read("scripts/platform/apply-rubrova-source-patches.py");
+const sourcePatcherTestsSource = read("scripts/platform/test_apply_rubrova_source_patches.py");
 const uiSmokeSource = read("scripts/platform/inspect-mycompany-ui.py");
 const nativeListenerCheckSource = read("scripts/platform/native-listener-check.sh");
 const nativeListenerCheckTestsSource = read("scripts/platform/test-native-listener-check.sh");
@@ -468,6 +470,10 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativePreviewSource, /RubrovaCIReplenishmentFixture[.]lsf/);
   assert.match(nativePreviewSource, /RubrovaCIReplenishmentFixture/);
   assert.match(nativeReplenishmentFixtureSource, /rubrova-ci-outgoing/);
+  assert.match(sourcePatcherSource, /RECEIPT_RES_REQUIRE_AFTER/);
+  assert.match(sourcePatcherSource, /AND NOT canceled\(receipt\(line\)\)/);
+  assert.match(sourcePatcherSource, /apply_receipt_cancellation_reservation_guard\(\)/);
+  assert.match(sourcePatcherTestsSource, /class ReceiptCancellationReservationPatchTests/);
   assert.match(nativeReplenishmentFixtureSource, /rubrova-ci-incoming/);
   const outgoingOrderGrouping = nativeReplenishmentFixtureSource
     .split("rubrovaCIOutgoingOrder() = ")[1]
@@ -493,6 +499,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(nativeReplenishmentFixtureSource, /Purchase[.]quantity\(rubrovaCIIncomingOrderLine\(\)\) <- 4/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReceiptExpectedAfterCancel/);
   assert.match(nativeReplenishmentFixtureSource, /rubrovaCIReceiptExpectedAfterReplacement/);
+  assert.match(uiSmokeSource, /if os[.]environ[.]get\("RUBROVA_UI_DEMO_MODE", "false"\)[.]lower\(\) != "true":\s+verify_purchase_receipt_cancellation_reservation/);
   assert.match(uiSmokeSource, /def verify_purchase_receipt_cancellation_reservation\(/);
   assert.match(uiSmokeSource, /rubrovaTestPurchaseReceiptCancellationReservationApi/);
   assert.match(uiSmokeSource, /UI_REPLENISHMENT_RECEIPT_CANCELLATION_DIAGNOSTICS_VERIFIED=true/);

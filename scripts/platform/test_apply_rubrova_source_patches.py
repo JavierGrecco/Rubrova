@@ -204,5 +204,107 @@ class CumulativeRefundPatchTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
 
 
+
+
+def upstream_receipt_res_source() -> str:
+    return "\n".join(
+        (
+            "MODULE ReceiptRes;",
+            "",
+            PATCHER.RECEIPT_RES_REQUIRE_BEFORE,
+            "",
+            "NAMESPACE Inventory;",
+            "",
+            "CLASS ReceiptResLedger 'Receipt' : ResLedger;",
+            PATCHER.RECEIPT_RES_FILTER_BEFORE,
+            "",
+        )
+    )
+
+
+class ReceiptCancellationReservationPatchTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="rubrova-receipt-res-patch-")
+        self.target = Path(self.temp_dir.name) / "ReceiptRes.lsf"
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
+
+    def apply_patch(self) -> tuple[bool, str, str]:
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with patch.object(PATCHER, "RECEIPT_RES_TARGET", self.target):
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                result = PATCHER.apply_receipt_cancellation_reservation_guard()
+        return result, stdout.getvalue(), stderr.getvalue()
+
+    def test_clean_upstream_receipt_res_excludes_canceled_reservations(self) -> None:
+        original = upstream_receipt_res_source()
+        self.target.write_text(original, encoding="utf-8")
+
+        result, output, error = self.apply_patch()
+
+        self.assertTrue(result, error)
+        updated = self.target.read_text(encoding="utf-8")
+        self.assertIn(PATCHER.RECEIPT_RES_REQUIRE_AFTER, updated)
+        self.assertIn(PATCHER.RECEIPT_RES_FILTER_AFTER, updated)
+        self.assertNotIn(PATCHER.RECEIPT_RES_REQUIRE_BEFORE, updated)
+        self.assertNotIn(PATCHER.RECEIPT_RES_FILTER_BEFORE, updated)
+        self.assertIn("ReceiptRes ahora excluye", output)
+        self.assertEqual(
+            updated.replace(PATCHER.RECEIPT_RES_REQUIRE_AFTER, PATCHER.RECEIPT_RES_REQUIRE_BEFORE)
+                  .replace(PATCHER.RECEIPT_RES_FILTER_AFTER, PATCHER.RECEIPT_RES_FILTER_BEFORE),
+            original,
+            "El parche debe limitarse al REQUIRE y al filtro del ledger.",
+        )
+
+    def test_running_receipt_res_patch_twice_is_idempotent(self) -> None:
+        self.target.write_text(upstream_receipt_res_source(), encoding="utf-8")
+        first_result, _, first_error = self.apply_patch()
+        self.assertTrue(first_result, first_error)
+        first_content = self.target.read_text(encoding="utf-8")
+
+        second_result, output, second_error = self.apply_patch()
+
+        self.assertTrue(second_result, second_error)
+        self.assertEqual(self.target.read_text(encoding="utf-8"), first_content)
+        self.assertIn("excluye recepciones canceladas", output)
+
+    def test_partially_applied_receipt_res_patch_fails_without_mutating(self) -> None:
+        partial = upstream_receipt_res_source().replace(
+            PATCHER.RECEIPT_RES_REQUIRE_BEFORE,
+            PATCHER.RECEIPT_RES_REQUIRE_AFTER,
+            1,
+        )
+        self.target.write_text(partial, encoding="utf-8")
+
+        result, _, error = self.apply_patch()
+
+        self.assertFalse(result)
+        self.assertIn("parcialmente modificado", error)
+        self.assertEqual(self.target.read_text(encoding="utf-8"), partial)
+
+    def test_receipt_res_source_drift_fails_closed(self) -> None:
+        drifted = upstream_receipt_res_source().replace(
+            PATCHER.RECEIPT_RES_FILTER_BEFORE,
+            "resLedger = AGGR ReceiptResLedger WHERE ready(receipt(line));",
+            1,
+        )
+        self.target.write_text(drifted, encoding="utf-8")
+
+        result, _, error = self.apply_patch()
+
+        self.assertFalse(result)
+        self.assertIn("difiere del snapshot esperado", error)
+        self.assertEqual(self.target.read_text(encoding="utf-8"), drifted)
+
+    def test_missing_receipt_res_target_fails_without_creating_a_file(self) -> None:
+        result, _, error = self.apply_patch()
+
+        self.assertFalse(result)
+        self.assertIn("No se encontró el ledger", error)
+        self.assertFalse(self.target.exists())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

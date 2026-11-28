@@ -166,6 +166,25 @@ STOCKTAKE_LIST_AGGREGATE_MARKERS = (
 )
 
 
+# A canceled future receipt must stop contributing its negative reservation.
+# ReceiptCanceled depends on ReceiptDone, so the dependency direction is acyclic.
+RECEIPT_RES_TARGET = ROOT / "vendor/mycompany/src/main/lsfusion/inventory/receipts/ReceiptRes.lsf"
+RECEIPT_RES_REQUIRE_BEFORE = "REQUIRE ReceiptDone;"
+RECEIPT_RES_REQUIRE_AFTER = "REQUIRE ReceiptDone, ReceiptCanceled;"
+RECEIPT_RES_FILTER_BEFORE = (
+    "resLedger = AGGR ReceiptResLedger WHERE initialDemand(ReceiptLine line) > 0 "
+    "AND ready(receipt(line)) AND NOT done(receipt(line));"
+)
+RECEIPT_RES_FILTER_AFTER = (
+    "resLedger = AGGR ReceiptResLedger WHERE initialDemand(ReceiptLine line) > 0 "
+    "AND ready(receipt(line)) AND NOT done(receipt(line)) AND NOT canceled(receipt(line));"
+)
+RECEIPT_RES_REQUIRED_MARKERS = (
+    RECEIPT_RES_REQUIRE_AFTER,
+    RECEIPT_RES_FILTER_AFTER,
+)
+
+
 # MyCompany's refund dialog compares each payment method only with the original
 # invoice payment. Rubrova adds a global cumulative cap over active native outgoings
 # and requests serializable isolation for the native payment confirmation.
@@ -493,6 +512,63 @@ def apply_stocktake_list_zero_aware_aggregate() -> bool:
 
 
 
+def apply_receipt_cancellation_reservation_guard() -> bool:
+    target = RECEIPT_RES_TARGET
+    if not target.is_file():
+        print(f"No se encontró el ledger de reservas de recepciones: {target}", file=sys.stderr)
+        return False
+
+    source = target.read_text(encoding="utf-8")
+    require_before = source.count(RECEIPT_RES_REQUIRE_BEFORE)
+    require_after = source.count(RECEIPT_RES_REQUIRE_AFTER)
+    filter_before = source.count(RECEIPT_RES_FILTER_BEFORE)
+    filter_after = source.count(RECEIPT_RES_FILTER_AFTER)
+
+    if (
+        require_after == 1
+        and filter_after == 1
+        and require_before == 0
+        and filter_before == 0
+    ):
+        print("ReceiptRes excluye recepciones canceladas de las reservas futuras.")
+        return True
+
+    if (
+        require_before != 1
+        or filter_before != 1
+        or require_after != 0
+        or filter_after != 0
+    ):
+        print(
+            "No se aplicó el guard de cancelación de ReceiptRes. "
+            "El módulo está parcialmente modificado o difiere del snapshot esperado "
+            f"(REQUIRE original={require_before}, nuevo={require_after}, "
+            f"filtro original={filter_before}, nuevo={filter_after}).",
+            file=sys.stderr,
+        )
+        return False
+
+    updated = source.replace(RECEIPT_RES_REQUIRE_BEFORE, RECEIPT_RES_REQUIRE_AFTER, 1)
+    updated = updated.replace(RECEIPT_RES_FILTER_BEFORE, RECEIPT_RES_FILTER_AFTER, 1)
+    missing = [marker for marker in RECEIPT_RES_REQUIRED_MARKERS if updated.count(marker) != 1]
+    if (
+        missing
+        or RECEIPT_RES_REQUIRE_BEFORE in updated
+        or RECEIPT_RES_FILTER_BEFORE in updated
+    ):
+        print(
+            "El parche de reservas de recepciones canceladas quedó incompleto: "
+            + ", ".join(missing or ["persisten anclas upstream"]),
+            file=sys.stderr,
+        )
+        return False
+
+    target.write_text(updated, encoding="utf-8")
+    print("ReceiptRes ahora excluye las reservas de recepciones canceladas.")
+    return True
+
+
+
 def apply_cumulative_refund_guard() -> bool:
     target = RETURN_PAYMENT_TARGET
     if not target.is_file():
@@ -738,6 +814,9 @@ def main() -> int:
         return 1
 
     if not apply_stocktake_list_zero_aware_aggregate():
+        return 1
+
+    if not apply_receipt_cancellation_reservation_guard():
         return 1
 
     if not apply_cumulative_refund_guard():
