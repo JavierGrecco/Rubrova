@@ -352,6 +352,7 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `scripts/platform/audit-source-docs.mjs` | Índice de páginas Markdown, idioma, ruta, título y encabezados de docs upstream | Para localizar material de MyCompany/lsFusion por idioma y tema |
 | `scripts/platform/audit-source-docs.test.mjs` | Pruebas del índice documental | Al cambiar el indexador |
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
+| `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
 | `scripts/platform/apply-rubrova-source-patches.py` | Aplica parches Rubrova sobre fuentes upstream con controles explícitos | Al compilar la fuente modificada |
 | `extensions/lsfusion/` | Extensiones propias de Rubrova | Antes de modificar módulos upstream; revisar si la extensión existente basta |
