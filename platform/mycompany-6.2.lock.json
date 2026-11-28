@@ -38,7 +38,7 @@
     "entrypoint": "extensions/lsfusion/RubrovaCustom.lsf",
     "locale": "es_AR",
     "resourceBundle": "extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties",
-    "translationStatus": "partial-pos-captions-and-basic-erp-glossary-not-runtime-validated",
+    "translationStatus": "partial-es_AR; 121 of 1559 upstream values differ from English; full module and runtime coverage pending",
     "modules": [
       {
         "name": "RubrovaCustom",
@@ -107,7 +107,19 @@
           "RubrovaRetailReturns"
         ]
       }
-    ]
+    ],
+    "translationCoverage": {
+      "sourceBundle": "vendor/mycompany/src/main/resources/MyCompanyResourceBundle.properties",
+      "localeBundle": "extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties",
+      "sourceEntries": 1559,
+      "localeEntries": 181,
+      "upstreamKeysPresent": 122,
+      "upstreamValuesChanged": 121,
+      "upstreamValuesUnchanged": 1,
+      "upstreamKeysMissing": 1437,
+      "rubrovaSpecificEntries": 59,
+      "verification": "static key/value comparison only; user-visible runtime localization is validated separately"
+    }
   },
   "acceptance": [
     "Complete pinned MyCompany and lsFusion source trees are committed in Rubrova",

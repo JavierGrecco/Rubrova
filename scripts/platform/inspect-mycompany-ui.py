@@ -485,7 +485,7 @@ def select_pos_register(page: Any, register_name: str) -> None:
     print(f"UI_POS_REGISTER_SELECTION_NAME={register_name}")
 
 
-def click_exact_action(page: Any, label: str) -> bool:
+def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) -> bool:
     # Prefer the stable lsFusion property container, but GWT can leave a hidden
     # projection node with that ID while the actual visible submit control is elsewhere.
     container = ACTION_CONTAINER_BY_LABEL.get(label)
@@ -551,12 +551,14 @@ def click_exact_action(page: Any, label: str) -> bool:
     actual_label = button.evaluate(
         'element => (element.innerText || element.value || element.textContent || "").trim()'
     )
-    accepted_labels = ACTION_LABEL_ALIASES.get(label, (label,))
+    accepted_labels = (("Nueva venta", "Nueva venta (shift F12)") if require_spanish and label == "Nueva venta" else ACTION_LABEL_ALIASES.get(label, (label,)))
     if actual_label not in accepted_labels:
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_LABEL_MISMATCH={actual_label!r}")
         print(f"UI_ACTION_{label.upper().replace(' ', '_')}_ACCEPTED_LABELS={json.dumps(accepted_labels, ensure_ascii=False)}")
         return False
 
+    if require_spanish and label == "Nueva venta":
+        print("UI_ACTION_NUEVA_VENTA_LABEL_ES=true")
     button.scroll_into_view_if_needed()
     button.click(no_wait_after=True)
     print(f"UI_ACTION_{label.upper().replace(' ', '_')}_CLICKED=true")
@@ -1942,13 +1944,14 @@ def verify_native_return_draft(
     page.screenshot(path=str(draft_screenshot), full_page=True)
     print(f"UI_RETURN_DRAFT_SCREENSHOT={draft_screenshot}")
 
-    # Locate the native newReceipt property, not a translated caption: this action begins
-    # with CANCEL and safely abandons the unconfirmed credit-note draft.
-    if not click_exact_action(page, "Nueva venta"):
+    # Resolve by the native property, but require its visible caption to be Spanish.
+    # This action begins with CANCEL and safely abandons the unconfirmed credit-note draft.
+    if not click_exact_action(page, "Nueva venta", require_spanish=True):
         visible_snapshot(page, "UI_RETURN_DRAFT_NEW_RECEIPT_ACTION_NOT_FOUND")
         raise RuntimeError(
-            "No se pudo descartar la nota en borrador mediante la acción nativa 'Nueva venta'."
+            "No se pudo descartar la nota en borrador mediante la acción nativa 'Nueva venta' en español."
         )
+    print("UI_RETURN_DRAFT_DISCARD_ACTION_SPANISH=true")
     receipt_grid = page.locator('[lsfusion-container="GRID(l)"]')
     try:
         receipt_grid.wait_for(state="visible", timeout=15_000)

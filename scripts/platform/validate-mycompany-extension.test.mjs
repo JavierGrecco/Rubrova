@@ -26,6 +26,7 @@ const nativeReplenishmentFixture = JSON.parse(read("docs/fixtures/mycompany-nati
 const replenishmentPolicyFixture = JSON.parse(read("docs/fixtures/replenishment-planning-policy.json"));
 const paymentArchitectureSource = read("docs/PAYMENT_TERMINAL_INTEGRATION_ARCHITECTURE.md");
 const bundle = read("extensions/lsfusion/MyCompanyResourceBundle_es_AR.properties");
+const upstreamBundle = read("vendor/mycompany/src/main/resources/MyCompanyResourceBundle.properties");
 const preparerSource = read("scripts/platform/prepare-mycompany-6.2.sh");
 const runtimeSmokeSource = read("scripts/platform/test-runtime-smoke.sh");
 const nativeSmokeSource = read("scripts/platform/test-runtime-native-smoke.sh");
@@ -780,7 +781,7 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
     "Images", "Operations", "Manufacturing", "Retail", "sales", "Settings",
     "Employees", "Units_of_measure", "Contracts", "Positions", "Currencies",
     "Exchange_rates", "Projects", "Human_resources", "Activities", "Fleet",
-    "Documentation"
+    "Documentation", "New_receipt"
   ];
   for (const key of required) assert.ok(entries.has(key), "Falta traducción obligatoria: " + key);
   assert.ok(entries.size >= 70, "Glosario inicial demasiado pequeño: " + entries.size);
@@ -792,6 +793,19 @@ test("el glosario inicial tiene claves únicas, no vacías y necesarias para el 
   assert.equal(entries.get("Discount_p"), "Descuento, %");
   assert.equal(entries.get("Date"), "Fecha");
   assert.equal(entries.get("Reference"), "Referencia");
+  assert.equal(entries.get("New_receipt"), "Nueva venta");
+  const upstreamEntries = parseProperties(upstreamBundle);
+  const translatedUpstreamKeys = [...upstreamEntries.keys()].filter((key) => entries.has(key));
+  const changedUpstreamValues = translatedUpstreamKeys.filter((key) => entries.get(key) !== upstreamEntries.get(key));
+  const unchangedUpstreamValues = translatedUpstreamKeys.filter((key) => entries.get(key) === upstreamEntries.get(key));
+  const rubrovaSpecificEntries = [...entries.keys()].filter((key) => !upstreamEntries.has(key));
+  assert.equal(lock.extension.translationCoverage.sourceEntries, upstreamEntries.size);
+  assert.equal(lock.extension.translationCoverage.localeEntries, entries.size);
+  assert.equal(lock.extension.translationCoverage.upstreamKeysPresent, translatedUpstreamKeys.length);
+  assert.equal(lock.extension.translationCoverage.upstreamValuesChanged, changedUpstreamValues.length);
+  assert.equal(lock.extension.translationCoverage.upstreamValuesUnchanged, unchangedUpstreamValues.length);
+  assert.equal(lock.extension.translationCoverage.upstreamKeysMissing, upstreamEntries.size - translatedUpstreamKeys.length);
+  assert.equal(lock.extension.translationCoverage.rubrovaSpecificEntries, rubrovaSpecificEntries.length);
   assert.ok(moduleSource.includes("FOR MasterData.id(MasterData.Individual i) = 'unknown' DO {"));
   assert.ok(!moduleSource.includes("FOR MasterData.Individual i WHERE"));
   assert.ok(!moduleSource.includes("FOR MasterData.Individual i DO {"));
@@ -1019,10 +1033,12 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes("def verify_native_return_draft("));
   assert.ok(uiSmokeSource.includes('button[lsfusion-container="PROPERTY(return(s,si))"]'));
   assert.ok(uiSmokeSource.includes('button[lsfusion-container="PROPERTY(posPayment(s,b))"]'));
-  assert.ok(uiSmokeSource.includes('click_exact_action(page, "Nueva venta")'));
-  assert.match(uiSmokeSource, /"Nueva venta": "PROPERTY\\(newReceipt\\(s\\)\\)"/);
+  assert.ok(uiSmokeSource.includes('click_exact_action(page, "Nueva venta", require_spanish=True)'));
+  assert.ok(uiSmokeSource.includes('"Nueva venta": "PROPERTY(newReceipt(s))"'));
   assert.ok(uiSmokeSource.includes('"Nueva venta": ("Nueva venta", "New receipt (shift F12)")'));
   assert.ok(uiSmokeSource.includes("accepted_labels = ACTION_LABEL_ALIASES.get(label, (label,))"));
+  assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_DISCARD_ACTION_SPANISH=true"));
+  assert.ok(uiSmokeSource.includes("UI_ACTION_NUEVA_VENTA_LABEL_ES=true"));
   assert.ok(uiSmokeSource.includes("UI_RETURN_ACTION_CLICKED=true"));
   assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_GRID_RENDERED=true"));
   assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_PAYMENT_ACTION_PRESENT=true"));
