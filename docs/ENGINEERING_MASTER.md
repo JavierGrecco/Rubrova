@@ -4029,3 +4029,11 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - **Decisión:** si la cancelación de Bill deja Receipt activa pero `toBillShipped` en cero por la referencia persistente, confirmar primero la regla funcional y luego diseñar una corrección que mantenga el historial. Si el costo permanece basado en la factura cancelada, verificar precedencia de `ABSTRACT CASE` y el fallback al precio del pedido.
 - **Próximo paso:** revisar logs del workflow [#616](https://github.com/JavierGrecco/Rubrova/actions/runs/46160101852), ajustar la fixture si la acción API de creación requiere interacción UI, y sólo tras un resultado medido abrir cambio upstream.
 
+
+### 2026-11-28 — REP-062 — Corrección de límite de referencia en fixture Bill delivered
+
+- **Workflow:** [#617](https://github.com/JavierGrecco/Rubrova/actions/runs/46160821559), SHA `1f551d4b03283e1bd61bcf46e2d8117bfb871c94`. La prevalidación compartida, Windows y la compilación/empaquetado completo de lsFusion 6.2 + MyCompany 6.2 terminaron correctamente.
+- **Fallo nativo:** el smoke macOS ARM64 no llegó a ejecutar la API de cancelación. La inicialización de datos intentó guardar `vendorReference = 'rubrova-ci-bill-delivered-cancel'` (32 caracteres) en un campo PostgreSQL `varchar(30)`. SQL informó `value too long for type character varying(30)` y el servidor abortó. Los timeouts de consultas observados durante el apagado son secundarios a la interrupción; no son evidencia de un fallo funcional del circuito Bill.
+- **Corrección:** se acortó la referencia del fixture a `rubrova-ci-bill-delivered`, manteniendo el mismo identificador en creación y búsqueda. Se agregó un guard Node que exige la coincidencia exacta y valida `Buffer.byteLength(..., 'utf8') <= 30`, para detectar futuras expansiones antes del runtime.
+- **Alcance de evidencia:** el workflow #617 **no** ejecutó la creación/cancelación de Bill ni midió `billLine`, `toBillShipped`, stock o costo. Por tanto, REP-059 continúa como hipótesis de fuente; no se confirma ni se descarta un defecto funcional.
+- **Estado:** corregido el fixture; pendiente nueva ejecución de prevalidación, build y smoke nativo. No cerrar la puerta de auditoría 9.7 ni aceptar todavía SupplierBillLifecycle en runtime.
