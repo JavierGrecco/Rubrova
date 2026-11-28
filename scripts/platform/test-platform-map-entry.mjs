@@ -5,6 +5,20 @@ import path from "node:path";
 
 const root = process.cwd();
 const read = (file) => readFileSync(path.join(root, file), "utf8");
+const indexPath = "docs/platform-audit/README.md";
+
+function markdownFiles(directory, base = directory) {
+  const result = [];
+  for (const entry of readdirSync(path.join(root, directory), { withFileTypes: true })) {
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...markdownFiles(absolute, base));
+    else if (entry.isFile() && entry.name.toLowerCase().endsWith(".md")) {
+      result.push(absolute.split(path.sep).join("/"));
+    }
+  }
+  return result.sort();
+}
+
 const requiredDossiers = [
   "MYCOMPANY_6_2_FUNCTIONAL_MAP.md",
   "MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md",
@@ -22,37 +36,70 @@ const requiredDossiers = [
   "LSFUSION_6_2_CAPABILITY_MAP.md",
 ];
 
-test("el índice visible de mapeo existe y cubre todos los dossiers", () => {
-  const indexPath = "docs/platform-audit/README.md";
-  assert.ok(existsSync(path.join(root, indexPath)), "Falta el índice obligatorio de mapeo.");
+const mandatoryToolPaths = [
+  "AGENTS.md",
+  "README.md",
+  "docs/ENGINEERING_MASTER.md",
+  "docs/WORKFLOW.md",
+  ".github/pull_request_template.md",
+  "platform/source-lock.json",
+  "platform/mycompany-6.2.lock.json",
+  "extensions/lsfusion/RubrovaCustom.lsf",
+  "scripts/platform/audit-lsf-source.mjs",
+  "scripts/platform/audit-lsf-source.test.mjs",
+  "scripts/platform/audit-source-docs.mjs",
+  "scripts/platform/audit-source-docs.test.mjs",
+  "scripts/platform/local-preflight.sh",
+  "scripts/platform/validate-vendored-sources.sh",
+];
+
+test("el índice existe y contiene el catálogo de los 69 documentos actuales", () => {
+  assert.ok(existsSync(path.join(root, indexPath)), "Falta el índice obligatorio de conocimiento.");
   const index = read(indexPath);
+  const files = markdownFiles("docs");
 
+  assert.equal(files.length, 69, "Cambió el inventario de documentos de docs/: actualizar conteo y catálogo.");
+  for (const file of files) {
+    assert.ok(index.includes(file), `Documento sin clasificar en el índice integral: ${file}`);
+  }
+});
+
+test("todos los dossiers especializados están presentes y enlazados", () => {
+  const index = read(indexPath);
   for (const dossier of requiredDossiers) {
-    assert.ok(
-      existsSync(path.join(root, "docs/platform-audit", dossier)),
-      `Falta el dossier requerido: ${dossier}`,
-    );
-    assert.ok(index.includes(dossier), `El índice no enlaza ${dossier}.`);
-  }
-
-  const mapFiles = readdirSync(path.join(root, "docs/platform-audit"))
-    .filter((name) => /^(MYCOMPANY_6_2_.*_(?:MAP|MODULES)\.md|LSFUSION_6_2_CAPABILITY_MAP\.md)$/.test(name));
-  for (const file of mapFiles) {
-    assert.ok(index.includes(file), `Se agregó un dossier sin incorporarlo al índice: ${file}`);
+    const file = `docs/platform-audit/${dossier}`;
+    assert.ok(existsSync(path.join(root, file)), `Falta el dossier obligatorio: ${file}`);
+    assert.ok(index.includes(file), `El índice no contiene la ruta completa de ${file}`);
   }
 });
 
-test("el índice conserva los límites del relevamiento y el inventario base", () => {
-  const index = read("docs/platform-audit/README.md");
-  assert.match(index, /Estado del relevamiento: EN CURSO/);
-  assert.match(index, /800 módulos LSF/);
-  assert.match(index, /112 módulos MyCompany/);
-  assert.match(index, /347 archivos Markdown/);
-  assert.match(index, /684 páginas Markdown/);
-  assert.match(index, /No se debe escribir.*completamente analizado/s);
+test("las herramientas, locks y fuentes de composición forman parte del recorrido documentado", () => {
+  const index = read(indexPath);
+  for (const file of mandatoryToolPaths) {
+    assert.ok(existsSync(path.join(root, file)), `Falta una pieza de la cadena de auditoría: ${file}`);
+    assert.ok(index.includes(file), `La cadena de auditoría no está documentada en el índice: ${file}`);
+  }
 });
 
-test("README, agentes y flujo de trabajo hacen visible y obligatorio el mapeo", () => {
+test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos históricos", () => {
+  const index = read(indexPath);
+  for (const marker of [
+    "Orden recomendado de lectura",
+    "Rutas de lectura por tipo de trabajo",
+    "Mapa de relaciones entre los documentos de dominio",
+    "Auditoría reuse-first de MyCompany y lsFusion",
+    "Guía de integración lsFusion 6.2 y MyCompany 6.2",
+    "Inventario, stock, depósitos, conteos y costos",
+    "Facturación, impuestos, deuda, pagos y contabilidad argentina",
+    "Los 800 módulos LSF",
+    "Los 69 documentos Markdown catalogados",
+    "puerta 9.7",
+  ]) {
+    assert.ok(index.toLowerCase().includes(marker.toLowerCase()), `Falta una ruta o regla obligatoria: ${marker}`);
+  }
+});
+
+test("README, AGENTS, workflow y plantilla mantienen visible la obligación de consultar el mapeo", () => {
   const readme = read("README.md");
   const agents = read("AGENTS.md");
   const workflow = read("docs/WORKFLOW.md");
@@ -64,4 +111,3 @@ test("README, agentes y flujo de trabajo hacen visible y obligatorio el mapeo", 
   assert.ok(workflow.includes("Puerta obligatoria de mapeo"));
   assert.ok(template.includes("Revisión obligatoria del mapeo"));
 });
-
