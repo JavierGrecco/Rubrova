@@ -275,8 +275,12 @@ test("renderiza una ruta que separa primera lectura, dependencias y límites del
   const route = resolveModuleIntegrationRoute(fixtureCatalog, "InvLedger");
   const output = renderModuleIntegrationRoute(route);
   assert.match(output, /Primera lectura obligatoria/);
-  assert.match(output, /Contrato obligatorio de integración/);
-  assert.match(output, /no introducir HTTP o microservicios internos/);
+  const manufacturingOutput = renderModuleIntegrationRoute(
+    resolveModuleIntegrationRoute(fixtureCatalog, "ManufacturingOrder"),
+  );
+  assert.doesNotMatch(output, /Contrato obligatorio de integración/);
+  assert.match(manufacturingOutput, /Contrato obligatorio de integración/);
+  assert.match(manufacturingOutput, /no introducir HTTP o microservicios internos/);
   assert.match(output, /Ficha individual/);
   assert.match(output, /modules\/InvLedger\.md/);
   assert.match(output, /Datos maestros y relaciones transversales/);
