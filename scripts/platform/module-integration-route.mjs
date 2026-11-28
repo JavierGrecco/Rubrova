@@ -233,9 +233,15 @@ export function resolveModuleIntegrationRoute(catalog, query) {
 
   const module = exact[0];
   const guide = domainGuideFor(module);
+  const requireDetails = (module.requires || []).map(name => {
+    const dependency = allModules.find(candidate => candidate.moduleName === name);
+    return dependency
+      ? { moduleName: name, path: dependency.path, product: dependency.product, domain: dependency.domain }
+      : { moduleName: name, path: null, product: null, domain: null };
+  });
   const consumers = allModules
     .filter(candidate => (candidate.requires || []).includes(module.moduleName))
-    .map(candidate => ({ moduleName: candidate.moduleName, path: candidate.path, product: candidate.product }))
+    .map(candidate => ({ moduleName: candidate.moduleName, path: candidate.path, product: candidate.product, domain: candidate.domain }))
     .sort((a, b) => a.moduleName.localeCompare(b.moduleName, "en"));
 
   const utilities = (module.requires || []).filter(name => UTILITY_MODULES.has(name));
@@ -256,11 +262,26 @@ export function resolveModuleIntegrationRoute(catalog, query) {
       reason: utilities.length > 0 ? `REQUIRE incluye utilidades compartidas: ${utilities.join(", ")}.` : "Revisar macros y mecanismos transversales antes de crear una alternativa propia.",
     });
   }
-  related.push({
-    path: "docs/platform-audit/LSFUSION_6_2_CAPABILITY_MAP.md",
-    title: "Capacidades lsFusion 6.2",
-    reason: "Obligatorio si se cambia un hook, formulario, acción, evento, sesión, transacción o API.",
-  });
+  if (module.product === "Extensiones Rubrova") {
+    related.push(
+      { path: "docs/MODULE_COMPOSITION.md", title: "Composición de módulos", reason: "Contrato de composición y ownership de las extensiones propias." },
+      { path: "docs/SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md", title: "Procedencia y operación offline", reason: "Origen, patches, lock y responsabilidades de mantenimiento." },
+    );
+  }
+  if (module.product === "MyCompany 6.2" && module.domain === "utils") {
+    related.push({
+      path: "docs/platform-audit/MYCOMPANY_6_2_MASTERDATA_RELATIONSHIPS_MAP.md",
+      title: "Datos maestros y relaciones transversales",
+      reason: "Las utilidades suelen operar sobre entidades compartidas; confirmar el propietario de los datos que reciben.",
+    });
+  }
+  if (guide.path !== LSFUSION_GUIDE.path) {
+    related.push({
+      path: LSFUSION_GUIDE.path,
+      title: LSFUSION_GUIDE.title,
+      reason: "Capacidades de lenguaje, formularios, sesiones, transacciones y APIs cuando se cambia el contrato.",
+    });
+  }
   related.push({
     path: "docs/ENGINEERING_MASTER.md#b-integration",
     title: "Guía de integración lsFusion/MyCompany 6.2",
@@ -284,6 +305,7 @@ export function resolveModuleIntegrationRoute(catalog, query) {
     sourceCommit: module.source?.commit || null,
     sourceTag: module.source?.tag || null,
     requires: module.requires || [],
+    requireDetails,
     consumers,
     guide,
     passportNote,
@@ -318,8 +340,8 @@ export function renderModuleIntegrationRoute(route) {
     `- **Namespace:** ${route.namespace || "(sin namespace declarado)"}`,
     `- **Fuente exacta:** \`${route.path}\``,
     `- **Commit de origen:** ${route.sourceCommit || "(ver source-lock)" }`,
-    `- **REQUIRE directos (${route.requires.length}):** ${route.requires.length ? route.requires.map(name => \`${name}\`).join(", ") : "(ninguno)" }`,
-    `- **Consumidores directos detectados (${route.consumers.length}):** ${route.consumers.length ? route.consumers.map(item => \`${item.moduleName}\`).join(", ") : "(ninguno en el catálogo estructural)" }`,
+    `- **REQUIRE directos (${route.requires.length}):** ${route.requireDetails.length ? route.requireDetails.map(item => item.path ? \`${item.moduleName} (${item.product}: ${item.path})\` : \`${item.moduleName} (no resuelto en el catálogo)\`).join("; ") : "(ninguno)" }`,
+    `- **Consumidores directos detectados (${route.consumers.length}):** ${route.consumers.length ? route.consumers.map(item => \`${item.moduleName} (${item.product}: ${item.path})\`).join("; ") : "(ninguno en el catálogo estructural)" }`,
     "",
     "## Primera lectura obligatoria",
     `- **Dossier primario:** ${route.guide.path} — ${route.guide.title}`,
