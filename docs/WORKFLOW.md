@@ -16,11 +16,25 @@ Esta regla es deliberada y tiene prioridad para este proyecto sobre flujos conve
 
 ## Antes de modificar
 
-1. Leer README y documento del módulo afectado.
-2. Revisar el estado actual de `main`.
-3. Comprobar si ya existe una solución o decisión equivalente.
-4. Identificar impactos en datos, permisos, auditoría, integraciones y pruebas.
-5. Definir cómo se comprobará el resultado.
+1. Leer `README.md`, `AGENTS.md` y el [índice obligatorio de mapeo](platform-audit/README.md).
+2. Leer el [Manual técnico canónico](ENGINEERING_MASTER.md) y el dossier del dominio afectado.
+3. Revisar el estado actual de `main`, los commits fijados en `platform/source-lock.json` y la composición desde `extensions/lsfusion/RubrovaCustom.lsf`.
+4. Comprobar si MyCompany o lsFusion ya resuelven la necesidad, incluso mediante utilidades compartidas, módulos fuera de la composición o extensiones.
+5. Identificar impactos en datos, ledgers, permisos, auditoría, integraciones, concurrencia, recuperación y pruebas.
+6. Definir cómo se comprobará el resultado y qué evidencia permitiría aceptarlo.
+
+## Puerta obligatoria de mapeo y reutilización
+
+Ninguna función, integración, migración o ampliación que afecte al POS/ERP puede empezar desde la hipótesis de que "no existe" una solución nativa. Antes de diseñarla, la persona responsable debe:
+
+1. Consultar `docs/platform-audit/README.md` y los mapas pertinentes de MyCompany 6.2 y lsFusion 6.2.
+2. Localizar módulos, archivos, dependencias `REQUIRE`, extensiones y consumidores/productores; incluir módulos fuera del cierre actual y regionales cuando corresponda.
+3. Leer la implementación y la documentación relacionada. Seguir formulario/navegación, acción, propiedades, eventos, restricciones, permisos, documento/líneas, estados, ledgers, reportes y APIs afectados.
+4. Distinguir capacidades de lenguaje/plataforma de funciones de negocio de MyCompany. No inferir que algo está cargado o habilitado por el mero hecho de existir en `vendor/` o en un mapa.
+5. Registrar la decisión: reutilizar nativo, extender nativo, adaptar por contrato/API, construir módulo Rubrova, parchear upstream o sumar dependencia externa. Justificar la elección y dejar evidencia.
+6. Al cerrar, actualizar dossier, índice si cambia la cobertura, Manual técnico, roadmap y pruebas en el mismo cambio. Si no hay información suficiente, dejar el punto explícitamente abierto.
+
+Un cambio sin impacto en las plataformas base puede declarar el gate "no aplica", con una razón breve. Un cambio que sí las afecta no puede marcar el gate como omitido. La plantilla de PR incluye los campos y la lista de verificación; los commits directos a `main` deben dejar el mismo registro en la documentación/commit.
 
 ## Durante el trabajo
 
