@@ -4,13 +4,13 @@
 
 **Este es el punto de entrada obligatorio para cualquier integrante, desarrollador o agente que trabaje en Rubrova.** Su propósito es localizar toda la investigación existente, indicar el orden de lectura según la tarea y conectar los mapas de dominio con los documentos de arquitectura, producto, seguridad, runtime y reutilización. No alcanza con abrir un único mapa y asumir que la funcionalidad está aislada.
 
-**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.111 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
-- **73 documentos mantenidos por Rubrova fuera de `vendor/`**: los **69 documentos Markdown en `docs/`** (54 generales + 15 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
+**Estado del catálogo documental del repositorio:** el árbol recursivo de `main` registra **1.113 archivos Markdown** en total (corte de esta revisión, árbol sin truncar):
+- **75 documentos mantenidos por Rubrova fuera de `vendor/`**: los **71 documentos Markdown en `docs/`** (54 generales + 17 de `platform-audit/`), más `README.md`, `AGENTS.md`, `.github/pull_request_template.md` y `patches/lsfusion/README.md`.
 - **1.038 archivos Markdown dentro de `vendor/`**: 1.031 páginas de documentación upstream incluidas en las cinco raíces que indexa `audit-source-docs.mjs` (347 MyCompany + 684 lsFusion), más 7 README/CHANGELOG/guías de soporte del snapshot.
 
 El catálogo de documentos mantenidos por Rubrova está enlazado en este archivo; las 1.031 páginas upstream se enumeran por ruta, idioma, título y encabezados en el registro generado `rubrova-source-document-catalog`. Los siete Markdown adicionales del snapshot se enumeran expresamente en la sección 9. Los archivos binarios/imagenes upstream también quedan listados en el catálogo generado, pero ni el índice ni el registro afirman que cada página o imagen haya sido leída funcionalmente.
 
-El test `scripts/platform/test-platform-map-entry.mjs` comprueba que los **73 Markdown mantenidos por Rubrova fuera de vendor/** estén incluidos en el índice y que los siete documentos auxiliares del snapshot no queden omitidos. `audit-source-docs.mjs` vuelve a generar el índice completo de páginas upstream desde los cinco directorios fijados. Si se incorpora un documento, fuente, idioma o recurso nuevo, debe clasificarse y enlazarse antes de pasar la prevalidación.
+El test `scripts/platform/test-platform-map-entry.mjs` comprueba que los **75 Markdown mantenidos por Rubrova fuera de vendor/** estén incluidos en el índice y que los siete documentos auxiliares del snapshot no queden omitidos. `audit-source-docs.mjs` vuelve a generar el índice completo de páginas upstream desde los cinco directorios fijados. Si se incorpora un documento, fuente, idioma o recurso nuevo, debe clasificarse y enlazarse antes de pasar la prevalidación.
 
 **Persistencia de los registros generados:** GitHub Actions publica `rubrova-lsf-source-catalog` y `rubrova-source-document-catalog` como artefactos con retención de 30 días. No son archivos permanentes de Git ni reemplazan este índice. Para conservar una copia consultable de los registros en el equipo de trabajo, ejecutar desde la raíz:
 
@@ -44,7 +44,7 @@ Quedan allí `lsfusion-source-catalog.json`, `lsfusion-module-register.md`, `sou
 4. [Manual técnico canónico](../ENGINEERING_MASTER.md): secciones vigentes 1–11 primero; en especial cómo se mantiene la fuente de verdad, estado de `main`, contratos, decisiones, evidencias, sección 9 y puerta 9.7.
 5. [Arquitectura](../ARCHITECTURE.md), [composición de módulos](../MODULE_COMPOSITION.md), [inicio de implementación](../IMPLEMENTATION_START.md) y [procedencia/fork](../SOURCE_OWNERSHIP_AND_OFFLINE_RUNTIME.md).
 6. [Forma de trabajo](../WORKFLOW.md): procedimiento de cambios, pruebas, revisión e integración.
-7. Elegir la ruta funcional de la sección 4. No es necesario leer de punta a punta los 69 documentos para cada tarea; sí es obligatorio consultar el recorrido relevante y los documentos relacionados que indique.
+7. Elegir la ruta funcional de la sección 4. No es necesario leer de punta a punta los 71 documentos para cada tarea; sí es obligatorio consultar el recorrido relevante y los documentos relacionados que indique.
 
 ### 2.2 Antes de implementar cualquier capacidad
 
@@ -118,6 +118,28 @@ Los conteos por dominio se solapan. Un mismo módulo puede extender otros domini
 No convertir un nivel en otro por inferencia.
 
 ## 4. Rutas de lectura por tipo de trabajo
+
+### 4.0 Integración por módulo exacto — ruta obligatoria
+
+Cuando una tarea nombra un módulo o archivo LSF concreto, la lectura debe empezar por el **nombre declarado en `MODULE`**, no sólo por el dominio:
+
+1. Abrir el [directorio de integración por módulo](MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md) (`docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md`). Contiene rutas rápidas para los módulos centrales de cada circuito, sección exacta del dossier y relaciones que deben leerse antes de modificar.
+2. Para cualquier módulo que no figure en la tabla manual, ejecutar `node scripts/platform/module-integration-route.mjs --module NombreExacto`. También acepta la ruta o el nombre exacto del archivo `.lsf`. La salida muestra `MODULE`, ruta, namespace, estado en `RubrovaCustom`, `REQUIRE` directos y consumidores directos, además del dossier y lecturas transversales.
+3. Abrir la [plantilla obligatoria de ficha de integración](MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) (`docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md`) cuando no exista una ficha adecuada o el cambio descubra relaciones/contratos nuevos. No completar huecos con suposiciones.
+4. Seguir por separado el grafo de dependencias de código (`REQUIRE`) y las relaciones de negocio (documentos, estados, reservas, ledgers, pagos, costos y reportes). La herramienta informa dependencias directas; el dossier y la fuente deben explicar la relación funcional.
+5. Verificar si el módulo está dentro del cierre desde `RubrovaCustom`. Un módulo encontrado en `vendor/` puede estar fuera de composición y no debe asumirse cargado ni habilitado.
+
+| Necesidad de integración | Primera ficha/dossier | Siguientes lecturas obligatorias |
+|---|---|---|
+| Ledger, documento o movimiento de inventario | [Directorio por módulo](MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md), luego `InvLedger`, `ResLedger`, `CostLedger`, `Receipt`, `Shipment`, `Adjustment` o `Scrap` según el cambio | Inventory/Ledger → Master Data → Purchase → Sales → Invoicing → Utilities → lsFusion |
+| Pedido de venta, precio o despacho derivado | Directorio por módulo, luego `SalesOrder`, `SalesOrderShipment`, `SalesOrderInvoice` o `SalesOrderManufacturing` | Sales/Pricing → Inventory → Invoicing → Purchase/Manufacturing → Master Data |
+| Pedido de compra, recepción o reposición | Directorio por módulo, luego `PurchaseOrder`, `PurchaseOrderReceipt`, `PurchaseOrderBill` o `PurchaseOrderShipmentAuto` | Purchase/Replenishment → Inventory → Invoicing → Master Data → Manufacturing |
+| Factura, deuda, cobro, pago o cuenta | Directorio por módulo, luego `Invoice`, `Bill`, `Debt`, `IncomingPayment`, `OutgoingPayment` o `Payment` | Invoicing/Ledgers → Sales/Purchase/Retail → Inventory/Returns → Accounting Interoperability |
+| Caja, turno, pago mixto o devolución POS | Directorio por módulo, luego `Pos`, `PosDashboardPayment`, `PosDashboardReturn`, `Session`, `SessionInvoice` o `SessionPayment` | Retail/POS → Sales → Invoicing/Payments → Inventory → Terminales/identidad/seguridad |
+| Producto, socio, empresa, empleado, unidad o SKU | Directorio por módulo, luego `Item`, `Product`, `Partner`, `Company`, `Employee` o `ProductSku` | Master Data → todos los documentos consumidores → Utilities |
+| BOM, orden de fabricación u operación | Directorio por módulo, luego `Bom`, `ManufacturingOrder`, `WorkCenter` o `WorkOrder` | Manufacturing → Sales → Purchase → Inventory/CostLedger → Master Data |
+| CRM, asistencia, flota o proyecto | Directorio por módulo y dossier específico | Master Data → Sales/Invoicing/Projects/HR/Fleet → Utilities → Security |
+
 
 Estas secuencias son deliberadas. El documento de la primera columna es el disparador; los pasos siguientes son dependencias de lectura y revisión, no enlaces decorativos.
 
@@ -222,6 +244,8 @@ El sistema transaccional sigue siendo dueño de ventas, pagos, caja, compras, st
 | [MYCOMPANY_6_2_UTILITY_MODULES](../platform-audit/MYCOMPANY_6_2_UTILITY_MODULES.md) · `docs/platform-audit/MYCOMPANY_6_2_UTILITY_MODULES.md` | Utilidades compartidas, documentos, historial, archivos, correo, numeración, geo, barcode y criptografía. | Es transversal: consultar en cualquier cambio que use documentos, historial, archivos, correo, numeración, geo, barcode, crypto o macros compartidas. |
 | [MYCOMPANY_6_2_REGIONAL_MODULES](../platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md) · `docs/platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md` | Los 96 módulos regionales de Bulgaria, Polonia y Rusia: inventario inicial y auditoría pendiente. | MyCompany Functional Map, Invoicing, CRM, Retail, Security y Accounting Interoperability; no asumir adecuación argentina. |
 | [LSFUSION_6_2_CAPABILITY_MAP](../platform-audit/LSFUSION_6_2_CAPABILITY_MAP.md) · `docs/platform-audit/LSFUSION_6_2_CAPABILITY_MAP.md` | Capacidades de lenguaje, ejecución, clientes, persistencia, APIs, seguridad y herramientas de lsFusion. | Module Composition, Source Ownership, Utility Modules y dossier MyCompany del dominio que se esté cambiando. |
+| [MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY](../platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md) · `docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md` | Directorio de integración por nombre exacto para módulos centrales; fuente LSF, sección de lectura, dependencias y relaciones | Leer primero al integrar/modificar un módulo concreto; para los restantes usar el CLI de consulta. |
+| [MODULE_INTEGRATION_PASSPORT_TEMPLATE](../platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) · `docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md` | Plantilla de responsabilidad, entidades, casos de uso, contratos, estados, ledgers, permisos, excepciones, pruebas y decisión reuse-first | Completar una ficha por módulo o grupo cohesivo cuando el dossier de dominio no sea suficiente. |
 
 ### 5.1 Lectura de los estados de estos dossiers
 
@@ -337,7 +361,7 @@ Este catálogo complementa los 14 dossiers anteriores. Incluye **todos** los doc
 
 ### 7.1 Recursos de soporte y fixtures bajo `docs/`
 
-Además de los 69 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **77 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
+Además de los 69 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **79 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
 
 | Archivo | Qué contiene / para qué sirve | Leer junto con |
 |---|---|---|
@@ -380,10 +404,13 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `platform/mycompany-6.2.lock.json` | Lock específico de la fuente MyCompany | Al verificar versión/composición de MyCompany |
 | `extensions/lsfusion/RubrovaCustom.lsf` | Raíz real de composición de Rubrova | Para calcular el cierre de `REQUIRE`; no asumir que la raíz es sólo `MyCompany` |
 | `scripts/platform/audit-lsf-source.mjs` | Catálogo estructural de módulos, REQUIRE, namespaces, declaraciones y cierre de dependencias | Para obtener inventario reproducible de 800/49/7 y cambios del snapshot |
+| `scripts/platform/module-integration-route.mjs` | Consulta cualquier módulo por nombre exacto o archivo .lsf; devuelve fuente, namespace, composición, REQUIRE, consumidores y ruta de lectura | Obligatorio antes de integrar/modificar un módulo concreto |
+| `scripts/platform/module-integration-route.test.mjs` | Protege la resolución exacta, dependencias/consumidores, módulos fuera del cierre y enlaces de fuentes LSF | Ejecutar junto con los tests del mapa documental |
 | `scripts/platform/audit-lsf-source.test.mjs` | Pruebas del parser y del grafo estructural | Al cambiar el generador |
 | `scripts/platform/audit-source-docs.mjs` | Índice de páginas Markdown, idioma, ruta, título y encabezados de docs upstream | Para localizar material de MyCompany/lsFusion por idioma y tema |
 | `scripts/platform/audit-source-docs.test.mjs` | Pruebas del índice documental | Al cambiar el indexador |
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
+| `.github/workflows/documentation-map.yml` | Valida catálogo, rutas por módulo, plantilla, generadores upstream y recursos de `docs/` ante cambios documentales | Gate CI documental obligatorio |
 | `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 77 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
 | `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
