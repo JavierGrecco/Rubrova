@@ -93,6 +93,33 @@ const RUBROVA_GUIDE = {
   coverage: "Consultar también Module Composition y Source Ownership.",
 };
 
+const MODULE_PASSPORTS = {
+  InvLedger: {
+    path: "docs/platform-audit/modules/InvLedger.md",
+    title: "Ficha de integración — InvLedger",
+  },
+  ResLedger: {
+    path: "docs/platform-audit/modules/ResLedger.md",
+    title: "Ficha de integración — ResLedger",
+  },
+  CostLedger: {
+    path: "docs/platform-audit/modules/CostLedger.md",
+    title: "Ficha de integración — CostLedger",
+  },
+  Receipt: {
+    path: "docs/platform-audit/modules/Receipt.md",
+    title: "Ficha de integración — Receipt",
+  },
+  SalesOrder: {
+    path: "docs/platform-audit/modules/SalesOrder.md",
+    title: "Ficha de integración — SalesOrder",
+  },
+  Session: {
+    path: "docs/platform-audit/modules/Session.md",
+    title: "Ficha de integración — Session",
+  },
+};
+
 const PASSPORT_OVERRIDES = {
   Inventory: "Composición del dominio; no es propietario único de todos los datos que requiere.",
   InvLedger: "§1.1 — movimientos físicos por producto/ubicación; no equivale a reserva ni costo.",
@@ -288,6 +315,7 @@ export function resolveModuleIntegrationRoute(catalog, query) {
     reason: "Contratos de módulos, extensión, sesiones, transacciones y frontera de autoridad.",
   });
 
+  const passport = MODULE_PASSPORTS[module.moduleName] || null;
   const passportNote = PASSPORT_OVERRIDES[module.moduleName] || null;
   const inApplication = module.reachableFromApplicationRoot === true;
   const compositionState = inApplication
@@ -308,6 +336,7 @@ export function resolveModuleIntegrationRoute(catalog, query) {
     requireDetails,
     consumers,
     guide,
+    passport,
     passportNote,
     declarations: declarationSummary(module),
     related,
@@ -344,6 +373,7 @@ export function renderModuleIntegrationRoute(route) {
     `- **Consumidores directos detectados (${route.consumers.length}):** ${route.consumers.length ? route.consumers.map(item => \`${item.moduleName} (${item.product}: ${item.path})\`).join("; ") : "(ninguno en el catálogo estructural)" }`,
     "",
     "## Primera lectura obligatoria",
+    route.passport ? `- **Ficha individual:** ${route.passport.path} — ${route.passport.title}` : "- **Ficha individual:** todavía no hay un pasaporte específico; no asumir que la ruta de dominio sustituye el análisis del módulo. Completar la plantilla antes de una integración que lo requiera.",
     `- **Dossier primario:** ${route.guide.path} — ${route.guide.title}`,
     `- **Cobertura conocida:** ${route.guide.coverage}`,
     route.passportNote ? `- **Nota de integración:** ${route.passportNote}` : "- **Nota de integración:** no hay override funcional específico registrado; seguir el dossier de dominio y completar la ficha del módulo si el cambio lo requiere.",
