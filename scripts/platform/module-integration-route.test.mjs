@@ -5,6 +5,8 @@ import path from "node:path";
 import {
   resolveModuleIntegrationRoute,
   renderModuleIntegrationRoute,
+  renderModuleIntegrationRouteJson,
+  parseArgs,
 } from "./module-integration-route.mjs";
 import { buildSourceCatalog } from "./audit-lsf-source.mjs";
 
@@ -52,13 +54,16 @@ const fixtureCatalog = {
   myCompany: {
     modules: [
       makeModule("InvLedger", { requires: ["Product", "Location"] }),
-      makeModule("Product", { domain: "masterdata", path: "vendor/mycompany/src/main/lsfusion/masterdata/items/products/Product.lsf" }),
+      makeModule("Product", { domain: "masterdata", path: "vendor/mycompany/src/main/lsfusion/masterdata/items/products/Product.lsf", requires: ["Item"] }),
+      makeModule("Item", { domain: "masterdata", path: "vendor/mycompany/src/main/lsfusion/masterdata/items/Item.lsf" }),
       makeModule("Location", { domain: "inventory", path: "vendor/mycompany/src/main/lsfusion/inventory/locations/Location.lsf" }),
       makeModule("GeoUtils", { domain: "utils", path: "vendor/mycompany/src/main/lsfusion/utils/GeoUtils.lsf" }),
       makeModule("RegionalTax", { domain: "region", path: "vendor/mycompany/src/main/lsfusion/region/RegionalTax.lsf" }),
       makeModule("Inventory", { requires: ["InvLedger", "Receipt"] }),
       makeModule("Receipt", { requires: ["InvLedger", "ResLedger"] }),
       makeModule("ResLedger", { requires: ["InvLedger"] }),
+      makeModule("InventoryDashboard", { domain: "retail", requires: ["Inventory"] }),
+      makeModule("InventoryDashboardExport", { domain: "retail", requires: ["InventoryDashboard"] }),
       makeModule("OptionalModule", { active: false }),
       makeModule("SalesOrder", { domain: "sales", path: "vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf" }),
       makeModule("Invoice", { domain: "invoicing", path: "vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf" }),
@@ -93,6 +98,87 @@ test("identifica REQUIRE directos y consumidores directos sin confundirlos", () 
   ]);
   assert.deepEqual(route.consumers.map(item => item.moduleName), ["Inventory", "Receipt", "ResLedger"]);
   assert.ok(route.consumers.every(item => item.path.endsWith(".lsf")));
+});
+
+test("calcula dependencias y consumidores transitivos con profundidad mínima", () => {
+  const route = resolveModuleIntegrationRoute(fixtureCatalog, "InvLedger");
+  const requirements = route.transitiveRequires.map(item => [item.moduleName, item.depth]);
+  assert.deepEqual(requirements, [["Location", 1], ["Product", 1], ["Item", 2]]);
+
+  const consumers = route.transitiveConsumers.map(item => [item.moduleName, item.depth]);
+  assert.deepEqual(consumers, [
+    ["Inventory", 1],
+    ["Receipt", 1],
+    ["ResLedger", 1],
+    ["InventoryDashboard", 2],
+    ["InventoryDashboardExport", 3],
+  ]);
+});
+
+test("el recorrido transitivo tolera ciclos y no vuelve a incluir el módulo inicial", () => {
+  const cyclicCatalog = {
+    sources: fixtureCatalog.sources,
+    myCompany: {
+      modules: [
+        makeModule("CycleA", { requires: ["CycleB"] }),
+        makeModule("CycleB", { requires: ["CycleA"] }),
+      ],
+    },
+    lsFusion: { modules: [] },
+    rubrovaExtensions: { modules: [] },
+  };
+  const route = resolveModuleIntegrationRoute(cyclicCatalog, "CycleA");
+  assert.deepEqual(route.transitiveRequires.map(item => item.moduleName), ["CycleB"]);
+  assert.deepEqual(route.transitiveConsumers.map(item => item.moduleName), ["CycleB"]);
+});
+
+test("no elige arbitrariamente un módulo cuando REQUIRE tiene más de un candidato", () => {
+  const ambiguousCatalog = {
+    sources: fixtureCatalog.sources,
+    myCompany: {
+      modules: [
+        makeModule("Caller", { requires: ["SharedModule"] }),
+        makeModule("SharedModule"),
+      ],
+    },
+    lsFusion: {
+      modules: [
+        makeModule("SharedModule", {
+          path: "vendor/platform/src/main/lsfusion/SharedModule.lsf",
+        }),
+      ],
+    },
+    rubrovaExtensions: { modules: [] },
+  };
+  const route = resolveModuleIntegrationRoute(ambiguousCatalog, "Caller");
+  assert.equal(route.requireDetails[0].ambiguous, true);
+  assert.equal(route.requireDetails[0].candidates.length, 2);
+  assert.deepEqual(route.transitiveRequires, []);
+  assert.equal(route.ambiguousTransitiveRequires[0].moduleName, "SharedModule");
+});
+
+test("informa dependencias transitivas que no existen en los snapshots", () => {
+  const missingCatalog = {
+    sources: fixtureCatalog.sources,
+    myCompany: { modules: [makeModule("ModuleWithGap", { requires: ["MissingDependency"] })] },
+    lsFusion: { modules: [] },
+    rubrovaExtensions: { modules: [] },
+  };
+  const route = resolveModuleIntegrationRoute(missingCatalog, "ModuleWithGap");
+  assert.deepEqual(route.transitiveRequires, []);
+  assert.deepEqual(route.unresolvedTransitiveRequires, [
+    { moduleName: "MissingDependency", requiredBy: "ModuleWithGap", depth: 1 },
+  ]);
+});
+
+test("permite solicitar salida JSON sin mezclar texto de presentación", () => {
+  const route = resolveModuleIntegrationRoute(fixtureCatalog, "InvLedger");
+  const parsed = JSON.parse(renderModuleIntegrationRouteJson(route));
+  assert.equal(parsed.moduleName, "InvLedger");
+  assert.equal(parsed.transitiveConsumers[0].moduleName, "Inventory");
+  assert.equal(parsed.transitiveConsumers[0].depth, 1);
+  assert.equal(parseArgs(["--module", "InvLedger", "--json"]).json, true);
+  assert.equal(parseArgs(["-m", "InvLedger"]).moduleName, "InvLedger");
 });
 
 test("resuelve también el nombre exacto del archivo fuente", () => {

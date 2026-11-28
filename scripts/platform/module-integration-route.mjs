@@ -231,6 +231,132 @@ function domainGuideFor(module) {
   return DOMAIN_GUIDES[module.domain] || DOMAIN_GUIDES["(raíz)"];
 }
 
+function moduleIdentity(module) {
+  return `${module.product}\u0000${module.moduleName}\u0000${module.path}`;
+}
+
+function moduleRouteReference(module, depth) {
+  return {
+    moduleName: module.moduleName,
+    product: module.product,
+    path: module.path,
+    domain: module.domain,
+    depth,
+  };
+}
+
+/**
+ * Recorre el grafo estático de REQUIRE en ambas direcciones.
+ * BFS garantiza la distancia mínima y el conjunto visited protege frente a ciclos.
+ * Las referencias ambiguas o no resueltas se informan, nunca se elige una fuente
+ * arbitrariamente cuando un nombre de módulo no es único en los snapshots.
+ */
+function traverseModuleRelations(allModules, startModule, direction) {
+  const byName = new Map();
+  for (const module of allModules) {
+    const matches = byName.get(module.moduleName) || [];
+    matches.push(module);
+    byName.set(module.moduleName, matches);
+  }
+
+  const reverse = new Map();
+  const ambiguousConsumers = new Map();
+  if (direction === "consumers") {
+    for (const dependent of allModules) {
+      for (const dependencyName of dependent.requires || []) {
+        const targets = byName.get(dependencyName) || [];
+        if (targets.length === 1) {
+          const targetKey = moduleIdentity(targets[0]);
+          const consumers = reverse.get(targetKey) || [];
+          consumers.push(dependent);
+          reverse.set(targetKey, consumers);
+        } else if (targets.length > 1) {
+          for (const target of targets) {
+            const targetKey = moduleIdentity(target);
+            const candidates = ambiguousConsumers.get(targetKey) || [];
+            candidates.push({
+              module: dependent,
+              dependencyName,
+            });
+            ambiguousConsumers.set(targetKey, candidates);
+          }
+        }
+      }
+    }
+  }
+
+  const queue = [{ module: startModule, depth: 0 }];
+  const visited = new Set([moduleIdentity(startModule)]);
+  const modules = [];
+  const unresolved = [];
+  const ambiguous = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    const currentKey = moduleIdentity(current.module);
+    let nextModules = [];
+
+    if (direction === "requires") {
+      for (const dependencyName of current.module.requires || []) {
+        const candidates = byName.get(dependencyName) || [];
+        if (candidates.length === 0) {
+          unresolved.push({
+            moduleName: dependencyName,
+            requiredBy: current.module.moduleName,
+            depth: current.depth + 1,
+          });
+        } else if (candidates.length > 1) {
+          ambiguous.push({
+            moduleName: dependencyName,
+            requiredBy: current.module.moduleName,
+            depth: current.depth + 1,
+            candidates: candidates.map(candidate => ({
+              product: candidate.product,
+              path: candidate.path,
+            })),
+          });
+        } else {
+          nextModules.push(candidates[0]);
+        }
+      }
+    } else {
+      nextModules = reverse.get(currentKey) || [];
+      for (const candidate of ambiguousConsumers.get(currentKey) || []) {
+        ambiguous.push({
+          moduleName: candidate.module.moduleName,
+          product: candidate.module.product,
+          path: candidate.module.path,
+          dependsOn: candidate.dependencyName,
+          depth: current.depth + 1,
+        });
+      }
+    }
+
+    nextModules
+      .sort((a, b) => a.moduleName.localeCompare(b.moduleName, "en"))
+      .forEach(module => {
+        const key = moduleIdentity(module);
+        if (visited.has(key)) return;
+        visited.add(key);
+        const depth = current.depth + 1;
+        modules.push(moduleRouteReference(module, depth));
+        queue.push({ module, depth });
+      });
+  }
+
+  const sortByDepthAndName = (a, b) =>
+    a.depth - b.depth ||
+    a.moduleName.localeCompare(b.moduleName, "en") ||
+    String(a.product || "").localeCompare(String(b.product || ""), "en");
+
+  const uniqueBy = (items, keyFor) => [...new Map(items.map(item => [keyFor(item), item])).values()];
+  return {
+    modules: modules.sort(sortByDepthAndName),
+    unresolved: uniqueBy(unresolved, item => `${item.requiredBy}\u0000${item.moduleName}\u0000${item.depth}`).sort(sortByDepthAndName),
+    ambiguous: uniqueBy(ambiguous, item => JSON.stringify(item)).sort(sortByDepthAndName),
+  };
+}
+
 function declarationSummary(module) {
   const counts = module.counts || {};
   const declarations = module.declarations || {};
@@ -286,15 +412,28 @@ export function resolveModuleIntegrationRoute(catalog, query) {
   const guide = domainGuideFor(module);
   const passport = MODULE_PASSPORTS[module.moduleName] || null;
   const requireDetails = (module.requires || []).map(name => {
-    const dependency = allModules.find(candidate => candidate.moduleName === name);
-    return dependency
-      ? { moduleName: name, path: dependency.path, product: dependency.product, domain: dependency.domain }
-      : { moduleName: name, path: null, product: null, domain: null };
+    const matches = allModules.filter(candidate => candidate.moduleName === name);
+    if (matches.length === 0) return { moduleName: name, path: null, product: null, domain: null, unresolved: true };
+    if (matches.length > 1) {
+      return {
+        moduleName: name,
+        path: null,
+        product: null,
+        domain: null,
+        ambiguous: true,
+        candidates: matches.map(candidate => ({ product: candidate.product, path: candidate.path })),
+      };
+    }
+    const dependency = matches[0];
+    return { moduleName: name, path: dependency.path, product: dependency.product, domain: dependency.domain };
   });
   const consumers = allModules
     .filter(candidate => (candidate.requires || []).includes(module.moduleName))
     .map(candidate => ({ moduleName: candidate.moduleName, path: candidate.path, product: candidate.product, domain: candidate.domain }))
     .sort((a, b) => a.moduleName.localeCompare(b.moduleName, "en"));
+
+  const requirementImpact = traverseModuleRelations(allModules, module, "requires");
+  const consumerImpact = traverseModuleRelations(allModules, module, "consumers");
 
   const utilities = (module.requires || []).filter(name => UTILITY_MODULES.has(name));
   const related = [
@@ -366,6 +505,11 @@ export function resolveModuleIntegrationRoute(catalog, query) {
     requires: module.requires || [],
     requireDetails,
     consumers,
+    transitiveRequires: requirementImpact.modules,
+    unresolvedTransitiveRequires: requirementImpact.unresolved,
+    ambiguousTransitiveRequires: requirementImpact.ambiguous,
+    transitiveConsumers: consumerImpact.modules,
+    ambiguousTransitiveConsumers: consumerImpact.ambiguous,
     guide,
     passport,
     passportNote,
@@ -402,6 +546,10 @@ export function renderModuleIntegrationRoute(route) {
     `- **Commit de origen:** ${route.sourceCommit || (route.product === "Extensiones Rubrova" ? "(fuente propia: revisar HEAD de main)" : "(ver source-lock)") }`,
     `- **REQUIRE directos (${route.requires.length}):** ${route.requireDetails.length ? route.requireDetails.map(item => item.path ? item.moduleName + " (" + item.product + ": " + item.path + ")" : item.moduleName + " (no resuelto en el catálogo)").join("; ") : "(ninguno)" }`,
     `- **Consumidores directos detectados (${route.consumers.length}):** ${route.consumers.length ? route.consumers.map(item => item.moduleName + " (" + item.product + ": " + item.path + ")").join("; ") : "(ninguno en el catálogo estructural)" }`,
+    `- **Dependencias transitivas (${route.transitiveRequires.length}):** ${route.transitiveRequires.length ? route.transitiveRequires.map(item => item.moduleName + " [nivel " + item.depth + "]").join("; ") : "(ninguna resuelta)" }`,
+    `- **Consumidores transitivos (${route.transitiveConsumers.length}):** ${route.transitiveConsumers.length ? route.transitiveConsumers.map(item => item.moduleName + " [nivel " + item.depth + "]").join("; ") : "(ninguno detectado)" }`,
+    `- **Dependencias no resueltas:** ${route.unresolvedTransitiveRequires.length ? route.unresolvedTransitiveRequires.map(item => item.requiredBy + " → " + item.moduleName + " [nivel " + item.depth + "]").join("; ") : "(ninguna)" }`,
+    `- **Relaciones ambiguas:** ${route.ambiguousTransitiveRequires.length + route.ambiguousTransitiveConsumers.length ? [...route.ambiguousTransitiveRequires.map(item => item.requiredBy + " → " + item.moduleName + " (" + item.candidates.length + " candidatos)"), ...route.ambiguousTransitiveConsumers.map(item => item.moduleName + " depende de " + item.dependsOn + " [nivel " + item.depth + "]")].join("; ") : "(ninguna)" }`,
     "",
     "## Primera lectura obligatoria",
     route.passport ? `- **Ficha individual:** ${route.passport.path} — ${route.passport.title}` : "- **Ficha individual:** todavía no hay un pasaporte específico; no asumir que la ruta de dominio sustituye el análisis del módulo. Completar la plantilla antes de una integración que lo requiera.",
@@ -422,33 +570,41 @@ export function renderModuleIntegrationRoute(route) {
   return lines.join("\n");
 }
 
-function parseArgs(args) {
+export function parseArgs(args) {
   let moduleName = null;
+  let json = false;
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === "--module" || args[i] === "-m") {
       moduleName = args[i + 1];
       if (!moduleName) throw new Error("Falta el nombre después de --module.");
       i += 1;
+    } else if (args[i] === "--json") {
+      json = true;
     } else if (args[i] === "--help" || args[i] === "-h") {
       return { help: true };
     } else {
       throw new Error(`Argumento no reconocido: ${args[i]}`);
     }
   }
-  if (!moduleName) throw new Error("Uso: node scripts/platform/module-integration-route.mjs --module NombreExacto");
-  return { moduleName };
+  if (!moduleName) throw new Error("Uso: node scripts/platform/module-integration-route.mjs --module NombreExacto [--json]");
+  return { moduleName, json };
+}
+
+export function renderModuleIntegrationRouteJson(route) {
+  return JSON.stringify(route, null, 2);
 }
 
 export function runModuleRouteCli(args = process.argv.slice(2)) {
   const options = parseArgs(args);
   if (options.help) {
-    console.log("Uso: node scripts/platform/module-integration-route.mjs --module NombreExacto");
+    console.log("Uso: node scripts/platform/module-integration-route.mjs --module NombreExacto [--json]");
     console.log("También acepta la ruta exacta o el nombre del archivo .lsf.");
+    console.log("--json devuelve el resultado estructurado para automatización.");
     return;
   }
   const catalog = buildSourceCatalog();
   const route = resolveModuleIntegrationRoute(catalog, options.moduleName);
-  console.log(renderModuleIntegrationRoute(route));
+  console.log(options.json ? renderModuleIntegrationRouteJson(route) : renderModuleIntegrationRoute(route));
   if (!route.found) process.exitCode = 2;
 }
 

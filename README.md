@@ -87,19 +87,22 @@ node scripts/platform/module-integration-route.mjs --module InvLedger
 node scripts/platform/module-integration-route.mjs --module PurchaseOrder.lsf
 node scripts/platform/module-integration-route.mjs --module vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf
 
+# Obtener las mismas relaciones en JSON para scripts o análisis automatizados
+node scripts/platform/module-integration-route.mjs --module InvLedger --json
+
 # Consultar la sintaxis
 node scripts/platform/module-integration-route.mjs --help
 ```
 
-También admite `-m` como alias de `--module`. La coincidencia se hace por nombre de módulo, nombre de archivo o ruta exacta (sin distinguir mayúsculas/minúsculas). Si no encuentra una coincidencia exacta, devuelve sugerencias; si hay más de una coincidencia, informa la ambigüedad. Las sugerencias no se deben tratar como una resolución automática.
+También admite `-m` como alias de `--module` y `--json` para emitir una respuesta JSON sin texto adicional, apta para scripts y otras validaciones. La coincidencia se hace por nombre de módulo, nombre de archivo o ruta exacta (sin distinguir mayúsculas/minúsculas). Si no encuentra una coincidencia exacta, devuelve sugerencias; si hay más de una coincidencia, informa la ambigüedad. Las sugerencias no se deben tratar como una resolución automática.
 
 **Qué devuelve la consulta:**
 
 - **Identidad y procedencia:** nombre `MODULE`, producto de origen, ruta LSF, namespace, dominio y commit/tag del snapshot.
 - **Composición:** indica si el módulo aparece dentro o fuera del cierre estático alcanzable desde `RubrovaCustom`. Un módulo fuera del cierre no debe considerarse activo; estar dentro tampoco demuestra por sí solo que esté cargado o habilitado en un runtime concreto.
-- **Relaciones de código:** lista sus `REQUIRE` directos y los módulos que lo declaran como dependencia directa. Son relaciones estructurales; no equivalen a todas las relaciones funcionales o de negocio.
+- **Relaciones de código:** lista `REQUIRE` y consumidores directos, además de sus dependencias y consumidores transitivos. Informa la profundidad de cada relación y separa referencias no resueltas o ambiguas. Es un grafo estructural, no el mapa completo de relaciones funcionales o de negocio.
 - **Ruta de lectura:** prioriza una ficha individual cuando existe, enlaza el dossier del dominio y propone lecturas transversales (datos maestros, utilidades compartidas, capacidades lsFusion, arquitectura, composición u otras según corresponda). Cuando falta una ficha individual, señala la plantilla para crearla sin completar vacíos por suposición.
-- **Resumen de fuente:** muestra conteos y nombres detectados de clases, propiedades, acciones, formularios, restricciones, eventos y anotaciones API, junto con las limitaciones del análisis.
+- **Resumen de fuente:** muestra conteos y nombres detectados de clases, propiedades, acciones, formularios, restricciones, eventos y anotaciones API, junto con las limitaciones del análisis. En JSON quedan disponibles los campos `transitiveRequires`, `transitiveConsumers`, `unresolvedTransitiveRequires` y las relaciones ambiguas.
 
 **Cómo usar el resultado:** leer primero la ficha/dossier recomendado, abrir la fuente LSF exacta, revisar por separado dependencias `REQUIRE` y consumidores, y seguir las relaciones de negocio que correspondan (documentos, estados, reservas, pagos, costos y ledgers). Confirmar además la composición real desde `RubrovaCustom`. Si el análisis individual no existe o es insuficiente, completar `docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md` y enlazar la nueva ficha en el directorio antes de aprobar la integración.
 

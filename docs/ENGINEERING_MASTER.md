@@ -1986,6 +1986,12 @@ El script [audit-lsf-source.mjs](../scripts/platform/audit-lsf-source.mjs) gener
 
 Este catálogo ayuda a detectar archivos no inventariados, dependencias y cambios en la base. **No interpreta por sí solo todas las funciones, no descubre la semántica completa del código y no reemplaza las fichas manuales ni las pruebas de runtime.** Sus conteos nunca deben presentarse como porcentaje de cobertura funcional.
 
+#### Consulta de impacto estructural por módulo
+
+El CLI [module-integration-route.mjs](../scripts/platform/module-integration-route.mjs) usa ese catálogo para ubicar un módulo por su declaración `MODULE`, su archivo o su ruta exacta. Además de `REQUIRE` y consumidores directos, recorre el grafo en ambas direcciones y devuelve dependencias y consumidores transitivos con la profundidad mínima. La consulta separa referencias no resueltas y ambiguas, prioriza una ficha individual si existe y recomienda dossiers/lecturas transversales. La opción `--json` ofrece el mismo resultado en formato estructurado para automatizaciones.
+
+El recorrido usa búsqueda en anchura y evita ciclos; sólo afirma relaciones estructurales demostrables en los snapshots. No infiere relaciones de negocio, ejecución, visibilidad, permisos ni habilitación en runtime. Una cadena transitiva de `REQUIRE` no equivale a una cadena de documentos o ledgers: esas relaciones deben seguirse en las fichas y dossiers funcionales. Las pruebas dedicadas cubren profundidad, ciclos, dependencias ausentes/ambiguas y serialización JSON.
+
 #### Congelamiento de alcance mientras la puerta esté abierta
 
 Hasta cerrar el relevamiento, el trabajo permitido se limita a investigar, inventariar, leer fuentes, documentar, crear herramientas de auditoría, corregirlas y ejecutar pruebas necesarias para obtener evidencia. También se permiten correcciones técnicas imprescindibles para poder cargar y estudiar la plataforma.
