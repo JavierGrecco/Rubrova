@@ -321,7 +321,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /wait_until_form_loaded\([\s\S]*?"UI_POS_SCREEN",[\s\S]*?register_name=pos_register_name,[\s\S]*?\)/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=true/);
   assert.doesNotMatch(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=false/);
-  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str, \\*, require_spanish: bool = False\)/);
+  assert.ok(uiSmokeSource.includes("def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) -> bool"));
   assert.match(uiSmokeSource, /ACTION_CONTAINER_BY_LABEL = \{/);
   assert.match(uiSmokeSource, /"Abrir turno": "PROPERTY\(openSession\(p\)\)"/);
   assert.match(uiSmokeSource, /"Ok \(ctrl ENTER\)": "PROPERTY\(overFormOk\)"/);
@@ -930,7 +930,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency()"));
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
   assert.match(uiSmokeSource, /def wait_for_payment_dialog\(page: Any, timeout_seconds: int = 20\)/);
-  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str, \\*, require_spanish: bool = False\) -> bool/);
+  assert.ok(uiSmokeSource.includes("def click_exact_action(page: Any, label: str, *, require_spanish: bool = False) -> bool"));
   assert.match(uiSmokeSource, /page[.]get_by_role\("button", name=label, exact=True\)/);
   assert.doesNotMatch(uiSmokeSource, /def wait_for_exact_link\(/);
   assert.ok(uiSmokeSource.includes('search_tab.click(no_wait_after=True)'));
