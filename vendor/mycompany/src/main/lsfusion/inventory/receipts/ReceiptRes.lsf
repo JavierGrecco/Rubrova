@@ -1,6 +1,6 @@
 MODULE ReceiptRes;
 
-REQUIRE ReceiptDone;
+REQUIRE ReceiptDone, ReceiptCanceled;
 
 NAMESPACE Inventory;
 
@@ -9,7 +9,7 @@ EXTEND FORM receiptType PROPERTIES(o) increaseAvailableStock;
 DESIGN receiptType { otherInformation { MOVE PROPERTY(increaseAvailableStock(o)); } }
 
 CLASS ReceiptResLedger 'Receipt' : ResLedger;
-resLedger = AGGR ReceiptResLedger WHERE initialDemand(ReceiptLine line) > 0 AND ready(receipt(line)) AND NOT done(receipt(line));
+resLedger = AGGR ReceiptResLedger WHERE initialDemand(ReceiptLine line) > 0 AND ready(receipt(line)) AND NOT done(receipt(line)) AND NOT canceled(receipt(line));
 
 type(ReceiptResLedger l) += nameType(receipt(line(l)));
 
