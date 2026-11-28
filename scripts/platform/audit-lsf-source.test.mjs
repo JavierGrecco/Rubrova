@@ -59,5 +59,5 @@ test("preserva líneas al enmascarar comentarios y cadenas", () => {
   const masked = maskLsfNonCode(source);
   assert.equal(masked.split("\n").length, source.split("\n").length);
   assert.equal(masked.split("\n")[2].trim(), "FORM x;");
-  assert.equal(masked.split("\n")[5].trim(), "CLASS X;");
+  assert.equal(masked.split("\n")[6].trim(), "CLASS X;");
 });

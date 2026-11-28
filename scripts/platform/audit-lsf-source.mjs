@@ -28,7 +28,7 @@ function walkFiles(directory, extension) {
 
 /** Enmascara comentarios y literales, preservando los saltos de línea. */
 export function maskLsfNonCode(source) {
-  const chars = [...source];
+  const chars = source.split("");
   let state = "code";
   let quote = "";
   for (let i = 0; i < chars.length; i += 1) {
