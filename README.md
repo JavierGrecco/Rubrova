@@ -39,26 +39,23 @@ Rubrova es un producto propio bajo dirección de producto y responsabilidad expl
 
 > **Estado del proyecto · 28 de noviembre de 2026**
 >
-> Rubrova sigue siendo un piloto integrado POS + ERP; **no es una versión productiva**. La aceptación anterior [run #524](https://github.com/JavierGrecco/Rubrova/actions/runs/46047336284) confirmó en macOS ARM64 una venta en el turno y la acción nativa **Devolver** visible y habilitada, pero todavía no había pulsado la acción.
+> Rubrova sigue siendo un piloto integrado POS + ERP; **no es una versión productiva**.
 >
-> El [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), SHA fb1ba303, pasó prevalidación, sintaxis Windows, compilación y empaquetado. El servidor nativo inició y la UI abrió una nota de crédito en borrador; falló al descartarla porque el botón se mostraba como New receipt (shift F12) en lugar de Nueva venta. No se demostró el descarte ni la ausencia de efectos en caja/ledger.
+> El [run #600](https://github.com/JavierGrecco/Rubrova/actions/runs/46108699011), SHA `664aef83fd89a2dd404b3e35ac43e1f2400e825c`, terminó correctamente: prevalidación compartida, validación sintáctica Windows, compilación completa de lsFusion/MyCompany 6.2 y smoke nativo macOS ARM64. El escenario autenticado abrió el POS, registró una venta sintética de ARS 1.250, pulsó la devolución nativa, abrió una nota de crédito en borrador, la descartó con la acción española `Nueva venta` y comprobó la restauración de `GRID(l)`. El descarte no generó devolución ni egreso: el turno siguió abierto con caja ARS 1.250 y el inventario permaneció en 9 unidades.
 >
-> Los runs #529, #530 y #531 detectaron sucesivamente regresiones estáticas en la nueva puerta española (regex de selector, expectativa antigua de alias y regex de firma). Windows pasó en esas revisiones; prevalidación falló y por eso build/smoke se omitieron.
+> El mismo smoke volvió a comprobar devoluciones parciales, rechazo de exceso, reintegros mixtos y acumulados por medio, cancelaciones, conciliación de stocktake, persistencia tras reinicio y backup/restauración de PostgreSQL en una base aislada. El backup aceptado cubre la base de datos, **no acredita todavía adjuntos ni recuperación integral en otra PC**.
 >
-> En el commit bedaecec las comprobaciones de firma se reemplazaron por comparaciones literales. El [run #532](https://github.com/JavierGrecco/Rubrova/actions/runs/46093329781) pasó prevalidación y Windows; la compilación de MyCompany/lsFusion estaba en curso al último corte. La traducción y la secuencia todavía no tienen aceptación de runtime.
+> **Límites vigentes:** el smoke se ejecutó en macOS ARM64 sobre datos sintéticos. Linux nativo y Docker/Linux fueron omitidos; Windows sólo tuvo validación de sintaxis. `RUBROVA_NATIVE_OFFLINE_ACCEPTANCE=not_tested` y `RUBROVA_NATIVE_EGRESS_BLOCKED=false`: no afirmar aceptación offline ni aislamiento de egreso. No hay homologación con dispositivos de pago, ARCA ni una jornada comercial real.
 >
-> El análisis reuse-first previo de MyCompany/lsFusion se conserva en los anexos A y B del [manual técnico](docs/ENGINEERING_MASTER.md). El inventario confirma 800 módulos LSF y define el trabajo que falta para conocer de manera sistemática las relaciones, pantallas, acciones, estados, ledgers, APIs, permisos y casos de uso por dominio.
+> **Mapeo obligatorio:** el inventario identifica 800 módulos MyCompany, 49 módulos LSF y 3.330 fuentes Java; el cierre estático desde `RubrovaCustom` contiene 719 módulos. El relevamiento funcional integral sigue abierto en la [puerta 9.7](docs/platform-audit/README.md) y en el [issue #18](https://github.com/JavierGrecco/Rubrova/issues/18). No iniciar reemplazos propios cuando exista una capacidad nativa aún no evaluada.
 >
-> La localización de MyCompany sigue siendo parcial: el bundle base contiene 1.559 claves; el bundle es_AR contiene 122 de esas claves (121 con valor distinto del inglés y una idéntica), mientras 1.437 no tienen entrada local. Hay además 59 claves propias de Rubrova. La cobertura de archivos no equivale a aceptación visual.
+> **Bloqueos y seguimiento:** el descarte POS tras devolver quedó aceptado en #600 y el [issue #19](https://github.com/JavierGrecco/Rubrova/issues/19) está cerrado. Siguen abiertos el [issue #17](https://github.com/JavierGrecco/Rubrova/issues/17) (cancelación de recepción prevista y reservas, hipótesis estática pendiente de reproducir), el [issue #18](https://github.com/JavierGrecco/Rubrova/issues/18) (relevamiento integral) y el [issue #9](https://github.com/JavierGrecco/Rubrova/issues/9) (warnings del build).
 >
-> **Estado GitHub:** main conserva dos ramas visibles: main y work/pos-refund-cumulative-method-guard. La segunda quedó obsoleta después de integrar el límite de reintegros y está pendiente de eliminación. No hay PR abiertos y main aún no tiene protección por reglas obligatorias.
+> **Estado GitHub:** `main` está en `664aef83fd89`; no hay PR abiertos. Se ve una rama histórica adicional `work/pos-refund-cumulative-method-guard`, divergida respecto de `main`; no se elimina hasta auditar su contenido exclusivo. Ninguna de las dos ramas está protegida.
 >
-> Aún faltan aceptación en el equipo físico del comercio, modo offline, instalación funcional Windows/Linux, backup integral con adjuntos y una jornada comercial supervisada.
->
-> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) está documentada; metadatos de lote, bloqueos por vencimiento, trazabilidad y guardas de producción siguen pendientes de implementación y validación.
+> La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) sigue siendo diseño: metadatos de lote, retención, vencimiento, FEFO y guardas de producción no están aceptados en runtime.
 >
 > Seguimiento: [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
-
 ## Mapeo obligatorio de MyCompany 6.2 y lsFusion 6.2
 
 Rubrova parte de dos plataformas con cientos de módulos, utilidades, mecanismos de extensión, APIs y herramientas ya implementados. **Antes de crear una función, integración o módulo propio, el equipo debe verificar qué existe en MyCompany, qué aporta lsFusion y cómo se relaciona con el resto del sistema.**
