@@ -131,7 +131,7 @@ El [pasaporte integrado ReceiptLifecycle](modules/ReceiptLifecycle.md) cubre un 
 | ResLedger | [Ficha ResLedger](modules/ResLedger.md) · `docs/platform-audit/modules/ResLedger.md` | Reservas, esperados, signos, disponible y reglas de ubicación |
 | CostLedger | [Ficha CostLedger](modules/CostLedger.md) · `docs/platform-audit/modules/CostLedger.md` | Valoración estándar/AVCO/FIFO, recálculo y riesgos |
 | Receipt | [Ficha Receipt](modules/Receipt.md) · `docs/platform-audit/modules/Receipt.md` | Recepción, entidades, validaciones y efectos en ledgers |
-| ReceiptLifecycle (grupo) | [Pasaporte ReceiptLifecycle](modules/ReceiptLifecycle.md) | Secuencia pedido→recepción prevista→Done→put-away/costo→cancelación; responsabilidades de módulos/ledgers y evidencia #609/#613 |
+| ReceiptLifecycle (grupo) | [Pasaporte ReceiptLifecycle](modules/ReceiptLifecycle.md) · `docs/platform-audit/modules/ReceiptLifecycle.md` | Secuencia pedido→recepción prevista→Done→put-away/costo→cancelación; responsabilidades de módulos/ledgers y evidencia #609/#613 |
 | SalesOrder | [Ficha SalesOrder](modules/SalesOrder.md) · `docs/platform-audit/modules/SalesOrder.md` | Pedido, entidades, estados y documentos derivados |
 | Session | [Ficha Session](modules/Session.md) · `docs/platform-audit/modules/Session.md` | Apertura/cierre de POS, hooks y conciliación del turno |
 | PurchaseOrder | [Ficha PurchaseOrder](modules/PurchaseOrder.md) · `docs/platform-audit/modules/PurchaseOrder.md` | Pedido de compra, proveedor, parciales y documentos derivados |
@@ -399,7 +399,7 @@ Este catálogo complementa los 14 dossiers anteriores. Incluye **todos** los doc
 
 ### 7.1 Recursos de soporte y fixtures bajo `docs/`
 
-Además de los 94 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **102 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
+Además de los 95 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **103 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
 
 | Archivo | Qué contiene / para qué sirve | Leer junto con |
 |---|---|---|
@@ -449,7 +449,7 @@ No hay que leer el manual de cientos de kilobytes linealmente para cada tarea. C
 | `scripts/platform/audit-source-docs.test.mjs` | Pruebas del índice documental | Al cambiar el indexador |
 | `scripts/platform/local-preflight.sh` | Ejecuta tests de auditoría y de plataforma antes del build | Obligatorio antes de validar una entrega |
 | `.github/workflows/documentation-map.yml` | Valida catálogo, rutas por módulo, plantilla, generadores upstream y recursos de `docs/` ante cambios documentales | Gate CI documental obligatorio |
-| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 102 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
+| `.github/workflows/documentation-map.yml` | Ejecuta el test de cobertura de los 103 recursos de `docs/`, prueba ambos generadores y publica los catálogos de 30 días | Se activa cuando cambia documentación, instrucciones, plantilla, parches o auditorías |
 | `.github/pull_request_template.md` | Solicita documentar el caso, los módulos nativos revisados, la decisión reuse-first, los contratos y la evidencia | Completar en cada PR; en commits directos a `main`, dejar el mismo registro en la documentación/commit |
 | `scripts/platform/validate-vendored-sources.sh` | Comprueba integridad y cantidades mínimas de fuentes vendorizadas | Al incorporar o actualizar snapshots |
 | `patches/lsfusion/README.md` | Política para parches directos al motor: cuándo usar extensión, procedencia, archivos upstream afectados, versión y pruebas | Antes de modificar directamente `vendor/platform` |
