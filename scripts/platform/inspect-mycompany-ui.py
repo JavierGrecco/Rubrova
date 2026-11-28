@@ -2449,6 +2449,7 @@ def inspect_page(url: str) -> int:
                 page.screenshot(path=str(after_login_screenshot), full_page=True)
                 print(f"UI_HOME_SCREENSHOT={after_login_screenshot}")
                 verify_replenishment_source_export(context, url)
+                verify_purchase_receipt_cancellation_reservation(context, url)
                 if os.environ.get("RUBROVA_UI_DEMO_MODE", "false").lower() != "true":
                     verify_return_quantity_guard(context, url)
                     verify_stocktake_barcode_semantics(context, url)
