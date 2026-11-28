@@ -115,6 +115,7 @@ test("un módulo sin pasaporte individual lo declara y conserva el dossier de do
   assert.equal(route.found, true);
   assert.equal(route.passport, null);
   assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md");
+  assert.ok(route.related.some(item => item.path === "docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md"));
 });
 
 test("advierte cuando un módulo existe pero queda fuera del cierre actual", () => {
