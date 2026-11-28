@@ -60,6 +60,6 @@ test("genera un registro con páginas e imágenes de todos los idiomas", () => {
     absentLocales: [],
   });
   assert.match(markdown, /Inventario/);
-  assert.match(markdown, /inventory\\.md/);
+  assert.match(markdown, /inventory[.]md/);
   assert.match(markdown, /stock\\.png/);
 });
