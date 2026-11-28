@@ -180,12 +180,9 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         rubrovaCIReceiptOriginal() <- rubrovaCIIncomingReceipt();
 
         // Baseline: incoming receipt is ready/not done; its type skips available.
-        rubrovaCIReceiptExpectedBefore() <- OVERRIDE
-            (Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptPlannedBefore() <- OVERRIDE
-            (Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptAvailableBefore() <- OVERRIDE
-            (Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptExpectedBefore() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptPlannedBefore() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptAvailableBefore() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
 
         // Turn on increaseAvailableStock to expose whether the canceled expected
         // receipt still participates in both expected and available calculations.
@@ -193,22 +190,16 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         APPLY;
         IF canceled() THEN RETURN;
 
-        rubrovaCIReceiptExpectedWithAvailable() <- OVERRIDE
-            (Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptPlannedWithAvailable() <- OVERRIDE
-            (Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptAvailableWithAvailable() <- OVERRIDE
-            (Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptExpectedWithAvailable() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptPlannedWithAvailable() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptAvailableWithAvailable() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
 
         // Invoke the native cancellation action; do not update ledger rows directly.
         Inventory.cancel(rubrovaCIReceiptOriginal());
 
-        rubrovaCIReceiptExpectedAfterCancel() <- OVERRIDE
-            (Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptPlannedAfterCancel() <- OVERRIDE
-            (Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptAvailableAfterCancel() <- OVERRIDE
-            (Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptExpectedAfterCancel() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptPlannedAfterCancel() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptAvailableAfterCancel() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptOriginalReadyAfterCancel() <- Inventory.ready(rubrovaCIReceiptOriginal());
         rubrovaCIReceiptOriginalCanceledAfterCancel() <- Inventory.canceled(rubrovaCIReceiptOriginal());
         rubrovaCIReceiptOriginalDoneAfterCancel() <- Inventory.done(rubrovaCIReceiptOriginal());
@@ -220,18 +211,14 @@ rubrovaTestPurchaseReceiptCancellationReservationApi () {
         IF canceled() THEN RETURN;
 
         rubrovaCIReceiptReplacement() <- Purchase.reserveReceipt(rubrovaCIIncomingOrder());
-        rubrovaCIReceiptExpectedAfterReplacement() <- OVERRIDE
-            (Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptPlannedAfterReplacement() <- OVERRIDE
-            (Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
-        rubrovaCIReceiptAvailableAfterReplacement() <- OVERRIDE
-            (Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptExpectedAfterReplacement() <- (OVERRIDE Inventory.expected(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptPlannedAfterReplacement() <- (OVERRIDE Inventory.planned(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
+        rubrovaCIReceiptAvailableAfterReplacement() <- (OVERRIDE Inventory.available(Sales.rubrovaCITestLocation(), Sales.rubrovaCITestProduct()), 0);
         rubrovaCIReceiptReplacementDistinct() <- rubrovaCIReceiptReplacement()
-            AND rubrovaCIReceiptReplacement() <> rubrovaCIReceiptOriginal();
+            AND rubrovaCIReceiptReplacement() != rubrovaCIReceiptOriginal();
         rubrovaCIReceiptReplacementReady() <- Inventory.ready(rubrovaCIReceiptReplacement());
         rubrovaCIReceiptReplacementCanceled() <- Inventory.canceled(rubrovaCIReceiptReplacement());
-        rubrovaCIReceiptReplacementDemand() <- OVERRIDE
-            (Inventory.initialDemand(rubrovaCIIncomingReceiptLine()), 0);
+        rubrovaCIReceiptReplacementDemand() <- (OVERRIDE Inventory.initialDemand(rubrovaCIIncomingReceiptLine()), 0);
 
         // Restore the original availability policy after capturing its effect.
         Inventory.increaseAvailableStock(Inventory.receiptType('receipt')) <- NULL;
