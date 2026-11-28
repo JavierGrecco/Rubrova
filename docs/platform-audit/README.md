@@ -1,5 +1,7 @@
 # Índice integral y rutas obligatorias de conocimiento — MyCompany 6.2 / lsFusion 6.2
 
+**Archivo:** `docs/platform-audit/README.md`.
+
 **Este es el punto de entrada obligatorio para cualquier integrante, desarrollador o agente que trabaje en Rubrova.** Su propósito es localizar toda la investigación existente, indicar el orden de lectura según la tarea y conectar los mapas de dominio con los documentos de arquitectura, producto, seguridad, runtime y reutilización. No alcanza con abrir un único mapa y asumir que la funcionalidad está aislada.
 
 **Estado del catálogo documental:** inventario de `docs/` verificado sobre `main`: 54 documentos Markdown generales + 15 documentos Markdown en `docs/platform-audit/` = **69 documentos Markdown catalogados**, incluido este índice. El test `scripts/platform/test-platform-map-entry.mjs` comprueba que cada archivo Markdown bajo `docs/` tenga una referencia en este catálogo. Si se incorpora un documento nuevo, debe clasificarse y conectarse antes de pasar la prevalidación.
