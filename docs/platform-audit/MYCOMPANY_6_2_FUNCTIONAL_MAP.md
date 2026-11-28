@@ -18,6 +18,15 @@ Cada capacidad debe pasar por niveles distintos de evidencia:
 
 Un documento funcional no prueba por sí solo el comportamiento de la versión compilada; un módulo en la composición no prueba que cada una de sus funciones esté habilitada; una pantalla visible no prueba que los asientos o saldos resultantes sean correctos.
 
+## 1.1 Cobertura documental por idioma
+
+El índice automático de recursos del snapshot identifica 347 páginas Markdown de MyCompany: 112 en inglés, 121 en polaco y 114 en ruso. Las tres variantes contienen las mismas 112 rutas de documentación general; el polaco agrega nueve páginas del circuito KSeF y el ruso agrega dos páginas específicas de Mango y marcado de productos.
+
+- **Polaco:** \`invoicing/ksef/automatyzacja.md\`, \`dostep-i-logowanie.md\`, \`faktury-zakupu.md\`, \`ksef.md\`, \`pobieranie-faktur.md\`, \`rozwiazywanie-problemow.md\`, \`sesja-i-szyfrowanie.md\`, \`wprowadzenie.md\`, \`wysylka-faktur.md\`.
+- **Ruso:** \`crm/mango.md\` y \`retail/marking.md\`.
+
+Esto confirma que el paquete inglés no es suficiente para comprender las particularidades de todas las integraciones regionales. Los 347 documentos ya están indexados por idioma, ruta, título y encabezados en el artefacto generado por \`audit-source-docs.mjs\`; falta leerlos y vincular cada página a su módulo/función. No hay documentación MyCompany en español en el snapshot.
+
 ## 2. Composición e inventario de dominios
 
 El catálogo estático de la revisión fijada identifica 800 módulos LSF de MyCompany. La raíz de la aplicación de Rubrova es \`RubrovaCustom\`; desde esa raíz se alcanza un cierre de 719 módulos: 688 de MyCompany, 24 de lsFusion y 7 extensiones propias. Quedan 112 módulos MyCompany fuera del cierre: 96 regionales y 16 no regionales. No se descartan por ese motivo.

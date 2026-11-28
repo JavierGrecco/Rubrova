@@ -20,6 +20,14 @@ La base se distribuye en cuatro módulos Maven: \`api\`, \`desktop-client\`, \`s
 
 **Advertencia documental:** algunas páginas de instalación y desarrollo del snapshot incluyen enlaces, ejemplos o nombres de artefactos 6.1 aunque el código fijado sea 6.2. La documentación debe reconciliarse contra la etiqueta 6.2 y el build real antes de transformarse en un procedimiento operativo de Rubrova.
 
+## 1.1 Inventario documental contrastado
+
+El índice automático contiene 684 páginas Markdown y 178 imágenes de lsFusion: 342 páginas y 89 imágenes en inglés, y el mismo conteo en ruso. La comparación de rutas confirma que los 342 nombres de página coinciden entre ambos idiomas.
+
+Hay 33 documentos por idioma que no usan encabezados Markdown estructurados. El indexador conserva su primera línea como título provisional, pero no los considera documentos vacíos: son páginas cortas con texto, tablas o listas. Deben revisarse de manera individual para decidir si son referencias de operadores, introducciones o procedimientos y asociarlos al tema correspondiente.
+
+El catálogo completo por ruta y encabezados se genera con \`scripts/platform/audit-source-docs.mjs\` y se publica como artefacto \`rubrova-source-document-catalog\` de CI. Este índice permite comprobar cobertura y localizar páginas; no sustituye la lectura ni el contraste con el código 6.2.
+
 ## 2. Dos modelos que se deben conocer por separado
 
 ### 2.1 Modelo lógico
