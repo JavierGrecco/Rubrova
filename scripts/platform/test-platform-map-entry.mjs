@@ -139,6 +139,21 @@ test("todos los archivos de docs, incluidos fixtures y recursos gráficos, está
   }
 });
 
+test("la guía obligatoria de Fabricación y Proyectos no contiene enlaces locales rotos", () => {
+  const guidePath = "docs/platform-audit/MYCOMPANY_6_2_MANUFACTURING_PROJECTS_INTEGRATION.md";
+  const guideDirectory = path.dirname(guidePath);
+  const guide = read(guidePath);
+  const links = [...guide.matchAll(/\]\(([^)]+)\)/g)].map(match => match[1]);
+  assert.ok(links.length >= 20, "La guía debe conservar sus enlaces a fuentes y fichas");
+
+  for (const target of links) {
+    if (/^[a-z]+:\/\//i.test(target) || target.startsWith("#")) continue;
+    const localTarget = target.split("#", 1)[0];
+    const absolute = path.resolve(root, guideDirectory, localTarget);
+    assert.ok(existsSync(absolute), `Enlace local roto en ${guidePath}: ${target}`);
+  }
+});
+
 test("todos los dossiers especializados están presentes y enlazados", () => {
   const index = read(indexPath);
   for (const dossier of requiredDossiers) {

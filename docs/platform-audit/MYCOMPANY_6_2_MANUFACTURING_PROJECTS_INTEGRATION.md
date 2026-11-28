@@ -21,24 +21,24 @@ Las integraciones externas sí requieren adaptadores y contratos explícitos. De
 El compositor \`Manufacturing\` exige BOM, BOM anidadas, estructura/costo, importación, operaciones, órdenes, estados, reservas, inventario, costos, lotes, mermas, reportes, centros de trabajo y órdenes de trabajo. El inventario completo del árbol contiene 41 archivos LSF de fabricación. El número de archivos no equivale a 41 fichas aceptadas: la lectura profunda y la aceptación deben seguir registrándose por separado.
 
 Fuentes de entrada:
-- [Manufacturing.lsf](../../../vendor/mycompany/src/main/lsfusion/manufacturing/Manufacturing.lsf)
-- [BOM](../../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf), [BOM anidada](../../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/BomNested.lsf), [operaciones](../../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/BomOperation.lsf)
-- [Orden de fabricación](../../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf)
-- [Reservas](../../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderRes.lsf), [inventario](../../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderInv.lsf), [costos](../../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderCost.lsf)
-- [Lotes](../../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderLot.lsf), [mermas](../../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/scrap/ManufacturingOrderScrap.lsf)
-- [WorkCenter](../../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkCenter.lsf), [WorkOrder](../../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkOrder.lsf)
+- [Manufacturing.lsf](../../vendor/mycompany/src/main/lsfusion/manufacturing/Manufacturing.lsf)
+- [BOM](../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/Bom.lsf), [BOM anidada](../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/BomNested.lsf), [operaciones](../../vendor/mycompany/src/main/lsfusion/manufacturing/bom/BomOperation.lsf)
+- [Orden de fabricación](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrder.lsf)
+- [Reservas](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderRes.lsf), [inventario](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderInv.lsf), [costos](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderCost.lsf)
+- [Lotes](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/ManufacturingOrderLot.lsf), [mermas](../../vendor/mycompany/src/main/lsfusion/manufacturing/orders/scrap/ManufacturingOrderScrap.lsf)
+- [WorkCenter](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkCenter.lsf), [WorkOrder](../../vendor/mycompany/src/main/lsfusion/manufacturing/workOrders/WorkOrder.lsf)
 
 ### Proyectos y tiempos
 
 El compositor \`ProjectManagement\` incluye proyectos, asignaciones, tareas, equipos, partes de horas, timesheets de empleado/supervisor/móvil, compras, ventas, despachos, facturación, fabricación, costos de mano de obra, reportes y nómina. La integración con fabricación no es una asociación visual: almacena un \`Project\` en la orden de fabricación, propaga el proyecto a los partes de horas relacionados y deriva costo laboral de esos registros.
 
 Fuentes de entrada:
-- [ProjectManagement.lsf](../../../vendor/mycompany/src/main/lsfusion/projectManagement/ProjectManagement.lsf)
-- [Project](../../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/Project.lsf), [asignaciones y acceso](../../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/ProjectAssignment.lsf)
-- [TimeEntry](../../../vendor/mycompany/src/main/lsfusion/projectManagement/timeEntries/TimeEntry.lsf), [ProjectTimeEntry](../../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/timeentries/ProjectTimeEntry.lsf)
-- [ProjectManufacturingOrder](../../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrder.lsf)
-- [ProjectManufacturingOrderTimeEntry](../../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrderTimeEntry.lsf), [Timesheet](../../../vendor/mycompany/src/main/lsfusion/projectManagement/timesheet/Timesheet.lsf)
-- [Costo laboral por orden](../../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrderCost.lsf)
+- [ProjectManagement.lsf](../../vendor/mycompany/src/main/lsfusion/projectManagement/ProjectManagement.lsf)
+- [Project](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/Project.lsf), [asignaciones y acceso](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/ProjectAssignment.lsf)
+- [TimeEntry](../../vendor/mycompany/src/main/lsfusion/projectManagement/timeEntries/TimeEntry.lsf), [ProjectTimeEntry](../../vendor/mycompany/src/main/lsfusion/projectManagement/projects/timeentries/ProjectTimeEntry.lsf)
+- [ProjectManufacturingOrder](../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrder.lsf)
+- [ProjectManufacturingOrderTimeEntry](../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrderTimeEntry.lsf), [Timesheet](../../vendor/mycompany/src/main/lsfusion/projectManagement/timesheet/Timesheet.lsf)
+- [Costo laboral por orden](../../vendor/mycompany/src/main/lsfusion/projectManagement/manufacturing/orders/ProjectManufacturingOrderCost.lsf)
 
 ## 3. Propiedad de datos: no crear modelos paralelos
 
