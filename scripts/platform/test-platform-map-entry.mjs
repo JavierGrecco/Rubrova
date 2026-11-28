@@ -156,7 +156,7 @@ test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos his
     "1.038 archivos Markdown",
     "1.031 páginas de documentación upstream",
     "retención de 30 días",
-    "79 archivos",
+    "85 archivos",
     "demand-monthly-history.json",
     "mycompany-native-replenishment-export.json",
     "platform-evaluation.json",
