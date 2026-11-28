@@ -17,11 +17,17 @@ Esta regla es deliberada y tiene prioridad para este proyecto sobre flujos conve
 ## Antes de modificar
 
 1. Leer `README.md`, `AGENTS.md` y el [índice obligatorio de mapeo](platform-audit/README.md).
-2. Leer el [Manual técnico canónico](ENGINEERING_MASTER.md) y el dossier del dominio afectado.
-3. Revisar el estado actual de `main`, los commits fijados en `platform/source-lock.json` y la composición desde `extensions/lsfusion/RubrovaCustom.lsf`.
-4. Comprobar si MyCompany o lsFusion ya resuelven la necesidad, incluso mediante utilidades compartidas, módulos fuera de la composición o extensiones.
-5. Identificar impactos en datos, ledgers, permisos, auditoría, integraciones, concurrencia, recuperación y pruebas.
-6. Definir cómo se comprobará el resultado y qué evidencia permitiría aceptarlo.
+2. Identificar el nombre exacto `MODULE` del componente que se va a modificar; consultar el [directorio de integración por módulo](platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md) o ejecutar `node scripts/platform/module-integration-route.mjs --module NombreExacto`.
+3. Leer la primera lectura obligatoria que indique la ruta, el dossier funcional, la ficha de integración del módulo y las dependencias transversales (datos maestros, utilidades, plataforma, seguridad y contratos) que correspondan.
+4. Leer el [Manual técnico canónico](ENGINEERING_MASTER.md) para estado, decisiones, evidencia, contratos y roadmap.
+5. Revisar el estado actual de `main`, los commits fijados en `platform/source-lock.json` y la composición desde `extensions/lsfusion/RubrovaCustom.lsf`.
+6. Comprobar si MyCompany o lsFusion ya resuelven la necesidad, incluso mediante utilidades compartidas, módulos fuera de la composición o extensiones.
+7. Identificar impactos en datos, ledgers, permisos, auditoría, integraciones, concurrencia, recuperación y pruebas.
+8. Definir cómo se comprobará el resultado y qué evidencia permitiría aceptarlo.
+
+
+
+Cuando el cambio afecta un módulo concreto, el gate debe identificar **el `MODULE` exacto**, la ficha/dossier de lectura y sus consumidores directos. Si el módulo no tiene ficha suficiente, usar `MODULE_INTEGRATION_PASSPORT_TEMPLATE.md` y dejar los vacíos como pendientes; no resumir el dossier del dominio como si fuera una ficha individual.
 
 ## Puerta obligatoria de mapeo y reutilización
 
