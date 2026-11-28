@@ -508,3 +508,7 @@ Aunque el catálogo de documentos está completo para el árbol `docs/`, queda t
 - completar una matriz reuse-first explícita para cada capacidad de producto priorizada.
 
 **Conclusión de estado:** el inventario documental de `docs/` está catalogado, pero la investigación funcional integral de MyCompany 6.2 y lsFusion 6.2 continúa incompleta. Hasta cerrar los puntos anteriores, se mantiene abierta la puerta 9.7 y no se inicia desarrollo funcional nuevo salvo la investigación, documentación, auditoría y correcciones técnicas imprescindibles para completar el relevamiento.
+
+### Evidencia de runtime más reciente
+
+El workflow [#615](https://github.com/JavierGrecco/Rubrova/actions/runs/46158247302) terminó `success` sobre SHA `f873f31ae0f2a24c6803222bb64fc7e575a52e00`: compilación completa lsFusion/MyCompany, servidor nativo macOS ARM64, UI/POS, persistencia tras reinicio y backup/restore de PostgreSQL aislado. Linux/Docker fueron omitidos, Windows sólo tuvo validación sintáctica y el modo offline no fue probado. Ver REP-060 en `docs/ENGINEERING_MASTER.md`.
