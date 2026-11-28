@@ -458,6 +458,7 @@ export function buildSourceCatalog(root = ROOT) {
       projectFileCount: platformProjectFiles.length,
       projectExtensionCounts: countBy(platformProjectFiles, extensionOf),
       mavenModuleFileCounts: countBy(platformProjectFiles, (file) => file.slice(PLATFORM_ROOT.length + 1).split("/")[0]),
+      projectFiles: platformProjectFiles,
       javaSourceCatalog: platformJavaCatalog,
       lsfFileCount: platformModules.length,
       javaSourceFileCount: myJavaFiles.length,
@@ -615,6 +616,72 @@ export function renderModuleRegisterMarkdown(catalog) {
       escapeMarkdownCell(module.namespace || "—"), escapeMarkdownCell(module.requires.join(", ") || "—"),
       c.classes + c.classExtensions, c.properties, c.actions, c.forms + c.formExtensions, c.apiAnnotations,
     ].join(" | ") + " |");
+  }
+
+  lines.push("", "## MyCompany 6.2 — recursos que complementan los módulos LSF", "");
+  lines.push("| Tipo de recurso | Cantidad |");
+  lines.push("|---|---:|");
+  for (const [category, count] of Object.entries(catalog.myCompanyProject.categoryCounts).sort(([a], [b]) => a.localeCompare(b))) {
+    lines.push("| " + escapeMarkdownCell(category) + " | " + count + " |");
+  }
+
+  lines.push("", "### Plantillas de reportes e impresión JRXML", "");
+  for (const file of catalog.myCompanyProject.reportTemplates) lines.push("- " + file);
+  lines.push("", "### JavaScript y CSS", "");
+  for (const file of catalog.myCompanyProject.webAssets) lines.push("- " + file);
+  lines.push("", "### Extensiones Java propias", "");
+  for (const item of catalog.myCompanyProject.javaSources) {
+    const types = item.topLevelTypes.map((type) => type.kind + " " + type.name + " (L" + type.line + ")").join(", ") || "sin tipo público detectado";
+    lines.push("- " + item.path + " — paquete " + item.packageName + "; " + types + "; imports: " + item.importCount);
+  }
+  lines.push("", "### Bundles, configuración y SQL", "");
+  for (const file of catalog.myCompanyProject.propertyFiles) lines.push("- " + file);
+  for (const file of catalog.myCompanyProject.sqlScripts) lines.push("- " + file);
+  lines.push("", "### Imágenes y otros recursos", "");
+  for (const file of catalog.myCompanyProject.imageAssets) lines.push("- " + file);
+  const listedMyCompany = new Set([
+    ...catalog.myCompanyProject.reportTemplates,
+    ...catalog.myCompanyProject.webAssets,
+    ...catalog.myCompanyProject.javaSources.map((item) => item.path),
+    ...catalog.myCompanyProject.propertyFiles,
+    ...catalog.myCompanyProject.sqlScripts,
+    ...catalog.myCompanyProject.imageAssets,
+  ]);
+  for (const item of catalog.myCompanyProject.files) {
+    if (item.extension !== ".lsf" && item.extension !== ".md" && !listedMyCompany.has(item.path)) {
+      lines.push("- " + item.path + " — " + item.category);
+    }
+  }
+
+  lines.push("", "## lsFusion 6.2 — registro de las 3.330 fuentes Java", "");
+  lines.push("| Módulo Maven | Paquete Java | Tipos de nivel superior detectados | Imports | Líneas | Archivo |");
+  lines.push("|---|---|---|---:|---:|---|");
+  for (const item of catalog.lsFusion.javaSourceCatalog) {
+    const mavenModule = item.path.slice(PLATFORM_ROOT.length + 1).split("/")[0];
+    const types = item.topLevelTypes.map((type) => type.kind + " " + type.name).join(", ") || "No detectado";
+    lines.push("| " + [
+      escapeMarkdownCell(mavenModule),
+      escapeMarkdownCell(item.packageName),
+      escapeMarkdownCell(types),
+      item.importCount,
+      item.lineCount,
+      escapeMarkdownCell(item.path),
+    ].join(" | ") + " |");
+  }
+
+  lines.push("", "## lsFusion — demás recursos del proyecto", "");
+  lines.push("| Extensión | Cantidad |");
+  lines.push("|---|---:|");
+  for (const [extension, count] of Object.entries(catalog.lsFusion.projectExtensionCounts).sort(([a], [b]) => a.localeCompare(b))) {
+    lines.push("| " + escapeMarkdownCell(extension) + " | " + count + " |");
+  }
+  lines.push("");
+  const listedPlatformCode = new Set([
+    ...catalog.lsFusion.javaSourceCatalog.map((item) => item.path),
+    ...catalog.lsFusion.modules.map((item) => item.path),
+  ]);
+  for (const file of catalog.lsFusion.projectFiles) {
+    if (!listedPlatformCode.has(file) && !file.endsWith(".md")) lines.push("- " + file);
   }
 
   lines.push("", "## Advertencias de interpretación", "");

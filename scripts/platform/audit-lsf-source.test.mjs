@@ -165,3 +165,46 @@ test("extrae el paquete y los tipos públicos principales de fuentes Java", () =
     ["class", "GenerateCSRAction"],
   ]);
 });
+
+
+test("el registro estructural incorpora recursos MyCompany y fuentes Java de plataforma", async () => {
+  const { renderModuleRegisterMarkdown } = await import("./audit-lsf-source.mjs");
+  const module = {
+    moduleName: "ComprasDemo",
+    path: "vendor/mycompany/src/main/lsfusion/purchase/Demo.lsf",
+    namespace: "Compras",
+    requires: ["Base"],
+    lineCount: 20,
+    reachableFromApplicationRoot: true,
+    domain: "purchase",
+    counts: { classes: 1, classExtensions: 0, properties: 2, propertyExtensions: 0, actions: 1, actionExtensions: 0, forms: 1, formExtensions: 0, constraints: 0, whenEvents: 0, onEvents: 0, apiAnnotations: 0, navigators: 0 },
+    declarations: { classes: [{ name: "Pedido", line: 2 }], properties: [{ name: "numero", line: 4 }, { name: "importe", line: 5 }], actions: [{ name: "confirmar", line: 6 }], classExtensions: [], propertyExtensions: [], actionExtensions: [], forms: [{ name: "pedido", line: 8 }], formExtensions: [], navigators: [], constraints: [], whenEvents: [], onEvents: [], apiAnnotations: [], noAuthAnnotations: [], groups: [], designs: [], windows: [], metaStatements: [], tables: [], indexes: [], beforeStatements: [], afterStatements: [], macroInvocations: [] },
+  };
+  const markdown = renderModuleRegisterMarkdown({
+    applicationComposition: { rootModule: "RubrovaCustom", resolvedModuleCount: 3, sourceModuleCounts: { myCompany: 1, lsFusion: 1, rubrova: 1 }, unresolvedRequirements: [] },
+    myCompany: { lsfFileCount: 1, modules: [module] },
+    rubrovaExtensions: { lsfFileCount: 1, modules: [{ ...module, moduleName: "RubrovaExt", path: "extensions/lsfusion/RubrovaExt.lsf", counts: module.counts, declarations: module.declarations }] },
+    myCompanyProject: {
+      categoryCounts: { "Plantilla JasperReports": 1, "Componente JavaScript": 1, "Extensión Java": 1 },
+      reportTemplates: ["vendor/mycompany/report.jrxml"],
+      webAssets: ["vendor/mycompany/app.js"],
+      javaSources: [{ path: "vendor/mycompany/Custom.java", packageName: "mycompany", topLevelTypes: [{ kind: "class", name: "Custom", line: 3 }], importCount: 1 }],
+      propertyFiles: ["vendor/mycompany/messages.properties"],
+      sqlScripts: ["vendor/mycompany/schema.sql"],
+      imageAssets: ["vendor/mycompany/logo.png"],
+      files: [],
+      fileCount: 5,
+    },
+    lsFusion: {
+      lsfFileCount: 1,
+      modules: [{ ...module, moduleName: "System", path: "vendor/platform/server/src/main/lsfusion/system/System.lsf" }],
+      projectExtensionCounts: { ".java": 1, ".lsf": 1 },
+      javaSourceCatalog: [{ path: "vendor/platform/server/src/main/java/example/System.java", packageName: "example", importCount: 2, lineCount: 40, topLevelTypes: [{ kind: "class", name: "System", line: 5 }] }],
+      projectFiles: ["vendor/platform/server/src/main/java/example/System.java", "vendor/platform/server/src/main/lsfusion/system/System.lsf"],
+    },
+  });
+  assert.match(markdown, /report\\.jrxml/);
+  assert.match(markdown, /Custom\\.java/);
+  assert.match(markdown, /System\\.java/);
+  assert.match(markdown, /messages\\.properties/);
+});
