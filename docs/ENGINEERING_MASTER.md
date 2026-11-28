@@ -1783,7 +1783,7 @@ El diferencial no debe reemplazar el ERP base, sino potenciarlo donde el negocio
 
 Estas son líneas de producto; no equivalen a declarar que cada capacidad está implementada.
 
-### 9.6 Localización española: cobertura y puerta de aceptación
+### 9.6 Localización en español argentino (es_AR): cobertura y puerta de aceptación
 
 La plataforma de interfaz y los mensajes del motor tienen bundles propios; la traducción del negocio MyCompany utiliza MyCompanyResourceBundle. No se debe confundir que el cliente GWT y los mensajes de servidor estén en español con que todos los rótulos de MyCompany lo estén.
 
@@ -1799,6 +1799,107 @@ Reglas obligatorias:
 - El smoke nativo debe comprobar menús y acciones visibles en español. Para la devolución POS, la aceptación exige Nueva venta (con o sin el atajo visible), no New receipt.
 
 La cobertura de recursos se compara automáticamente con el bundle base, pero la puerta definitiva es visual y funcional: abrir cada pantalla del perfil activo, comprobar sus controles y mensajes y fallar ante texto inglés inesperado. La cifra de cobertura debe actualizarse junto con cada traducción y no puede presentarse como completa mientras haya claves o pantallas activas sin validar.
+
+### 9.7 Puerta obligatoria de cierre del relevamiento (bloqueante)
+
+<text>**Estado: ABIERTA.** No se habilita el avance a nuevas funciones de Rubrova ni a otro hito del roadmap mientras esta puerta siga abierta.</text>
+
+El objetivo es conocer de manera verificable todo lo que ofrecen las versiones fijadas de MyCompany 6.2 y lsFusion 6.2: funcionalidades visibles, operaciones, configuraciones, herramientas administrativas, puntos de extensión, APIs, reglas, relaciones y límites. No alcanza con inventariar archivos, leer nombres de módulos o confirmar que el proyecto compila.
+
+#### Alcance que debe quedar cubierto
+
+**MyCompany 6.2 — los 800 módulos LSF**
+
+- Cada archivo y módulo debe aparecer en el catálogo, con ruta, nombre, namespace, dependencias REQUIRE, dominio, versión de origen y relación con el módulo raíz.
+- Cada módulo se debe clasificar: cargado por MyCompany, dependencia indirecta, opcional, regional, específico de un proveedor, de soporte interno, ejemplo/fixture o fuera de uso. La clasificación debe estar justificada; «no se usa» sin revisar no es una conclusión válida.
+- Para cada módulo se deben identificar sus clases, datos iniciales, propiedades y cálculos, acciones, formularios, navegación, validaciones, eventos, APIs, permisos, informes y dependencias.
+- Se debe explicar qué caso de uso resuelve, cómo se configura, qué pasos sigue el usuario, qué otros módulos intervienen y qué sucede al confirmar, cancelar, modificar, duplicar o revertir una operación.
+- Para cada circuito documental se debe seguir el dato desde la pantalla y la acción hasta el documento, sus líneas, las relaciones con el origen, los estados, los pagos/deudas, los ledgers y los informes que consumen el hecho.
+- Los módulos opcionales o regionales también deben quedar identificados y documentados. No se activan por el solo hecho de estar incluidos en el código.
+
+**lsFusion 6.2 — plataforma y herramientas**
+
+El mapa debe cubrir las capacidades del lenguaje, del servidor, de la base de datos, de los clientes y de la administración. Como mínimo:
+
+- Modelo de datos, clases, herencia, polimorfismo, propiedades, datos persistentes y locales, cálculos, agregaciones, índices, materialización y modelo físico.
+- Acciones, operadores, expresiones, restricciones, eventos, reactividad, concurrencia, sesiones, transacciones, APPLY, CANCEL, NEWSESSION y NESTEDSESSION.
+- Módulos, namespaces, REQUIRE, extensiones, puntos de extensión, metaprogramación y generación de código.
+- Formularios, componentes, diseños, navegación, filtros, búsquedas, reportes, impresión, importación y exportación.
+- Persistencia, SQL, optimización, adaptadores, conexión con Java, archivos y sistemas externos.
+- Action API, EXEC/EVAL y sus límites, autenticación, permisos y seguridad por usuario, rol, acción, propiedad y navegación.
+- Cliente web, cliente de escritorio, comunicación cliente-servidor, internacionalización, recursos y herramientas de desarrollo/IDE.
+- Instalación, configuración, compilación, empaquetado, despliegue, logs, diagnóstico, Process Monitor, profiler, scheduler, backups y restauración.
+- Capacidades incorporadas en MyCompany que dependen de la plataforma, con el mecanismo concreto que las hace posibles.
+
+Cada herramienta debe tener una ficha de propósito, quién la utiliza, cómo se habilita, configuración necesaria, entradas/salidas, permisos, efectos, límites y forma de verificarla. Se deben distinguir las funciones documentadas de las que están presentes en el código y de las que efectivamente están disponibles en el runtime de Rubrova.
+
+#### Ficha y evidencia obligatorias
+
+La ficha definida en 9.3 se aplica a todos los módulos. Cuando un archivo no tenga una función de negocio independiente, se debe documentar qué aporta y a qué módulo/capacidad sirve; no se lo puede dejar sin clasificar.
+
+Cada afirmación debe etiquetarse como **hecho de fuente**, **hecho de prueba**, **interpretación**, **hipótesis**, **decisión** o **pendiente**, siguiendo la sección 1.2. La evidencia tiene que indicar commit exacto, archivo y líneas, configuración, escenario, entorno y resultado.
+
+Los niveles de evidencia no se mezclan:
+
+1. **Inventariado:** el archivo, módulo, API o herramienta está identificado.
+2. **Analizado en fuente:** se siguió la implementación y se entienden sus contratos y límites.
+3. **Cargado:** el módulo o subsistema inicia en la composición y configuración que se está estudiando.
+4. **Verificado en interfaz o API:** se ejecutó una operación real y se observó su resultado.
+5. **Conciliado de punta a punta:** los documentos, estados, saldos, ledgers, reportes y efectos relacionados coinciden.
+6. **Aceptado:** hay pruebas repetibles para el escenario y sus excepciones relevantes.
+
+Una compilación verde no equivale a un módulo cargado; un formulario visible no equivale a una operación correcta; una prueba aislada no equivale a conciliación integral.
+
+#### Catálogo estructural automático
+
+El script [audit-lsf-source.mjs](../scripts/platform/audit-lsf-source.mjs) genera un índice de los archivos LSF de MyCompany y la plataforma, sus encabezados, dependencias y declaraciones estructurales. La prevalidación ejecuta sus pruebas y compara los conteos con los locks de origen; GitHub Actions conserva el JSON como artefacto.
+
+Este catálogo ayuda a detectar archivos no inventariados, dependencias y cambios en la base. **No interpreta por sí solo todas las funciones, no descubre la semántica completa del código y no reemplaza las fichas manuales ni las pruebas de runtime.** Sus conteos nunca deben presentarse como porcentaje de cobertura funcional.
+
+#### Congelamiento de alcance mientras la puerta esté abierta
+
+Hasta cerrar el relevamiento, el trabajo permitido se limita a investigar, inventariar, leer fuentes, documentar, crear herramientas de auditoría, corregirlas y ejecutar pruebas necesarias para obtener evidencia. También se permiten correcciones técnicas imprescindibles para poder cargar y estudiar la plataforma.
+
+Quedan en pausa la incorporación de nuevas funciones de negocio, nuevas integraciones, nuevos frameworks, cambios de arquitectura por anticipado y la ampliación del roadmap funcional. No se activa una integración regional ni se desarrolla un reemplazo propio mientras no se haya evaluado primero la alternativa nativa.
+
+#### Condiciones para cerrar la puerta
+
+La puerta sólo se cierra cuando se cumplan todas estas condiciones:
+
+- Los 800 módulos MyCompany están identificados y clasificados, sin archivos ni dependencias relevantes sin explicar.
+- Todas las funciones de negocio, administrativas y de integración disponibles están asociadas a sus módulos, configuración, pantallas/acciones, datos, reglas, permisos, relaciones y límites.
+- La composición efectiva está diferenciada de los módulos opcionales, y se conoce qué necesita cada perfil para activarse.
+- Los circuitos entre dominios tienen un mapa de relaciones y propiedad de datos; están identificados los documentos y ledgers que constituyen la fuente de verdad.
+- Las capacidades y herramientas de lsFusion están cubiertas desde la documentación de la versión fijada y contrastadas con su código cuando corresponda.
+- Cada capacidad relevante tiene un estado de evidencia honesto; no quedan afirmaciones de disponibilidad apoyadas únicamente en nombres o documentación de otra versión.
+- Existe una matriz reuse-first completa: nativo configurable, extensión sobre contrato nativo, adaptador externo o brecha real que justifique desarrollo propio.
+- Los perfiles que se habiliten tienen cobertura visual y funcional en español argentino, sin textos en inglés en los flujos aceptados.
+- Las pruebas seleccionadas demuestran los recorridos críticos y sus excepciones; quedan registradas las limitaciones conocidas y los puntos que deliberadamente no se activan.
+- Una revisión técnica final no encuentra módulos, dependencias, funciones expuestas o relaciones relevantes sin identificar.
+
+Al cerrar esta puerta se retoma el roadmap que ya existe, utilizando la matriz de reutilización y sin volver a investigar desde cero. **Hasta entonces, el estado oficial sigue siendo «relevamiento incompleto».**
+
+#### Glosario de interfaz es_AR
+
+| Concepto | Término preferido |
+|---|---|
+| Caja lógica de venta | Caja |
+| Período de trabajo de la caja | Turno |
+| Cobro de una venta | Cobro |
+| Dinero devuelto al cliente | Reintegro |
+| Lugar físico de almacenamiento | Depósito |
+| Cantidad física registrada | Stock |
+| Cantidad comprometida | Stock reservado |
+| Conteo físico de mercadería | Conteo de stock |
+| Conteo de billetes y monedas | Arqueo de caja |
+| Entrada de mercadería | Recepción |
+| Salida o envío de mercadería | Despacho |
+| Documento de compra | Pedido de compra |
+| Producción | Orden de producción |
+| Código tributario argentino | CUIT |
+| Organismo fiscal argentino | ARCA |
+
+Los textos de interacción deben sonar naturales en Argentina y usar voseo cuando corresponda: «Ingresá», «Elegí», «Guardá», «Consultá» y «Anulá». El tono debe ser claro y profesional, sin forzar modismos ni cambiar un término de dominio por una traducción que altere su significado.
 
 ## 10. Referencias de código y documentación
 
@@ -3645,3 +3746,12 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 - #530 identificó la aserción de alias obsoleta; #531 identificó dos regex de firma mal escapadas. En ambos casos la validación PowerShell pasó, pero la prevalidación falló y evitó que el build y el smoke se ejecutaran.
 - El commit bedaecec reemplazó ambas regex por comparación literal de la firma keyword-only actual. #532 aprobó la prevalidación compartida y Windows; el build estaba en ejecución al corte.
 - **Pendiente:** el smoke funcional debe verificar el botón real en español, hacer el descarte nativo, volver al recibo y demostrar que no cambian ventas, devoluciones, caja ni ledger.
+
+### 2026-11-27 — REP-050 — Puerta bloqueante y catálogo estructural de fuentes
+
+- Se formaliza el relevamiento exhaustivo de MyCompany 6.2 y lsFusion 6.2 como puerta bloqueante: no se avanza con nuevas funciones ni con la siguiente etapa del roadmap hasta cerrar la cobertura definida en 9.7.
+- Se vuelve explícito que los 800 módulos tienen que estar identificados y clasificados, incluidos los opcionales y regionales; los conteos del árbol no equivalen a cobertura funcional.
+- El inventario actual de la revisión fijada también identifica 49 archivos LSF de la plataforma, 3.330 fuentes Java y 431 páginas Markdown en inglés más 431 en ruso. Estos conteos sirven como base de trazabilidad, no como análisis semántico de todas las capacidades.
+- Se incorpora un catálogo automático de estructura y dependencias, con pruebas y comparación contra los locks de origen. El resultado se publica como artefacto de CI para poder revisar el inventario completo.
+- **Límite explícito:** el catálogo automático no certifica comportamiento, carga, permisos, configuración ni conciliación. La ficha funcional y la evidencia de runtime siguen siendo obligatorias.
+- **Estado:** puerta ABIERTA. Se permite únicamente investigación, inventario, documentación, herramientas de auditoría y pruebas necesarias para demostrar las capacidades nativas.

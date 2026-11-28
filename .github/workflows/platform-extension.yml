@@ -49,6 +49,13 @@ jobs:
         env:
           RUBROVA_PREFLIGHT_OUTPUT_DIR: ${{ runner.temp }}/rubrova-preflight
         run: bash scripts/platform/local-preflight.sh --platform
+      - name: Publicar el catálogo estructural de fuentes
+        uses: actions/upload-artifact@v7
+        with:
+          name: rubrova-lsf-source-catalog
+          path: ${{ runner.temp }}/rubrova-preflight/lsfusion-source-catalog.json
+          if-no-files-found: error
+          retention-days: 7
 
   # La compilación sólo prueba que se generaron artefactos. No demuestra que
   # lsFusion 6.2 pueda parsear/cargar todos los módulos ni que sus APIs respeten
