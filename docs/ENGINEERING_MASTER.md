@@ -3503,6 +3503,8 @@ Fin del manual técnico canónico. Toda nueva evidencia, contrato, decisión, in
 ### 2026-11-27 — REP-045 — Perfil inicial de producción alimentaria documentado
 
 - La inspección de `MyCompany.lsf` y `Manufacturing.lsf` confirma que fabricación nativa, BOM, órdenes, consumo, producto terminado, costos, merma y lotes ya forman parte de la suite vendorizada. `InvLedgerLot` mantiene el stock por lote y `PosDashboardLot` permite capturar lotes desde el POS.
-- `Inventory.Lot` sólo mantiene ID y producto; no contiene fecha de elaboración, vencimiento ni condición de conservación. La captura de lote no implica FEFO, bloqueo de vencidos o trazabilidad alimentaria completa.
+- `Inventory.Lot` sólo mantiene ID y producto; no contiene fecha de elaboración, vencimiento ni condición de conservación.
+- `ManufacturingOrderReady.checkAvailability` trabaja con disponibilidad por ubicación/producto (`prevAvailable(location, item)`), no con FEFO ni reservas por lote. `ManufacturingOrderLot` permite asignar lotes a líneas, mientras `defineDocLot` sólo verifica identidad de producto y cantidad total asignada. No valida expiración ni cuarentena.
+- `ManufacturingOrderDone.markAsDone` puede completar producción y consumo reales con las cantidades previstas cuando están vacías. Para alimentos se necesita una barrera de confirmación de cantidades reales antes de finalizar una tanda.
 - Se documentó en `docs/FOOD_PRODUCTION_AND_TRACEABILITY.md` la forma de extender esos contratos nativos para tienda + rotisería, con versiones de receta, tandas, consumos/producción reales, merma, costo, trazabilidad hacia adelante/atrás y validación sanitaria supervisada. Se enlazó desde `SECTOR_PROFILES.md` y `PRODUCT_CAPABILITY_MAP.md`.
 - **Estado:** especificación funcional en `main`; no hay todavía código ni aceptación runtime de vencimientos, FEFO, temperatura, recall o lotes alimentarios. No activar el flujo como productivo.
