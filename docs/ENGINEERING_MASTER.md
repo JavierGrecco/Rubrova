@@ -20,7 +20,7 @@
 
 ### 1.1 Fuente única
 
-Las conclusiones técnicas sobre MyCompany, lsFusion, módulos, contratos, propiedad de datos, integraciones, decisiones, pruebas y roadmap viven aquí. No crear archivos separados para nuevas auditorías, mapas de relaciones, contratos, registros de decisiones o avances de investigación.
+Este manual es la autoridad para estado, evidencia, contratos, propiedad de datos, decisiones y roadmap. Los dossiers ya existentes de `docs/platform-audit/` profundizan la lectura de fuentes por dominio; no son una segunda fuente de decisiones. Su índice obligatorio (`docs/platform-audit/README.md`) sólo organiza la cobertura y enlaza los dossiers. Toda conclusión que afecte arquitectura, contratos, aceptación o roadmap se refleja aquí. No crear mapas o trackers paralelos.
 
 Se mantienen en el repositorio los documentos de producto que definen requisitos funcionales específicos (POS, fiscalidad, mayorista, servicios, datos analíticos, etc.). Pueden detallar necesidades del negocio, pero no mantener contratos técnicos diferentes de los aquí definidos.
 
@@ -70,6 +70,14 @@ Al cerrar el trabajo, actualizar este manual. No depender de conversaciones, mem
 ---
 
 <a id="estado-actual-de-main"></a>
+
+### 1.5 Puerta obligatoria de mapeo reuse-first
+
+Antes de cualquier diseño o implementación que afecte MyCompany 6.2 o lsFusion 6.2, consultar el [índice obligatorio de mapeo](platform-audit/README.md). No depender de conversaciones, memoria de trabajo ni búsquedas superficiales.
+
+La revisión debe localizar las capacidades nativas, módulos, dependencias `REQUIRE`, extensiones, clases, propiedades, acciones, formularios, restricciones, eventos, APIs, permisos, recursos y documentación relacionada. Debe seguir el flujo completo hasta estados, documentos, líneas, ledgers, reportes y efectos externos. También debe considerar módulos no incluidos actualmente en `RubrovaCustom` y las regionalizaciones cuando sean relevantes.
+
+Cada avance registra una decisión explícita —reutilizar, extender, adaptar, crear módulo propio, parchear upstream o incorporar dependencia— con fuentes y motivo. El dossier del dominio, el índice de cobertura cuando corresponda, este manual y sus pruebas se actualizan en el mismo cambio. Si sólo existe evidencia estática, no se afirma aceptación de runtime. Las instrucciones para agentes están en `AGENTS.md`; el procedimiento común, en `docs/WORKFLOW.md`.
 
 ## 2. Estado actual de main
 
