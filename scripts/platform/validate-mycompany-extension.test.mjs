@@ -321,7 +321,7 @@ test("el smoke aceptado corre en Linux x86_64 y sólo admite emulación Mac con 
   assert.match(uiSmokeSource, /wait_until_form_loaded\([\s\S]*?"UI_POS_SCREEN",[\s\S]*?register_name=pos_register_name,[\s\S]*?\)/);
   assert.match(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=true/);
   assert.doesNotMatch(uiSmokeSource, /UI_POS_SCREEN_AVAILABLE=false/);
-  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str\)/);
+  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str, \\*, require_spanish: bool = False\)/);
   assert.match(uiSmokeSource, /ACTION_CONTAINER_BY_LABEL = \{/);
   assert.match(uiSmokeSource, /"Abrir turno": "PROPERTY\(openSession\(p\)\)"/);
   assert.match(uiSmokeSource, /"Ok \(ctrl ENTER\)": "PROPERTY\(overFormOk\)"/);
@@ -930,7 +930,7 @@ test("la prueba de resiliencia inyecta timeout, verifica recuperación y persist
   assert.ok(runtimeSmokeSource.includes("Invoicing.currency(Invoicing.invoiceType('retail')) <- MasterData.defaultCurrency()"));
   assert.match(uiSmokeSource, /UI_POS_EFFECTIVE_CONFIGURATION/);
   assert.match(uiSmokeSource, /def wait_for_payment_dialog\(page: Any, timeout_seconds: int = 20\)/);
-  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str\) -> bool/);
+  assert.match(uiSmokeSource, /def click_exact_action\(page: Any, label: str, \\*, require_spanish: bool = False\) -> bool/);
   assert.match(uiSmokeSource, /page[.]get_by_role\("button", name=label, exact=True\)/);
   assert.doesNotMatch(uiSmokeSource, /def wait_for_exact_link\(/);
   assert.ok(uiSmokeSource.includes('search_tab.click(no_wait_after=True)'));
@@ -1036,7 +1036,7 @@ test("el cierre del turno acepta el CONFIRM GWT original y concilia la sesión",
   assert.ok(uiSmokeSource.includes('click_exact_action(page, "Nueva venta", require_spanish=True)'));
   assert.ok(uiSmokeSource.includes('"Nueva venta": "PROPERTY(newReceipt(s))"'));
   assert.ok(uiSmokeSource.includes('"Nueva venta": ("Nueva venta", "New receipt (shift F12)")'));
-  assert.ok(uiSmokeSource.includes("accepted_labels = ACTION_LABEL_ALIASES.get(label, (label,))"));
+  assert.ok(uiSmokeSource.includes('require_spanish and label == "Nueva venta"'));
   assert.ok(uiSmokeSource.includes("UI_RETURN_DRAFT_DISCARD_ACTION_SPANISH=true"));
   assert.ok(uiSmokeSource.includes("UI_ACTION_NUEVA_VENTA_LABEL_ES=true"));
   assert.ok(uiSmokeSource.includes("UI_RETURN_ACTION_CLICKED=true"));
