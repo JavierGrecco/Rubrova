@@ -402,16 +402,165 @@ export function buildSourceCatalog(root = ROOT) {
   };
 }
 
+const MYCOMPANY_DOCUMENTATION_FOLDERS = {
+  crm: ["crm"],
+  fleet: ["transport"],
+  humanResources: ["humanResources"],
+  inventory: ["inventory"],
+  invoicing: ["invoicing"],
+  manufacturing: ["manufacturing"],
+  masterdata: ["masterdata"],
+  projectManagement: ["projectManagement"],
+  purchase: ["purchase"],
+  retail: ["retail"],
+  sales: ["sales"],
+};
+
+function declarationNames(module, key) {
+  return (module.declarations[key] || []).map((entry) =>
+    entry.name ? entry.name + " (L" + entry.line + ")" : "L" + entry.line,
+  );
+}
+
+function escapeMarkdownCell(value) {
+  return String(value ?? "").replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
+}
+
+export function renderModuleRegisterMarkdown(catalog) {
+  const docRoot = path.join(ROOT, "vendor/mycompany/src/main/resources/docs/en");
+  const docPaths = walkFiles(docRoot, ".md");
+  const docsByFolder = new Map();
+  for (const relativePath of docPaths) {
+    const folder = relativePath.split("/")[0] || "(raíz)";
+    if (!docsByFolder.has(folder)) docsByFolder.set(folder, []);
+    docsByFolder.get(folder).push("vendor/mycompany/src/main/resources/docs/en/" + relativePath);
+  }
+
+  const lines = [
+    "# Registro estructural de módulos LSF — Rubrova",
+    "",
+    "**Alcance:** snapshots fijados de MyCompany 6.2, lsFusion 6.2 y extensiones LSF propias.",
+    "",
+    "**Método:** declaraciones de nivel superior detectadas estáticamente. Las acciones sin palabra clave se detectan por patrón. Las expansiones META y macros no se interpretan. Este registro no constituye una ficha funcional ni prueba de runtime.",
+    "",
+    "## Resumen de composición",
+    "",
+    "| Origen | Archivos LSF | En el cierre de RubrovaCustom |",
+    "|---|---:|---:|",
+    "| MyCompany 6.2 | " + catalog.myCompany.lsfFileCount + " | " + catalog.applicationComposition.sourceModuleCounts.myCompany + " |",
+    "| lsFusion 6.2 | " + catalog.lsFusion.lsfFileCount + " | " + catalog.applicationComposition.sourceModuleCounts.lsFusion + " |",
+    "| Extensiones Rubrova | " + catalog.rubrovaExtensions.lsfFileCount + " | " + catalog.applicationComposition.sourceModuleCounts.rubrova + " |",
+    "",
+    "Dependencias sin resolver desde RubrovaCustom: **" + catalog.applicationComposition.unresolvedRequirements.length + "**.",
+    "",
+    "## MyCompany 6.2 — los 800 módulos",
+    "",
+    "| Módulo | Dominio | En RubrovaCustom | Namespace | REQUIRE | Clases | Propiedades | Acciones | Formularios | Restricciones | Eventos | API |",
+    "|---|---|---:|---|---|---:|---:|---:|---:|---:|---:|---:|",
+  ];
+
+  const myModules = [...catalog.myCompany.modules].sort((a, b) =>
+    a.domain.localeCompare(b.domain) || a.moduleName.localeCompare(b.moduleName),
+  );
+  for (const module of myModules) {
+    const c = module.counts;
+    lines.push("| " + [
+      escapeMarkdownCell(module.moduleName),
+      escapeMarkdownCell(module.domain),
+      module.reachableFromApplicationRoot ? "Sí" : "No",
+      escapeMarkdownCell(module.namespace || "—"),
+      escapeMarkdownCell(module.requires.join(", ") || "—"),
+      c.classes + c.classExtensions,
+      c.properties,
+      c.actions,
+      c.forms + c.formExtensions,
+      c.constraints,
+      c.whenEvents + c.onEvents,
+      c.apiAnnotations,
+    ].join(" | ") + " |");
+  }
+
+  lines.push("", "## Fichas estructurales por módulo MyCompany", "");
+  for (const module of myModules) {
+    const folders = MYCOMPANY_DOCUMENTATION_FOLDERS[module.domain] || [];
+    const candidates = folders.flatMap((folder) => docsByFolder.get(folder) || []);
+    lines.push("### " + module.moduleName);
+    lines.push("");
+    lines.push("- **Archivo:** " + module.path);
+    lines.push("- **Namespace:** " + (module.namespace || "—"));
+    lines.push("- **En cierre RubrovaCustom:** " + (module.reachableFromApplicationRoot ? "Sí" : "No; requiere evaluación antes de activarlo"));
+    lines.push("- **Dependencias REQUIRE:** " + (module.requires.join(", ") || "Ninguna declarada"));
+    lines.push("- **Líneas:** " + module.lineCount);
+    lines.push("- **Candidatos de documentación por dominio (no asociación confirmada):** " + (candidates.length ? candidates.join(", ") : "No se encontró carpeta documental homónima; revisar documentación transversal o regional"));
+    const groups = [
+      ["Clases", "classes"], ["Extensiones de clase", "classExtensions"],
+      ["Propiedades", "properties"], ["Extensiones de propiedades", "propertyExtensions"],
+      ["Acciones detectadas", "actions"], ["Extensiones de acciones", "actionExtensions"],
+      ["Formularios", "forms"], ["Extensiones de formularios", "formExtensions"],
+      ["Bloques de navegación", "navigators"], ["Grupos de propiedades", "groups"],
+      ["Diseños", "designs"], ["Ventanas", "windows"], ["Metacódigo", "metaStatements"],
+      ["Tablas", "tables"], ["Restricciones", "constraints"], ["Índices", "indexes"],
+      ["Eventos WHEN", "whenEvents"], ["Eventos ON", "onEvents"],
+      ["Eventos BEFORE", "beforeStatements"], ["Eventos AFTER", "afterStatements"],
+      ["Marcas API", "apiAnnotations"], ["Marcas no-auth", "noAuthAnnotations"],
+      ["Invocaciones de macros", "macroInvocations"],
+    ];
+    for (const [label, key] of groups) {
+      const names = declarationNames(module, key);
+      lines.push("- **" + label + " (" + names.length + "):** " + (names.join(", ") || "—"));
+    }
+    lines.push("");
+  }
+
+  lines.push("## lsFusion 6.2 — módulos LSF del servidor", "");
+  lines.push("| Módulo | Ruta | Namespace | REQUIRE | Clases | Propiedades | Acciones | Formularios | Eventos | API | En RubrovaCustom |");
+  lines.push("|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|");
+  for (const module of [...catalog.lsFusion.modules].sort((a, b) => a.moduleName.localeCompare(b.moduleName))) {
+    const c = module.counts;
+    lines.push("| " + [
+      escapeMarkdownCell(module.moduleName), escapeMarkdownCell(module.path),
+      escapeMarkdownCell(module.namespace || "—"), escapeMarkdownCell(module.requires.join(", ") || "—"),
+      c.classes + c.classExtensions, c.properties, c.actions, c.forms + c.formExtensions,
+      c.whenEvents + c.onEvents, c.apiAnnotations, module.reachableFromApplicationRoot ? "Sí" : "No",
+    ].join(" | ") + " |");
+  }
+
+  lines.push("", "## Extensiones propias de Rubrova", "");
+  lines.push("| Módulo | Ruta | Namespace | REQUIRE | Clases | Propiedades | Acciones | Formularios | API |");
+  lines.push("|---|---|---|---|---:|---:|---:|---:|---:|");
+  for (const module of [...catalog.rubrovaExtensions.modules].sort((a, b) => a.moduleName.localeCompare(b.moduleName))) {
+    const c = module.counts;
+    lines.push("| " + [
+      escapeMarkdownCell(module.moduleName), escapeMarkdownCell(module.path),
+      escapeMarkdownCell(module.namespace || "—"), escapeMarkdownCell(module.requires.join(", ") || "—"),
+      c.classes + c.classExtensions, c.properties, c.actions, c.forms + c.formExtensions, c.apiAnnotations,
+    ].join(" | ") + " |");
+  }
+
+  lines.push("", "## Advertencias de interpretación", "");
+  lines.push("- Los módulos fuera del cierre de RubrovaCustom no se consideran descartados.");
+  lines.push("- Los documentos indicados por carpeta son candidatos; la relación módulo-documento debe confirmarse leyendo el contenido.");
+  lines.push("- Las clases, formularios, propiedades y acciones generadas por metacódigo o macros pueden no aparecer en los conteos estáticos.");
+  lines.push("- La cantidad de acciones sin palabra clave es heurística y se debe revisar en los casos ambiguos.");
+  lines.push("- Este registro no describe reglas de negocio, estados, transacciones, permisos, integraciones externas ni efectos en ledgers. Eso requiere la ficha funcional y evidencia definidas en el manual de ingeniería.");
+  return lines.join("\n") + "\n";
+}
+
 function runCli() {
   const args = process.argv.slice(2);
   let outputPath = null;
+  let markdownOutputPath = null;
   for (let i = 0; i < args.length; i += 1) {
     if (args[i] === "--json-output") {
       outputPath = args[i + 1];
       if (!outputPath) throw new Error("Falta la ruta después de --json-output.");
       i += 1;
+    } else if (args[i] === "--markdown-output") {
+      markdownOutputPath = args[i + 1];
+      if (!markdownOutputPath) throw new Error("Falta la ruta después de --markdown-output.");
+      i += 1;
     } else if (args[i] === "--help" || args[i] === "-h") {
-      console.log("Uso: node scripts/platform/audit-lsf-source.mjs [--json-output archivo.json]");
+      console.log("Uso: node scripts/platform/audit-lsf-source.mjs [--json-output archivo.json] [--markdown-output registro.md]");
       return;
     } else {
       throw new Error("Argumento no reconocido: " + args[i]);
@@ -438,6 +587,12 @@ function runCli() {
     mkdirSync(path.dirname(absolute), { recursive: true });
     writeFileSync(absolute, JSON.stringify(catalog, null, 2) + "\n", "utf8");
     console.log("Informe JSON: " + absolute);
+  }
+  if (markdownOutputPath) {
+    const absolute = path.resolve(markdownOutputPath);
+    mkdirSync(path.dirname(absolute), { recursive: true });
+    writeFileSync(absolute, renderModuleRegisterMarkdown(catalog), "utf8");
+    console.log("Registro Markdown: " + absolute);
   }
   if (!catalog.quality.myCompanyCountMatchesLock || !catalog.quality.platformJavaCountMatchesLock) {
     throw new Error("Los conteos de fuentes no coinciden con los locks fijados.");

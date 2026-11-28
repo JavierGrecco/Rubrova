@@ -79,7 +79,7 @@ run_platform() {
   run_step "$PYTHON_BIN" scripts/platform/test_apply_rubrova_source_patches.py
   run_step "$NODE_BIN" --test scripts/platform/validate-mycompany-extension.test.mjs
   run_step "$NODE_BIN" --test scripts/platform/audit-lsf-source.test.mjs
-  run_step "$NODE_BIN" scripts/platform/audit-lsf-source.mjs --json-output "$OUTPUT_DIR/lsfusion-source-catalog.json"
+  run_step "$NODE_BIN" scripts/platform/audit-lsf-source.mjs --json-output "$OUTPUT_DIR/lsfusion-source-catalog.json" --markdown-output "$OUTPUT_DIR/lsfusion-module-register.md"
   run_step "$NODE_BIN" --test scripts/platform/audit-source-docs.test.mjs
   run_step "$NODE_BIN" scripts/platform/audit-source-docs.mjs --json-output "$OUTPUT_DIR/source-document-catalog.json"
   run_step "$NODE_BIN" --test scripts/evaluation/fixture-validator.test.mjs

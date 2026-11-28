@@ -49,13 +49,15 @@ jobs:
         env:
           RUBROVA_PREFLIGHT_OUTPUT_DIR: ${{ runner.temp }}/rubrova-preflight
         run: bash scripts/platform/local-preflight.sh --platform
-      - name: Publicar el catálogo estructural de fuentes
+      - name: Publicar el catálogo estructural y el registro de módulos
         uses: actions/upload-artifact@v7
         with:
           name: rubrova-lsf-source-catalog
-          path: ${{ runner.temp }}/rubrova-preflight/lsfusion-source-catalog.json
+          path: |
+            ${{ runner.temp }}/rubrova-preflight/lsfusion-source-catalog.json
+            ${{ runner.temp }}/rubrova-preflight/lsfusion-module-register.md
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
       - name: Publicar el índice documental de MyCompany y lsFusion
         uses: actions/upload-artifact@v7
         with:
