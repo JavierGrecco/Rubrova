@@ -207,6 +207,26 @@ OutgoingPaymentCanceled define active(payment) como (ready OR done) AND NOT canc
 
 OutgoingPaymentType restringe cuentas bancarias/caja y puede marcar pagos intercompany. OutgoingPaymentInitial crea tipos de pago a proveedor bancarios y en efectivo, además de tipos para reintegro a clientes; no considerar todos los tipos como pagos a proveedor.
 
+### 7.1 Secuencia comprobada en fuente MyCompany 6.2 — `BillPayment.registerPayment`
+
+El código fijado de MyCompany 6.2 precisa el comportamiento que debe conservar Rubrova:
+
+1. `BillPaymentInitial` asigna `outgoingPaymentType('vendorbank')` al tipo Bill cuyo ID es `bill`; el tipo `vendorcash` existe, pero no es el predeterminado. No asumir que cualquier CashAccount es compatible con la acción estándar.
+2. `registerPayment(Bill)` sólo se expone cuando el documento está Ready. La acción aplica el documento actual y, en una sesión nueva, crea `OutgoingPayment`, lo pone Ready, ejecuta `fill(p,b)` y los eventos locales.
+3. `fill(p,b)` copia el tipo de pago desde BillType, proveedor, cuenta del proveedor, empresa, cuenta de la empresa y moneda. Las cuentas deben pertenecer a sus titulares y respetar el tipo bancario/de caja permitido.
+4. La acción propone `sourceLeft(b)` como importe y aplica `paid(b,p) <- left(b,p)`. Luego abre el formulario nativo `outgoingPayment` en un diálogo para que el usuario ajuste el importe. Si reduce el importe, la propia acción limita la imputación a `amount[Debt](p)`.
+5. `OutgoingPaymentCanceled.active` considera activos tanto Ready como Done, excepto cancelados; `OutgoingPaymentLedger` incorpora el pago al `Payment` con `signedAmount = -amount`. Por ello, el saldo de la cuenta disminuye al registrar un pago Ready, no sólo al marcarlo Done.
+6. `OutgoingPaymentDone.markAsDone` cambia el estado a Done en otra sesión, pero no crea un segundo movimiento: el pago sigue siendo un único Payment activo.
+7. `BillDebt` marca Bill Done/Paid cuando el importe de deuda queda totalmente imputado y revierte ese estado cuando deja de cumplirse. **Es posible, por diseño de fuente, que Bill ya figure Paid mientras el último OutgoingPayment continúa Ready**. No confundir deuda cubierta/imputada con confirmación externa del banco.
+8. `Payment.balance(Account)` suma sólo Payment activos y un constraint impide saldo negativo si `allowNegative(account)` no está habilitado. Un pago que no pueda cubrirse con la cuenta de empresa debe fallar, no crear un saldo artificial.
+9. En paralelo, `OutgoingPaymentDebt` puede autoimputar por coincidencia de substring entre `reference(payment)` y `number(IncomingDebt)`. Esa heurística no es conciliación bancaria ni debe usarse como sustituto de la imputación explícita que realiza `BillPayment`.
+
+**Fuentes upstream fijadas al SHA MyCompany 6.2 `d21ca6978717b98b6300d90267f9767db7414008`:** [BillPayment](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/bills/payments/BillPayment.lsf), [BillPaymentInitial](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/bills/payments/BillPaymentInitial.lsf), [OutgoingPayment](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPayment.lsf), [OutgoingPaymentCanceled](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentCanceled.lsf), [OutgoingPaymentDone](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentDone.lsf), [OutgoingPaymentDebt](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentDebt.lsf), [OutgoingPaymentLedger](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/payments/outgoing/OutgoingPaymentLedger.lsf), [BillDebt](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/bills/BillDebt.lsf), [Debt](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/ledgers/Debt.lsf), [Payment](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/ledgers/Payment.lsf), [Account](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/accounts/Account.lsf), [CashAccount](https://github.com/lsfusion-solutions/mycompany/blob/d21ca6978717b98b6300d90267f9767db7414008/src/main/lsfusion/invoicing/accounts/cash/CashAccount.lsf).
+
+**Contrato de fixture futura:** la aceptación debe pulsar la acción real `registerPayment` y trabajar con sus diálogos; no basta con insertar OutgoingPayment directamente. Crear cuentas sintéticas independientes de tipo permitido, asignarlas explícitamente a Bill/proveedor y empresa, y sembrar un saldo de apertura positivo mediante el flujo nativo. Medir antes/después el importe de la factura, `paid(Bill)`, `left(Bill)`, estado Bill, estado de cada OutgoingPayment y `Payment.balance(Account)`. En la secuencia 40 + 60 sobre una deuda de 100, el primer pago debe dejar 60 pendientes; el segundo completa la imputación y puede marcar Bill Paid aun estando Ready; pasar el segundo pago a Done no debe descontar dos veces; cancelarlo debe retirar su movimiento e imputación y hacer reaparecer la deuda, siempre que el contrato funcional permita esa cancelación. Repetir la lectura tras reinicio sin volver a ejecutar acciones.
+
+**Estado:** lectura estática exacta de la versión fijada; la secuencia anterior es un plan de aceptación, no resultado runtime. Debe probarse primero la ruta UI nativa porque `registerPayment` abre `DIALOG`.
+
 ## 8. Coincidencia automática por referencia
 
 OutgoingPaymentDebt observa cambios de reference, partner y active. Si la referencia contiene el número de una IncomingDebt y canBePaid se cumple, asigna el saldo pendiente automáticamente.
@@ -256,11 +276,15 @@ Pendiente de runtime:
 | Cancelar Bill con Receipt ligada | Se cancela el documento vinculado según el contrato nativo; sin dejar stock/costo activo residual |
 | Precio pedido distinto de factura | Comprobar qué implementación cost(ReceiptLine) prevalece y que costo no se duplique |
 | Servicio/flete | Distribución por bases y extraCost de recepción reconciliados |
-| Pago parcial | Factura 100; pago 40; left 60; otro pago 60; left 0 y Done sólo cuando corresponde |
+| Pago parcial por acción nativa | Factura 100; botón Register Payment 40; left 60; segundo 60; left 0 |
+| Listo vs terminado | Pago Ready descuenta una vez del Payment ledger; cambiar a Done no duplica movimiento |
+| Estado derivado de Bill | Bill pasa a Paid al cubrirse toda la deuda aunque el OutgoingPayment correspondiente siga Ready |
+| Cancelación de pago | El OutgoingPayment cancelado deja de ser activo, su imputación se retira y el saldo/deuda se recalculan |
+| Cuenta y permisos | Cuenta propia del titular correcto, tipo vendorbank/vendorcash permitido, fondos suficientes y rechazo si saldo negativo no autorizado |
 | Un pago a varias facturas | Imputación limitada al saldo de cada factura y al monto del pago |
-| Sobrepago | Constraint impide saldo negativo no autorizado |
+| Sobrepago | Constraint impide sobreimputar deuda ni crear saldo negativo no autorizado |
 | Reference substring | No se imputa una factura homónima/solapada por falso positivo |
-| Ready vs Done | Determinar si Ready debe reducir balance de cuenta y mostrar saldo comprometido/ejecutado por separado |
+| Ready vs Done | Reportar por separado saldo de cuenta afectado por Ready y estado de documento Done; no llamarlo conciliación bancaria |
 | Moneda | Tipo de cambio fechado, redondeo y edición de fecha después de imputar |
 | Cancelar Bill delivered y reemitirla | La ReceiptLine vuelve a quedar facturable o la política define otro camino explícito; no debe quedar una recepción activa imposible de facturar | 
 | Cancelar factura/pago | Deuda, imputaciones y cuenta se recalculan sin dejar contrapartidas activas incorrectas |
@@ -283,13 +307,14 @@ Pendiente de runtime:
 
 ## 13. Estado y próximos pasos
 
-**Estado actual:** fuente de 37 módulos relevada y relaciones/fórmulas documentadas. Se identificó la asimetría potencial al cancelar una factura delivered (§3.2) y ya se añadió una fixture CI que ejecuta el flujo nativo y captura su lectura tras reinicio. El workflow #616 está probando la nueva sonda; todavía no hay resultado runtime aceptado. No existe aún una aceptación E2E completa de pedido→factura→recepción→costo→deuda→pago→saldo de cuenta. La validación #613 corresponde sólo a Receipt/stock/put-away/costo y no acepta factura, deuda ni pago.
+**Estado actual:** fuente de 37 módulos relevada y relaciones/fórmulas documentadas. La asimetría potencial al cancelar una factura delivered (§3.2) tiene una fixture CI; el run #617 compiló/empaquetó la plataforma completa, pero el smoke nativo abortó durante la carga de datos por superar el límite `vendorReference varchar(30)`. Se corrigió la referencia y se agregó un guard de longitud en `main` (REP-062); todavía no se ha medido la secuencia Bill delivered/cancel en runtime. No existe aún una aceptación E2E completa de pedido→factura→recepción→costo→deuda→pago→saldo de cuenta. #613 acepta sólo Receipt/stock/put-away/costo, no factura, deuda ni pago.
 
 Siguiente bloque de evidencia:
-1. **En ejecución en workflow #616:** pedido de 3, recepción Done de 2, Bill delivered de 2 a precio distinto del pedido, cancelación nativa de Bill y lectura de stock/costo/enlace/cantidad facturable; repetir consulta después del reinicio.
+1. Reejecutar CI sobre la referencia corregida y obtener el diagnóstico medido de Bill delivered/cancel; repetir lectura persistida después del reinicio.
 2. Según el resultado, corregir con un parche estrecho sólo si se confirma el defecto, preservando el historial documental.
-3. Fixture separada de pagos parciales/totales, referencia ambigua y lectura del balance con OutgoingPayment Ready/Done.
-4. Conciliar después del reinicio OrderLine, BillLine, ReceiptLine, Debt, Payment y saldo de cuenta.
+3. Después de resolver ese bloque, implementar una prueba UI para `BillPayment.registerPayment` con pagos parciales y totales, tipo de cuenta permitido y fondos suficientes. Medir Ready/Done/Cancel, imputación de deuda y balance sin duplicar movimientos.
+4. Probar la coincidencia automática por substring de referencia por separado; no mezclarla con la aceptación explícita de BillPayment.
+5. Conciliar después del reinicio OrderLine, BillLine, ReceiptLine, Debt, Payment y saldo de cuenta.
 
 ## 14. Lecturas relacionadas
 
