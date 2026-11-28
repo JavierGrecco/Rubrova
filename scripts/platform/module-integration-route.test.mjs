@@ -61,6 +61,11 @@ const fixtureCatalog = {
       makeModule("ResLedger", { requires: ["InvLedger"] }),
       makeModule("OptionalModule", { active: false }),
       makeModule("SalesOrder", { domain: "sales", path: "vendor/mycompany/src/main/lsfusion/sales/orders/SalesOrder.lsf" }),
+      makeModule("Invoice", { domain: "invoicing", path: "vendor/mycompany/src/main/lsfusion/invoicing/invoices/Invoice.lsf" }),
+      makeModule("Bill", { domain: "invoicing", path: "vendor/mycompany/src/main/lsfusion/invoicing/bills/Bill.lsf" }),
+      makeModule("Pos", { domain: "retail", path: "vendor/mycompany/src/main/lsfusion/retail/pos/Pos.lsf" }),
+      makeModule("Partner", { domain: "masterdata", path: "vendor/mycompany/src/main/lsfusion/masterdata/partners/Partner.lsf" }),
+      makeModule("PurchaseOrderReceipt", { domain: "purchase", path: "vendor/mycompany/src/main/lsfusion/purchase/inventory/receipts/orders/PurchaseOrderReceipt.lsf" }),
       makeModule("PurchaseOrder", { domain: "purchase", path: "vendor/mycompany/src/main/lsfusion/purchase/orders/PurchaseOrder.lsf" }),
     ],
   },
@@ -111,11 +116,27 @@ test("envía utilidades y módulos regionales a sus dossiers específicos", () =
 });
 
 test("un módulo sin pasaporte individual lo declara y conserva el dossier de dominio", () => {
-  const route = resolveModuleIntegrationRoute(fixtureCatalog, "PurchaseOrder");
+  const route = resolveModuleIntegrationRoute(fixtureCatalog, "PurchaseOrderReceipt");
   assert.equal(route.found, true);
   assert.equal(route.passport, null);
   assert.equal(route.guide.path, "docs/platform-audit/MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md");
   assert.ok(route.related.some(item => item.path === "docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md"));
+});
+
+test("prioriza pasaportes de compra, facturación, POS y entidades maestras", () => {
+  const expected = {
+    PurchaseOrder: "docs/platform-audit/modules/PurchaseOrder.md",
+    Invoice: "docs/platform-audit/modules/Invoice.md",
+    Bill: "docs/platform-audit/modules/Bill.md",
+    Pos: "docs/platform-audit/modules/Pos.md",
+    Product: "docs/platform-audit/modules/Product.md",
+    Partner: "docs/platform-audit/modules/Partner.md",
+  };
+  for (const [moduleName, passportPath] of Object.entries(expected)) {
+    const route = resolveModuleIntegrationRoute(fixtureCatalog, moduleName);
+    assert.equal(route.found, true);
+    assert.equal(route.passport.path, passportPath);
+  }
 });
 
 test("advierte cuando un módulo existe pero queda fuera del cierre actual", () => {
@@ -195,7 +216,7 @@ test("los nombres del directorio coinciden con MODULE declarado en cada archivo 
 
 test("la plantilla de ficha conserva los controles mínimos de integración y aceptación", () => {
   const template = read("docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md");
-  for (const moduleName of ["InvLedger", "ResLedger", "CostLedger", "Receipt", "SalesOrder", "Session"]) {
+  for (const moduleName of ["InvLedger", "ResLedger", "CostLedger", "Receipt", "SalesOrder", "Session", "PurchaseOrder", "Invoice", "Bill", "Pos", "Product", "Partner"]) {
     const passportPath = `docs/platform-audit/modules/${moduleName}.md`;
     assert.ok(existsSync(path.join(root, passportPath)), `Falta ficha individual de ${moduleName}`);
     assert.ok(read(passportPath).includes(`Ficha de integración — ${moduleName}`));
