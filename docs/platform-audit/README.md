@@ -125,18 +125,20 @@ Para estos módulos no hay que quedarse sólo con el resumen del dominio: abrir 
 
 | Módulo exacto | Ficha de integración | Alcance de lectura |
 |---|---|---|
-| InvLedger | [Ficha InvLedger](modules/InvLedger.md) | Movimiento físico, saldos, ubicación, aceptación y productores |
-| ResLedger | [Ficha ResLedger](modules/ResLedger.md) | Reservas, esperados, signos, disponible y reglas de ubicación |
-| CostLedger | [Ficha CostLedger](modules/CostLedger.md) | Valoración estándar/AVCO/FIFO, recálculo y riesgos |
-| Receipt | [Ficha Receipt](modules/Receipt.md) | Recepción, entidades, validaciones y efectos en ledgers |
-| SalesOrder | [Ficha SalesOrder](modules/SalesOrder.md) | Pedido, entidades, estados y documentos derivados |
-| Session | [Ficha Session](modules/Session.md) | Apertura/cierre de POS, hooks y conciliación del turno |
+| InvLedger | [Ficha InvLedger](modules/InvLedger.md) · `docs/platform-audit/modules/InvLedger.md` | Movimiento físico, saldos, ubicación, aceptación y productores |
+| ResLedger | [Ficha ResLedger](modules/ResLedger.md) · `docs/platform-audit/modules/ResLedger.md` | Reservas, esperados, signos, disponible y reglas de ubicación |
+| CostLedger | [Ficha CostLedger](modules/CostLedger.md) · `docs/platform-audit/modules/CostLedger.md` | Valoración estándar/AVCO/FIFO, recálculo y riesgos |
+| Receipt | [Ficha Receipt](modules/Receipt.md) · `docs/platform-audit/modules/Receipt.md` | Recepción, entidades, validaciones y efectos en ledgers |
+| SalesOrder | [Ficha SalesOrder](modules/SalesOrder.md) · `docs/platform-audit/modules/SalesOrder.md` | Pedido, entidades, estados y documentos derivados |
+| Session | [Ficha Session](modules/Session.md) · `docs/platform-audit/modules/Session.md` | Apertura/cierre de POS, hooks y conciliación del turno |
 
 ### 4.0 Integración por módulo exacto — ruta obligatoria
 
 Cuando una tarea nombra un módulo o archivo LSF concreto, la lectura debe empezar por el **nombre declarado en `MODULE`**, no sólo por el dominio:
 
 1. Abrir el [directorio de integración por módulo](MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md) (`docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md`). Contiene rutas rápidas para los módulos centrales de cada circuito, sección exacta del dossier y relaciones que deben leerse antes de modificar.
+El CLI consulta los **856 módulos** inventariados en los snapshots: 800 MyCompany, 49 lsFusion y 7 extensiones Rubrova. La salida incluye rutas exactas de dependencias y consumidores; si existe un pasaporte individual, lo coloca como primera lectura.
+
 2. Para cualquier módulo que no figure en la tabla manual, ejecutar `node scripts/platform/module-integration-route.mjs --module NombreExacto`. También acepta la ruta o el nombre exacto del archivo `.lsf`. La salida muestra `MODULE`, ruta, namespace, estado en `RubrovaCustom`, `REQUIRE` directos y consumidores directos, además del dossier y lecturas transversales.
 3. Abrir la [plantilla obligatoria de ficha de integración](MODULE_INTEGRATION_PASSPORT_TEMPLATE.md) (`docs/platform-audit/MODULE_INTEGRATION_PASSPORT_TEMPLATE.md`) cuando no exista una ficha adecuada o el cambio descubra relaciones/contratos nuevos. No completar huecos con suposiciones.
 4. Seguir por separado el grafo de dependencias de código (`REQUIRE`) y las relaciones de negocio (documentos, estados, reservas, ledgers, pagos, costos y reportes). La herramienta informa dependencias directas; el dossier y la fuente deben explicar la relación funcional.
