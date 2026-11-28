@@ -12,6 +12,7 @@
 <p align="center">
   <a href="docs/EXECUTIVE_PRODUCT_BRIEF.md">Brief ejecutivo</a> ·
   <a href="docs/platform-audit/README.md">Mapeo obligatorio MyCompany / lsFusion</a> ·
+  <a href="docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md">Directorio de integración por módulo</a> ·
   <a href="docs/ENGINEERING_MASTER.md#estado-actual-de-main">Estado y evidencia</a> ·
   <a href="docs/ARCHITECTURE.md">Arquitectura</a> ·
   <a href="docs/SECURITY_POSTURE.md">Seguridad y evidencia</a> ·
