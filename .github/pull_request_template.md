@@ -5,14 +5,29 @@
 ## Revisión obligatoria del mapeo de MyCompany / lsFusion
 
 - [ ] Consulté `docs/platform-audit/README.md` y los dossiers relevantes.
-- [ ] Revisé el módulo nativo y sus dependencias `REQUIRE` / extensiones.
+- [ ] Identifiqué el nombre exacto declarado en `MODULE` y consulté `MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md` o ejecuté `node scripts/platform/module-integration-route.mjs --module NombreExacto`.
+- [ ] Revisé la primera lectura indicada, la ficha del módulo y las lecturas transversales recomendadas.
+- [ ] Revisé el módulo nativo, sus dependencias `REQUIRE`, sus consumidores directos y las extensiones.
+- [ ] Confirmé si cada módulo está dentro o fuera del cierre de `RubrovaCustom`; no asumí que todo lo vendorizado está cargado.
 - [ ] Revisé las capacidades pertinentes de lsFusion, cliente, API y utilidades.
 - [ ] Seguí el flujo hasta documentos, estados, ledgers, reportes y efectos laterales.
-- [ ] Actualicé el dossier y el Manual técnico, o expliqué por qué no corresponde.
+- [ ] Actualicé/creé la ficha de integración y el Manual técnico, o expliqué por qué no corresponde.
 
-**Módulos / rutas MyCompany revisados:**
+**MODULE exacto (no sólo nombre de archivo):**
 
-**Capacidades / construcciones lsFusion revisadas:**
+**Ruta(s) LSF y commit de origen:**
+
+**Comando de consulta ejecutado y salida (si aplica):**
+
+**Dossier y secciones de primera lectura:**
+
+**REQUIRE directos:**
+
+**Consumidores directos:**
+
+**Entidades/documentos/ledgers dueños y afectados:**
+
+**Estados, transiciones, APIs y permisos implicados:**
 
 **Dependencias, consumidores y productores afectados:**
 
