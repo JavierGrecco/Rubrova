@@ -322,6 +322,8 @@ Capacidades documentadas:
 
 **Pendiente:** autorización de carga retroactiva, cierres de período, redondeos, tarifas históricas, tiempos aprobados/rechazados, dependencias de tareas, notificaciones, calendarios y conciliación de horas con haberes y costos de fabricación.
 
+El mapa detallado de los 13 módulos de flota está en [MYCOMPANY_6_2_FLEET_VEHICLE_COSTS_MAP.md](MYCOMPANY_6_2_FLEET_VEHICLE_COSTS_MAP.md). Incluye los registros de vehículo/servicio y los límites de automatización pendientes.
+
 ### 3.11 Flota: vehículo → asignación de conductor → mantenimiento → gasto
 
 Capacidades documentadas:
