@@ -315,7 +315,7 @@ loadDefaultData () + {
             NEW donePutLineCI = Purchase.OrderLine {
                 Purchase.order(donePutLineCI) <- donePutOrderCI;
                 Purchase.item(donePutLineCI) <- Sales.rubrovaCITestProduct();
-                Purchase.quantity(donePutLineCI) <- 2;
+                Purchase.quantity(donePutLineCI) <- 3;
                 Purchase.price(donePutLineCI) <- 1000;
             }
             Purchase.confirmed(donePutOrderCI) <- TRUE;

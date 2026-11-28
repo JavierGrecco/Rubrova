@@ -1171,11 +1171,11 @@ def verify_purchase_receipt_done_cancellation(context: Any, url: str) -> None:
 
     # Targets, not observed results, until this runtime gate succeeds.
     expected = {
-        "putBaselineMain": 10, "putBaselineChild": 0, "putBaselineCost": 0, "putBaselinePending": 2,
+        "putBaselineMain": 10, "putBaselineChild": 0, "putBaselineCost": 0, "putBaselinePending": 3,
         "putReceivedMain": 11, "putReceivedChild": 1, "putReceivedCost": 2000,
-        "putReceivedQuantity": 2, "putQuantity": 1, "putLedgerDone": 1, "putReceivedPending": 0,
-        "putCanceledMain": 10, "putCanceledChild": 0, "putCanceledCost": 0, "putCanceledPending": 2,
-        "putReplacementDemand": 2,
+        "putReceivedQuantity": 2, "putQuantity": 1, "putLedgerDone": 1, "putReceivedPending": 1,
+        "putCanceledMain": 10, "putCanceledChild": 0, "putCanceledCost": 0, "putCanceledPending": 3,
+        "putReplacementDemand": 3,
         "plainBaselineMain": 10, "plainBaselineChild": 0, "plainBaselineCost": 0, "plainBaselinePending": 4,
         "plainReceivedMain": 14, "plainReceivedChild": 0, "plainReceivedCost": 4000,
         "plainReceivedQuantity": 4, "plainPutQuantity": 0, "plainLedgerDone": 0, "plainReceivedPending": 0,

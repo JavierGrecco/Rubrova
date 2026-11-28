@@ -95,7 +95,7 @@ La ubicación participa del control de acceso por ubicación; proveedor y produc
 
 ## 8.1 Aceptación runtime de cancelación posterior a Done (#17)
 
-La fixture efímera de CI crea dos órdenes independientes sobre un depósito aislado con saldo inicial de 10 unidades y una ubicación hija vacía. Cada orden utiliza precio de compra de $1.000 por unidad y se completa mediante la acción nativa de recepción.
+La fixture efímera de CI crea dos órdenes independientes sobre un depósito aislado con saldo inicial de 10 unidades y una ubicación hija vacía. El primer pedido es de 3 unidades: se reciben 2 y queda 1 pendiente; el segundo pedido de 4 unidades se recibe completo. Ambos usan precio de compra de $1.000 por unidad y las acciones nativas de recepción.
 
 | Escenario | Momento | Depósito principal | Ubicación hija | Costo de la recepción |
 |---|---|---:|---:|---:|
