@@ -244,6 +244,8 @@ Relaciones importantes:
 
 **Pendiente:** probar rendimiento de BOM anidadas, redondeos y coeficientes, reservas, faltantes, sustituciones, lotes, scrap, desarme, variaciones reales, distribución de costos y conciliación de ledgers.
 
+El análisis detallado de los 30 módulos de retail y de las extensiones Rubrova de reintegros está en [MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md](MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md). Incluye las reglas de caja y los límites fiscales todavía no resueltos.
+
 ### 3.7 Retail / POS: sesión → venta → cobro → devolución → cierre
 
 Capacidades documentadas:
