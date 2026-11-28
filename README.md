@@ -43,9 +43,9 @@ El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las cap
 >
 > El [run #527](https://github.com/JavierGrecco/Rubrova/actions/runs/46090558222), SHA fb1ba303, pasó prevalidación, sintaxis Windows, compilación y empaquetado. El servidor nativo inició y la UI abrió una nota de crédito en borrador; falló al descartarla porque el botón se mostraba como New receipt (shift F12) en lugar de Nueva venta. No se demostró el descarte ni la ausencia de efectos en caja/ledger.
 >
-> La corrección por identidad nativa se integró en f932b9d y su regresión en 051506f. El [run #529](https://github.com/JavierGrecco/Rubrova/actions/runs/46091863880) terminó en failure durante la prevalidación: la regex de la nueva aserción estática sobreescapaba los paréntesis. Windows pasó; build y smoke fueron omitidos. No fue una falla del servidor ni una prueba de aceptación funcional.
+> Los runs #529, #530 y #531 detectaron sucesivamente regresiones estáticas en la nueva puerta española (regex de selector, expectativa antigua de alias y regex de firma). Windows pasó en esas revisiones; prevalidación falló y por eso build/smoke se omitieron.
 >
-> En el commit 1321c2d se corrigió la regresión para comparar el selector con texto literal, se añadió New_receipt=Nueva venta al recurso es_AR y el smoke exige el caption español en el botón real antes de descartar el borrador. El [run #530](https://github.com/JavierGrecco/Rubrova/actions/runs/46092959665) está validando esta revisión; la traducción y la secuencia todavía no tienen aceptación de runtime.
+> En el commit bedaecec las comprobaciones de firma se reemplazaron por comparaciones literales. El [run #532](https://github.com/JavierGrecco/Rubrova/actions/runs/46093329781) pasó prevalidación y Windows; la compilación de MyCompany/lsFusion estaba en curso al último corte. La traducción y la secuencia todavía no tienen aceptación de runtime.
 >
 > El análisis reuse-first previo de MyCompany/lsFusion se conserva en los anexos A y B del [manual técnico](docs/ENGINEERING_MASTER.md). El inventario confirma 800 módulos LSF y define el trabajo que falta para conocer de manera sistemática las relaciones, pantallas, acciones, estados, ledgers, APIs, permisos y casos de uso por dominio.
 >
