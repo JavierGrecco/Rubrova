@@ -191,6 +191,16 @@ test("el directorio manual enlaza archivos LSF existentes y módulos del catálo
   }
 });
 
+test("cada módulo con pasaporte individual enlaza su ficha directamente en la fila rápida", () => {
+  const directory = read("docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md");
+  const names = ["InvLedger", "ResLedger", "CostLedger", "Receipt", "SalesOrder", "Session", "PurchaseOrder", "Invoice", "Bill", "Pos", "Product", "Partner"];
+  for (const name of names) {
+    const row = directory.split("\\n").find(line => line.startsWith(`| \`\${name}\` |`));
+    assert.ok(row, `No existe ruta rápida para ${name}`);
+    assert.ok(row.includes(`[Ficha \${name}](modules/\${name}.md)`), `La fila de ${name} no enlaza su pasaporte individual`);
+  }
+});
+
 test("los nombres del directorio coinciden con MODULE declarado en cada archivo LSF", () => {
   const directory = read("docs/platform-audit/MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md");
   const catalog = buildSourceCatalog();
