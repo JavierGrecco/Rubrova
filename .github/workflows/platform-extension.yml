@@ -58,11 +58,13 @@ jobs:
             ${{ runner.temp }}/rubrova-preflight/lsfusion-module-register.md
           if-no-files-found: error
           retention-days: 30
-      - name: Publicar el índice documental de MyCompany y lsFusion
+      - name: Publicar el índice y el registro de documentación
         uses: actions/upload-artifact@v7
         with:
           name: rubrova-source-document-catalog
-          path: ${{ runner.temp }}/rubrova-preflight/source-document-catalog.json
+          path: |
+            ${{ runner.temp }}/rubrova-preflight/source-document-catalog.json
+            ${{ runner.temp }}/rubrova-preflight/source-document-register.md
           if-no-files-found: error
           retention-days: 30
 

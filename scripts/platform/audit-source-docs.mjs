@@ -141,16 +141,95 @@ export function buildDocumentationCatalog(root = ROOT) {
   };
 }
 
+function escapeMarkdownCell(value) {
+  return String(value ?? "").replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
+}
+
+export function renderDocumentationRegisterMarkdown(catalog) {
+  const lines = [
+    "# Registro de documentación — MyCompany 6.2 y lsFusion 6.2",
+    "",
+    "**Alcance:** páginas Markdown y recursos gráficos que vienen incluidos en los snapshots fijados.",
+    "",
+    "**Método:** índice de título, ruta, idioma, encabezados y recursos. No reemplaza la lectura funcional ni confirma que cada página describa exactamente el runtime de Rubrova.",
+    "",
+    "## Resumen de recursos",
+    "",
+    "| Producto | Idioma | Páginas Markdown | Imágenes |",
+    "|---|---|---:|---:|",
+  ];
+
+  for (const locale of catalog.locales) {
+    lines.push("| " + [
+      escapeMarkdownCell(locale.product),
+      escapeMarkdownCell(locale.locale),
+      locale.markdownCount,
+      locale.imageCount,
+    ].join(" | ") + " |");
+  }
+
+  lines.push("", "Total: **" + catalog.quality.totalMarkdownPages + " páginas Markdown** y **" + catalog.quality.totalImages + " imágenes**.", "");
+  lines.push("Páginas sin encabezados Markdown: **" + catalog.quality.pagesWithoutHeadings + "**. No se omiten; se listan con su título de respaldo.", "");
+
+  for (const locale of catalog.locales) {
+    lines.push("## " + locale.product + " — " + locale.locale);
+    lines.push("");
+    lines.push("| Título | Dominio | Encabezados | Fuente del título | Archivo |");
+    lines.push("|---|---|---:|---|---|");
+    for (const page of locale.pages) {
+      const headingSummary = page.headings.map((heading) =>
+        "H" + heading.level + " " + heading.text + " (L" + heading.line + ")",
+      ).join("; ") || "Sin encabezados";
+      lines.push("| " + [
+        escapeMarkdownCell(page.title),
+        escapeMarkdownCell(page.domain),
+        page.headingCount,
+        escapeMarkdownCell(page.titleSource),
+        escapeMarkdownCell(page.path),
+      ].join(" | ") + " |");
+      if (!page.hasHeading) {
+        // El título de respaldo y la ruta quedan registrados; no se descarta la página.
+      }
+    }
+    lines.push("");
+    lines.push("### Recursos gráficos — " + locale.locale);
+    lines.push("");
+    for (const imagePath of locale.images) lines.push("- " + imagePath);
+    if (!locale.images.length) lines.push("- No hay imágenes en esta carpeta.");
+    lines.push("");
+  }
+
+  lines.push("## Carpetas de idioma ausentes", "");
+  if (catalog.absentLocales.length) {
+    for (const locale of catalog.absentLocales) {
+      lines.push("- " + locale.product + " " + locale.locale + ": " + locale.path);
+    }
+  } else {
+    lines.push("No hay carpetas ausentes entre los idiomas esperados por este inventario.");
+  }
+  lines.push("", "## Advertencias", "");
+  lines.push("- La clasificación de dominio se basa en la carpeta del archivo, no en una interpretación automática de su contenido.");
+  lines.push("- Una página indexada no está necesariamente leída, traducida ni contrastada con las fuentes.");
+  lines.push("- Los 33 documentos de plataforma sin encabezados por idioma siguen incluidos; su estructura se debe revisar individualmente.");
+  lines.push("- MyCompany trae documentación en inglés, polaco y ruso. No se encontró carpeta documental española en el snapshot.");
+  return lines.join("\n") + "\n";
+}
+
 function runCli() {
   const args = process.argv.slice(2);
   let outputPath = null;
+  let markdownOutputPath = null;
   for (let index = 0; index < args.length; index += 1) {
     if (args[index] === "--json-output") {
       outputPath = args[index + 1];
       if (!outputPath) throw new Error("Falta la ruta después de --json-output.");
       index += 1;
+    } else if (args[index] === "--markdown-output") {
+      markdownOutputPath = args[index + 1];
+      if (!markdownOutputPath) throw new Error("Falta la ruta después de --markdown-output.");
+      index += 1;
     } else if (args[index] === "--help" || args[index] === "-h") {
-      console.log("Uso: node scripts/platform/audit-source-docs.mjs [--json-output archivo.json]");
+      console.log("Uso: node scripts/platform/audit-source-docs.mjs [--json-output archivo.json] [--markdown-output registro.md]");
       return;
     } else {
       throw new Error("Argumento no reconocido: " + args[index]);
@@ -174,6 +253,12 @@ function runCli() {
     mkdirSync(path.dirname(absolute), { recursive: true });
     writeFileSync(absolute, JSON.stringify(catalog, null, 2) + "\n", "utf8");
     console.log("Informe JSON: " + absolute);
+  }
+  if (markdownOutputPath) {
+    const absolute = path.resolve(markdownOutputPath);
+    mkdirSync(path.dirname(absolute), { recursive: true });
+    writeFileSync(absolute, renderDocumentationRegisterMarkdown(catalog), "utf8");
+    console.log("Registro Markdown: " + absolute);
   }
 }
 
