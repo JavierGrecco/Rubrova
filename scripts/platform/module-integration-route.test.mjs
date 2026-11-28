@@ -167,7 +167,7 @@ test("la plantilla de ficha conserva los controles mínimos de integración y ac
     "Estados, transacciones y efectos secundarios",
     "Seguridad, permisos y auditoría",
     "Ledgers y efectos",
-    "Pruebas y evidencia",
+    "Matriz de pruebas y evidencia",
     "Decisión reuse-first",
     "No inferir",
   ]) {
