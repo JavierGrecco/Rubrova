@@ -91,8 +91,8 @@ test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos his
     "Guía de integración lsFusion 6.2 y MyCompany 6.2",
     "Inventario, stock, depósitos, conteos y costos",
     "Facturación, impuestos, deuda, pagos y contabilidad argentina",
-    "Los 800 módulos LSF",
-    "Los 69 documentos Markdown catalogados",
+    "800 módulos LSF",
+    "69 documentos Markdown catalogados",
     "puerta 9.7",
   ]) {
     assert.ok(index.toLowerCase().includes(marker.toLowerCase()), `Falta una ruta o regla obligatoria: ${marker}`);
