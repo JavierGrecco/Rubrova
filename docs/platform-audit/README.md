@@ -328,6 +328,23 @@ Este catálogo complementa los 14 dossiers anteriores. Incluye **todos** los doc
 | [CUSTOMER 360 AND INTELLIGENCE](../CUSTOMER_360_AND_INTELLIGENCE.md) · `docs/CUSTOMER_360_AND_INTELLIGENCE.md` | Vista consolidada de cliente e inteligencia de relación, con límites de identidad y privacidad. |
 | [PROJECTED STOCK AND REPLENISHMENT](../PROJECTED_STOCK_AND_REPLENISHMENT.md) · `docs/PROJECTED_STOCK_AND_REPLENISHMENT.md` | Stock proyectado, contrato de exportación nativa y planificador conservador; no genera órdenes. |
 
+### 7.1 Recursos de soporte y fixtures bajo `docs/`
+
+Además de los 69 Markdown, el directorio `docs/` contiene siete JSON y un SVG. El inventario actual suma **77 archivos**. Estos recursos no son texto auxiliar descartable: forman parte de los experimentos reproducibles, los contratos y la presentación del proyecto.
+
+| Archivo | Qué contiene / para qué sirve | Leer junto con |
+|---|---|---|
+| [demand-monthly-history.json](../fixtures/demand-monthly-history.json) | Benchmark sintético de demanda mensual 2022–2025, estacionalidad del hemisferio sur y backtesting walk-forward | [Demanda y margen](../DEMAND_AND_MARGIN_INTELLIGENCE.md), [BI](../BUSINESS_INTELLIGENCE.md) y los tests del motor de pronóstico |
+| [stockout-censored-demand.json](../fixtures/stockout-censored-demand.json) | Escenario sintético de demanda censurada por quiebres de stock; separa ventas observadas de demanda latente usada sólo para evaluar | [Demanda y margen](../DEMAND_AND_MARGIN_INTELLIGENCE.md) y los tests del estimador de demanda censurada |
+| [platform-evaluation.json](../fixtures/platform-evaluation.json) | Datos/escenarios comunes sintéticos para comparar plataformas POS+ERP bajo condiciones equivalentes | [Laboratorio de evaluación](../PLATFORM_LAB_SETUP.md), [Evaluación de plataformas](../PLATFORM_EVALUATION.md) y `scripts/evaluation/` |
+| [mycompany-native-replenishment-export.json](../fixtures/mycompany-native-replenishment-export.json) | Ejemplo sintético del contrato JSON de exportación nativa MyCompany 6.2, sólo lectura, con conteos, ledgers y semánticas explícitas | [Stock proyectado y reposición](../PROJECTED_STOCK_AND_REPLENISHMENT.md), [compras](MYCOMPANY_6_2_PURCHASE_REPLENISHMENT_MAP.md) e [inventario](MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md) |
+| [mycompany-replenishment-snapshot.json](../fixtures/mycompany-replenishment-snapshot.json) | Snapshot normalizado de reposición con inventario, reservas, recepciones y entradas de planificación | [Stock proyectado y reposición](../PROJECTED_STOCK_AND_REPLENISHMENT.md), `scripts/replenishment/import_mycompany_snapshot.py` |
+| [replenishment-planning-policy.json](../fixtures/replenishment-planning-policy.json) | Política de demostración explícita (demanda, lead time, revisión, stock de seguridad, MOQ y múltiplos); no se infiere de ledgers | [Stock proyectado y reposición](../PROJECTED_STOCK_AND_REPLENISHMENT.md), `scripts/replenishment/plan_replenishment.py` |
+| [replenishment-planning.json](../fixtures/replenishment-planning.json) | Casos sintéticos para decisión de reposición, expedición, supresión por pronóstico insuficiente y revisión de datos | [Stock proyectado y reposición](../PROJECTED_STOCK_AND_REPLENISHMENT.md) y `scripts/replenishment/test_plan_replenishment.py` |
+| [rubrova-hero.svg](../assets/rubrova-hero.svg) | Imagen vectorial de identidad/portada usada por el README; no contiene contrato funcional | [README principal](../../README.md) |
+
+**Regla:** un fixture es una muestra sintética con propósito y límites concretos, no evidencia de datos reales ni de aceptación comercial. Al cambiar un esquema o una regla, actualizar el fixture, su validador/test y el documento que explica su semántica. No reutilizar fixtures para producción ni introducir datos personales reales.
+
 ## 8. Investigaciones históricas del Manual técnico: anexos A–K
 
 El Manual técnico es extenso y contiene antecedentes que no deben perderse ni convertirse en fuentes competidoras. Las secciones 1–11 son el estado vigente. Los anexos conservan investigación, decisiones y planes previos; cuando haya contradicción, prevalece el estado vigente y se corrige la discrepancia.
