@@ -32,6 +32,8 @@ function filesUnder(directory) {
 
 const requiredDossiers = [
   "MYCOMPANY_6_2_FUNCTIONAL_MAP.md",
+  "MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md",
+  "MODULE_INTEGRATION_PASSPORT_TEMPLATE.md",
   "MYCOMPANY_6_2_RETAIL_POS_SESSIONS_MAP.md",
   "MYCOMPANY_6_2_SALES_PRICING_LEDGER_MAP.md",
   "MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md",
@@ -58,6 +60,8 @@ const mandatoryToolPaths = [
   "platform/mycompany-6.2.lock.json",
   "extensions/lsfusion/RubrovaCustom.lsf",
   "scripts/platform/audit-lsf-source.mjs",
+  "scripts/platform/module-integration-route.mjs",
+  "scripts/platform/module-integration-route.test.mjs",
   "scripts/platform/audit-lsf-source.test.mjs",
   "scripts/platform/audit-source-docs.mjs",
   "scripts/platform/audit-source-docs.test.mjs",
@@ -79,8 +83,8 @@ test("el índice existe y contiene todos los documentos mantenidos por Rubrova f
   const files = markdownFiles(".", { excludeVendor: true });
   const docsFiles = markdownFiles("docs");
 
-  assert.equal(docsFiles.length, 69, "Cambió el inventario de docs/: actualizar el catálogo.");
-  assert.equal(files.length, 73, "Cambió el inventario Markdown fuera de vendor/: clasificar cada alta o baja.");
+  assert.equal(docsFiles.length, 71, "Cambió el inventario de docs/: actualizar el catálogo.");
+  assert.equal(files.length, 75, "Cambió el inventario Markdown fuera de vendor/: clasificar cada alta o baja.");
   for (const file of files) {
     assert.ok(index.includes(file), `Documento fuera de vendor sin clasificar en el índice integral: ${file}`);
   }
@@ -106,7 +110,7 @@ test("los siete documentos Markdown auxiliares de vendor quedan identificados", 
 test("todos los archivos de docs, incluidos fixtures y recursos gráficos, están catalogados", () => {
   const index = read(indexPath);
   const files = filesUnder("docs");
-  assert.equal(files.length, 77, "Cambió el inventario completo de docs/: actualizar el catálogo.");
+  assert.equal(files.length, 79, "Cambió el inventario completo de docs/: actualizar el catálogo.");
   for (const file of files) {
     assert.ok(index.includes(file), `Recurso de docs sin clasificar en el índice: ${file}`);
   }
@@ -140,18 +144,20 @@ test("el índice mantiene las rutas de lectura, relaciones cruzadas y anexos his
     "Inventario, stock, depósitos, conteos y costos",
     "Facturación, impuestos, deuda, pagos y contabilidad argentina",
     "800 módulos LSF",
-    "69 documentos Markdown en",
-    "1.111 archivos Markdown",
-    "73 documentos mantenidos por Rubrova",
+    "71 documentos Markdown en",
+    "1.113 archivos Markdown",
+    "75 documentos mantenidos por Rubrova",
     "1.038 archivos Markdown",
     "1.031 páginas de documentación upstream",
     "retención de 30 días",
-    "77 archivos",
+    "79 archivos",
     "demand-monthly-history.json",
     "mycompany-native-replenishment-export.json",
     "platform-evaluation.json",
     "stockout-censored-demand.json",
     "rubrova-hero.svg",
+    "directorio de integración por módulo",
+    "ficha de integración",
     "puerta 9.7",
   ]) {
     assert.ok(index.toLowerCase().includes(marker.toLowerCase()), `Falta una ruta o regla obligatoria: ${marker}`);
@@ -167,11 +173,17 @@ test("README, AGENTS, workflow y plantilla mantienen visible la obligación de c
 
   assert.ok(docWorkflow.includes("'docs/**'"));
   assert.ok(docWorkflow.includes("scripts/platform/test-platform-map-entry.mjs"));
+  assert.ok(docWorkflow.includes("scripts/platform/module-integration-route.test.mjs"));
   assert.ok(docWorkflow.includes("scripts/platform/audit-lsf-source.mjs"));
+  assert.ok(docWorkflow.includes("scripts/platform/module-integration-route.mjs"));
   assert.ok(docWorkflow.includes("scripts/platform/audit-source-docs.mjs"));
   assert.ok(readme.includes("docs/platform-audit/README.md"));
   assert.ok(agents.includes("docs/platform-audit/README.md"));
+  assert.ok(agents.includes("MYCOMPANY_6_2_MODULE_INTEGRATION_DIRECTORY.md"));
+  assert.ok(agents.includes("module-integration-route.mjs"));
   assert.ok(agents.includes("Regla reuse-first obligatoria"));
   assert.ok(workflow.includes("Puerta obligatoria de mapeo"));
+  assert.ok(workflow.includes("module-integration-route.mjs"));
+  assert.ok(workflow.includes("directorio de integración por módulo"));
   assert.ok(template.includes("Revisión obligatoria del mapeo"));
 });
