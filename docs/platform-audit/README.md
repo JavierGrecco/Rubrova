@@ -12,7 +12,14 @@ El catálogo de documentos mantenidos por Rubrova está enlazado en este archivo
 
 El test `scripts/platform/test-platform-map-entry.mjs` comprueba que los **73 Markdown mantenidos por Rubrova fuera de vendor/** estén incluidos en el índice y que los siete documentos auxiliares del snapshot no queden omitidos. `audit-source-docs.mjs` vuelve a generar el índice completo de páginas upstream desde los cinco directorios fijados. Si se incorpora un documento, fuente, idioma o recurso nuevo, debe clasificarse y enlazarse antes de pasar la prevalidación.
 
-**Persistencia de los registros generados:** GitHub Actions publica `rubrova-lsf-source-catalog` y `rubrova-source-document-catalog` como artefactos con retención de 30 días. No son archivos permanentes de Git ni reemplazan este índice. Se pueden regenerar desde la raíz con `bash scripts/platform/local-preflight.sh --platform`; el código de ambos generadores y sus pruebas sí permanece versionado. Ante una actualización de los locks, regenerar y revisar los registros antes de aprobar el nuevo snapshot.
+**Persistencia de los registros generados:** GitHub Actions publica `rubrova-lsf-source-catalog` y `rubrova-source-document-catalog` como artefactos con retención de 30 días. No son archivos permanentes de Git ni reemplazan este índice. Para conservar una copia consultable de los registros en el equipo de trabajo, ejecutar desde la raíz:
+
+```bash
+mkdir -p /tmp/rubrova-platform-map
+RUBROVA_PREFLIGHT_OUTPUT_DIR=/tmp/rubrova-platform-map bash scripts/platform/local-preflight.sh --platform
+```
+
+Quedan allí `lsfusion-source-catalog.json`, `lsfusion-module-register.md`, `source-document-catalog.json` y `source-document-register.md`. El preflight borra su carpeta temporal predeterminada cuando no se especifica `RUBROVA_PREFLIGHT_OUTPUT_DIR`. El código de ambos generadores y sus pruebas sí permanece versionado. Ante una actualización de los locks, regenerar y revisar los registros antes de aprobar el nuevo snapshot.
 
 **Estado del relevamiento técnico:** **EN CURSO / puerta 9.7 ABIERTA.** El catálogo documental exhaustivo no significa que se hayan leído y conciliado funcionalmente todos los módulos, páginas fuente, herramientas o capacidades. Los 800 módulos MyCompany están inventariados estructuralmente, no todos tienen ficha funcional completa ni pruebas de runtime. No se debe declarar completo el mapeo de MyCompany/lsFusion.
 
