@@ -1789,6 +1789,8 @@ La plataforma de interfaz y los mensajes del motor tienen bundles propios; la tr
 
 En el snapshot upstream 6.2 se encontraron los bundles base, polaco y ruso; no hay un bundle español upstream. Rubrova mantiene su propio archivo MyCompanyResourceBundle_es_AR.properties. Tras incorporar New_receipt=Nueva venta, el cotejo estático del bundle base (1.559 claves) registra 122 claves upstream presentes en es_AR; 121 tienen un valor distinto al inglés, una conserva exactamente el valor upstream y 1.437 no tienen entrada local. Además hay 59 claves propias de Rubrova. Estos conteos miden presencia y diferencia de valores; **no certifican calidad lingüística ni aceptación visual**.
 
+La documentación funcional incluida en el snapshot MyCompany también necesita su propio mapa: \`src/main/resources/docs\` contiene 112 archivos Markdown en inglés, 121 en polaco y 114 en ruso, además de 113 imágenes en ruso. No se encontró documentación de MyCompany en español ni en español argentino en esa ruta. Los recursos de idioma del producto incluyen \`MyCompanyResourceBundle.properties\`, \`MyCompanyResourceBundle_pl.properties\` y \`MyCompanyResourceBundle_ru.properties\`; no existe una variante upstream \`_es\` o \`_es_AR\`. Por lo tanto, el español argentino de Rubrova es una responsabilidad propia y debe cubrir tanto la interfaz como la documentación funcional que se entregue a sus usuarios.
+
 Reglas obligatorias:
 
 - Todo menú, formulario, botón, acción, filtro, estado, diálogo, mensaje, reporte y documentación operativa visible al usuario debe presentarse en español argentino cuando el usuario opera con locale es_AR.
