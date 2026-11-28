@@ -1,0 +1,99 @@
+name: Validación del mapa documental
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'AGENTS.md'
+      - 'README.md'
+      - 'patches/lsfusion/**'
+      - '.github/pull_request_template.md'
+      - '.github/workflows/documentation-map.yml'
+      - 'scripts/platform/test-platform-map-entry.mjs'
+      - 'scripts/platform/audit-lsf-source.mjs'
+      - 'scripts/platform/audit-lsf-source.test.mjs'
+      - 'scripts/platform/audit-source-docs.mjs'
+      - 'scripts/platform/audit-source-docs.test.mjs'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'AGENTS.md'
+      - 'README.md'
+      - 'patches/lsfusion/**'
+      - '.github/pull_request_template.md'
+      - '.github/workflows/documentation-map.yml'
+      - 'scripts/platform/test-platform-map-entry.mjs'
+      - 'scripts/platform/audit-lsf-source.mjs'
+      - 'scripts/platform/audit-lsf-source.test.mjs'
+      - 'scripts/platform/audit-source-docs.mjs'
+      - 'scripts/platform/audit-source-docs.test.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rubrova-documentation-map-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-map:
+    name: Validar inventario, secuencias y registros upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Obtener el repositorio
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Validar los 77 recursos bajo docs y el catálogo de 1.111 documentos
+        run: node --test scripts/platform/test-platform-map-entry.mjs
+
+      - name: Probar los generadores de catálogos upstream
+        run: |
+          node --test scripts/platform/audit-lsf-source.test.mjs
+          node --test scripts/platform/audit-source-docs.test.mjs
+
+      - name: Regenerar los inventarios desde las fuentes fijadas
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/rubrova-map"
+          node scripts/platform/audit-lsf-source.mjs \
+            --json-output "$RUNNER_TEMP/rubrova-map/lsfusion-source-catalog.json" \
+            --markdown-output "$RUNNER_TEMP/rubrova-map/lsfusion-module-register.md"
+          node scripts/platform/audit-source-docs.mjs \
+            --json-output "$RUNNER_TEMP/rubrova-map/source-document-catalog.json" \
+            --markdown-output "$RUNNER_TEMP/rubrova-map/source-document-register.md"
+          test -s "$RUNNER_TEMP/rubrova-map/lsfusion-source-catalog.json"
+          test -s "$RUNNER_TEMP/rubrova-map/lsfusion-module-register.md"
+          test -s "$RUNNER_TEMP/rubrova-map/source-document-catalog.json"
+          test -s "$RUNNER_TEMP/rubrova-map/source-document-register.md"
+
+      - name: Publicar el registro estructural de módulos
+        uses: actions/upload-artifact@v7
+        with:
+          name: rubrova-lsf-source-catalog
+          path: |
+            ${{ runner.temp }}/rubrova-map/lsfusion-source-catalog.json
+            ${{ runner.temp }}/rubrova-map/lsfusion-module-register.md
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publicar el registro documental upstream
+        uses: actions/upload-artifact@v7
+        with:
+          name: rubrova-source-document-catalog
+          path: |
+            ${{ runner.temp }}/rubrova-map/source-document-catalog.json
+            ${{ runner.temp }}/rubrova-map/source-document-register.md
+          if-no-files-found: error
+          retention-days: 30
