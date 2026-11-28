@@ -139,6 +139,8 @@ El manual describe un modelo de inventario con:
 
 **Pendiente:** mapa exacto de las clases y ledgers, reglas de costo por método y fecha, reversión, serialización, lotes, ubicaciones, inventario negativo, reservas simultáneas, permisos y conciliación por depósito/artículo/unidad.
 
+El análisis detallado de movimientos físicos, reservas, costos, recepciones, ubicación interna, despachos, traslados, aceptación y ajustes está en [MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md](MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md). El mapa identifica tres ledgers y deja marcado el riesgo de fecha en FIFO, todavía pendiente de reproducción.
+
 ### 3.5 Facturación, deuda, impuestos y pagos
 
 La documentación enumera:

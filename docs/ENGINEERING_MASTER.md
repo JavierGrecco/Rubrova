@@ -1891,6 +1891,8 @@ En lsFusion también hay módulos de soporte del servidor fuera de la composici�
 
 El detalle de los 96 módulos regionales (Bulgaria, Polonia y Rusia), con ruta, área y estado de revisión, está en [MYCOMPANY_6_2_REGIONAL_MODULES.md](platform-audit/MYCOMPANY_6_2_REGIONAL_MODULES.md). Se mantienen fuera del cierre, no descartados; la capacidad se describe como inferida cuando todavía no se leyó la fuente.
 
+El análisis en profundidad de inventario y los tres ledgers está en [MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md](platform-audit/MYCOMPANY_6_2_INVENTORY_LEDGER_MAP.md). Incluye la fuente exacta, los cálculos, circuitos y riesgos pendientes de prueba.
+
 #### Los 16 módulos MyCompany no regionales fuera del cierre
 
 La siguiente clasificación es una lectura inicial de sus fuentes; no implica que estén descartados ni que se haya validado su uso en el runtime. Cada uno debe quedar analizado y con una decisión explícita.
