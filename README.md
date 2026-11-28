@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="docs/EXECUTIVE_PRODUCT_BRIEF.md">Brief ejecutivo</a> ·
+  <a href="docs/platform-audit/README.md">Mapeo obligatorio MyCompany / lsFusion</a> ·
   <a href="docs/ENGINEERING_MASTER.md#estado-actual-de-main">Estado y evidencia</a> ·
   <a href="docs/ARCHITECTURE.md">Arquitectura</a> ·
   <a href="docs/SECURITY_POSTURE.md">Seguridad y evidencia</a> ·
@@ -58,6 +59,19 @@ El uso de IA no reduce el alcance de producto ni sustituye la revisión. Las cap
 > La especificación de [elaboración de alimentos y trazabilidad para rotiserías](docs/FOOD_PRODUCTION_AND_TRACEABILITY.md) está documentada; metadatos de lote, bloqueos por vencimiento, trazabilidad y guardas de producción siguen pendientes de implementación y validación.
 >
 > Seguimiento: [estado, evidencias y criterios de aceptación](docs/ENGINEERING_MASTER.md#estado-actual-de-main) · [roadmap técnico](docs/ENGINEERING_MASTER.md#roadmap-técnico-único-y-definición-de-terminado).
+
+## Mapeo obligatorio de MyCompany 6.2 y lsFusion 6.2
+
+Rubrova parte de dos plataformas con cientos de módulos, utilidades, mecanismos de extensión, APIs y herramientas ya implementados. **Antes de crear una función, integración o módulo propio, el equipo debe verificar qué existe en MyCompany, qué aporta lsFusion y cómo se relaciona con el resto del sistema.**
+
+El mapeo no es una investigación opcional ni conocimiento que dependa de quien inició el proyecto. Es una condición de diseño y desarrollo para evitar duplicaciones, preservar reglas nativas y aprovechar la inversión ya incorporada en `vendor/mycompany` y `vendor/platform`.
+
+- [Índice obligatorio de mapeo y estado de cobertura](docs/platform-audit/README.md): inventarios, dossiers por dominio, módulos fuera de la composición y pendientes reales.
+- [Mapa de capacidades de lsFusion 6.2](docs/platform-audit/LSFUSION_6_2_CAPABILITY_MAP.md): lenguaje, runtime, formularios, sesiones, persistencia, APIs, clientes y herramientas.
+- [Mapa funcional de MyCompany 6.2](docs/platform-audit/MYCOMPANY_6_2_FUNCTIONAL_MAP.md): composición, 800 módulos, dominios y documentación fuente.
+- [Manual técnico canónico](docs/ENGINEERING_MASTER.md): decisiones, contratos, evidencias, estado y roadmap.
+
+El relevamiento sigue **EN CURSO**. Que una capacidad esté inventariada, documentada o incluida por `REQUIRE` no demuestra que esté cargada, habilitada, conciliada ni aceptada en runtime. Cada avance debe consultar los mapas, justificar si reutiliza/extiende/adapta/construye y actualizar el dossier y el manual en el mismo cambio.
 
 ## Propuesta de producto
 
