@@ -59,6 +59,8 @@ También existe inventario por lote en [InvLedgerLot](../vendor/mycompany/src/ma
 - El maestro nativo `Inventory.Lot` guarda identificador y producto, pero no fecha de elaboración, vencimiento ni condiciones de conservación.
 - La acción nativa `Manufacturing.checkAvailability` de `ManufacturingOrderReady.lsf` calcula disponibilidad por ubicación y producto (`prevAvailable(location, item))); no elige ni reserva lotes FEFO. La existencia de `ManufacturingOrderLot.lsf` permite asignar cantidades por lote en las líneas, pero no demuestra que el chequeo de disponibilidad haya validado cada lote.
 - El macro nativo `defineDocLot` verifica que el producto del lote coincida con el de la línea y que la suma asignada a lotes no quede por debajo de la cantidad cuando el documento queda listo. No evalúa vencimiento, cuarentena ni vida útil.
+- `PosDashboardLot.processBarCode` incrementa la cantidad del lote escaneado en la línea POS, pero el código inspeccionado no comprueba allí vencimiento ni retención. El escaneo debe seguir siendo una captura; la autorización debe comprobarse antes de confirmar la venta y contabilizar su salida.
+- `ReceiptDone.validate` puede ofrecer completar cantidades recibidas vacías con `initialDemand` en recepciones no inmediatas; para alimentos no se debe confundir la cantidad prevista con la pesada/contada. Hay que exigir confirmación del dato físico y verificar el comportamiento de recepciones inmediatas en el runtime concreto.
 - `ManufacturingOrderDone.markAsDone` completa cantidades reales desde las cantidades planificadas cuando esas cantidades no fueron ingresadas. Para alimentos, ese comportamiento requiere una barrera explícita de confirmación/revisión antes de cerrar una tanda.
 
 ### Mapa técnico de trazabilidad nativa
